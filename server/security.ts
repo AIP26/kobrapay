@@ -1,0 +1,236 @@
+/**
+ * KobraPay Security Middleware
+ * Centralizes all security hardening: headers, rate limiting, audit logging, input sanitization
+ */
+import type { Express, Request, Response, NextFunction } from "express";
+import helmet from "helmet";
+import rateLimit from "express-rate-limit";
+import slowDown from "express-slow-down";
+
+// ─── In-memory store for failed login attempts (use Redis in production) ───────
+const failedAttempts = new Map<string, { count: number; blockedUntil?: number }>();
+const BLOCK_AFTER_ATTEMPTS = 10;
+const BLOCK_DURATION_MS = 15 * 60 * 1000; // 15 minutes
+
+// ─── Audit log (in-memory for dev; persist to DB in production) ───────────────
+interface AuditEntry {
+  timestamp: string;
+  ip: string;
+  userId?: number;
+  action: string;
+  resource: string;
+  statusCode?: number;
+  userAgent?: string;
+}
+const auditLog: AuditEntry[] = [];
+const MAX_AUDIT_ENTRIES = 10000;
+
+export function logAudit(entry: Omit<AuditEntry, "timestamp">) {
+  if (auditLog.length >= MAX_AUDIT_ENTRIES) {
+    auditLog.shift(); // Remove oldest entry
+  }
+  auditLog.push({ ...entry, timestamp: new Date().toISOString() });
+}
+
+export function getAuditLog(limit = 100): AuditEntry[] {
+  return auditLog.slice(-limit).reverse();
+}
+
+// ─── IP extraction helper ──────────────────────────────────────────────────────
+export function getClientIp(req: Request): string {
+  const forwarded = req.headers["x-forwarded-for"];
+  if (typeof forwarded === "string") {
+    return forwarded.split(",")[0].trim();
+  }
+  return req.socket.remoteAddress || "unknown";
+}
+
+// ─── Brute force protection ────────────────────────────────────────────────────
+export function checkBruteForce(ip: string): { blocked: boolean; remainingMs?: number } {
+  const record = failedAttempts.get(ip);
+  if (!record) return { blocked: false };
+
+  if (record.blockedUntil && Date.now() < record.blockedUntil) {
+    return { blocked: true, remainingMs: record.blockedUntil - Date.now() };
+  }
+
+  // Block expired — reset
+  if (record.blockedUntil && Date.now() >= record.blockedUntil) {
+    failedAttempts.delete(ip);
+    return { blocked: false };
+  }
+
+  return { blocked: false };
+}
+
+export function recordFailedAttempt(ip: string): void {
+  const record = failedAttempts.get(ip) || { count: 0 };
+  record.count += 1;
+  if (record.count >= BLOCK_AFTER_ATTEMPTS) {
+    record.blockedUntil = Date.now() + BLOCK_DURATION_MS;
+    console.warn(`[Security] IP ${ip} blocked for 15 minutes after ${record.count} failed attempts`);
+  }
+  failedAttempts.set(ip, record);
+}
+
+export function clearFailedAttempts(ip: string): void {
+  failedAttempts.delete(ip);
+}
+
+// ─── Input sanitization ────────────────────────────────────────────────────────
+export function sanitizeString(input: unknown): string {
+  if (typeof input !== "string") return "";
+  return input
+    .replace(/[<>]/g, "") // Remove angle brackets (XSS prevention)
+    .replace(/javascript:/gi, "") // Remove javascript: URIs
+    .replace(/on\w+\s*=/gi, "") // Remove event handlers
+    .trim()
+    .slice(0, 10000); // Limit length
+}
+
+// ─── Rate limiters ─────────────────────────────────────────────────────────────
+
+/** General API rate limiter: 200 requests per minute per IP */
+export const generalRateLimit = rateLimit({
+  windowMs: 60 * 1000,
+  max: 200,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "Demasiadas solicitudes. Por favor intenta de nuevo en un minuto.", code: "RATE_LIMITED" },
+  handler: (req, res, next, options) => {
+    const ip = getClientIp(req);
+    logAudit({ ip, action: "RATE_LIMITED", resource: req.path, statusCode: 429 });
+    res.status(429).json(options.message);
+  },
+});
+
+/** Strict rate limiter for auth endpoints: 10 attempts per 15 minutes */
+export const authRateLimit = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "Demasiados intentos de acceso. Espera 15 minutos antes de intentar de nuevo.", code: "AUTH_RATE_LIMITED" },
+  handler: (req, res, next, options) => {
+    const ip = getClientIp(req);
+    logAudit({ ip, action: "AUTH_RATE_LIMITED", resource: req.path, statusCode: 429 });
+    console.warn(`[Security] Auth rate limit exceeded for IP: ${ip}`);
+    res.status(429).json(options.message);
+  },
+});
+
+/** Payment endpoint rate limiter: 30 payment attempts per 10 minutes */
+export const paymentRateLimit = rateLimit({
+  windowMs: 10 * 60 * 1000,
+  max: 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "Demasiados intentos de pago. Por favor espera unos minutos.", code: "PAYMENT_RATE_LIMITED" },
+  handler: (req, res, next, options) => {
+    const ip = getClientIp(req);
+    logAudit({ ip, action: "PAYMENT_RATE_LIMITED", resource: req.path, statusCode: 429 });
+    res.status(429).json(options.message);
+  },
+});
+
+/** Slow down middleware: gradually slows repeated requests */
+export const speedLimiter = slowDown({
+  windowMs: 60 * 1000,
+  delayAfter: 50,
+  delayMs: (hits) => (hits - 50) * 100, // Add 100ms delay per request over 50
+});
+
+// ─── Security headers middleware ───────────────────────────────────────────────
+export function setupSecurityHeaders(app: Express): void {
+  app.use(
+    helmet({
+      contentSecurityPolicy: {
+        directives: {
+          defaultSrc: ["'self'"],
+          scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", "https://js.stripe.com"],
+          styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+          fontSrc: ["'self'", "https://fonts.gstatic.com"],
+          imgSrc: ["'self'", "data:", "https:", "blob:"],
+          connectSrc: ["'self'", "https://api.stripe.com", "https://*.manus.computer", "wss://*.manus.computer"],
+          frameSrc: ["'self'", "https://js.stripe.com", "https://hooks.stripe.com"],
+          objectSrc: ["'none'"],
+          upgradeInsecureRequests: [],
+        },
+      },
+      crossOriginEmbedderPolicy: false, // Required for Stripe.js
+      hsts: {
+        maxAge: 31536000, // 1 year
+        includeSubDomains: true,
+        preload: true,
+      },
+    })
+  );
+
+  // Additional security headers
+  app.use((req: Request, res: Response, next: NextFunction) => {
+    res.setHeader("X-Content-Type-Options", "nosniff");
+    res.setHeader("X-Download-Options", "noopen");
+    res.setHeader("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
+    next();
+  });
+}
+
+// ─── Tenant isolation middleware ───────────────────────────────────────────────
+/**
+ * Validates that a userId belongs to the requesting user's tenant.
+ * Superadmin (owner) can access any tenant.
+ * Regular users can only access their own data.
+ */
+export function assertTenantAccess(
+  requestingUserId: number,
+  requestingUserRole: string,
+  ownerOpenId: string,
+  requestingUserOpenId: string,
+  targetUserId: number
+): void {
+  // Superadmin (platform owner) has unrestricted access
+  const isSuperAdmin = requestingUserOpenId === ownerOpenId;
+  if (isSuperAdmin) return;
+
+  // Admin can only access their own data
+  if (requestingUserId !== targetUserId) {
+    throw new Error("FORBIDDEN: Cross-tenant access denied");
+  }
+}
+
+// ─── Audit middleware for API routes ──────────────────────────────────────────
+export function auditMiddleware(req: Request, res: Response, next: NextFunction): void {
+  const ip = getClientIp(req);
+  const start = Date.now();
+
+  res.on("finish", () => {
+    // Only log non-static, non-health requests
+    if (req.path.startsWith("/api/") && !req.path.includes("health")) {
+      logAudit({
+        ip,
+        action: req.method,
+        resource: req.path,
+        statusCode: res.statusCode,
+        userAgent: req.headers["user-agent"],
+      });
+    }
+  });
+
+  next();
+}
+
+// ─── Register all security middleware ─────────────────────────────────────────
+export function registerSecurityMiddleware(app: Express): void {
+  // 1. Security headers (must be first)
+  setupSecurityHeaders(app);
+
+  // 2. Rate limiting
+  app.use("/api/oauth", authRateLimit);
+  app.use("/api/trpc", generalRateLimit);
+  app.use("/api/trpc", speedLimiter);
+
+  // 3. Audit logging
+  app.use(auditMiddleware);
+
+  console.log("[Security] All security middleware registered");
+}

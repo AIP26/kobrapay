@@ -18,6 +18,7 @@ import {
   FileText,
   AlertTriangle,
   ShoppingCart,
+  Shield,
 } from "lucide-react";
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
@@ -38,6 +39,7 @@ const navItems = [
   { href: "/dashboard/widget", icon: Code2, label: "Widget de Pago", section: "main" },
   { href: "/dashboard/reader", icon: ShoppingCart, label: "Compra tu Lector", section: "main" },
   { href: "/dashboard/clients", icon: Users, label: "Mis Clientes", section: "admin", adminOnly: true },
+  { href: "/dashboard/security", icon: Shield, label: "Seguridad", section: "admin", adminOnly: true },
   { href: "/dashboard/settings", icon: Settings, label: "Configuración", section: "settings" },
 ];
 

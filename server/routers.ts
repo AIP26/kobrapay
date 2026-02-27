@@ -27,6 +27,7 @@ import { COOKIE_NAME } from "@shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
+import { securityRouter } from "./routers/security";
 import { notifyOwner } from "./_core/notification";
 import { storagePut } from "./storage";
 
@@ -55,6 +56,7 @@ function calculateCommission(amount: number, commissionRate: number) {
 
 export const appRouter = router({
   system: systemRouter,
+  security: securityRouter,
 
   auth: router({
     me: publicProcedure.query((opts) => opts.ctx.user),

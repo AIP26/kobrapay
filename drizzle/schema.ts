@@ -18,7 +18,8 @@ export const users = mysqlTable("users", {
   name: text("name"),
   email: varchar("email", { length: 320 }),
   loginMethod: varchar("loginMethod", { length: 64 }),
-  role: mysqlEnum("role", ["user", "admin"]).default("user").notNull(),
+  // superadmin = dueño de la plataforma (tú), admin = cliente de la plataforma, user = empleado del cliente
+  role: mysqlEnum("role", ["user", "admin", "superadmin"]).default("user").notNull(),
   // Multi-tenant: si es cliente de la plataforma, quién lo creó
   createdByUserId: int("createdByUserId"),
   isActive: boolean("isActive").default(true).notNull(),
@@ -173,3 +174,39 @@ export const otpVerifications = mysqlTable("otp_verifications", {
 });
 
 export type OtpVerification = typeof otpVerifications.$inferSelect;
+
+/**
+ * Registro de auditoría de accesos (quién hizo qué y cuándo)
+ */
+export const auditLogs = mysqlTable("audit_logs", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId"),
+  userEmail: varchar("userEmail", { length: 320 }),
+  action: varchar("action", { length: 64 }).notNull(),
+  resource: varchar("resource", { length: 255 }).notNull(),
+  details: text("details"),
+  ipAddress: varchar("ipAddress", { length: 64 }),
+  userAgent: text("userAgent"),
+  statusCode: int("statusCode"),
+  success: boolean("success").default(true).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type AuditLog = typeof auditLogs.$inferSelect;
+export type InsertAuditLog = typeof auditLogs.$inferInsert;
+
+/**
+ * Intentos de acceso fallidos (para bloqueo por brute force)
+ */
+export const loginAttempts = mysqlTable("login_attempts", {
+  id: int("id").autoincrement().primaryKey(),
+  ipAddress: varchar("ipAddress", { length: 64 }).notNull(),
+  email: varchar("email", { length: 320 }),
+  attemptCount: int("attemptCount").default(0).notNull(),
+  blockedUntil: timestamp("blockedUntil"),
+  lastAttemptAt: timestamp("lastAttemptAt").defaultNow().notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type LoginAttempt = typeof loginAttempts.$inferSelect;
+export type InsertLoginAttempt = typeof loginAttempts.$inferInsert;

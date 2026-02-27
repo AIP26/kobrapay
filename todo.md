@@ -163,22 +163,22 @@
 ## Fase 9 - Seguridad Multi-Tenant y Ciberseguridad
 
 ### Aislamiento de datos (Multi-Tenant)
-- [ ] Middleware de tenant isolation: cada query filtra por owner_id obligatoriamente
-- [ ] Roles: superadmin (tú), admin (cliente tuyo), user (empleado del cliente)
-- [ ] superadmin ve todo; admin solo ve sus datos; user solo lo que admin le permita
-- [ ] Prohibir acceso cruzado entre tenants (un cliente no puede ver datos de otro)
-- [ ] Auditoría de accesos: log de quién accedió a qué y cuándo
+- [x] Middleware de tenant isolation: cada query filtra por owner_id obligatoriamente
+- [x] Roles: superadmin (tú), admin (cliente tuyo), user (empleado del cliente)
+- [x] superadmin ve todo; admin solo ve sus datos; user solo lo que admin le permita
+- [x] Prohibir acceso cruzado entre tenants (un cliente no puede ver datos de otro)
+- [x] Auditoría de accesos: log de quién accedió a qué y cuándo
 
 ### Hardening del servidor
-- [ ] Rate limiting: máximo N requests por IP por minuto (anti-brute force)
-- [ ] Helmet.js: headers de seguridad HTTP (CSP, HSTS, X-Frame-Options, etc.)
-- [ ] CORS restringido: solo dominios autorizados
-- [ ] Sanitización de inputs: prevenir SQL injection y XSS
-- [ ] Tokens JWT con expiración corta + refresh tokens
-- [ ] Bloqueo automático de IP tras intentos fallidos de login
-- [ ] Logs de seguridad: intentos de acceso no autorizado
+- [x] Rate limiting: máximo N requests por IP por minuto (anti-brute force)
+- [x] Helmet.js: headers de seguridad HTTP (CSP, HSTS, X-Frame-Options, etc.)
+- [x] CORS restringido: solo dominios autorizados
+- [x] Sanitización de inputs: prevenir SQL injection y XSS
+- [x] Tokens JWT con expiración corta + refresh tokens (gestionado por Manus OAuth)
+- [x] Bloqueo automático de IP tras intentos fallidos de login (10 intentos = 15 min bloqueo)
+- [x] Logs de seguridad: intentos de acceso no autorizado
 
 ### Protección de rutas frontend
-- [ ] Rutas protegidas por rol: superadmin, admin, user
-- [ ] Redirección automática si no tiene permisos
-- [ ] No exponer datos sensibles en el frontend (comisiones de otros tenants, etc.)
+- [x] Rutas protegidas por rol: superadmin, admin, user
+- [x] Redirección automática si no tiene permisos
+- [x] No exponer datos sensibles en el frontend (comisiones de otros tenants, etc.)

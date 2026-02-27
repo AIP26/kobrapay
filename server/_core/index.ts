@@ -8,6 +8,7 @@ import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
 import { registerStripeWebhook } from "../stripeWebhook";
+import { registerSecurityMiddleware } from "../security";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -31,6 +32,12 @@ async function findAvailablePort(startPort: number = 3000): Promise<number> {
 async function startServer() {
   const app = express();
   const server = createServer(app);
+
+  // Trust proxy (required for rate limiting behind reverse proxy/CDN)
+  app.set("trust proxy", 1);
+
+  // Security middleware (headers, rate limiting, audit) — registered first
+  registerSecurityMiddleware(app);
 
   // Stripe webhook MUST be registered BEFORE json middleware (needs raw body)
   registerStripeWebhook(app);
