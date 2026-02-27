@@ -20,6 +20,8 @@ export const users = mysqlTable("users", {
   loginMethod: varchar("loginMethod", { length: 64 }),
   // superadmin = dueño de la plataforma (tú), admin = cliente de la plataforma, user = empleado del cliente
   role: mysqlEnum("role", ["user", "admin", "superadmin"]).default("user").notNull(),
+  // Estado de la cuenta: pending = esperando aprobación, active = aprobado, blocked = rechazado/bloqueado
+  accountStatus: mysqlEnum("accountStatus", ["pending", "active", "blocked"]).default("pending").notNull(),
   // Multi-tenant: si es cliente de la plataforma, quién lo creó
   createdByUserId: int("createdByUserId"),
   isActive: boolean("isActive").default(true).notNull(),

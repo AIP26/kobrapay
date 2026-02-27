@@ -65,6 +65,11 @@ export async function upsertUser(user: InsertUser): Promise<void> {
     values.role = "admin";
     updateSet.role = "admin";
   }
+  // El superadmin (owner) siempre queda activo; nuevos registros quedan en "pending"
+  if (user.openId === ENV.ownerOpenId) {
+    values.accountStatus = "active";
+    updateSet.accountStatus = "active";
+  }
   if (!values.lastSignedIn) values.lastSignedIn = new Date();
   if (Object.keys(updateSet).length === 0) updateSet.lastSignedIn = new Date();
 
@@ -83,6 +88,36 @@ export async function getUserById(id: number) {
   if (!db) return undefined;
   const result = await db.select().from(users).where(eq(users.id, id)).limit(1);
   return result[0];
+}
+
+// ─── Gestión de registros (aprobación de cuentas) ─────────────────────────────
+
+export async function getAllRegistrations() {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select({
+    id: users.id,
+    name: users.name,
+    email: users.email,
+    role: users.role,
+    accountStatus: users.accountStatus,
+    isActive: users.isActive,
+    createdAt: users.createdAt,
+    lastSignedIn: users.lastSignedIn,
+    loginMethod: users.loginMethod,
+  }).from(users).orderBy(users.createdAt);
+}
+
+export async function updateUserAccountStatus(
+  userId: number,
+  status: "pending" | "active" | "blocked"
+) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(users).set({
+    accountStatus: status,
+    isActive: status === "active",
+  }).where(eq(users.id, userId));
 }
 
 // ─── Vendor Settings ─────────────────────────────────────────────────────────

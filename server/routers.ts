@@ -33,6 +33,9 @@ import {
   updateProduct,
   deleteProduct,
   adjustProductStock,
+  getAllRegistrations,
+  updateUserAccountStatus,
+  getUserById,
 } from "./db";
 import { COOKIE_NAME } from "@shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
@@ -873,6 +876,58 @@ export const appRouter = router({
       .input(z.object({ id: z.number(), delta: z.number().int() }))
       .mutation(async ({ ctx, input }) => {
         return adjustProductStock(input.id, ctx.user.id, input.delta);
+      }),
+  }),
+
+  // ─── Gestión de registros (super-admin) ──────────────────────────────────────────
+  registrations: router({
+    list: protectedProcedure.query(async ({ ctx }) => {
+      // Solo el superadmin puede ver todos los registros
+      if (!ctx.isSuperAdmin) throw new TRPCError({ code: "FORBIDDEN", message: "Solo el super-admin puede gestionar registros" });
+      return getAllRegistrations();
+    }),
+
+    approve: protectedProcedure
+      .input(z.object({ userId: z.number(), commissionRate: z.number().min(0).max(100).default(5) }))
+      .mutation(async ({ ctx, input }) => {
+        if (!ctx.isSuperAdmin) throw new TRPCError({ code: "FORBIDDEN" });
+        await updateUserAccountStatus(input.userId, "active");
+        // Buscar si ya existe como cliente del admin
+        const targetUser = await getUserById(input.userId);
+        if (targetUser) {
+          const existingClient = await getPlatformClientByEmail(targetUser.email ?? "");
+          if (!existingClient && targetUser.email) {
+            // Crear automáticamente como cliente con comisión configurable
+            await createPlatformClient({
+              adminUserId: ctx.user.id,
+              name: targetUser.name || targetUser.email,
+              email: targetUser.email,
+              businessName: null,
+              phone: null,
+              commissionRate: String(input.commissionRate),
+              status: "active",
+              tempPassword: null,
+            });
+          }
+        }
+        await notifyOwner({ title: "Cuenta aprobada", content: `La cuenta de ${targetUser?.name || targetUser?.email || `ID ${input.userId}`} ha sido aprobada y asignada como cliente con ${input.commissionRate}% de comisión.` });
+        return { success: true };
+      }),
+
+    reject: protectedProcedure
+      .input(z.object({ userId: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        if (!ctx.isSuperAdmin) throw new TRPCError({ code: "FORBIDDEN" });
+        await updateUserAccountStatus(input.userId, "blocked");
+        return { success: true };
+      }),
+
+    setPending: protectedProcedure
+      .input(z.object({ userId: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        if (!ctx.isSuperAdmin) throw new TRPCError({ code: "FORBIDDEN" });
+        await updateUserAccountStatus(input.userId, "pending");
+        return { success: true };
       }),
   }),
 });

@@ -20,11 +20,15 @@ import {
   ShoppingCart,
   Shield,
   UserCheck,
+  Package,
+  MonitorSmartphone,
+  UserCog,
 } from "lucide-react";
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
 import { Button } from "./ui/button";
 import { Avatar, AvatarFallback } from "./ui/avatar";
+import PendingApproval from "@/pages/PendingApproval";
 
 const KOBRAPAY_LOGO = "https://files.manuscdn.com/user_upload_by_module/session_file/310519663381362445/BlaEgmymroahADGF.png";
 const KOBRAPAY_ICON = "https://files.manuscdn.com/user_upload_by_module/session_file/310519663381362445/yMTQoaqGYTxuRnnF.png";
@@ -41,8 +45,11 @@ const navItems = [
   { href: "/dashboard/invoices", icon: FileText, label: "Mis Facturas", section: "main" },
   { href: "/dashboard/widget", icon: Code2, label: "Widget de Pago", section: "main" },
   { href: "/dashboard/reader", icon: ShoppingCart, label: "Compra tu Lector", section: "main" },
+  { href: "/dashboard/catalog", icon: Package, label: "Catálogo", section: "main" },
+  { href: "/dashboard/pos", icon: MonitorSmartphone, label: "Punto de Venta", section: "main" },
   { href: "/dashboard/clients", icon: Users, label: "Mis Clientes", section: "admin", adminOnly: true },
   { href: "/dashboard/security", icon: Shield, label: "Seguridad", section: "admin", adminOnly: true },
+  { href: "/dashboard/registrations", icon: UserCog, label: "Registros", section: "superadmin" },
   { href: "/dashboard/settings", icon: Settings, label: "Configuración", section: "settings" },
 ];
 
@@ -67,6 +74,18 @@ export default function DashboardLayout({ children, title }: DashboardLayoutProp
           <p className="text-gray-400 text-sm">Cargando...</p>
         </div>
       </div>
+    );
+  }
+
+  // Verificar estado de la cuenta (pending o blocked)
+  const accountStatus = (user as Record<string, unknown>)?.accountStatus as string | undefined;
+  if (isAuthenticated && (accountStatus === "pending" || accountStatus === "blocked")) {
+    return (
+      <PendingApproval
+        email={user?.email}
+        name={user?.name}
+        status={accountStatus as "pending" | "blocked"}
+      />
     );
   }
 
@@ -144,6 +163,26 @@ export default function DashboardLayout({ children, title }: DashboardLayoutProp
                       : "text-gray-300 hover:bg-white/8 hover:text-white"
                   )}>
                   <Icon className={cn("w-4 h-4 flex-shrink-0", isActive ? "text-emerald-400" : "")} />
+                  {label}
+                </Link>
+              );
+            })}
+          </div>
+        )}
+        {/* Super-admin: Gestión de registros */}
+        {(user as Record<string, unknown>)?.isSuperAdmin === true && (
+          <div className="space-y-0.5 mt-4">
+            <p className="px-4 py-1.5 text-xs font-semibold text-amber-500/70 uppercase tracking-wider">Super Admin</p>
+            {navItems.filter(i => i.section === "superadmin").map(({ href, icon: Icon, label }) => {
+              const isActive = location === href;
+              return (
+                <Link key={href} href={href} onClick={() => setSidebarOpen(false)}
+                  className={cn("flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition-all",
+                    isActive
+                      ? "bg-gradient-to-r from-amber-500/20 to-orange-500/20 text-amber-400 border border-amber-500/30"
+                      : "text-amber-300/70 hover:bg-white/8 hover:text-amber-300"
+                  )}>
+                  <Icon className={cn("w-4 h-4 flex-shrink-0", isActive ? "text-amber-400" : "")} />
                   {label}
                 </Link>
               );

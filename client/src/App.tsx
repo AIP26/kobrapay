@@ -24,6 +24,7 @@ import Payers from "./pages/Payers";
 import Staff from "./pages/Staff";
 import Catalog from "./pages/Catalog";
 import POS from "./pages/POS";
+import Registrations from "./pages/Registrations";
 
 function Router() {
   return (
@@ -48,6 +49,7 @@ function Router() {
       <Route path="/dashboard/staff" component={Staff} />
       <Route path="/dashboard/catalog" component={Catalog} />
       <Route path="/dashboard/pos" component={POS} />
+      <Route path="/dashboard/registrations" component={Registrations} />
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
     </Switch>
