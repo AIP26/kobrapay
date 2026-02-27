@@ -210,3 +210,25 @@ export const loginAttempts = mysqlTable("login_attempts", {
 
 export type LoginAttempt = typeof loginAttempts.$inferSelect;
 export type InsertLoginAttempt = typeof loginAttempts.$inferInsert;
+
+/**
+ * Base de datos de clientes (pagadores que han realizado al menos un pago)
+ */
+export const customers = mysqlTable("customers", {
+  id: int("id").autoincrement().primaryKey(),
+  // El vendedor (usuario de la plataforma) al que pertenece este cliente
+  userId: int("userId").notNull(),
+  name: varchar("name", { length: 255 }).notNull(),
+  email: varchar("email", { length: 320 }).notNull(),
+  phone: varchar("phone", { length: 32 }),
+  countryCode: varchar("countryCode", { length: 8 }).default("+52").notNull(),
+  // Estadísticas
+  totalPaid: decimal("totalPaid", { precision: 12, scale: 2 }).default("0").notNull(),
+  totalTransactions: int("totalTransactions").default(0).notNull(),
+  lastPaymentAt: timestamp("lastPaymentAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type Customer = typeof customers.$inferSelect;
+export type InsertCustomer = typeof customers.$inferInsert;

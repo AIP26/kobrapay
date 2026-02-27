@@ -20,6 +20,7 @@ import Chargebacks from "./pages/Chargebacks";
 import Invoices from "./pages/Invoices";
 import Reader from "./pages/Reader";
 import SecurityAudit from "./pages/SecurityAudit";
+import Payers from "./pages/Payers";
 
 function Router() {
   return (
@@ -40,6 +41,7 @@ function Router() {
       <Route path="/dashboard/invoices" component={Invoices} />
       <Route path="/dashboard/reader" component={Reader} />
       <Route path="/dashboard/security" component={SecurityAudit} />
+      <Route path="/dashboard/payers" component={Payers} />
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
     </Switch>

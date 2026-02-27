@@ -1,11 +1,14 @@
-import { and, desc, eq, sql } from "drizzle-orm";
+import { and, desc, eq, like, or, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import {
+  Customer,
+  InsertCustomer,
   InsertPaymentLink,
   InsertPlatformClient,
   InsertTransaction,
   InsertUser,
   InsertVendorSettings,
+  customers,
   otpVerifications,
   paymentLinks,
   platformClients,
@@ -281,6 +284,85 @@ export async function getDashboardStats(userId: number) {
     paidLinks: links.filter((l) => l.status === "paid").length,
     pendingLinks: links.filter((l) => l.status === "pending").length,
   };
+}
+
+// ─── Customers (base de datos de pagadores) ──────────────────────────────────
+
+export async function upsertCustomer(data: {
+  userId: number;
+  name: string;
+  email: string;
+  phone?: string;
+  countryCode?: string;
+  amount: number;
+}) {
+  const db = await getDb();
+  if (!db) return;
+
+  const existing = await db
+    .select()
+    .from(customers)
+    .where(and(eq(customers.userId, data.userId), eq(customers.email, data.email)))
+    .limit(1);
+
+  if (existing[0]) {
+    // Actualizar estadísticas del cliente existente
+    await db
+      .update(customers)
+      .set({
+        name: data.name,
+        phone: data.phone ?? existing[0].phone,
+        countryCode: data.countryCode ?? existing[0].countryCode,
+        totalPaid: String(parseFloat(String(existing[0].totalPaid)) + data.amount),
+        totalTransactions: existing[0].totalTransactions + 1,
+        lastPaymentAt: new Date(),
+        updatedAt: new Date(),
+      })
+      .where(eq(customers.id, existing[0].id));
+  } else {
+    // Crear nuevo cliente
+    await db.insert(customers).values({
+      userId: data.userId,
+      name: data.name,
+      email: data.email,
+      phone: data.phone,
+      countryCode: data.countryCode ?? "+52",
+      totalPaid: String(data.amount),
+      totalTransactions: 1,
+      lastPaymentAt: new Date(),
+    } as InsertCustomer);
+  }
+}
+
+export async function getCustomersByUser(userId: number, search?: string) {
+  const db = await getDb();
+  if (!db) return [];
+
+  if (search && search.trim()) {
+    const term = `%${search.trim()}%`;
+    return db
+      .select()
+      .from(customers)
+      .where(
+        and(
+          eq(customers.userId, userId),
+          or(like(customers.name, term), like(customers.email, term), like(customers.phone ?? "", term))
+        )
+      )
+      .orderBy(desc(customers.lastPaymentAt));
+  }
+
+  return db.select().from(customers).where(eq(customers.userId, userId)).orderBy(desc(customers.lastPaymentAt));
+}
+
+export async function getCustomerTransactions(userId: number, customerEmail: string) {
+  const db = await getDb();
+  if (!db) return [];
+  return db
+    .select()
+    .from(transactions)
+    .where(and(eq(transactions.userId, userId), eq(transactions.payerEmail, customerEmail), eq(transactions.status, "succeeded")))
+    .orderBy(desc(transactions.createdAt));
 }
 
 // ─── OTP Verifications ────────────────────────────────────────────────────────

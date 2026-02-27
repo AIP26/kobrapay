@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useParams } from "wouter";
+import PhoneInput from "react-phone-number-input";
+import "react-phone-number-input/style.css";
 import { trpc } from "@/lib/trpc";
 import { loadStripe } from "@stripe/stripe-js";
 import {
@@ -75,6 +77,8 @@ function PaymentForm({ token }: { token: string }) {
     amount: "", currency: "MXN", description: "", email: "", businessName: "",
   });
   const [cameraActive, setCameraActive] = useState(false);
+  const [lang, setLang] = useState<"es" | "en">("es");
+  const [paymentError, setPaymentError] = useState<{ title: string; description: string; action: string } | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -243,10 +247,23 @@ function PaymentForm({ token }: { token: string }) {
     }
   };
 
+  const getStripeErrorDetails = (code?: string, message?: string) => {
+    const c = (code || message || "").toLowerCase();
+    if (c.includes("insufficient_funds")) return { title: lang === "es" ? "Fondos insuficientes" : "Insufficient funds", description: lang === "es" ? "La tarjeta no tiene saldo suficiente." : "The card has insufficient balance.", action: lang === "es" ? "Usa otra tarjeta con saldo disponible." : "Use another card with available balance." };
+    if (c.includes("do_not_honor") || c.includes("do not honor")) return { title: lang === "es" ? "Banco no autorizó" : "Bank declined", description: lang === "es" ? "Tu banco rechazó el pago sin especificar el motivo." : "Your bank declined the payment without specifying the reason.", action: lang === "es" ? "Llama a tu banco para autorizar compras en línea o usa otra tarjeta." : "Call your bank to authorize online purchases or use another card." };
+    if (c.includes("fraud") || c.includes("radar") || c.includes("suspicious")) return { title: lang === "es" ? "Pago sospechoso" : "Suspicious payment", description: lang === "es" ? "El sistema de seguridad detectó actividad inusual." : "The security system detected unusual activity.", action: lang === "es" ? "Paga con el dispositivo y tarjeta que usas normalmente para compras online." : "Pay with the device and card you normally use for online purchases." };
+    if (c.includes("expired_card") || c.includes("expired card")) return { title: lang === "es" ? "Tarjeta vencida" : "Expired card", description: lang === "es" ? "La fecha de vencimiento de tu tarjeta expiró." : "Your card's expiration date has passed.", action: lang === "es" ? "Usa una tarjeta vigente." : "Use a valid card." };
+    if (c.includes("incorrect_cvc") || c.includes("cvc") || c.includes("cvv")) return { title: lang === "es" ? "CVV incorrecto" : "Incorrect CVV", description: lang === "es" ? "El código de seguridad no coincide." : "The security code does not match.", action: lang === "es" ? "Verifica el CVV en el reverso de tu tarjeta." : "Check the CVV on the back of your card." };
+    if (c.includes("authentication_required") || c.includes("3d")) return { title: lang === "es" ? "Requiere autenticación" : "Authentication required", description: lang === "es" ? "Tu banco requiere verificación adicional (3D Secure)." : "Your bank requires additional verification (3D Secure).", action: lang === "es" ? "Autoriza el pago desde la app de tu banco e intenta de nuevo." : "Authorize the payment from your bank's app and try again." };
+    if (c.includes("card_declined") || c.includes("declined")) return { title: lang === "es" ? "Tarjeta rechazada" : "Card declined", description: lang === "es" ? "El banco emisor rechazó el pago." : "The issuing bank declined the payment.", action: lang === "es" ? "Llama a tu banco o usa otra tarjeta." : "Call your bank or use another card." };
+    return { title: lang === "es" ? "Pago no completado" : "Payment failed", description: lang === "es" ? "No se pudo procesar el pago." : "The payment could not be processed.", action: lang === "es" ? "Intenta de nuevo o usa otra tarjeta." : "Try again or use another card." };
+  };
+
   const handlePayment = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!stripe || !elements || !clientSecret) return;
     setProcessing(true);
+    setPaymentError(null);
     const cardNumber = elements.getElement(CardNumberElement);
     if (!cardNumber) { setProcessing(false); return; }
     try {
@@ -260,7 +277,12 @@ function PaymentForm({ token }: { token: string }) {
           },
         },
       });
-      if (stripeError) { toast.error(stripeError.message || "Error al procesar el pago"); setProcessing(false); return; }
+      if (stripeError) {
+        const details = getStripeErrorDetails(stripeError.code, stripeError.message);
+        setPaymentError(details);
+        setProcessing(false);
+        return;
+      }
       if (paymentIntent?.status === "succeeded") {
         const result = await confirmPayment.mutateAsync({ paymentIntentId, token });
         if (result.success) {
@@ -274,7 +296,7 @@ function PaymentForm({ token }: { token: string }) {
           setStep("success");
         }
       }
-    } catch { toast.error("Error al confirmar el pago"); }
+    } catch { toast.error(lang === "es" ? "Error al confirmar el pago" : "Error confirming payment"); }
     finally { setProcessing(false); }
   };
 
@@ -317,7 +339,7 @@ function PaymentForm({ token }: { token: string }) {
   // ─── Layout principal ─────────────────────────────────────────────────────
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
-      <PageHeader businessName={businessName} />
+      <PageHeader businessName={businessName} lang={lang} onToggleLang={() => setLang(l => l === "es" ? "en" : "es")} />
       <StepProgress step={step} requireOtp={requireOtp} requireSelfie={requireSelfie} />
 
       <div className="flex-1 flex items-start justify-center p-4 pt-6">
@@ -369,13 +391,13 @@ function PaymentForm({ token }: { token: string }) {
               {/* PASO 2: Datos del cliente */}
               {step === "customer" && (
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-800 mb-4">Tus datos</h3>
+                  <h3 className="text-lg font-semibold text-gray-800 mb-4">{lang === "en" ? "Your information" : "Tus datos"}</h3>
                   <div className="grid grid-cols-2 gap-4 mb-4">
                     <div>
                       <Label className="text-gray-600 text-sm mb-1 block">Nombre(s)</Label>
                       <div className="relative">
                         <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                        <Input className="pl-9" placeholder="Juan" value={customer.firstName}
+                        <Input className="pl-9" placeholder={lang === "en" ? "John" : "Juan"} value={customer.firstName}
                           onChange={(e) => setCustomer({ ...customer, firstName: e.target.value })} />
                       </div>
                     </div>
@@ -383,7 +405,7 @@ function PaymentForm({ token }: { token: string }) {
                       <Label className="text-gray-600 text-sm mb-1 block">Apellidos</Label>
                       <div className="relative">
                         <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                        <Input className="pl-9" placeholder="García López" value={customer.lastName}
+                        <Input className="pl-9" placeholder={lang === "en" ? "Smith" : "García López"} value={customer.lastName}
                           onChange={(e) => setCustomer({ ...customer, lastName: e.target.value })} />
                       </div>
                     </div>
@@ -392,16 +414,21 @@ function PaymentForm({ token }: { token: string }) {
                     <Label className="text-gray-600 text-sm mb-1 block">Correo electrónico</Label>
                     <div className="relative">
                       <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                      <Input className="pl-9" type="email" placeholder="correo@ejemplo.com" value={customer.email}
+                      <Input className="pl-9" type="email" placeholder={lang === "en" ? "email@example.com" : "correo@ejemplo.com"} value={customer.email}
                         onChange={(e) => setCustomer({ ...customer, email: e.target.value })} />
                     </div>
                   </div>
                   <div className="mb-6">
-                    <Label className="text-gray-600 text-sm mb-1 block">Teléfono</Label>
-                    <div className="relative">
-                      <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                      <Input className="pl-9" type="tel" placeholder="+52 55 1234 5678" value={customer.phone}
-                        onChange={(e) => setCustomer({ ...customer, phone: e.target.value })} />
+                    <Label className="text-gray-600 text-sm mb-1 block">{lang === "en" ? "Phone" : "Teléfono"}</Label>
+                    <div className="border border-gray-200 rounded-xl px-3 py-2.5 bg-white focus-within:border-blue-400 focus-within:ring-2 focus-within:ring-blue-100 transition-all">
+                      <PhoneInput
+                        international
+                        defaultCountry="MX"
+                        value={customer.phone}
+                        onChange={(val) => setCustomer({ ...customer, phone: val || "" })}
+                        className="phone-input-custom"
+                        placeholder={lang === "en" ? "+1 555 000 0000" : "+52 55 1234 5678"}
+                      />
                     </div>
                   </div>
                   <div className="flex gap-3">
@@ -413,7 +440,7 @@ function PaymentForm({ token }: { token: string }) {
                       disabled={!customer.firstName || !customer.email}
                       onClick={() => setStep(getNextStep("customer"))}
                     >
-                      Continuar <ChevronRight className="w-5 h-5 ml-1" />
+                      {lang === "en" ? "Continue" : "Continuar"} <ChevronRight className="w-5 h-5 ml-1" />
                     </Button>
                   </div>
                 </div>
@@ -559,11 +586,23 @@ function PaymentForm({ token }: { token: string }) {
                         </div>
                       )}
 
+                      {paymentError && (
+                        <div className="border-l-4 border-red-500 bg-red-50 rounded-r-xl p-4 mb-4">
+                          <div className="flex items-start gap-3">
+                            <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
+                            <div>
+                              <p className="font-semibold text-red-800 text-sm mb-1">{paymentError.title}</p>
+                              <p className="text-red-700 text-sm mb-1">{paymentError.description}</p>
+                              <p className="text-red-600 text-xs font-medium">{paymentError.action}</p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
                       <Button type="submit"
                         className="w-full bg-gray-900 hover:bg-gray-800 text-white py-4 rounded-xl font-bold text-base"
                         disabled={processing || !stripe}>
                         {processing ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : <Lock className="w-5 h-5 mr-2" />}
-                        REALIZAR PAGO
+                        {lang === "en" ? "PAY NOW" : "REALIZAR PAGO"}
                       </Button>
                     </form>
                   )}
@@ -596,7 +635,7 @@ function StatusPage({ icon, title, message, color }: { icon: React.ReactNode; ti
   );
 }
 
-function PageHeader({ businessName }: { businessName: string }) {
+function PageHeader({ businessName, lang, onToggleLang }: { businessName: string; lang?: "es" | "en"; onToggleLang?: () => void }) {
   return (
     <div className="bg-white border-b border-gray-100 py-3 px-6 flex items-center justify-between shadow-sm">
       <div className="flex items-center gap-2.5">
@@ -610,9 +649,20 @@ function PageHeader({ businessName }: { businessName: string }) {
           <p className="text-gray-400 text-xs">Cobra fácil, cobra global</p>
         </div>
       </div>
-      <div className="text-right">
-        <p className="text-xs text-gray-400">Cobro de</p>
-        <p className="text-sm font-semibold text-gray-700 truncate max-w-[160px]">{businessName}</p>
+      <div className="flex items-center gap-3">
+        {onToggleLang && (
+          <button
+            onClick={onToggleLang}
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-gray-200 text-xs font-semibold text-gray-600 hover:bg-gray-50 transition-colors"
+          >
+            <span className="text-base">{lang === "es" ? "🇲🇽" : "🇺🇸"}</span>
+            {lang === "es" ? "ES" : "EN"}
+          </button>
+        )}
+        <div className="text-right">
+          <p className="text-xs text-gray-400">{lang === "en" ? "Payment from" : "Cobro de"}</p>
+          <p className="text-sm font-semibold text-gray-700 truncate max-w-[160px]">{businessName}</p>
+        </div>
       </div>
     </div>
   );

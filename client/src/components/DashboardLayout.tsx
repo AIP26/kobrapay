@@ -35,6 +35,7 @@ const navItems = [
   { href: "/dashboard/create", icon: Plus, label: "Nuevo Cobro", section: "main" },
   { href: "/dashboard/recurring", icon: RefreshCw, label: "Cobros Recurrentes", section: "main" },
   { href: "/dashboard/chargebacks", icon: AlertTriangle, label: "Aclaraciones", section: "main" },
+  { href: "/dashboard/payers", icon: Users, label: "Mis Pagadores", section: "main" },
   { href: "/dashboard/invoices", icon: FileText, label: "Mis Facturas", section: "main" },
   { href: "/dashboard/widget", icon: Code2, label: "Widget de Pago", section: "main" },
   { href: "/dashboard/reader", icon: ShoppingCart, label: "Compra tu Lector", section: "main" },

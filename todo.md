@@ -182,3 +182,42 @@
 - [x] Rutas protegidas por rol: superadmin, admin, user
 - [x] Redirección automática si no tiene permisos
 - [x] No exponer datos sensibles en el frontend (comisiones de otros tenants, etc.)
+
+## Fase 10 - Mejoras Críticas de UX y Funcionalidad
+
+### Email al crear enlace de pago + Base de datos de clientes
+- [ ] Agregar campo "Email del cliente" al formulario de crear enlace de pago
+- [ ] Guardar email del cliente en payment_links al crear
+- [ ] Tabla customers en BD: nombre, email, teléfono, total pagado, fecha primer pago
+- [ ] Al completar un pago, crear/actualizar registro del cliente automáticamente
+- [ ] Página "Mis Clientes" con tabla y buscador por nombre/email
+- [ ] Al hacer click en cliente, ver historial de todas sus compras
+
+### OTP por email (arreglar)
+- [ ] Integrar servicio de email real (Resend o SendGrid) para enviar OTP
+- [ ] Verificar que el código llegue correctamente al email del cliente
+- [ ] Mejorar diseño del email OTP (plantilla HTML profesional)
+
+### Selector de lada internacional en teléfono
+- [ ] Agregar selector de código de país (+52 México, +1 USA, etc.) en campo teléfono
+- [ ] Mostrar bandera del país seleccionado
+- [ ] Guardar número completo con lada en la BD
+
+### Recibos profesionales
+- [ ] Rediseñar email de recibo con membrete, logo KobraPay, datos del negocio
+- [ ] Incluir: número de transacción, fecha, descripción, monto, datos del cliente
+- [ ] Diseño tipo factura/recibo formal con colores de marca
+- [ ] PDF descargable del recibo desde la página de éxito
+
+## Fase 11 - Detalle de Transacciones, Estatus de Fallo y Comprobantes
+
+- [ ] Número de operación único visible en cada transacción en Mis Ventas
+- [ ] Estatus claro con colores: Pagado (verde), Fallido (rojo), Pendiente (amarillo), Reembolsado (azul)
+- [ ] Razón de fallo en español (banco rechazó, fondos insuficientes, tarjeta expirada, etc.)
+- [ ] Mensaje de acción sugerida cuando falla (llamar al banco, usar otra tarjeta)
+- [ ] Vista de detalle de venta al hacer click en una transacción
+- [ ] Comprobante de pago descargable en PDF desde el detalle de venta
+- [ ] Selector de lada internacional en campo teléfono en PayPage
+- [ ] Módulo de Clientes con buscador (nombre, email, teléfono)
+- [ ] Historial de compras por cliente
+- [ ] Botón de idioma ES/EN en la página de pago pública (toggle español/inglés)

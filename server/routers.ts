@@ -9,6 +9,8 @@ import {
   createTransaction,
   getAllTransactionsForAdmin,
   getDashboardStats,
+  getCustomersByUser,
+  getCustomerTransactions,
   getPlatformClientByEmail,
   getPlatformClientById,
   getPlatformClientsByAdmin,
@@ -20,6 +22,7 @@ import {
   updatePaymentLinkStatus,
   updatePlatformClient,
   updateTransactionStatus,
+  upsertCustomer,
   upsertVendorSettings,
   verifyOtp,
 } from "./db";
@@ -29,6 +32,7 @@ import { systemRouter } from "./_core/systemRouter";
 import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
 import { securityRouter } from "./routers/security";
 import { notifyOwner } from "./_core/notification";
+import { sendOtpEmail, sendPaymentReceipt } from "./_core/email";
 import { storagePut } from "./storage";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "", {
@@ -40,12 +44,7 @@ function generateOtpCode(): string {
   return Math.floor(100000 + Math.random() * 900000).toString();
 }
 
-// Helper: enviar email con OTP (usa Stripe receipt como proxy o log en dev)
-async function sendOtpEmail(email: string, code: string, businessName: string): Promise<void> {
-  // En producción integrar con SendGrid/Resend/etc.
-  // Por ahora logueamos el código para pruebas
-  console.log(`[OTP] Código para ${email}: ${code} (negocio: ${businessName})`);
-}
+
 
 // Helper: calcular comisión
 function calculateCommission(amount: number, commissionRate: number) {
@@ -376,7 +375,8 @@ export const appRouter = router({
           expiresAt,
         });
 
-        await sendOtpEmail(input.email, code, settings?.businessName || "Procesador de Pagos");
+        const emailSent = await sendOtpEmail(input.email, code, settings?.businessName || "Procesador de Pagos");
+        console.log(`[OTP] Email enviado: ${emailSent}, código: ${code}`);
 
         return { success: true, message: "Código enviado a tu email" };
       }),
@@ -571,6 +571,45 @@ export const appRouter = router({
           }
 
           const settings = await getVendorSettings(link.userId);
+
+          // Registrar/actualizar cliente en la base de datos de clientes
+          try {
+            if (paymentIntent.metadata.payerEmail) {
+              await upsertCustomer({
+                userId: link.userId,
+                name: paymentIntent.metadata.payerName || "Cliente",
+                email: paymentIntent.metadata.payerEmail,
+                phone: paymentIntent.metadata.payerPhone || undefined,
+                amount: parseFloat(String(link.amount)),
+              });
+            }
+          } catch (err) {
+            console.error("[Customers] Error al registrar cliente:", err);
+          }
+
+          // Enviar recibo profesional por email
+          try {
+            if (paymentIntent.metadata.payerEmail) {
+              const txs2 = await getTransactionsByUser(link.userId);
+              const tx2 = txs2.find((t) => t.stripePaymentIntentId === input.paymentIntentId);
+              await sendPaymentReceipt({
+                payerEmail: paymentIntent.metadata.payerEmail,
+                payerName: paymentIntent.metadata.payerName || "Cliente",
+                businessName: settings?.businessName || "Procesador de Pagos",
+                businessEmail: settings?.businessEmail,
+                amount: link.amount,
+                currency: link.currency,
+                description: link.description,
+                transactionId: paymentIntent.id,
+                cardBrand: tx?.cardBrand,
+                cardLast4: tx?.cardLast4,
+                paidAt: new Date(),
+              });
+            }
+          } catch (err) {
+            console.error("[Email] Error al enviar recibo:", err);
+          }
+
           try {
             await notifyOwner({
               title: `💰 Pago recibido: $${link.amount} ${link.currency}`,
@@ -591,6 +630,21 @@ export const appRouter = router({
         }
 
         return { success: false, status: paymentIntent.status };
+      }),
+  }),
+
+  // ─── Base de datos de clientes (pagadores) ──────────────────────────────────────
+  customers: router({
+    list: protectedProcedure
+      .input(z.object({ search: z.string().optional() }))
+      .query(async ({ ctx, input }) => {
+        return getCustomersByUser(ctx.user.id, input.search);
+      }),
+
+    getTransactions: protectedProcedure
+      .input(z.object({ email: z.string().email() }))
+      .query(async ({ ctx, input }) => {
+        return getCustomerTransactions(ctx.user.id, input.email);
       }),
   }),
 });

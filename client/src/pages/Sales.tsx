@@ -3,6 +3,7 @@ import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
   BarChart3,
   CheckCircle2,
@@ -13,6 +14,14 @@ import {
   Search,
   TrendingUp,
   XCircle,
+  AlertCircle,
+  Copy,
+  Phone,
+  Mail,
+  User,
+  Calendar,
+  Hash,
+  ArrowLeft,
 } from "lucide-react";
 import { useState, useMemo } from "react";
 import { toast } from "sonner";
@@ -34,14 +43,458 @@ function formatDate(date: Date | string) {
 const statusConfig = {
   pending: { label: "Pendiente", color: "bg-amber-100 text-amber-700 border-amber-200", icon: Clock },
   processing: { label: "Procesando", color: "bg-blue-100 text-blue-700 border-blue-200", icon: Clock },
-  succeeded: { label: "Exitoso", color: "bg-green-100 text-green-700 border-green-200", icon: CheckCircle2 },
+  succeeded: { label: "Pagado", color: "bg-green-100 text-green-700 border-green-200", icon: CheckCircle2 },
   failed: { label: "Fallido", color: "bg-red-100 text-red-700 border-red-200", icon: XCircle },
-  refunded: { label: "Reembolsado", color: "bg-gray-100 text-gray-600 border-gray-200", icon: XCircle },
+  refunded: { label: "Reembolsado", color: "bg-gray-100 text-gray-600 border-gray-200", icon: RefreshCw },
 };
+
+// Mapa de códigos de error de Stripe a mensajes en español
+function getFailureDetails(errorMessage: string | null | undefined): {
+  title: string;
+  description: string;
+  action: string;
+  icon: "fraud" | "bank" | "card" | "funds" | "generic";
+} {
+  const msg = (errorMessage || "").toLowerCase();
+
+  if (msg.includes("insufficient_funds") || msg.includes("insufficient funds")) {
+    return {
+      title: "Fondos insuficientes",
+      description: "La tarjeta no tiene saldo suficiente para completar el pago.",
+      action: "Recomiéndale a tu cliente usar otra tarjeta con saldo disponible.",
+      icon: "card",
+    };
+  }
+  if (msg.includes("do_not_honor") || msg.includes("do not honor")) {
+    return {
+      title: "Banco no autorizó la transacción",
+      description: "El banco emisor de la tarjeta rechazó el pago sin especificar el motivo.",
+      action: "El cliente debe llamar a su banco para autorizar compras en línea o usar otra tarjeta.",
+      icon: "bank",
+    };
+  }
+  if (msg.includes("fraudulent") || msg.includes("fraud") || msg.includes("radar") || msg.includes("suspicious")) {
+    return {
+      title: "Pago sospechoso detectado",
+      description: "El sistema de seguridad detectó actividad inusual en esta transacción.",
+      action: "Recomiéndale a tu cliente que pague con el dispositivo y tarjeta que suele usar para compras online.",
+      icon: "fraud",
+    };
+  }
+  if (msg.includes("expired_card") || msg.includes("expired card")) {
+    return {
+      title: "Tarjeta vencida",
+      description: "La fecha de vencimiento de la tarjeta ha expirado.",
+      action: "El cliente debe usar una tarjeta vigente.",
+      icon: "card",
+    };
+  }
+  if (msg.includes("incorrect_cvc") || msg.includes("incorrect cvc") || msg.includes("cvv")) {
+    return {
+      title: "Código de seguridad incorrecto",
+      description: "El CVV o código de seguridad ingresado no coincide con el de la tarjeta.",
+      action: "El cliente debe verificar el código de seguridad (CVV/CVC) de su tarjeta.",
+      icon: "card",
+    };
+  }
+  if (msg.includes("lost_card") || msg.includes("stolen_card") || msg.includes("lost card") || msg.includes("stolen card")) {
+    return {
+      title: "Tarjeta reportada",
+      description: "La tarjeta ha sido reportada como perdida o robada por el banco.",
+      action: "El cliente debe contactar a su banco para obtener una nueva tarjeta.",
+      icon: "bank",
+    };
+  }
+  if (msg.includes("card_velocity_exceeded") || msg.includes("velocity")) {
+    return {
+      title: "Límite de intentos excedido",
+      description: "Se realizaron demasiados intentos de pago en poco tiempo.",
+      action: "El cliente debe esperar 24 horas o usar otra tarjeta.",
+      icon: "card",
+    };
+  }
+  if (msg.includes("authentication_required") || msg.includes("3d secure") || msg.includes("3ds")) {
+    return {
+      title: "Requiere autenticación del banco",
+      description: "El banco requiere verificación adicional (3D Secure) para autorizar el pago.",
+      action: "El cliente debe autorizar el pago desde la app de su banco o intentar de nuevo.",
+      icon: "bank",
+    };
+  }
+  if (msg.includes("card_declined") || msg.includes("card declined") || msg.includes("declined")) {
+    return {
+      title: "Tarjeta rechazada por el banco",
+      description: "El banco emisor de la tarjeta rechazó el pago.",
+      action: "Recomiéndale a tu cliente que llame a su banco o use otra tarjeta.",
+      icon: "bank",
+    };
+  }
+  if (msg.includes("processing_error") || msg.includes("processing error")) {
+    return {
+      title: "Error de procesamiento",
+      description: "Ocurrió un error técnico al procesar el pago.",
+      action: "El cliente puede intentar de nuevo en unos minutos.",
+      icon: "generic",
+    };
+  }
+
+  return {
+    title: "Pago no completado",
+    description: "El pago no pudo procesarse en este momento.",
+    action: "Recomiéndale a tu cliente intentar de nuevo o usar otra tarjeta.",
+    icon: "generic",
+  };
+}
+
+type Transaction = {
+  id: number;
+  stripePaymentIntentId?: string | null;
+  stripeChargeId?: string | null;
+  amount: string | number;
+  currency: string;
+  status: string;
+  payerName?: string | null;
+  payerEmail?: string | null;
+  payerPhone?: string | null;
+  cardBrand?: string | null;
+  cardLast4?: string | null;
+  commissionRate?: string | number | null;
+  commissionAmount?: string | number | null;
+  netAmount?: string | number | null;
+  errorMessage?: string | null;
+  metadata?: string | null;
+  createdAt: Date | string;
+  ipAddress?: string | null;
+};
+
+function generateOperationNumber(tx: Transaction): string {
+  // Generar número de operación único basado en ID + timestamp
+  const id = String(tx.id).padStart(6, "0");
+  const ts = new Date(tx.createdAt).getTime().toString().slice(-8);
+  return `KP${ts}${id}`;
+}
+
+function TransactionDetailModal({
+  tx,
+  onClose,
+}: {
+  tx: Transaction;
+  onClose: () => void;
+}) {
+  const cfg = statusConfig[tx.status as keyof typeof statusConfig] ?? statusConfig.pending;
+  const StatusIcon = cfg.icon;
+  const gross = Number(tx.amount);
+  const commRate = Number(tx.commissionRate || 0);
+  const commAmt = Number(tx.commissionAmount || 0);
+  const net = Number(tx.netAmount || gross);
+  const failureDetails = tx.status === "failed" ? getFailureDetails(tx.errorMessage) : null;
+  const operationNumber = generateOperationNumber(tx);
+  const description = tx.metadata ? (() => { try { return JSON.parse(tx.metadata).description || ""; } catch { return ""; } })() : "";
+
+  const handleDownloadReceipt = () => {
+    if (tx.status !== "succeeded") {
+      toast.error("Solo se pueden descargar comprobantes de pagos exitosos");
+      return;
+    }
+
+    const receiptHtml = `
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Comprobante de Pago - KobraPay</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Helvetica Neue', Arial, sans-serif; background: #f5f5f5; padding: 40px 20px; color: #1a1a1a; }
+    .receipt { max-width: 520px; margin: 0 auto; background: white; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 24px rgba(0,0,0,0.12); }
+    .header { background: linear-gradient(135deg, #00c896 0%, #00a8e0 100%); padding: 32px 36px; color: white; }
+    .header-logo { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
+    .header-logo .logo-icon { width: 44px; height: 44px; background: rgba(255,255,255,0.2); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 22px; font-weight: 900; }
+    .header-logo .brand { font-size: 22px; font-weight: 800; }
+    .header-logo .tagline { font-size: 11px; opacity: 0.8; }
+    .amount-section { text-align: center; }
+    .amount-label { font-size: 13px; opacity: 0.85; margin-bottom: 6px; }
+    .amount-value { font-size: 48px; font-weight: 900; letter-spacing: -1px; }
+    .amount-currency { font-size: 18px; opacity: 0.8; }
+    .status-badge { display: inline-flex; align-items: center; gap: 6px; background: rgba(255,255,255,0.25); border-radius: 20px; padding: 6px 16px; font-size: 13px; font-weight: 600; margin-top: 12px; }
+    .body { padding: 28px 36px; }
+    .section-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: #9ca3af; margin-bottom: 14px; margin-top: 24px; }
+    .section-title:first-child { margin-top: 0; }
+    .detail-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #f3f4f6; }
+    .detail-row:last-child { border-bottom: none; }
+    .detail-label { font-size: 13px; color: #6b7280; }
+    .detail-value { font-size: 13px; font-weight: 600; color: #1f2937; text-align: right; max-width: 240px; }
+    .operation-box { background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 10px; padding: 14px 18px; margin: 20px 0; }
+    .operation-label { font-size: 11px; color: #9ca3af; font-weight: 600; text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 4px; }
+    .operation-number { font-size: 18px; font-weight: 800; color: #1f2937; font-family: monospace; letter-spacing: 1px; }
+    .totals-box { background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 10px; padding: 16px 18px; margin-top: 20px; }
+    .total-row { display: flex; justify-content: space-between; align-items: center; padding: 4px 0; }
+    .total-label { font-size: 13px; color: #374151; }
+    .total-value { font-size: 13px; font-weight: 600; color: #374151; }
+    .total-net { font-size: 16px; font-weight: 800; color: #16a34a; }
+    .footer { background: #f9fafb; border-top: 1px solid #f3f4f6; padding: 20px 36px; text-align: center; }
+    .footer p { font-size: 11px; color: #9ca3af; line-height: 1.6; }
+    .footer strong { color: #6b7280; }
+    .secure-badges { display: flex; justify-content: center; gap: 16px; margin-top: 12px; }
+    .badge { background: white; border: 1px solid #e5e7eb; border-radius: 6px; padding: 4px 10px; font-size: 10px; font-weight: 700; color: #374151; }
+  </style>
+</head>
+<body>
+  <div class="receipt">
+    <div class="header">
+      <div class="header-logo">
+        <div class="logo-icon">K</div>
+        <div>
+          <div class="brand">KobraPay</div>
+          <div class="tagline">Cobra fácil, cobra global</div>
+        </div>
+      </div>
+      <div class="amount-section">
+        <div class="amount-label">Total pagado</div>
+        <div>
+          <span class="amount-value">${new Intl.NumberFormat("es-MX", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(gross)}</span>
+          <span class="amount-currency"> ${tx.currency}</span>
+        </div>
+        <div class="status-badge">✓ Pago Exitoso</div>
+      </div>
+    </div>
+
+    <div class="body">
+      <div class="operation-box">
+        <div class="operation-label">N.° de Operación</div>
+        <div class="operation-number">${operationNumber}</div>
+      </div>
+
+      <div class="section-title">Detalles del pago</div>
+      <div class="detail-row">
+        <span class="detail-label">Fecha y hora</span>
+        <span class="detail-value">${formatDate(tx.createdAt)}</span>
+      </div>
+      ${description ? `<div class="detail-row"><span class="detail-label">Concepto</span><span class="detail-value">${description}</span></div>` : ""}
+      ${tx.cardBrand && tx.cardLast4 ? `<div class="detail-row"><span class="detail-label">Medio de pago</span><span class="detail-value">${tx.cardBrand.charAt(0).toUpperCase() + tx.cardBrand.slice(1)} •••• ${tx.cardLast4}</span></div>` : ""}
+      ${tx.stripePaymentIntentId ? `<div class="detail-row"><span class="detail-label">Referencia Stripe</span><span class="detail-value" style="font-size:11px;font-family:monospace">${tx.stripePaymentIntentId}</span></div>` : ""}
+
+      <div class="section-title">Datos del cliente</div>
+      ${tx.payerName ? `<div class="detail-row"><span class="detail-label">Nombre</span><span class="detail-value">${tx.payerName}</span></div>` : ""}
+      ${tx.payerEmail ? `<div class="detail-row"><span class="detail-label">Email</span><span class="detail-value">${tx.payerEmail}</span></div>` : ""}
+      ${tx.payerPhone ? `<div class="detail-row"><span class="detail-label">Teléfono</span><span class="detail-value">${tx.payerPhone}</span></div>` : ""}
+
+      <div class="totals-box">
+        <div class="total-row">
+          <span class="total-label">Monto bruto</span>
+          <span class="total-value">${formatCurrency(gross, tx.currency)}</span>
+        </div>
+        ${commRate > 0 ? `
+        <div class="total-row">
+          <span class="total-label">Comisión plataforma (${commRate}%)</span>
+          <span class="total-value" style="color:#dc2626">-${formatCurrency(commAmt)}</span>
+        </div>
+        <div class="total-row" style="border-top:1px solid #bbf7d0;margin-top:8px;padding-top:8px">
+          <span class="total-label" style="font-weight:700">Monto neto</span>
+          <span class="total-net">${formatCurrency(net)}</span>
+        </div>
+        ` : ""}
+      </div>
+    </div>
+
+    <div class="footer">
+      <p>Este comprobante fue generado por <strong>KobraPay</strong>.<br>Pago procesado de forma segura con cifrado SSL 256-bit.</p>
+      <div class="secure-badges">
+        <span class="badge">VISA</span>
+        <span class="badge">MASTERCARD</span>
+        <span class="badge">AMEX</span>
+        <span class="badge">🔒 SSL</span>
+      </div>
+      <p style="margin-top:10px;font-size:10px">Generado el ${new Date().toLocaleDateString("es-MX", { day: "2-digit", month: "long", year: "numeric" })}</p>
+    </div>
+  </div>
+</body>
+</html>`;
+
+    const blob = new Blob([receiptHtml], { type: "text/html;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `comprobante-${operationNumber}.html`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success("Comprobante descargado");
+  };
+
+  const copyOperationNumber = () => {
+    navigator.clipboard.writeText(operationNumber);
+    toast.success("Número de operación copiado");
+  };
+
+  return (
+    <Dialog open onOpenChange={() => onClose()}>
+      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <div className="flex items-center gap-2">
+            <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+              <ArrowLeft className="w-4 h-4" />
+            </button>
+            <DialogTitle className="text-gray-800">Detalle de la transacción</DialogTitle>
+          </div>
+        </DialogHeader>
+
+        <div className="space-y-5">
+          {/* Monto y estatus */}
+          <div className="text-center py-4">
+            <p className={`text-4xl font-black mb-2 ${tx.status === "succeeded" ? "text-gray-900" : "text-gray-400 line-through"}`}>
+              {formatCurrency(gross, tx.currency)}
+            </p>
+            <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-semibold border ${cfg.color}`}>
+              <StatusIcon className="w-4 h-4" />
+              {cfg.label}
+            </span>
+            <p className="text-xs text-gray-400 mt-2">{formatDate(tx.createdAt)}</p>
+          </div>
+
+          {/* Alerta de fallo */}
+          {failureDetails && (
+            <div className="border-l-4 border-red-500 bg-red-50 rounded-r-xl p-4">
+              <div className="flex items-start gap-3">
+                <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
+                <div>
+                  <p className="font-semibold text-red-800 text-sm mb-1">{failureDetails.title}</p>
+                  <p className="text-red-700 text-sm mb-2">{failureDetails.description}</p>
+                  <p className="text-red-600 text-xs font-medium">{failureDetails.action}</p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Número de operación */}
+          <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-gray-400 font-semibold uppercase tracking-wide mb-1 flex items-center gap-1">
+                  <Hash className="w-3 h-3" /> N.° de Operación
+                </p>
+                <p className="text-lg font-black text-gray-800 font-mono tracking-wide">{operationNumber}</p>
+              </div>
+              <button
+                onClick={copyOperationNumber}
+                className="text-blue-500 hover:text-blue-700 transition-colors p-2 rounded-lg hover:bg-blue-50"
+              >
+                <Copy className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+
+          {/* Datos del cliente */}
+          <div>
+            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Datos del cliente</p>
+            <div className="space-y-2">
+              {tx.payerName && (
+                <div className="flex items-center gap-3 py-2 border-b border-gray-100">
+                  <User className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                  <div>
+                    <p className="text-xs text-gray-400">Nombre</p>
+                    <p className="text-sm font-medium text-gray-800">{tx.payerName}</p>
+                  </div>
+                </div>
+              )}
+              {tx.payerEmail && (
+                <div className="flex items-center gap-3 py-2 border-b border-gray-100">
+                  <Mail className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                  <div>
+                    <p className="text-xs text-gray-400">Email</p>
+                    <p className="text-sm font-medium text-gray-800">{tx.payerEmail}</p>
+                  </div>
+                </div>
+              )}
+              {tx.payerPhone && (
+                <div className="flex items-center gap-3 py-2 border-b border-gray-100">
+                  <Phone className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                  <div>
+                    <p className="text-xs text-gray-400">Teléfono</p>
+                    <p className="text-sm font-medium text-gray-800">{tx.payerPhone}</p>
+                  </div>
+                </div>
+              )}
+              {tx.cardBrand && tx.cardLast4 && (
+                <div className="flex items-center gap-3 py-2 border-b border-gray-100">
+                  <CreditCard className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                  <div>
+                    <p className="text-xs text-gray-400">Medio de pago</p>
+                    <p className="text-sm font-medium text-gray-800 capitalize">
+                      {tx.cardBrand} •••• {tx.cardLast4}
+                    </p>
+                  </div>
+                </div>
+              )}
+              {description && (
+                <div className="flex items-center gap-3 py-2 border-b border-gray-100">
+                  <Calendar className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                  <div>
+                    <p className="text-xs text-gray-400">Concepto</p>
+                    <p className="text-sm font-medium text-gray-800">{description}</p>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Desglose financiero */}
+          {tx.status === "succeeded" && (
+            <div className="bg-green-50 border border-green-200 rounded-xl p-4">
+              <p className="text-xs font-semibold text-green-700 uppercase tracking-wide mb-3">Desglose financiero</p>
+              <div className="space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">Monto bruto</span>
+                  <span className="font-semibold text-gray-800">{formatCurrency(gross, tx.currency)}</span>
+                </div>
+                {commRate > 0 && (
+                  <>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-600">Comisión ({commRate}%)</span>
+                      <span className="font-semibold text-red-600">-{formatCurrency(commAmt)}</span>
+                    </div>
+                    <div className="flex justify-between text-sm border-t border-green-200 pt-2">
+                      <span className="font-bold text-gray-800">Monto neto</span>
+                      <span className="font-black text-green-700 text-base">{formatCurrency(net)}</span>
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Referencia Stripe */}
+          {tx.stripePaymentIntentId && (
+            <div className="text-center">
+              <p className="text-xs text-gray-400">Referencia Stripe</p>
+              <p className="text-xs font-mono text-gray-500 mt-0.5">{tx.stripePaymentIntentId}</p>
+            </div>
+          )}
+
+          {/* Botones de acción */}
+          <div className="flex gap-3 pt-2">
+            <Button variant="outline" onClick={onClose} className="flex-1">
+              Cerrar
+            </Button>
+            {tx.status === "succeeded" && (
+              <Button
+                onClick={handleDownloadReceipt}
+                className="flex-1 bg-green-600 hover:bg-green-700 text-white"
+              >
+                <Download className="w-4 h-4 mr-2" />
+                Descargar comprobante
+              </Button>
+            )}
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
 
 export default function Sales() {
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<"all" | "succeeded" | "pending" | "failed">("all");
+  const [selectedTx, setSelectedTx] = useState<Transaction | null>(null);
 
   const { data: transactions, isLoading, refetch, isFetching } = trpc.transactions.list.useQuery(
     undefined,
@@ -198,7 +651,7 @@ export default function Sales() {
                         : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                     }`}
                   >
-                    {f === "all" ? "Todos" : f === "succeeded" ? "Exitosos" : f === "pending" ? "Pendientes" : "Fallidos"}
+                    {f === "all" ? "Todos" : f === "succeeded" ? "Pagados" : f === "pending" ? "Pendientes" : "Fallidos"}
                   </button>
                 ))}
               </div>
@@ -242,9 +695,9 @@ export default function Sales() {
                     <thead>
                       <tr className="border-b border-gray-100 bg-gray-50/50">
                         <th className="text-left text-xs font-semibold text-gray-500 uppercase tracking-wide px-6 py-3">Cliente</th>
+                        <th className="text-left text-xs font-semibold text-gray-500 uppercase tracking-wide px-4 py-3">N.° Operación</th>
                         <th className="text-left text-xs font-semibold text-gray-500 uppercase tracking-wide px-4 py-3">Tarjeta</th>
-                        <th className="text-right text-xs font-semibold text-gray-500 uppercase tracking-wide px-4 py-3">Monto bruto</th>
-                        <th className="text-right text-xs font-semibold text-gray-500 uppercase tracking-wide px-4 py-3">Comisión</th>
+                        <th className="text-right text-xs font-semibold text-gray-500 uppercase tracking-wide px-4 py-3">Monto</th>
                         <th className="text-right text-xs font-semibold text-gray-500 uppercase tracking-wide px-4 py-3">Neto</th>
                         <th className="text-center text-xs font-semibold text-gray-500 uppercase tracking-wide px-4 py-3">Estado</th>
                         <th className="text-right text-xs font-semibold text-gray-500 uppercase tracking-wide px-6 py-3">Fecha</th>
@@ -255,13 +708,15 @@ export default function Sales() {
                         const cfg = statusConfig[tx.status as keyof typeof statusConfig] ?? statusConfig.pending;
                         const StatusIcon = cfg.icon;
                         const gross = Number(tx.amount);
-                        const commRate = Number(tx.commissionRate || 0);
                         const commAmt = Number(tx.commissionAmount || 0);
                         const net = Number(tx.netAmount || gross);
+                        const opNum = generateOperationNumber(tx as Transaction);
+                        const failInfo = tx.status === "failed" ? getFailureDetails(tx.errorMessage) : null;
                         return (
                           <tr
                             key={tx.id}
-                            className={`border-b border-gray-50 hover:bg-gray-50/50 transition-colors ${i % 2 === 0 ? "" : "bg-gray-50/30"}`}
+                            onClick={() => setSelectedTx(tx as Transaction)}
+                            className={`border-b border-gray-50 hover:bg-cyan-50/30 transition-colors cursor-pointer ${i % 2 === 0 ? "" : "bg-gray-50/30"}`}
                           >
                             <td className="px-6 py-4">
                               <div className="flex items-center gap-3">
@@ -271,8 +726,14 @@ export default function Sales() {
                                 <div>
                                   <p className="text-sm font-medium text-gray-800">{tx.payerName || "—"}</p>
                                   <p className="text-xs text-gray-400">{tx.payerEmail || ""}</p>
+                                  {failInfo && (
+                                    <p className="text-xs text-red-500 font-medium mt-0.5">{failInfo.title}</p>
+                                  )}
                                 </div>
                               </div>
+                            </td>
+                            <td className="px-4 py-4">
+                              <span className="text-xs font-mono text-gray-500">{opNum}</span>
                             </td>
                             <td className="px-4 py-4">
                               {tx.cardBrand && tx.cardLast4 ? (
@@ -284,26 +745,17 @@ export default function Sales() {
                               )}
                             </td>
                             <td className="px-4 py-4 text-right">
-                              <span className={`text-sm font-bold ${tx.status === "succeeded" ? "text-gray-800" : "text-gray-500"}`}>
+                              <span className={`text-sm font-bold ${tx.status === "succeeded" ? "text-gray-800" : "text-gray-400 line-through"}`}>
                                 {formatCurrency(gross, tx.currency)}
                               </span>
                             </td>
                             <td className="px-4 py-4 text-right">
-                              {commRate > 0 ? (
-                                <div>
-                                  <span className="text-xs font-medium text-orange-600">
-                                    -{formatCurrency(commAmt)}
-                                  </span>
-                                  <p className="text-xs text-gray-400">{commRate}%</p>
-                                </div>
-                              ) : (
-                                <span className="text-xs text-gray-300">—</span>
-                              )}
-                            </td>
-                            <td className="px-4 py-4 text-right">
-                              <span className={`text-sm font-bold ${tx.status === "succeeded" ? "text-green-600" : "text-gray-500"}`}>
-                                {formatCurrency(net, tx.currency)}
+                              <span className={`text-sm font-bold ${tx.status === "succeeded" ? "text-green-600" : "text-gray-400"}`}>
+                                {tx.status === "succeeded" ? formatCurrency(net, tx.currency) : "—"}
                               </span>
+                              {commAmt > 0 && tx.status === "succeeded" && (
+                                <p className="text-xs text-orange-500">-{formatCurrency(commAmt)}</p>
+                              )}
                             </td>
                             <td className="px-4 py-4 text-center">
                               <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium border ${cfg.color}`}>
@@ -329,22 +781,34 @@ export default function Sales() {
                     const gross = Number(tx.amount);
                     const commAmt = Number(tx.commissionAmount || 0);
                     const net = Number(tx.netAmount || gross);
+                    const opNum = generateOperationNumber(tx as Transaction);
+                    const failInfo = tx.status === "failed" ? getFailureDetails(tx.errorMessage) : null;
                     return (
-                      <div key={tx.id} className="px-4 py-4">
+                      <div
+                        key={tx.id}
+                        className="px-4 py-4 cursor-pointer hover:bg-cyan-50/30 transition-colors"
+                        onClick={() => setSelectedTx(tx as Transaction)}
+                      >
                         <div className="flex items-start justify-between gap-3">
                           <div className="flex items-center gap-3">
-                            <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ${tx.status === "succeeded" ? "bg-green-100" : "bg-gray-100"}`}>
-                              <CreditCard className={`w-4 h-4 ${tx.status === "succeeded" ? "text-green-600" : "text-gray-400"}`} />
+                            <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ${tx.status === "succeeded" ? "bg-green-100" : tx.status === "failed" ? "bg-red-100" : "bg-gray-100"}`}>
+                              <CreditCard className={`w-4 h-4 ${tx.status === "succeeded" ? "text-green-600" : tx.status === "failed" ? "text-red-500" : "text-gray-400"}`} />
                             </div>
                             <div>
                               <p className="text-sm font-medium text-gray-800">{tx.payerName || "—"}</p>
                               <p className="text-xs text-gray-400">{tx.payerEmail || ""}</p>
+                              <p className="text-xs font-mono text-gray-400 mt-0.5">{opNum}</p>
+                              {failInfo && (
+                                <p className="text-xs text-red-500 font-medium mt-0.5">{failInfo.title}</p>
+                              )}
                               <p className="text-xs text-gray-400 mt-0.5">{formatDate(tx.createdAt)}</p>
                             </div>
                           </div>
                           <div className="text-right">
-                            <p className="font-bold text-gray-800">{formatCurrency(gross, tx.currency)}</p>
-                            {commAmt > 0 && (
+                            <p className={`font-bold ${tx.status === "succeeded" ? "text-gray-800" : "text-gray-400 line-through"}`}>
+                              {formatCurrency(gross, tx.currency)}
+                            </p>
+                            {commAmt > 0 && tx.status === "succeeded" && (
                               <p className="text-xs text-green-600 font-medium">Neto: {formatCurrency(net)}</p>
                             )}
                             <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border mt-1 ${cfg.color}`}>
@@ -361,7 +825,11 @@ export default function Sales() {
                 {/* Summary Footer */}
                 <div className="px-6 py-3 bg-gray-50 border-t border-gray-100">
                   <div className="flex flex-wrap items-center justify-between gap-3">
-                    <p className="text-xs text-gray-500">{filtered.length} transacción{filtered.length !== 1 ? "es" : ""}</p>
+                    <p className="text-xs text-gray-500">
+                      {filtered.length} transacción{filtered.length !== 1 ? "es" : ""}
+                      {" · "}
+                      <span className="text-gray-400">Haz clic en una fila para ver el detalle</span>
+                    </p>
                     <div className="flex items-center gap-4">
                       {totalCommission > 0 && (
                         <>
@@ -392,6 +860,11 @@ export default function Sales() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Modal de detalle */}
+      {selectedTx && (
+        <TransactionDetailModal tx={selectedTx} onClose={() => setSelectedTx(null)} />
+      )}
     </DashboardLayout>
   );
 }

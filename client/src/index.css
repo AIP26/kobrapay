@@ -175,3 +175,42 @@
     }
   }
 }
+
+/* ─── Phone Input Custom Styles ─────────────────────────────────────────────── */
+.phone-input-custom {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.phone-input-custom .PhoneInputCountry {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.phone-input-custom .PhoneInputCountrySelect {
+  border: none;
+  background: transparent;
+  font-size: 14px;
+  color: #374151;
+  cursor: pointer;
+  outline: none;
+  padding: 0 2px;
+}
+
+.phone-input-custom .PhoneInputInput {
+  flex: 1;
+  border: none;
+  background: transparent;
+  font-size: 15px;
+  color: #1f2937;
+  outline: none;
+  min-width: 0;
+}
+
+.phone-input-custom .PhoneInputInput::placeholder {
+  color: #9ca3af;
+}
