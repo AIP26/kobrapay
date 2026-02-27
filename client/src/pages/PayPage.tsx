@@ -1,19 +1,6 @@
+import { useState, useEffect, useRef } from "react";
+import { useParams } from "wouter";
 import { trpc } from "@/lib/trpc";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { toast } from "sonner";
-import { useState } from "react";
-import { useParams, useLocation } from "wouter";
-import {
-  AlertCircle,
-  CheckCircle2,
-  CreditCard,
-  Lock,
-  Shield,
-  XCircle,
-} from "lucide-react";
 import { loadStripe } from "@stripe/stripe-js";
 import {
   Elements,
@@ -23,18 +10,43 @@ import {
   useStripe,
   useElements,
 } from "@stripe/react-stripe-js";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { toast } from "sonner";
+import {
+  Shield,
+  CreditCard,
+  User,
+  Mail,
+  Phone,
+  Lock,
+  Camera,
+  CheckCircle2,
+  AlertCircle,
+  Loader2,
+  ChevronRight,
+  ArrowLeft,
+  RefreshCw,
+  XCircle,
+} from "lucide-react";
 
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || "");
 
-function formatCurrency(amount: number | string, currency = "MXN") {
-  return new Intl.NumberFormat("es-MX", { style: "currency", currency }).format(Number(amount));
+type Step = "info" | "customer" | "otp" | "selfie" | "payment" | "success";
+
+interface CustomerData {
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
 }
 
-const STRIPE_ELEMENT_STYLE = {
+const STRIPE_STYLE = {
   style: {
     base: {
       fontSize: "15px",
-      color: "#1a1a2e",
+      color: "#1f2937",
       fontFamily: "system-ui, -apple-system, sans-serif",
       "::placeholder": { color: "#9ca3af" },
     },
@@ -42,340 +54,643 @@ const STRIPE_ELEMENT_STYLE = {
   },
 };
 
-interface PaymentFormProps {
-  token: string;
-  linkData: {
-    clientName: string;
-    amount: string | number;
-    currency: string;
-    description: string;
-  };
+function formatMXN(amount: number | string) {
+  return new Intl.NumberFormat("es-MX", { style: "currency", currency: "MXN" }).format(Number(amount));
 }
 
-function PaymentForm({ token, linkData }: PaymentFormProps) {
+// ─── Formulario de pago interno ──────────────────────────────────────────────
+function PaymentForm({ token }: { token: string }) {
+  const [step, setStep] = useState<Step>("info");
+  const [customer, setCustomer] = useState<CustomerData>({ firstName: "", lastName: "", email: "", phone: "" });
+  const [otpCode, setOtpCode] = useState("");
+  const [otpSent, setOtpSent] = useState(false);
+  const [otpVerified, setOtpVerified] = useState(false);
+  const [selfieVerified, setSelfieVerified] = useState(false);
+  const [selfieUrl, setSelfieUrl] = useState("");
+  const [faceMatchScore, setFaceMatchScore] = useState(0);
+  const [clientSecret, setClientSecret] = useState("");
+  const [paymentIntentId, setPaymentIntentId] = useState("");
+  const [processing, setProcessing] = useState(false);
+  const [successData, setSuccessData] = useState<{ amount: string; currency: string; description: string; email: string; businessName: string }>({
+    amount: "", currency: "MXN", description: "", email: "", businessName: "",
+  });
+  const [cameraActive, setCameraActive] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+
   const stripe = useStripe();
   const elements = useElements();
-  const [, navigate] = useLocation();
-  const [step, setStep] = useState<"info" | "card">("info");
-  const [payerInfo, setPayerInfo] = useState({ name: "", email: "", phone: "" });
-  const [processing, setProcessing] = useState(false);
 
+  const { data: linkData, isLoading, error } = trpc.paymentLinks.getByToken.useQuery({ token });
+  const sendOtp = trpc.otp.send.useMutation();
+  const verifyOtp = trpc.otp.verify.useMutation();
+  const uploadSelfie = trpc.identity.uploadSelfie.useMutation();
   const createIntent = trpc.payments.createIntent.useMutation();
   const confirmPayment = trpc.payments.confirmPayment.useMutation();
 
-  const handleInfoSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!payerInfo.name.trim() || !payerInfo.email.trim()) {
-      toast.error("Por favor completa tu nombre y email");
-      return;
+  useEffect(() => {
+    return () => {
+      if (streamRef.current) streamRef.current.getTracks().forEach((t) => t.stop());
+    };
+  }, []);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <Loader2 className="w-10 h-10 animate-spin text-blue-500 mx-auto mb-3" />
+          <p className="text-gray-500 text-sm">Cargando información del pago...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !linkData) {
+    return (
+      <StatusPage icon={<AlertCircle className="w-12 h-12 text-red-400" />} title="Enlace no encontrado"
+        message="Este enlace de pago no existe o ha sido eliminado." color="red" />
+    );
+  }
+
+  if (linkData.status === "paid") {
+    return (
+      <StatusPage icon={<CheckCircle2 className="w-12 h-12 text-green-500" />} title="Pago ya realizado"
+        message="Este enlace ya fue pagado anteriormente." color="green" />
+    );
+  }
+
+  if (linkData.status === "expired") {
+    return (
+      <StatusPage icon={<XCircle className="w-12 h-12 text-amber-500" />} title="Enlace expirado"
+        message="Este enlace de pago ha expirado. Contacta al vendedor." color="amber" />
+    );
+  }
+
+  if (linkData.status === "cancelled") {
+    return (
+      <StatusPage icon={<XCircle className="w-12 h-12 text-gray-400" />} title="Enlace cancelado"
+        message="Este enlace de pago fue cancelado por el vendedor." color="gray" />
+    );
+  }
+
+  const amount = parseFloat(String(linkData.amount));
+  const currency = linkData.currency || "MXN";
+  const exchangeRate = parseFloat(String(linkData.usdExchangeRate || 0));
+  const usdEquivalent = exchangeRate > 0 ? (amount / exchangeRate).toFixed(2) : null;
+  const businessName = (linkData as Record<string, unknown>).vendorSettings
+    ? ((linkData as Record<string, unknown>).vendorSettings as Record<string, string>)?.businessName || "Comercio"
+    : "Comercio";
+  const requireOtp = Boolean((linkData as Record<string, unknown>).requireOtp);
+  const requireSelfie = Boolean((linkData as Record<string, unknown>).requireSelfie);
+  const chargebackText = (linkData as Record<string, unknown>).chargebackProtectionText as string | undefined;
+
+  const getNextStep = (current: Step): Step => {
+    if (current === "info") return "customer";
+    if (current === "customer") {
+      if (requireOtp) return "otp";
+      if (requireSelfie) return "selfie";
+      return "payment";
     }
-    setStep("card");
+    if (current === "otp") {
+      if (requireSelfie) return "selfie";
+      return "payment";
+    }
+    if (current === "selfie") return "payment";
+    return "success";
   };
 
-  const handlePayment = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!stripe || !elements) return;
+  const handleSendOtp = async () => {
+    try {
+      await sendOtp.mutateAsync({ token, email: customer.email });
+      setOtpSent(true);
+      toast.success("Código enviado a tu correo");
+    } catch (e: unknown) {
+      toast.error((e as { message?: string })?.message || "Error al enviar código");
+    }
+  };
 
+  const handleVerifyOtp = async () => {
+    if (otpCode.length !== 6) return;
+    try {
+      await verifyOtp.mutateAsync({ token, code: otpCode });
+      setOtpVerified(true);
+      toast.success("¡Identidad verificada!");
+      setTimeout(() => setStep(getNextStep("otp")), 800);
+    } catch (e: unknown) {
+      toast.error((e as { message?: string })?.message || "Código incorrecto");
+    }
+  };
+
+  const startCamera = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } });
+      streamRef.current = stream;
+      if (videoRef.current) videoRef.current.srcObject = stream;
+      setCameraActive(true);
+    } catch {
+      toast.error("No se pudo acceder a la cámara. Verifica los permisos.");
+    }
+  };
+
+  const takeSelfie = async () => {
+    if (!videoRef.current || !canvasRef.current) return;
+    const canvas = canvasRef.current;
+    const video = videoRef.current;
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    ctx.drawImage(video, 0, 0);
+    const imageBase64 = canvas.toDataURL("image/jpeg", 0.8);
+    if (streamRef.current) { streamRef.current.getTracks().forEach((t) => t.stop()); setCameraActive(false); }
+    try {
+      const result = await uploadSelfie.mutateAsync({ token, imageBase64, mimeType: "image/jpeg" });
+      setSelfieUrl(result.selfieUrl);
+      setFaceMatchScore(result.faceMatchScore);
+      setSelfieVerified(result.verified);
+      if (result.verified) {
+        toast.success(`Identidad verificada (${result.faceMatchScore.toFixed(0)}%)`);
+        setTimeout(() => setStep("payment"), 800);
+      } else {
+        toast.error("No se pudo verificar. Intenta con mejor iluminación.");
+      }
+    } catch {
+      toast.error("Error al procesar la selfie. Intenta de nuevo.");
+    }
+  };
+
+  const handleCreateIntent = async () => {
     setProcessing(true);
     try {
-      // Crear PaymentIntent
-      const intentData = await createIntent.mutateAsync({
+      const result = await createIntent.mutateAsync({
         token,
-        payerName: payerInfo.name,
-        payerEmail: payerInfo.email,
-        payerPhone: payerInfo.phone,
+        payerName: `${customer.firstName} ${customer.lastName}`.trim(),
+        payerEmail: customer.email,
+        payerPhone: customer.phone,
+        otpVerified,
+        selfieVerified,
+        selfieUrl,
+        faceMatchScore,
+        userAgent: navigator.userAgent,
       });
-
-      // Confirmar pago con Stripe
-      const cardNumber = elements.getElement(CardNumberElement);
-      if (!cardNumber) throw new Error("Error al cargar el formulario de pago");
-
-      const { error, paymentIntent } = await stripe.confirmCardPayment(intentData.clientSecret, {
-        payment_method: {
-          card: cardNumber,
-          billing_details: {
-            name: payerInfo.name,
-            email: payerInfo.email,
-            phone: payerInfo.phone || undefined,
-          },
-        },
-      });
-
-      if (error) {
-        toast.error(error.message || "Error al procesar el pago");
-        setProcessing(false);
-        return;
-      }
-
-      if (paymentIntent?.status === "succeeded") {
-        await confirmPayment.mutateAsync({
-          paymentIntentId: paymentIntent.id,
-          token,
-        });
-        navigate(`/pay/${token}/success`);
-      }
-    } catch (err: any) {
-      toast.error(err?.message || "Error al procesar el pago");
+      setClientSecret(result.clientSecret);
+      setPaymentIntentId(result.paymentIntentId);
+    } catch (e: unknown) {
+      toast.error((e as { message?: string })?.message || "Error al preparar el pago");
+    } finally {
       setProcessing(false);
     }
   };
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
-        {/* Header */}
-        <div className="text-center mb-6">
-          <div className="w-12 h-12 bg-primary rounded-2xl flex items-center justify-center mx-auto mb-3">
-            <CreditCard className="w-6 h-6 text-white" />
-          </div>
-          <h1 className="text-xl font-bold text-foreground">Pago seguro</h1>
-          <p className="text-sm text-muted-foreground mt-1">Procesado con Stripe · SSL cifrado</p>
-        </div>
+  const handlePayment = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!stripe || !elements || !clientSecret) return;
+    setProcessing(true);
+    const cardNumber = elements.getElement(CardNumberElement);
+    if (!cardNumber) { setProcessing(false); return; }
+    try {
+      const { error: stripeError, paymentIntent } = await stripe.confirmCardPayment(clientSecret, {
+        payment_method: {
+          card: cardNumber,
+          billing_details: {
+            name: `${customer.firstName} ${customer.lastName}`.trim(),
+            email: customer.email,
+            phone: customer.phone || undefined,
+          },
+        },
+      });
+      if (stripeError) { toast.error(stripeError.message || "Error al procesar el pago"); setProcessing(false); return; }
+      if (paymentIntent?.status === "succeeded") {
+        const result = await confirmPayment.mutateAsync({ paymentIntentId, token });
+        if (result.success) {
+          setSuccessData({
+            amount: String(result.amount || amount),
+            currency: result.currency || currency,
+            description: result.description || linkData.description,
+            email: result.payerEmail || customer.email,
+            businessName: result.businessName || businessName,
+          });
+          setStep("success");
+        }
+      }
+    } catch { toast.error("Error al confirmar el pago"); }
+    finally { setProcessing(false); }
+  };
 
-        {/* Order Summary */}
-        <Card className="border-border mb-4">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between mb-3">
-              <p className="text-sm font-medium text-muted-foreground">Detalle del pago</p>
-              <div className="flex items-center gap-1 text-xs text-green-600">
-                <Lock className="w-3 h-3" />
-                Seguro
-              </div>
+  // ─── Pantalla de éxito ────────────────────────────────────────────────────
+  if (step === "success") {
+    return (
+      <div className="min-h-screen bg-gray-50 flex flex-col">
+        <PageHeader businessName={successData.businessName} />
+        <div className="flex-1 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-lg max-w-md w-full p-8 text-center">
+            <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-5">
+              <CheckCircle2 className="w-12 h-12 text-green-500" />
             </div>
-            <div className="space-y-2">
-              <div className="flex justify-between">
-                <span className="text-sm text-muted-foreground">Cliente</span>
-                <span className="text-sm font-medium text-foreground">{linkData.clientName}</span>
+            <h2 className="text-2xl font-bold text-gray-900 mb-1">¡Pago exitoso!</h2>
+            <p className="text-gray-500 text-sm mb-6">Tu pago fue procesado correctamente.</p>
+            <div className="bg-gray-50 rounded-xl p-4 text-left space-y-3 mb-5">
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-500">Negocio</span>
+                <span className="font-semibold">{successData.businessName}</span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-sm text-muted-foreground">Descripción</span>
-                <span className="text-sm text-foreground text-right max-w-[200px]">{linkData.description}</span>
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-500">Concepto</span>
+                <span className="font-semibold text-right max-w-[200px]">{successData.description}</span>
               </div>
-              <div className="border-t border-border pt-2 flex justify-between">
-                <span className="font-semibold text-foreground">Total a pagar</span>
-                <span className="font-bold text-xl text-primary">
-                  {formatCurrency(linkData.amount, linkData.currency)}
+              <div className="flex justify-between border-t pt-3">
+                <span className="text-gray-700 font-medium">Total pagado</span>
+                <span className="text-2xl font-bold text-green-600">
+                  {formatMXN(successData.amount)}
                 </span>
               </div>
             </div>
-          </CardContent>
-        </Card>
-
-        {/* Step indicator */}
-        <div className="flex items-center gap-2 mb-4">
-          <div className={`flex items-center gap-1.5 text-xs font-medium ${step === "info" ? "text-primary" : "text-green-600"}`}>
-            <div className={`w-5 h-5 rounded-full flex items-center justify-center text-white text-xs ${step === "info" ? "bg-primary" : "bg-green-500"}`}>
-              {step === "card" ? <CheckCircle2 className="w-3 h-3" /> : "1"}
-            </div>
-            Tus datos
-          </div>
-          <div className="flex-1 h-px bg-border" />
-          <div className={`flex items-center gap-1.5 text-xs font-medium ${step === "card" ? "text-primary" : "text-muted-foreground"}`}>
-            <div className={`w-5 h-5 rounded-full flex items-center justify-center text-white text-xs ${step === "card" ? "bg-primary" : "bg-muted text-muted-foreground"}`}>
-              2
-            </div>
-            Pago
+            <p className="text-xs text-gray-400">Recibo enviado a <strong>{successData.email}</strong></p>
           </div>
         </div>
+        <PageFooter />
+      </div>
+    );
+  }
 
-        {/* Step 1: Personal Info */}
-        {step === "info" && (
-          <Card className="border-border">
-            <CardContent className="p-5">
-              <h2 className="font-semibold text-foreground mb-4">Tus datos de contacto</h2>
-              <form onSubmit={handleInfoSubmit} className="space-y-4">
-                <div className="space-y-1.5">
-                  <Label htmlFor="payerName">Nombre completo *</Label>
-                  <Input
-                    id="payerName"
-                    placeholder="Juan García López"
-                    value={payerInfo.name}
-                    onChange={(e) => setPayerInfo({ ...payerInfo, name: e.target.value })}
-                    required
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="payerEmail">Correo electrónico *</Label>
-                  <Input
-                    id="payerEmail"
-                    type="email"
-                    placeholder="juan@ejemplo.com"
-                    value={payerInfo.email}
-                    onChange={(e) => setPayerInfo({ ...payerInfo, email: e.target.value })}
-                    required
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="payerPhone">Teléfono (opcional)</Label>
-                  <Input
-                    id="payerPhone"
-                    type="tel"
-                    placeholder="+52 55 1234 5678"
-                    value={payerInfo.phone}
-                    onChange={(e) => setPayerInfo({ ...payerInfo, phone: e.target.value })}
-                  />
-                </div>
-                <Button type="submit" className="w-full" size="lg">
-                  Continuar al pago
-                </Button>
-              </form>
-            </CardContent>
-          </Card>
-        )}
+  // ─── Layout principal ─────────────────────────────────────────────────────
+  return (
+    <div className="min-h-screen bg-gray-50 flex flex-col">
+      <PageHeader businessName={businessName} />
+      <StepProgress step={step} requireOtp={requireOtp} requireSelfie={requireSelfie} />
 
-        {/* Step 2: Card Payment */}
-        {step === "card" && (
-          <Card className="border-border">
-            <CardContent className="p-5">
-              <h2 className="font-semibold text-foreground mb-4">Datos de tu tarjeta</h2>
-              <form onSubmit={handlePayment} className="space-y-4">
-                <div className="space-y-1.5">
-                  <Label>Número de tarjeta</Label>
-                  <div className="border border-input rounded-lg px-3 py-3 bg-background focus-within:ring-2 focus-within:ring-ring focus-within:border-transparent transition-all">
-                    <CardNumberElement options={STRIPE_ELEMENT_STYLE} />
-                  </div>
+      <div className="flex-1 flex items-start justify-center p-4 pt-6">
+        <div className="w-full max-w-2xl">
+          <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
+            {/* Banner del pago */}
+            <div className="bg-gradient-to-r from-blue-600 to-blue-700 p-6 text-white">
+              <div className="flex items-center gap-4">
+                <div className="w-14 h-14 bg-white/20 rounded-full flex items-center justify-center text-2xl font-bold">
+                  {businessName.charAt(0).toUpperCase()}
                 </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-1.5">
-                    <Label>Fecha de vencimiento</Label>
-                    <div className="border border-input rounded-lg px-3 py-3 bg-background focus-within:ring-2 focus-within:ring-ring focus-within:border-transparent transition-all">
-                      <CardExpiryElement options={STRIPE_ELEMENT_STYLE} />
-                    </div>
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label>CVV</Label>
-                    <div className="border border-input rounded-lg px-3 py-3 bg-background focus-within:ring-2 focus-within:ring-ring focus-within:border-transparent transition-all">
-                      <CardCvcElement options={STRIPE_ELEMENT_STYLE} />
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2 text-xs text-muted-foreground bg-muted/50 rounded-lg p-3">
-                  <Shield className="w-3.5 h-3.5 flex-shrink-0 text-green-600" />
-                  <span>Tus datos están cifrados con SSL. No almacenamos información de tu tarjeta.</span>
-                </div>
-
-                <Button
-                  type="submit"
-                  className="w-full"
-                  size="lg"
-                  disabled={processing || !stripe}
-                >
-                  {processing ? (
-                    <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />Procesando pago...</>
-                  ) : (
-                    <><Lock className="w-4 h-4 mr-2" />Pagar {formatCurrency(linkData.amount, linkData.currency)}</>
+                <div>
+                  <p className="text-blue-200 text-sm">{businessName}</p>
+                  <p className="text-4xl font-bold">{formatMXN(amount)}</p>
+                  {usdEquivalent && (
+                    <p className="text-blue-200 text-sm mt-0.5">≈ USD ${usdEquivalent} (TC: ${exchangeRate})</p>
                   )}
-                </Button>
+                </div>
+              </div>
+              <p className="mt-3 text-blue-100 text-sm">{linkData.description}</p>
+            </div>
 
-                <Button
-                  type="button"
-                  variant="ghost"
-                  className="w-full"
-                  onClick={() => setStep("info")}
-                  disabled={processing}
-                >
-                  Volver
-                </Button>
-              </form>
-            </CardContent>
-          </Card>
-        )}
+            <div className="p-6">
+              {/* PASO 1: Información */}
+              {step === "info" && (
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-800 mb-4">Información del pago</h3>
+                  <div className="space-y-2 mb-5">
+                    <InfoRow label="Para" value={linkData.clientName} />
+                    <InfoRow label="Concepto" value={linkData.description} />
+                    <InfoRow label="Monto" value={`${formatMXN(amount)} ${currency}`} />
+                    {usdEquivalent && <InfoRow label="Equiv. USD" value={`$${usdEquivalent} (TC: $${exchangeRate})`} />}
+                  </div>
+                  {chargebackText && (
+                    <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-5 flex gap-3">
+                      <Shield className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                      <p className="text-amber-800 text-sm">{chargebackText}</p>
+                    </div>
+                  )}
+                  <Button
+                    className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 text-base font-semibold rounded-xl"
+                    onClick={() => setStep("customer")}
+                  >
+                    Continuar <ChevronRight className="w-5 h-5 ml-1" />
+                  </Button>
+                </div>
+              )}
 
-        <p className="text-center text-xs text-muted-foreground mt-4">
-          Pago procesado de forma segura por <strong>Stripe</strong>
-        </p>
+              {/* PASO 2: Datos del cliente */}
+              {step === "customer" && (
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-800 mb-4">Tus datos</h3>
+                  <div className="grid grid-cols-2 gap-4 mb-4">
+                    <div>
+                      <Label className="text-gray-600 text-sm mb-1 block">Nombre(s)</Label>
+                      <div className="relative">
+                        <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                        <Input className="pl-9" placeholder="Juan" value={customer.firstName}
+                          onChange={(e) => setCustomer({ ...customer, firstName: e.target.value })} />
+                      </div>
+                    </div>
+                    <div>
+                      <Label className="text-gray-600 text-sm mb-1 block">Apellidos</Label>
+                      <div className="relative">
+                        <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                        <Input className="pl-9" placeholder="García López" value={customer.lastName}
+                          onChange={(e) => setCustomer({ ...customer, lastName: e.target.value })} />
+                      </div>
+                    </div>
+                  </div>
+                  <div className="mb-4">
+                    <Label className="text-gray-600 text-sm mb-1 block">Correo electrónico</Label>
+                    <div className="relative">
+                      <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                      <Input className="pl-9" type="email" placeholder="correo@ejemplo.com" value={customer.email}
+                        onChange={(e) => setCustomer({ ...customer, email: e.target.value })} />
+                    </div>
+                  </div>
+                  <div className="mb-6">
+                    <Label className="text-gray-600 text-sm mb-1 block">Teléfono</Label>
+                    <div className="relative">
+                      <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                      <Input className="pl-9" type="tel" placeholder="+52 55 1234 5678" value={customer.phone}
+                        onChange={(e) => setCustomer({ ...customer, phone: e.target.value })} />
+                    </div>
+                  </div>
+                  <div className="flex gap-3">
+                    <Button variant="outline" onClick={() => setStep("info")} className="flex-1">
+                      <ArrowLeft className="w-4 h-4 mr-1" /> Atrás
+                    </Button>
+                    <Button
+                      className="flex-[2] bg-blue-600 hover:bg-blue-700 text-white py-3 font-semibold rounded-xl"
+                      disabled={!customer.firstName || !customer.email}
+                      onClick={() => setStep(getNextStep("customer"))}
+                    >
+                      Continuar <ChevronRight className="w-5 h-5 ml-1" />
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              {/* PASO 3: OTP */}
+              {step === "otp" && (
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-800 mb-2">Verificación de identidad</h3>
+                  <p className="text-gray-500 text-sm mb-6">
+                    Enviaremos un código a <strong>{customer.email}</strong>
+                  </p>
+                  {!otpSent ? (
+                    <div className="text-center py-4">
+                      <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <Mail className="w-8 h-8 text-blue-600" />
+                      </div>
+                      <Button className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-xl"
+                        onClick={handleSendOtp} disabled={sendOtp.isPending}>
+                        {sendOtp.isPending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Mail className="w-4 h-4 mr-2" />}
+                        Enviar código
+                      </Button>
+                    </div>
+                  ) : otpVerified ? (
+                    <div className="text-center py-4">
+                      <CheckCircle2 className="w-16 h-16 text-green-500 mx-auto mb-3" />
+                      <p className="text-green-700 font-semibold">¡Identidad verificada!</p>
+                    </div>
+                  ) : (
+                    <div>
+                      <Label className="text-gray-600 text-sm mb-2 block">Código de 6 dígitos</Label>
+                      <Input className="text-center text-2xl tracking-widest font-mono mb-4" maxLength={6}
+                        placeholder="000000" value={otpCode}
+                        onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ""))} />
+                      <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl mb-3"
+                        onClick={handleVerifyOtp} disabled={otpCode.length !== 6 || verifyOtp.isPending}>
+                        {verifyOtp.isPending && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
+                        Verificar código
+                      </Button>
+                      <button className="w-full text-blue-600 text-sm flex items-center justify-center gap-1"
+                        onClick={() => { setOtpSent(false); setOtpCode(""); }}>
+                        <RefreshCw className="w-3 h-3" /> Reenviar código
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* PASO 4: Selfie */}
+              {step === "selfie" && (
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-800 mb-2">Verificación facial</h3>
+                  <p className="text-gray-500 text-sm mb-4">Toma una selfie con buena iluminación para verificar tu identidad.</p>
+                  {selfieVerified ? (
+                    <div className="text-center py-4">
+                      <CheckCircle2 className="w-16 h-16 text-green-500 mx-auto mb-3" />
+                      <p className="text-green-700 font-semibold">¡Identidad verificada!</p>
+                      <p className="text-gray-400 text-sm">Coincidencia: {faceMatchScore.toFixed(0)}%</p>
+                    </div>
+                  ) : !cameraActive ? (
+                    <div className="text-center py-6">
+                      <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <Camera className="w-10 h-10 text-blue-600" />
+                      </div>
+                      <Button className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-xl" onClick={startCamera}>
+                        <Camera className="w-4 h-4 mr-2" /> Activar cámara
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="text-center">
+                      <div className="relative inline-block rounded-xl overflow-hidden mb-4 border-4 border-blue-400">
+                        <video ref={videoRef} autoPlay playsInline className="w-64 h-64 object-cover" />
+                      </div>
+                      <canvas ref={canvasRef} className="hidden" />
+                      <div className="flex gap-3 justify-center">
+                        <Button variant="outline" onClick={() => {
+                          if (streamRef.current) streamRef.current.getTracks().forEach((t) => t.stop());
+                          setCameraActive(false);
+                        }}>Cancelar</Button>
+                        <Button className="bg-blue-600 hover:bg-blue-700 text-white px-6 rounded-xl"
+                          onClick={takeSelfie} disabled={uploadSelfie.isPending}>
+                          {uploadSelfie.isPending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Camera className="w-4 h-4 mr-2" />}
+                          Tomar foto
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* PASO 5: Pago con tarjeta */}
+              {step === "payment" && (
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-800 mb-4">Método de pago</h3>
+                  <div className="bg-gray-50 rounded-xl p-4 mb-5">
+                    <p className="text-gray-400 text-xs mb-1">Total a pagar</p>
+                    <p className="text-3xl font-bold text-gray-900">{formatMXN(amount)} <span className="text-lg text-gray-400">{currency}</span></p>
+                    {usdEquivalent && <p className="text-gray-400 text-xs mt-1">≈ USD ${usdEquivalent}</p>}
+                  </div>
+
+                  {!clientSecret ? (
+                    <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl mb-4 font-semibold"
+                      onClick={handleCreateIntent} disabled={processing}>
+                      {processing ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <CreditCard className="w-4 h-4 mr-2" />}
+                      Ingresar datos de tarjeta
+                    </Button>
+                  ) : (
+                    <form onSubmit={handlePayment}>
+                      {/* Selector de método */}
+                      <div className="flex gap-2 mb-5">
+                        <button type="button" className="flex-1 border-2 border-blue-500 bg-blue-50 rounded-lg py-2 px-3 text-sm font-semibold text-blue-700 flex items-center justify-center gap-2">
+                          <CreditCard className="w-4 h-4" /> Tarjeta de débito o crédito
+                        </button>
+                      </div>
+
+                      <div className="space-y-4 mb-5">
+                        <div>
+                          <Label className="text-gray-600 text-sm mb-1.5 block">Número de tarjeta</Label>
+                          <div className="border border-gray-200 rounded-xl px-4 py-3.5 bg-white focus-within:border-blue-400 focus-within:ring-2 focus-within:ring-blue-100 transition-all">
+                            <CardNumberElement options={STRIPE_STYLE} />
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <Label className="text-gray-600 text-sm mb-1.5 block">Vigencia</Label>
+                            <div className="border border-gray-200 rounded-xl px-4 py-3.5 bg-white focus-within:border-blue-400 focus-within:ring-2 focus-within:ring-blue-100 transition-all">
+                              <CardExpiryElement options={STRIPE_STYLE} />
+                            </div>
+                          </div>
+                          <div>
+                            <Label className="text-gray-600 text-sm mb-1.5 block">Código CVV</Label>
+                            <div className="border border-gray-200 rounded-xl px-4 py-3.5 bg-white focus-within:border-blue-400 focus-within:ring-2 focus-within:ring-blue-100 transition-all">
+                              <CardCvcElement options={STRIPE_STYLE} />
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {chargebackText && (
+                        <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 mb-4 flex gap-2">
+                          <Shield className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
+                          <p className="text-amber-800 text-xs">{chargebackText}</p>
+                        </div>
+                      )}
+
+                      <Button type="submit"
+                        className="w-full bg-gray-900 hover:bg-gray-800 text-white py-4 rounded-xl font-bold text-base"
+                        disabled={processing || !stripe}>
+                        {processing ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : <Lock className="w-5 h-5 mr-2" />}
+                        REALIZAR PAGO
+                      </Button>
+                    </form>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <PageFooter />
+    </div>
+  );
+}
+
+// ─── Componentes de apoyo ─────────────────────────────────────────────────────
+
+function StatusPage({ icon, title, message, color }: { icon: React.ReactNode; title: string; message: string; color: string }) {
+  const bg: Record<string, string> = { red: "bg-red-50", green: "bg-green-50", amber: "bg-amber-50", gray: "bg-gray-50" };
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
+      <div className="text-center max-w-sm">
+        <div className={`w-20 h-20 ${bg[color] || "bg-gray-50"} rounded-full flex items-center justify-center mx-auto mb-4`}>
+          {icon}
+        </div>
+        <h2 className="text-xl font-bold text-gray-800 mb-2">{title}</h2>
+        <p className="text-gray-500 text-sm">{message}</p>
       </div>
     </div>
   );
 }
 
-export default function PayPage() {
-  const { token } = useParams<{ token: string }>();
-  const { data: link, isLoading, error } = trpc.paymentLinks.getByToken.useQuery(
-    { token: token || "" },
-    { enabled: !!token }
+function PageHeader({ businessName }: { businessName: string }) {
+  return (
+    <div className="bg-white border-b border-gray-100 py-4 px-6 flex items-center justify-center gap-3 shadow-sm">
+      <div className="w-9 h-9 bg-blue-600 rounded-lg flex items-center justify-center">
+        <CreditCard className="w-5 h-5 text-white" />
+      </div>
+      <div>
+        <p className="font-bold text-gray-800 text-sm leading-tight">Pago Seguro</p>
+        <p className="text-gray-400 text-xs">{businessName}</p>
+      </div>
+    </div>
   );
+}
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-blue-50">
-        <div className="text-center">
-          <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-3" />
-          <p className="text-muted-foreground text-sm">Cargando enlace de pago...</p>
+function PageFooter() {
+  return (
+    <div className="py-6 px-4 text-center">
+      <p className="text-gray-400 text-xs mb-3">Pago procesado de manera segura con:</p>
+      <div className="flex items-center justify-center gap-6 flex-wrap">
+        <div className="flex items-center gap-1.5">
+          <div className="w-10 h-6 bg-blue-700 rounded text-white text-xs font-bold flex items-center justify-center">VISA</div>
+          <span className="text-gray-400 text-xs">Verified</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <div className="w-10 h-6 bg-red-600 rounded text-white text-xs font-bold flex items-center justify-center">MC</div>
+          <span className="text-gray-400 text-xs">SecureCode</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <div className="w-10 h-6 bg-blue-500 rounded text-white text-xs font-bold flex items-center justify-center">AMEX</div>
+          <span className="text-gray-400 text-xs">SafeKey</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <Lock className="w-4 h-4 text-green-500" />
+          <span className="text-gray-400 text-xs">SSL 256-bit</span>
         </div>
       </div>
-    );
-  }
+    </div>
+  );
+}
 
-  if (error || !link) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-blue-50 p-4">
-        <div className="text-center max-w-sm">
-          <div className="w-16 h-16 bg-red-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-            <AlertCircle className="w-8 h-8 text-red-600" />
+function InfoRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex justify-between py-2 border-b border-gray-100 last:border-0">
+      <span className="text-gray-500 text-sm">{label}</span>
+      <span className="text-gray-800 font-medium text-sm text-right max-w-[200px]">{value}</span>
+    </div>
+  );
+}
+
+function StepProgress({ step, requireOtp, requireSelfie }: { step: Step; requireOtp: boolean; requireSelfie: boolean }) {
+  const steps = [
+    { id: "info", label: "Pago" },
+    { id: "customer", label: "Datos" },
+    ...(requireOtp ? [{ id: "otp", label: "Verificar" }] : []),
+    ...(requireSelfie ? [{ id: "selfie", label: "Selfie" }] : []),
+    { id: "payment", label: "Pagar" },
+  ];
+  const currentIndex = steps.findIndex((s) => s.id === step);
+  return (
+    <div className="bg-white border-b border-gray-100 px-6 py-3">
+      <div className="flex items-center justify-center gap-1 max-w-sm mx-auto">
+        {steps.map((s, i) => (
+          <div key={s.id} className="flex items-center gap-1">
+            <div className={`flex items-center gap-1.5 ${i <= currentIndex ? "text-blue-600" : "text-gray-300"}`}>
+              <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold border-2 ${
+                i < currentIndex ? "bg-blue-600 border-blue-600 text-white" :
+                i === currentIndex ? "border-blue-600 text-blue-600 bg-white" :
+                "border-gray-200 text-gray-300 bg-white"
+              }`}>
+                {i < currentIndex ? "✓" : i + 1}
+              </div>
+              <span className="text-xs font-medium hidden sm:block">{s.label}</span>
+            </div>
+            {i < steps.length - 1 && <div className={`w-5 h-0.5 ${i < currentIndex ? "bg-blue-600" : "bg-gray-200"}`} />}
           </div>
-          <h1 className="text-xl font-bold text-foreground mb-2">Enlace no encontrado</h1>
-          <p className="text-muted-foreground text-sm">Este enlace de pago no existe o ha sido eliminado.</p>
-        </div>
+        ))}
       </div>
-    );
-  }
+    </div>
+  );
+}
 
-  if (link.status === "paid") {
+// ─── Wrapper con Stripe Elements ──────────────────────────────────────────────
+export default function PayPage() {
+  const params = useParams<{ token: string }>();
+  const token = params.token;
+  if (!token) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-blue-50 p-4">
-        <div className="text-center max-w-sm">
-          <div className="w-16 h-16 bg-green-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-            <CheckCircle2 className="w-8 h-8 text-green-600" />
-          </div>
-          <h1 className="text-xl font-bold text-foreground mb-2">Pago ya realizado</h1>
-          <p className="text-muted-foreground text-sm">Este enlace de pago ya fue procesado exitosamente.</p>
-        </div>
+      <div className="min-h-screen flex items-center justify-center">
+        <p className="text-gray-500">Token de pago inválido</p>
       </div>
     );
   }
-
-  if (link.status === "expired") {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-blue-50 p-4">
-        <div className="text-center max-w-sm">
-          <div className="w-16 h-16 bg-amber-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-            <XCircle className="w-8 h-8 text-amber-600" />
-          </div>
-          <h1 className="text-xl font-bold text-foreground mb-2">Enlace expirado</h1>
-          <p className="text-muted-foreground text-sm">Este enlace de pago ha expirado. Contacta al vendedor para obtener uno nuevo.</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (link.status === "cancelled") {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-blue-50 p-4">
-        <div className="text-center max-w-sm">
-          <div className="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-            <XCircle className="w-8 h-8 text-gray-500" />
-          </div>
-          <h1 className="text-xl font-bold text-foreground mb-2">Enlace cancelado</h1>
-          <p className="text-muted-foreground text-sm">Este enlace de pago ha sido cancelado por el vendedor.</p>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <Elements stripe={stripePromise}>
-      <PaymentForm
-        token={token || ""}
-        linkData={{
-          clientName: link.clientName,
-          amount: link.amount,
-          currency: link.currency,
-          description: link.description,
-        }}
-      />
+      <PaymentForm token={token} />
     </Elements>
   );
 }

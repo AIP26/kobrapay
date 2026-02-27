@@ -2,18 +2,26 @@ import DashboardLayout from "@/components/DashboardLayout";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Link } from "wouter";
+import { QRCodeSVG } from "qrcode.react";
 import {
   CheckCircle2,
   Clock,
   Copy,
+  Download,
+  Edit2,
   ExternalLink,
   Link2,
   Mail,
   MessageCircle,
   Plus,
+  QrCode,
+  Search,
   XCircle,
 } from "lucide-react";
 
@@ -22,11 +30,7 @@ function formatCurrency(amount: number | string, currency = "MXN") {
 }
 
 function formatDate(date: Date | string) {
-  return new Date(date).toLocaleDateString("es-MX", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  });
+  return new Date(date).toLocaleDateString("es-MX", { day: "2-digit", month: "short", year: "numeric" });
 }
 
 const statusConfig = {
@@ -36,14 +40,43 @@ const statusConfig = {
   cancelled: { label: "Cancelado", color: "bg-red-100 text-red-600 border-red-200", icon: XCircle },
 };
 
+type LinkItem = {
+  id: number;
+  token: string;
+  clientName: string;
+  clientEmail?: string | null;
+  amount: string | number;
+  currency: string;
+  description: string;
+  status: keyof typeof statusConfig;
+  createdAt: Date | string;
+  expiresAt?: Date | string | null;
+  commissionRate?: string | number | null;
+  commissionAmount?: string | number | null;
+  netAmount?: string | number | null;
+};
+
 export default function Links() {
   const [copiedId, setCopiedId] = useState<number | null>(null);
+  const [qrLink, setQrLink] = useState<LinkItem | null>(null);
+  const [editLink, setEditLink] = useState<LinkItem | null>(null);
+  const [editForm, setEditForm] = useState({ clientName: "", clientEmail: "", amount: "", description: "" });
+  const [search, setSearch] = useState("");
+  const qrRef = useRef<HTMLDivElement>(null);
   const utils = trpc.useUtils();
+
   const { data: links, isLoading } = trpc.paymentLinks.list.useQuery();
+
   const cancelLink = trpc.paymentLinks.cancel.useMutation({
+    onSuccess: () => { utils.paymentLinks.list.invalidate(); toast.success("Enlace cancelado"); },
+    onError: (err) => toast.error(err.message),
+  });
+
+  const updateLink = trpc.paymentLinks.update.useMutation({
     onSuccess: () => {
       utils.paymentLinks.list.invalidate();
-      toast.success("Enlace cancelado");
+      setEditLink(null);
+      toast.success("Enlace actualizado correctamente");
     },
     onError: (err) => toast.error(err.message),
   });
@@ -57,29 +90,85 @@ export default function Links() {
     setTimeout(() => setCopiedId(null), 2500);
   };
 
-  const handleWhatsApp = (token: string, clientName: string, amount: string | number, currency: string, description: string) => {
-    const url = getUrl(token);
+  const handleWhatsApp = (link: LinkItem) => {
+    const url = getUrl(link.token);
     const msg = encodeURIComponent(
-      `Hola ${clientName}, te comparto tu enlace de pago por ${formatCurrency(amount, currency)} para "${description}":\n\n${url}`
+      `Hola ${link.clientName} 👋\n\nTe comparto tu enlace de pago por *${formatCurrency(link.amount, link.currency)}* para "${link.description}":\n\n🔗 ${url}\n\n¡Gracias!`
     );
     window.open(`https://wa.me/?text=${msg}`, "_blank");
   };
 
-  const handleEmail = (token: string, clientName: string, amount: string | number, currency: string, description: string) => {
-    const url = getUrl(token);
-    const subject = encodeURIComponent(`Enlace de pago: ${formatCurrency(amount, currency)}`);
+  const handleEmail = (link: LinkItem) => {
+    const url = getUrl(link.token);
+    const subject = encodeURIComponent(`Enlace de pago: ${formatCurrency(link.amount, link.currency)}`);
     const body = encodeURIComponent(
-      `Hola ${clientName},\n\nTe comparto tu enlace de pago por ${formatCurrency(amount, currency)} para "${description}":\n\n${url}\n\nGracias.`
+      `Hola ${link.clientName},\n\nTe comparto tu enlace de pago por ${formatCurrency(link.amount, link.currency)} para "${link.description}":\n\n${url}\n\nGracias.`
     );
-    window.open(`mailto:?subject=${subject}&body=${body}`, "_blank");
+    window.open(`mailto:${link.clientEmail || ""}?subject=${subject}&body=${body}`, "_blank");
   };
+
+  const handleOpenEdit = (link: LinkItem) => {
+    setEditLink(link);
+    setEditForm({
+      clientName: link.clientName,
+      clientEmail: link.clientEmail || "",
+      amount: String(link.amount),
+      description: link.description,
+    });
+  };
+
+  const handleSaveEdit = () => {
+    if (!editLink) return;
+    updateLink.mutate({
+      id: editLink.id,
+      clientName: editForm.clientName || undefined,
+      clientEmail: editForm.clientEmail || undefined,
+      amount: editForm.amount ? parseFloat(editForm.amount) : undefined,
+      description: editForm.description || undefined,
+    });
+  };
+
+  const handleDownloadQR = () => {
+    if (!qrRef.current || !qrLink) return;
+    const svg = qrRef.current.querySelector("svg");
+    if (!svg) return;
+    const svgData = new XMLSerializer().serializeToString(svg);
+    const canvas = document.createElement("canvas");
+    canvas.width = 300; canvas.height = 300;
+    const ctx = canvas.getContext("2d");
+    const img = new Image();
+    img.onload = () => {
+      ctx?.drawImage(img, 0, 0, 300, 300);
+      const a = document.createElement("a");
+      a.download = `qr-${qrLink.token}.png`;
+      a.href = canvas.toDataURL("image/png");
+      a.click();
+    };
+    img.src = "data:image/svg+xml;base64," + btoa(svgData);
+    toast.success("QR descargado");
+  };
+
+  const filtered = (links || []).filter((l) =>
+    !search ||
+    l.clientName.toLowerCase().includes(search.toLowerCase()) ||
+    l.description.toLowerCase().includes(search.toLowerCase())
+  );
 
   return (
     <DashboardLayout title="Links de Pago">
       <div className="space-y-4">
-        {/* Header action */}
-        <div className="flex justify-end">
-          <Button asChild className="bg-cyan-500 hover:bg-cyan-400 text-white">
+        {/* Header */}
+        <div className="flex items-center gap-3 flex-wrap">
+          <div className="relative flex-1 min-w-[200px]">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <Input
+              placeholder="Buscar por cliente o descripción..."
+              className="pl-9 border-gray-200"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </div>
+          <Button asChild className="bg-cyan-500 hover:bg-cyan-400 text-white flex-shrink-0">
             <Link href="/dashboard/create">
               <Plus className="w-4 h-4 mr-2" />
               Nuevo enlace
@@ -92,13 +181,13 @@ export default function Links() {
             <CardTitle className="text-base font-semibold text-gray-800">
               Mis enlaces de pago
               {links && links.length > 0 && (
-                <span className="ml-2 text-sm font-normal text-gray-400">({links.length})</span>
+                <span className="ml-2 text-sm font-normal text-gray-400">({filtered.length} de {links.length})</span>
               )}
             </CardTitle>
           </CardHeader>
           <CardContent className="p-0">
             {isLoading ? (
-              <div className="space-y-0">
+              <div>
                 {[1, 2, 3].map((i) => (
                   <div key={i} className="flex items-center gap-4 px-6 py-4 border-b border-gray-50">
                     <div className="w-8 h-8 bg-gray-100 animate-pulse rounded-lg" />
@@ -110,34 +199,46 @@ export default function Links() {
                   </div>
                 ))}
               </div>
-            ) : !links || links.length === 0 ? (
+            ) : filtered.length === 0 ? (
               <div className="text-center py-16">
                 <div className="w-14 h-14 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-3">
                   <Link2 className="w-7 h-7 text-gray-400" />
                 </div>
-                <p className="font-medium text-gray-600 mb-1">Sin enlaces aún</p>
-                <p className="text-sm text-gray-400 mb-4">Crea tu primer enlace de pago para comenzar a cobrar</p>
-                <Button asChild className="bg-cyan-500 hover:bg-cyan-400 text-white">
-                  <Link href="/dashboard/create">
-                    <Plus className="w-4 h-4 mr-2" />
-                    Crear enlace
-                  </Link>
-                </Button>
+                <p className="font-medium text-gray-600 mb-1">{search ? "Sin resultados" : "Sin enlaces aún"}</p>
+                <p className="text-sm text-gray-400 mb-4">
+                  {search ? "Intenta con otra búsqueda" : "Crea tu primer enlace de pago para comenzar a cobrar"}
+                </p>
+                {!search && (
+                  <Button asChild className="bg-cyan-500 hover:bg-cyan-400 text-white">
+                    <Link href="/dashboard/create">
+                      <Plus className="w-4 h-4 mr-2" />
+                      Crear enlace
+                    </Link>
+                  </Button>
+                )}
               </div>
             ) : (
               <div className="divide-y divide-gray-100">
-                {links.map((link) => {
-                  const cfg = statusConfig[link.status] ?? statusConfig.pending;
+                {filtered.map((link) => {
+                  const cfg = statusConfig[link.status as keyof typeof statusConfig] ?? statusConfig.pending;
                   const StatusIcon = cfg.icon;
                   const isPending = link.status === "pending";
                   const url = getUrl(link.token);
+                  const commRate = parseFloat(String(link.commissionRate || 0));
+                  const grossAmt = parseFloat(String(link.amount));
+                  const commAmt = grossAmt * commRate / 100;
+                  const netAmt = grossAmt - commAmt;
 
                   return (
                     <div key={link.id} className="px-5 py-4 hover:bg-gray-50/50 transition-colors">
                       <div className="flex items-start gap-3">
                         {/* Icon */}
-                        <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5 ${link.status === "paid" ? "bg-green-100" : link.status === "pending" ? "bg-cyan-100" : "bg-gray-100"}`}>
-                          <Link2 className={`w-4 h-4 ${link.status === "paid" ? "text-green-600" : link.status === "pending" ? "text-cyan-600" : "text-gray-400"}`} />
+                        <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5 ${
+                          link.status === "paid" ? "bg-green-100" : link.status === "pending" ? "bg-cyan-100" : "bg-gray-100"
+                        }`}>
+                          <Link2 className={`w-4 h-4 ${
+                            link.status === "paid" ? "text-green-600" : link.status === "pending" ? "text-cyan-600" : "text-gray-400"
+                          }`} />
                         </div>
 
                         {/* Info */}
@@ -152,13 +253,14 @@ export default function Links() {
                           <p className="text-xs text-gray-500 mt-0.5 truncate">{link.description}</p>
                           <div className="flex items-center gap-3 mt-1 flex-wrap">
                             <span className="text-sm font-bold text-gray-800">{formatCurrency(link.amount, link.currency)}</span>
+                            {commRate > 0 && (
+                              <span className="text-xs text-green-600 font-medium">Neto: {formatCurrency(netAmt)}</span>
+                            )}
                             <span className="text-xs text-gray-400">{formatDate(link.createdAt)}</span>
                             {link.expiresAt && (
                               <span className="text-xs text-amber-500">Vence: {formatDate(link.expiresAt)}</span>
                             )}
                           </div>
-
-                          {/* URL preview */}
                           {isPending && (
                             <p className="text-xs text-gray-400 font-mono mt-1.5 truncate max-w-xs">{url}</p>
                           )}
@@ -176,18 +278,25 @@ export default function Links() {
                                 {copiedId === link.id ? <CheckCircle2 className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
                               </button>
                               <button
-                                onClick={() => handleWhatsApp(link.token, link.clientName, link.amount, link.currency, link.description)}
+                                onClick={() => handleWhatsApp(link as LinkItem)}
                                 className="p-1.5 rounded-lg hover:bg-green-50 text-gray-500 hover:text-green-600 transition-all"
                                 title="Enviar por WhatsApp"
                               >
                                 <MessageCircle className="w-4 h-4" />
                               </button>
                               <button
-                                onClick={() => handleEmail(link.token, link.clientName, link.amount, link.currency, link.description)}
+                                onClick={() => handleEmail(link as LinkItem)}
                                 className="p-1.5 rounded-lg hover:bg-blue-50 text-gray-500 hover:text-blue-600 transition-all"
                                 title="Enviar por Email"
                               >
                                 <Mail className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => setQrLink(link as LinkItem)}
+                                className="p-1.5 rounded-lg hover:bg-purple-50 text-gray-500 hover:text-purple-600 transition-all"
+                                title="Ver QR"
+                              >
+                                <QrCode className="w-4 h-4" />
                               </button>
                               <a
                                 href={url}
@@ -199,11 +308,14 @@ export default function Links() {
                                 <ExternalLink className="w-4 h-4" />
                               </a>
                               <button
-                                onClick={() => {
-                                  if (confirm("¿Cancelar este enlace?")) {
-                                    cancelLink.mutate({ id: link.id });
-                                  }
-                                }}
+                                onClick={() => handleOpenEdit(link as LinkItem)}
+                                className="p-1.5 rounded-lg hover:bg-amber-50 text-gray-500 hover:text-amber-600 transition-all"
+                                title="Editar enlace"
+                              >
+                                <Edit2 className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => { if (confirm("¿Cancelar este enlace?")) cancelLink.mutate({ id: link.id }); }}
                                 className="p-1.5 rounded-lg hover:bg-red-50 text-gray-400 hover:text-red-500 transition-all"
                                 title="Cancelar enlace"
                               >
@@ -227,6 +339,101 @@ export default function Links() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Modal QR */}
+      <Dialog open={!!qrLink} onOpenChange={() => setQrLink(null)}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Código QR de pago</DialogTitle>
+          </DialogHeader>
+          {qrLink && (
+            <div className="text-center space-y-4">
+              <p className="text-sm text-gray-500">
+                <strong>{qrLink.clientName}</strong> · {formatCurrency(qrLink.amount, qrLink.currency)}
+              </p>
+              <div ref={qrRef} className="flex justify-center">
+                <QRCodeSVG
+                  value={getUrl(qrLink.token)}
+                  size={200}
+                  bgColor="#ffffff"
+                  fgColor="#1e3a5f"
+                  level="M"
+                  includeMargin
+                />
+              </div>
+              <p className="text-xs text-gray-400 break-all font-mono">{getUrl(qrLink.token)}</p>
+              <div className="flex gap-2">
+                <Button variant="outline" className="flex-1" onClick={() => handleCopy(qrLink.id, qrLink.token)}>
+                  <Copy className="w-4 h-4 mr-2" /> Copiar enlace
+                </Button>
+                <Button className="flex-1 bg-cyan-500 hover:bg-cyan-400 text-white" onClick={handleDownloadQR}>
+                  <Download className="w-4 h-4 mr-2" /> Descargar QR
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal Editar */}
+      <Dialog open={!!editLink} onOpenChange={() => setEditLink(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Editar enlace de pago</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-1.5">
+              <Label>Nombre del cliente</Label>
+              <Input
+                value={editForm.clientName}
+                onChange={(e) => setEditForm({ ...editForm, clientName: e.target.value })}
+                className="border-gray-200"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Email del cliente</Label>
+              <Input
+                type="email"
+                value={editForm.clientEmail}
+                onChange={(e) => setEditForm({ ...editForm, clientEmail: e.target.value })}
+                className="border-gray-200"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Monto</Label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">$</span>
+                <Input
+                  type="number"
+                  min="10"
+                  step="0.01"
+                  value={editForm.amount}
+                  onChange={(e) => setEditForm({ ...editForm, amount: e.target.value })}
+                  className="pl-7 border-gray-200"
+                />
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label>Descripción</Label>
+              <Input
+                value={editForm.description}
+                onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
+                className="border-gray-200"
+              />
+            </div>
+          </div>
+          <DialogFooter className="gap-2 mt-2">
+            <Button variant="outline" onClick={() => setEditLink(null)}>Cancelar</Button>
+            <Button
+              className="bg-cyan-500 hover:bg-cyan-400 text-white"
+              onClick={handleSaveEdit}
+              disabled={updateLink.isPending}
+            >
+              {updateLink.isPending ? "Guardando..." : "Guardar cambios"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </DashboardLayout>
   );
 }

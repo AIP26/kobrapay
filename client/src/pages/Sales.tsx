@@ -1,6 +1,5 @@
 import DashboardLayout from "@/components/DashboardLayout";
 import { trpc } from "@/lib/trpc";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -9,12 +8,14 @@ import {
   CheckCircle2,
   Clock,
   CreditCard,
+  Download,
   RefreshCw,
   Search,
   TrendingUp,
   XCircle,
 } from "lucide-react";
 import { useState, useMemo } from "react";
+import { toast } from "sonner";
 
 function formatCurrency(amount: number | string, currency = "MXN") {
   return new Intl.NumberFormat("es-MX", { style: "currency", currency }).format(Number(amount));
@@ -41,11 +42,16 @@ const statusConfig = {
 export default function Sales() {
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<"all" | "succeeded" | "pending" | "failed">("all");
+
   const { data: transactions, isLoading, refetch, isFetching } = trpc.transactions.list.useQuery(
     undefined,
-    { refetchInterval: 30000 } // auto-refresh every 30s
+    { refetchInterval: 30000 }
   );
   const { data: stats } = trpc.transactions.stats.useQuery();
+  const { data: exportData, refetch: fetchExport } = trpc.transactions.exportCsv.useQuery(
+    undefined,
+    { enabled: false }
+  );
 
   const filtered = useMemo(() => {
     if (!transactions) return [];
@@ -63,6 +69,31 @@ export default function Sales() {
     if (tx.status === "succeeded") return sum + Number(tx.amount);
     return sum;
   }, 0);
+
+  const totalCommission = filtered.reduce((sum, tx) => {
+    if (tx.status === "succeeded") return sum + Number(tx.commissionAmount || 0);
+    return sum;
+  }, 0);
+
+  const totalNet = totalFiltered - totalCommission;
+
+  const handleExportCSV = async () => {
+    try {
+      const result = await fetchExport();
+      if (result.data?.csv) {
+        const blob = new Blob([result.data.csv], { type: "text/csv;charset=utf-8;" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `ventas-${new Date().toISOString().split("T")[0]}.csv`;
+        a.click();
+        URL.revokeObjectURL(url);
+        toast.success(`${result.data.count} transacciones exportadas`);
+      }
+    } catch {
+      toast.error("Error al exportar");
+    }
+  };
 
   return (
     <DashboardLayout title="Mis Ventas">
@@ -133,6 +164,15 @@ export default function Sales() {
                   <RefreshCw className={`w-3.5 h-3.5 mr-1.5 ${isFetching ? "animate-spin" : ""}`} />
                   Actualizar
                 </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleExportCSV}
+                  className="h-8 text-xs border-gray-200 text-green-700 hover:bg-green-50 hover:border-green-300"
+                >
+                  <Download className="w-3.5 h-3.5 mr-1.5" />
+                  Exportar CSV
+                </Button>
               </div>
             </div>
 
@@ -200,19 +240,24 @@ export default function Sales() {
                 <div className="hidden md:block overflow-x-auto">
                   <table className="w-full">
                     <thead>
-                      <tr className="border-b border-gray-100">
+                      <tr className="border-b border-gray-100 bg-gray-50/50">
                         <th className="text-left text-xs font-semibold text-gray-500 uppercase tracking-wide px-6 py-3">Cliente</th>
-                        <th className="text-left text-xs font-semibold text-gray-500 uppercase tracking-wide px-4 py-3">Descripción</th>
                         <th className="text-left text-xs font-semibold text-gray-500 uppercase tracking-wide px-4 py-3">Tarjeta</th>
-                        <th className="text-right text-xs font-semibold text-gray-500 uppercase tracking-wide px-4 py-3">Monto</th>
+                        <th className="text-right text-xs font-semibold text-gray-500 uppercase tracking-wide px-4 py-3">Monto bruto</th>
+                        <th className="text-right text-xs font-semibold text-gray-500 uppercase tracking-wide px-4 py-3">Comisión</th>
+                        <th className="text-right text-xs font-semibold text-gray-500 uppercase tracking-wide px-4 py-3">Neto</th>
                         <th className="text-center text-xs font-semibold text-gray-500 uppercase tracking-wide px-4 py-3">Estado</th>
                         <th className="text-right text-xs font-semibold text-gray-500 uppercase tracking-wide px-6 py-3">Fecha</th>
                       </tr>
                     </thead>
                     <tbody>
                       {filtered.map((tx, i) => {
-                        const cfg = statusConfig[tx.status] ?? statusConfig.pending;
+                        const cfg = statusConfig[tx.status as keyof typeof statusConfig] ?? statusConfig.pending;
                         const StatusIcon = cfg.icon;
+                        const gross = Number(tx.amount);
+                        const commRate = Number(tx.commissionRate || 0);
+                        const commAmt = Number(tx.commissionAmount || 0);
+                        const net = Number(tx.netAmount || gross);
                         return (
                           <tr
                             key={tx.id}
@@ -230,9 +275,6 @@ export default function Sales() {
                               </div>
                             </td>
                             <td className="px-4 py-4">
-                              <p className="text-sm text-gray-600 max-w-[180px] truncate">—</p>
-                            </td>
-                            <td className="px-4 py-4">
                               {tx.cardBrand && tx.cardLast4 ? (
                                 <span className="text-xs text-gray-500 capitalize font-mono">
                                   {tx.cardBrand} •••• {tx.cardLast4}
@@ -242,8 +284,25 @@ export default function Sales() {
                               )}
                             </td>
                             <td className="px-4 py-4 text-right">
-                              <span className={`text-sm font-bold ${tx.status === "succeeded" ? "text-green-600" : "text-gray-700"}`}>
-                                {formatCurrency(tx.amount, tx.currency)}
+                              <span className={`text-sm font-bold ${tx.status === "succeeded" ? "text-gray-800" : "text-gray-500"}`}>
+                                {formatCurrency(gross, tx.currency)}
+                              </span>
+                            </td>
+                            <td className="px-4 py-4 text-right">
+                              {commRate > 0 ? (
+                                <div>
+                                  <span className="text-xs font-medium text-orange-600">
+                                    -{formatCurrency(commAmt)}
+                                  </span>
+                                  <p className="text-xs text-gray-400">{commRate}%</p>
+                                </div>
+                              ) : (
+                                <span className="text-xs text-gray-300">—</span>
+                              )}
+                            </td>
+                            <td className="px-4 py-4 text-right">
+                              <span className={`text-sm font-bold ${tx.status === "succeeded" ? "text-green-600" : "text-gray-500"}`}>
+                                {formatCurrency(net, tx.currency)}
                               </span>
                             </td>
                             <td className="px-4 py-4 text-center">
@@ -265,8 +324,11 @@ export default function Sales() {
                 {/* Mobile Cards */}
                 <div className="md:hidden divide-y divide-gray-100">
                   {filtered.map((tx) => {
-                    const cfg = statusConfig[tx.status] ?? statusConfig.pending;
+                    const cfg = statusConfig[tx.status as keyof typeof statusConfig] ?? statusConfig.pending;
                     const StatusIcon = cfg.icon;
+                    const gross = Number(tx.amount);
+                    const commAmt = Number(tx.commissionAmount || 0);
+                    const net = Number(tx.netAmount || gross);
                     return (
                       <div key={tx.id} className="px-4 py-4">
                         <div className="flex items-start justify-between gap-3">
@@ -281,9 +343,10 @@ export default function Sales() {
                             </div>
                           </div>
                           <div className="text-right">
-                            <p className={`font-bold ${tx.status === "succeeded" ? "text-green-600" : "text-gray-700"}`}>
-                              {formatCurrency(tx.amount, tx.currency)}
-                            </p>
+                            <p className="font-bold text-gray-800">{formatCurrency(gross, tx.currency)}</p>
+                            {commAmt > 0 && (
+                              <p className="text-xs text-green-600 font-medium">Neto: {formatCurrency(net)}</p>
+                            )}
                             <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border mt-1 ${cfg.color}`}>
                               <StatusIcon className="w-2.5 h-2.5" />
                               {cfg.label}
@@ -296,16 +359,34 @@ export default function Sales() {
                 </div>
 
                 {/* Summary Footer */}
-                {filter !== "all" || search ? (
-                  <div className="px-6 py-3 bg-gray-50 border-t border-gray-100 flex items-center justify-between">
-                    <p className="text-xs text-gray-500">{filtered.length} resultado{filtered.length !== 1 ? "s" : ""}</p>
-                    {filter === "succeeded" || filter === "all" ? (
-                      <p className="text-sm font-semibold text-green-600">
-                        Total: {formatCurrency(totalFiltered)}
-                      </p>
-                    ) : null}
+                <div className="px-6 py-3 bg-gray-50 border-t border-gray-100">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <p className="text-xs text-gray-500">{filtered.length} transacción{filtered.length !== 1 ? "es" : ""}</p>
+                    <div className="flex items-center gap-4">
+                      {totalCommission > 0 && (
+                        <>
+                          <div className="text-right">
+                            <p className="text-xs text-gray-400">Bruto</p>
+                            <p className="text-sm font-semibold text-gray-700">{formatCurrency(totalFiltered)}</p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-xs text-gray-400">Comisión</p>
+                            <p className="text-sm font-semibold text-orange-600">-{formatCurrency(totalCommission)}</p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-xs text-gray-400">Neto</p>
+                            <p className="text-sm font-bold text-green-600">{formatCurrency(totalNet)}</p>
+                          </div>
+                        </>
+                      )}
+                      {totalCommission === 0 && (
+                        <p className="text-sm font-semibold text-green-600">
+                          Total: {formatCurrency(totalFiltered)}
+                        </p>
+                      )}
+                    </div>
                   </div>
-                ) : null}
+                </div>
               </>
             )}
           </CardContent>

@@ -13,6 +13,9 @@ import Settings from "./pages/Settings";
 import PayPage from "./pages/PayPage";
 import PaySuccess from "./pages/PaySuccess";
 import Sales from "./pages/Sales";
+import Clients from "./pages/Clients";
+import Widget from "./pages/Widget";
+import Recurring from "./pages/Recurring";
 
 function Router() {
   return (
@@ -25,7 +28,10 @@ function Router() {
       <Route path="/dashboard/links" component={Links} />
       <Route path="/dashboard/transactions" component={Transactions} />
       <Route path="/dashboard/sales" component={Sales} />
+      <Route path="/dashboard/clients" component={Clients} />
       <Route path="/dashboard/settings" component={Settings} />
+      <Route path="/dashboard/widget" component={Widget} />
+      <Route path="/dashboard/recurring" component={Recurring} />
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
     </Switch>

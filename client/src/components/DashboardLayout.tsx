@@ -12,7 +12,10 @@ import {
   Plus,
   Settings,
   X,
-  ShoppingCart,
+  Users,
+  Shield,
+  Code2,
+  RefreshCw,
 } from "lucide-react";
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
@@ -20,11 +23,14 @@ import { Button } from "./ui/button";
 import { Avatar, AvatarFallback } from "./ui/avatar";
 
 const navItems = [
-  { href: "/dashboard", icon: Home, label: "Panel" },
-  { href: "/dashboard/sales", icon: BarChart3, label: "Mis Ventas" },
-  { href: "/dashboard/links", icon: Link2, label: "Links de Pago" },
-  { href: "/dashboard/create", icon: Plus, label: "Nuevo Cobro" },
-  { href: "/dashboard/settings", icon: Settings, label: "Configuración" },
+  { href: "/dashboard", icon: Home, label: "Panel", section: "main" },
+  { href: "/dashboard/sales", icon: BarChart3, label: "Mis Ventas", section: "main" },
+  { href: "/dashboard/links", icon: Link2, label: "Links de Pago", section: "main" },
+  { href: "/dashboard/create", icon: Plus, label: "Nuevo Cobro", section: "main" },
+  { href: "/dashboard/recurring", icon: RefreshCw, label: "Cobros Recurrentes", section: "main" },
+  { href: "/dashboard/widget", icon: Code2, label: "Widget de Pago", section: "main" },
+  { href: "/dashboard/clients", icon: Users, label: "Mis Clientes", section: "admin", adminOnly: true },
+  { href: "/dashboard/settings", icon: Settings, label: "Configuracion", section: "settings" },
 ];
 
 interface DashboardLayoutProps {
@@ -94,26 +100,54 @@ export default function DashboardLayout({ children, title }: DashboardLayoutProp
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
-        {navItems.map(({ href, icon: Icon, label }) => {
-          const isActive = location === href;
-          return (
-            <Link
-              key={href}
-              href={href}
-              onClick={() => setSidebarOpen(false)}
-              className={cn(
-                "flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all",
-                isActive
-                  ? "bg-cyan-500 text-white"
-                  : "text-gray-300 hover:bg-white/10 hover:text-white"
-              )}
-            >
-              <Icon className="w-4 h-4 flex-shrink-0" />
-              {label}
-            </Link>
-          );
-        })}
+      <nav className="flex-1 px-3 py-4 overflow-y-auto">
+        <div className="space-y-0.5">
+          <p className="px-4 py-1.5 text-xs font-semibold text-gray-500 uppercase tracking-wider">Principal</p>
+          {navItems.filter(i => i.section === "main").map(({ href, icon: Icon, label }) => {
+            const isActive = location === href;
+            return (
+              <Link key={href} href={href} onClick={() => setSidebarOpen(false)}
+                className={cn("flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all",
+                  isActive ? "bg-cyan-500 text-white" : "text-gray-300 hover:bg-white/10 hover:text-white"
+                )}>
+                <Icon className="w-4 h-4 flex-shrink-0" />
+                {label}
+              </Link>
+            );
+          })}
+        </div>
+        {user?.role === "admin" && (
+          <div className="space-y-0.5 mt-4">
+            <p className="px-4 py-1.5 text-xs font-semibold text-gray-500 uppercase tracking-wider">Administracion</p>
+            {navItems.filter(i => i.section === "admin").map(({ href, icon: Icon, label }) => {
+              const isActive = location === href;
+              return (
+                <Link key={href} href={href} onClick={() => setSidebarOpen(false)}
+                  className={cn("flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all",
+                    isActive ? "bg-cyan-500 text-white" : "text-gray-300 hover:bg-white/10 hover:text-white"
+                  )}>
+                  <Icon className="w-4 h-4 flex-shrink-0" />
+                  {label}
+                </Link>
+              );
+            })}
+          </div>
+        )}
+        <div className="space-y-0.5 mt-4">
+          <p className="px-4 py-1.5 text-xs font-semibold text-gray-500 uppercase tracking-wider">Sistema</p>
+          {navItems.filter(i => i.section === "settings").map(({ href, icon: Icon, label }) => {
+            const isActive = location === href;
+            return (
+              <Link key={href} href={href} onClick={() => setSidebarOpen(false)}
+                className={cn("flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all",
+                  isActive ? "bg-cyan-500 text-white" : "text-gray-300 hover:bg-white/10 hover:text-white"
+                )}>
+                <Icon className="w-4 h-4 flex-shrink-0" />
+                {label}
+              </Link>
+            );
+          })}
+        </div>
       </nav>
 
       {/* User Profile */}

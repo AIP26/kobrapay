@@ -15,6 +15,13 @@
       "when": 1772163513575,
       "tag": "0001_slim_scourge",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1772166637716,
+      "tag": "0002_wealthy_lyja",
+      "breakpoints": true
     }
   ]
 }
