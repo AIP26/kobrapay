@@ -598,13 +598,21 @@ function StatusPage({ icon, title, message, color }: { icon: React.ReactNode; ti
 
 function PageHeader({ businessName }: { businessName: string }) {
   return (
-    <div className="bg-white border-b border-gray-100 py-4 px-6 flex items-center justify-center gap-3 shadow-sm">
-      <div className="w-9 h-9 bg-blue-600 rounded-lg flex items-center justify-center">
-        <CreditCard className="w-5 h-5 text-white" />
+    <div className="bg-white border-b border-gray-100 py-3 px-6 flex items-center justify-between shadow-sm">
+      <div className="flex items-center gap-2.5">
+        <img
+          src="https://files.manuscdn.com/user_upload_by_module/session_file/310519663381362445/yMTQoaqGYTxuRnnF.png"
+          alt="KobraPay"
+          className="w-8 h-8 object-contain"
+        />
+        <div>
+          <p className="font-bold text-gray-800 text-sm leading-tight">KobraPay</p>
+          <p className="text-gray-400 text-xs">Cobra fácil, cobra global</p>
+        </div>
       </div>
-      <div>
-        <p className="font-bold text-gray-800 text-sm leading-tight">Pago Seguro</p>
-        <p className="text-gray-400 text-xs">{businessName}</p>
+      <div className="text-right">
+        <p className="text-xs text-gray-400">Cobro de</p>
+        <p className="text-sm font-semibold text-gray-700 truncate max-w-[160px]">{businessName}</p>
       </div>
     </div>
   );

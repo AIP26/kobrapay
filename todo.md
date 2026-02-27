@@ -127,3 +127,58 @@
 - [ ] Tarjeta débito propia (requiere alianza con banco emisor)
 - [ ] App móvil (React Native)
 - [ ] Integración con SAT para facturación automática (CFDI 4.0)
+
+## Fase 8 - Identidad de Marca KobraPay + Nuevos Módulos
+
+### Logo y Branding
+- [x] Subir logo KobraPay final a CDN
+- [x] Aplicar logo en DashboardLayout (sidebar)
+- [x] Aplicar logo en Home.tsx (landing page)
+- [x] Aplicar logo en PayPage.tsx (página de pago pública)
+- [x] Actualizar nombre "PagaFácil" → "KobraPay" en todos los archivos
+- [ ] Actualizar favicon con ícono KobraPay
+- [ ] Actualizar título de la app en settings
+
+### Módulo Aclaraciones (Contracargos)
+- [ ] Tabla chargebacks en DB (transacción, estatus, monto, afectación, documentos)
+- [ ] Webhook Stripe: detectar disputas automáticamente y guardar en DB
+- [x] Página "Mis Aclaraciones" en dashboard
+- [x] Tabla con: ID transacción, fecha, estatus, monto, afectación, última actualización
+- [x] Subir documentos de evidencia para disputar
+- [x] Notificación al admin cuando llega un contracargo nuevo
+
+### Módulo Facturas
+- [ ] Tabla invoices en DB (folio, emisor RFC, receptor RFC, monto, conceptos, fecha)
+- [x] Página "Mis Facturas" en dashboard
+- [x] Formulario para crear factura (datos del cliente, conceptos, subtotal, IVA)
+- [x] Generar PDF de factura con membrete del negocio
+- [x] Descargar factura en PDF
+- [x] Enviar factura por email al cliente
+
+### Sección Lector Físico
+- [x] Página "Compra tu Lector" en dashboard
+- [x] Información sobre Stripe Terminal (modelos, precios)
+- [x] Formulario de solicitud de lector (nombre, dirección, teléfono)
+
+## Fase 9 - Seguridad Multi-Tenant y Ciberseguridad
+
+### Aislamiento de datos (Multi-Tenant)
+- [ ] Middleware de tenant isolation: cada query filtra por owner_id obligatoriamente
+- [ ] Roles: superadmin (tú), admin (cliente tuyo), user (empleado del cliente)
+- [ ] superadmin ve todo; admin solo ve sus datos; user solo lo que admin le permita
+- [ ] Prohibir acceso cruzado entre tenants (un cliente no puede ver datos de otro)
+- [ ] Auditoría de accesos: log de quién accedió a qué y cuándo
+
+### Hardening del servidor
+- [ ] Rate limiting: máximo N requests por IP por minuto (anti-brute force)
+- [ ] Helmet.js: headers de seguridad HTTP (CSP, HSTS, X-Frame-Options, etc.)
+- [ ] CORS restringido: solo dominios autorizados
+- [ ] Sanitización de inputs: prevenir SQL injection y XSS
+- [ ] Tokens JWT con expiración corta + refresh tokens
+- [ ] Bloqueo automático de IP tras intentos fallidos de login
+- [ ] Logs de seguridad: intentos de acceso no autorizado
+
+### Protección de rutas frontend
+- [ ] Rutas protegidas por rol: superadmin, admin, user
+- [ ] Redirección automática si no tiene permisos
+- [ ] No exponer datos sensibles en el frontend (comisiones de otros tenants, etc.)

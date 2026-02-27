@@ -16,6 +16,9 @@ import Sales from "./pages/Sales";
 import Clients from "./pages/Clients";
 import Widget from "./pages/Widget";
 import Recurring from "./pages/Recurring";
+import Chargebacks from "./pages/Chargebacks";
+import Invoices from "./pages/Invoices";
+import Reader from "./pages/Reader";
 
 function Router() {
   return (
@@ -32,6 +35,9 @@ function Router() {
       <Route path="/dashboard/settings" component={Settings} />
       <Route path="/dashboard/widget" component={Widget} />
       <Route path="/dashboard/recurring" component={Recurring} />
+      <Route path="/dashboard/chargebacks" component={Chargebacks} />
+      <Route path="/dashboard/invoices" component={Invoices} />
+      <Route path="/dashboard/reader" component={Reader} />
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
     </Switch>
