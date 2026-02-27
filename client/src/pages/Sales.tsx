@@ -511,6 +511,8 @@ export default function Sales() {
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [filter, setFilter] = useState<"all" | "succeeded" | "pending" | "failed">("all");
   const [selectedTx, setSelectedTx] = useState<Transaction | null>(null);
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
 
   // Debounce the search input
   useMemo(() => {
@@ -518,8 +520,15 @@ export default function Sales() {
     return () => clearTimeout(timer);
   }, [search]);
 
+  const queryInput = useMemo(() => ({
+    search: debouncedSearch || undefined,
+    status: filter !== "all" ? filter : undefined,
+    dateFrom: dateFrom || undefined,
+    dateTo: dateTo || undefined,
+  }), [debouncedSearch, filter, dateFrom, dateTo]);
+
   const { data: transactions, isLoading, refetch, isFetching } = trpc.transactions.list.useQuery(
-    { search: debouncedSearch || undefined },
+    queryInput,
     { refetchInterval: 30000 }
   );
   const { data: stats } = trpc.transactions.stats.useQuery();
@@ -530,11 +539,8 @@ export default function Sales() {
 
   const filtered = useMemo(() => {
     if (!transactions) return [];
-    return transactions.filter((tx) => {
-      const matchFilter = filter === "all" || tx.status === filter;
-      return matchFilter;
-    });
-  }, [transactions, filter]);
+    return transactions;
+  }, [transactions]);
 
   const groupedByDate = useMemo(() => groupByDate(filtered), [filtered]);
 
@@ -650,30 +656,60 @@ export default function Sales() {
             </div>
 
             {/* Filters */}
-            <div className="flex flex-col sm:flex-row gap-2 mt-3">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
-                <Input
-                  placeholder="Buscar por cliente, email o N.° de operación..."
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  className="pl-9 h-8 text-sm border-gray-200"
-                />
+            <div className="flex flex-col gap-2 mt-3">
+              <div className="flex flex-col sm:flex-row gap-2">
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
+                  <Input
+                    placeholder="Buscar por cliente, email o N.° de operación..."
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    className="pl-9 h-8 text-sm border-gray-200"
+                  />
+                </div>
+                <div className="flex gap-1 flex-wrap">
+                  {(["all", "succeeded", "pending", "failed"] as const).map((f) => (
+                    <button
+                      key={f}
+                      onClick={() => setFilter(f)}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                        filter === f
+                          ? "bg-cyan-500 text-white"
+                          : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                      }`}
+                    >
+                      {f === "all" ? "Todos" : f === "succeeded" ? "Pagados" : f === "pending" ? "Pendientes" : "Fallidos"}
+                    </button>
+                  ))}
+                </div>
               </div>
-              <div className="flex gap-1">
-                {(["all", "succeeded", "pending", "failed"] as const).map((f) => (
+              {/* Date range filters */}
+              <div className="flex flex-col sm:flex-row gap-2 items-center">
+                <div className="flex items-center gap-2 flex-1">
+                  <Calendar className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
+                  <span className="text-xs text-gray-500 flex-shrink-0">Desde</span>
+                  <Input
+                    type="date"
+                    value={dateFrom}
+                    onChange={(e) => setDateFrom(e.target.value)}
+                    className="h-8 text-xs border-gray-200 flex-1"
+                  />
+                  <span className="text-xs text-gray-500 flex-shrink-0">Hasta</span>
+                  <Input
+                    type="date"
+                    value={dateTo}
+                    onChange={(e) => setDateTo(e.target.value)}
+                    className="h-8 text-xs border-gray-200 flex-1"
+                  />
+                </div>
+                {(dateFrom || dateTo) && (
                   <button
-                    key={f}
-                    onClick={() => setFilter(f)}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
-                      filter === f
-                        ? "bg-cyan-500 text-white"
-                        : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                    }`}
+                    onClick={() => { setDateFrom(""); setDateTo(""); }}
+                    className="text-xs text-red-500 hover:text-red-700 px-2 py-1 rounded hover:bg-red-50 transition-colors flex-shrink-0"
                   >
-                    {f === "all" ? "Todos" : f === "succeeded" ? "Pagados" : f === "pending" ? "Pendientes" : "Fallidos"}
+                    Limpiar fechas
                   </button>
-                ))}
+                )}
               </div>
             </div>
           </CardHeader>
@@ -699,11 +735,11 @@ export default function Sales() {
                   <BarChart3 className="w-7 h-7 text-gray-400" />
                 </div>
                 <p className="font-medium text-gray-600 mb-1">
-                  {search || filter !== "all" ? "Sin resultados" : "Sin transacciones aún"}
+                  {search || filter !== "all" || dateFrom || dateTo ? "Sin resultados" : "Sin transacciones aún"}
                 </p>
                 <p className="text-sm text-gray-400">
-                  {search || filter !== "all"
-                    ? "Intenta con otros filtros"
+                  {search || filter !== "all" || dateFrom || dateTo
+                    ? "Intenta con otros filtros o cambia el rango de fechas"
                     : "Las transacciones aparecerán aquí cuando tus clientes paguen"}
                 </p>
               </div>

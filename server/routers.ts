@@ -17,6 +17,7 @@ import {
   getPaymentLinkByToken,
   getPaymentLinksByUser,
   getTransactionsByUser,
+  getTransactionsByUserFiltered,
   searchTransactionsByUser,
   getVendorSettings,
   updatePaymentLink,
@@ -310,11 +311,21 @@ export const appRouter = router({
   // ─── Transacciones ────────────────────────────────────────────────────────
   transactions: router({
     list: protectedProcedure
-      .input(z.object({ search: z.string().optional() }).optional())
+      .input(z.object({
+        search: z.string().optional(),
+        status: z.string().optional(),
+        dateFrom: z.string().optional(),
+        dateTo: z.string().optional(),
+      }).optional())
       .query(async ({ ctx, input }) => {
-        const search = input?.search?.trim();
-        if (search && search.length > 0) {
-          return searchTransactionsByUser(ctx.user.id, search);
+        const hasFilters = input?.search || input?.status || input?.dateFrom || input?.dateTo;
+        if (hasFilters) {
+          return getTransactionsByUserFiltered(ctx.user.id, {
+            search: input?.search,
+            status: input?.status,
+            dateFrom: input?.dateFrom,
+            dateTo: input?.dateTo,
+          });
         }
         return getTransactionsByUser(ctx.user.id);
       }),
@@ -637,6 +648,95 @@ export const appRouter = router({
         }
 
         return { success: false, status: paymentIntent.status };
+      }),
+  }),
+
+  // ─── Colaboradores (staff) ────────────────────────────────────────────────
+  staff: router({
+    list: protectedProcedure.query(async ({ ctx }) => {
+      const db = await import('./db').then(m => m.getDb());
+      if (!db) return [];
+      const { eq, and } = await import('drizzle-orm');
+      const { users } = await import('../drizzle/schema');
+      return db.select({
+        id: users.id,
+        name: users.name,
+        email: users.email,
+        isActive: users.isActive,
+        createdAt: users.createdAt,
+      }).from(users).where(
+        and(
+          eq(users.createdByUserId, ctx.user.id),
+          eq(users.role, 'user')
+        )
+      );
+    }),
+
+    invite: protectedProcedure
+      .input(z.object({ name: z.string().min(1), email: z.string().email() }))
+      .mutation(async ({ ctx, input }) => {
+        const db = await import('./db').then(m => m.getDb());
+        if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
+        const { eq } = await import('drizzle-orm');
+        const { users } = await import('../drizzle/schema');
+        // Verificar si ya existe
+        const existing = await db.select().from(users).where(eq(users.email, input.email)).limit(1);
+        if (existing.length > 0) {
+          // Si ya existe, actualizar createdByUserId si no tiene dueño
+          const u = existing[0];
+          if (u.createdByUserId && u.createdByUserId !== ctx.user.id) {
+            throw new TRPCError({ code: 'CONFLICT', message: 'Este email ya pertenece a otro negocio' });
+          }
+          await db.update(users).set({ createdByUserId: ctx.user.id, role: 'user', isActive: true }).where(eq(users.id, u.id));
+        } else {
+          // Crear usuario pendiente (sin openId, se asignará al primer login)
+          await db.insert(users).values({
+            openId: `pending_${nanoid(16)}`,
+            name: input.name,
+            email: input.email,
+            role: 'user',
+            createdByUserId: ctx.user.id,
+            isActive: false,
+          });
+        }
+        // Enviar email de invitación
+        try {
+          const { sendOtpEmail } = await import('./_core/email');
+          const settings = await import('./db').then(m => m.getVendorSettings(ctx.user.id));
+          const businessName = settings?.businessName || 'KobraPay';
+          // Usar Resend directamente para email de invitación
+          const { Resend } = await import('resend');
+          const resend = new Resend(process.env.RESEND_API_KEY || '');
+          await resend.emails.send({
+            from: `${businessName} via KobraPay <noreply@kobrapay.mx>`,
+            to: input.email,
+            subject: `Invitación a colaborar en ${businessName}`,
+            html: `<div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:24px">
+              <h2 style="color:#0e7490">Has sido invitado a colaborar</h2>
+              <p>Hola <strong>${input.name}</strong>,</p>
+              <p><strong>${businessName}</strong> te ha invitado a colaborar en KobraPay como colaborador.</p>
+              <p>Inicia sesión en <a href="https://kobrapay.mx/dashboard" style="color:#0e7490">kobrapay.mx</a> con este email para acceder.</p>
+              <p style="color:#6b7280;font-size:13px">Si no esperabas esta invitación, puedes ignorar este mensaje.</p>
+            </div>`,
+          });
+        } catch (e) {
+          console.warn('[Staff] Error enviando email de invitación:', e);
+        }
+        return { success: true };
+      }),
+
+    remove: protectedProcedure
+      .input(z.object({ staffId: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        const db = await import('./db').then(m => m.getDb());
+        if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
+        const { eq, and } = await import('drizzle-orm');
+        const { users } = await import('../drizzle/schema');
+        // Solo puede eliminar colaboradores que él creó
+        await db.update(users).set({ createdByUserId: null, isActive: false }).where(
+          and(eq(users.id, input.staffId), eq(users.createdByUserId, ctx.user.id))
+        );
+        return { success: true };
       }),
   }),
 

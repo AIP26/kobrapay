@@ -237,3 +237,11 @@
 - [ ] Reporte privado de comisiones para superadmin (no visible al cliente)
 - [ ] CSV de exportación con tabla separada: ingresos del cliente vs comisiones de KobraPay
 - [ ] Investigar e implementar Stripe Connect para separación automática de fondos
+
+## Fase 14 - Mejoras completadas (sesión actual)
+- [x] Configurar RESEND_API_KEY en el proyecto
+- [x] Verificar dominio kobrapay.mx en Resend (DNS records verificados en GoDaddy)
+- [x] Filtros avanzados en página de Ventas (por fecha, estado)
+- [x] Módulo de colaboradores/empleados por negocio con permisos limitados
+- [ ] Modal de detalle de transacción con recibo PDF descargable (próxima sesión)
+- [ ] Reporte de comisiones para superadmin (próxima sesión)

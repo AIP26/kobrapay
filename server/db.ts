@@ -1,4 +1,4 @@
-import { and, desc, eq, like, or, sql } from "drizzle-orm";
+import { and, desc, eq, gte, like, lte, or, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import {
   Customer,
@@ -237,6 +237,42 @@ export async function searchTransactionsByUser(userId: number, search: string) {
         )
       )
     )
+    .orderBy(desc(transactions.createdAt));
+}
+
+export async function getTransactionsByUserFiltered(
+  userId: number,
+  opts: { search?: string; status?: string; dateFrom?: string; dateTo?: string }
+) {
+  const db = await getDb();
+  if (!db) return [];
+  const conditions = [eq(transactions.userId, userId)];
+  if (opts.search) {
+    const term = `%${opts.search.trim()}%`;
+    conditions.push(
+      or(
+        like(transactions.payerName, term),
+        like(transactions.payerEmail, term),
+        like(transactions.operationNumber, term),
+        like(transactions.stripePaymentIntentId, term)
+      )!
+    );
+  }
+  if (opts.status && opts.status !== "all") {
+    conditions.push(eq(transactions.status, opts.status as "pending" | "processing" | "succeeded" | "failed" | "refunded"));
+  }
+  if (opts.dateFrom) {
+    conditions.push(gte(transactions.createdAt, new Date(opts.dateFrom)));
+  }
+  if (opts.dateTo) {
+    const to = new Date(opts.dateTo);
+    to.setHours(23, 59, 59, 999);
+    conditions.push(lte(transactions.createdAt, to));
+  }
+  return db
+    .select()
+    .from(transactions)
+    .where(and(...conditions))
     .orderBy(desc(transactions.createdAt));
 }
 
