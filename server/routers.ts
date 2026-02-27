@@ -17,6 +17,7 @@ import {
   getPaymentLinkByToken,
   getPaymentLinksByUser,
   getTransactionsByUser,
+  searchTransactionsByUser,
   getVendorSettings,
   updatePaymentLink,
   updatePaymentLinkStatus,
@@ -308,9 +309,15 @@ export const appRouter = router({
 
   // ─── Transacciones ────────────────────────────────────────────────────────
   transactions: router({
-    list: protectedProcedure.query(async ({ ctx }) => {
-      return getTransactionsByUser(ctx.user.id);
-    }),
+    list: protectedProcedure
+      .input(z.object({ search: z.string().optional() }).optional())
+      .query(async ({ ctx, input }) => {
+        const search = input?.search?.trim();
+        if (search && search.length > 0) {
+          return searchTransactionsByUser(ctx.user.id, search);
+        }
+        return getTransactionsByUser(ctx.user.id);
+      }),
 
     listAll: protectedProcedure.query(async ({ ctx }) => {
       if (ctx.user.role !== "admin") throw new TRPCError({ code: "FORBIDDEN" });

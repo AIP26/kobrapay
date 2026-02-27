@@ -219,6 +219,27 @@ export async function getTransactionsByUser(userId: number) {
   return db.select().from(transactions).where(eq(transactions.userId, userId)).orderBy(desc(transactions.createdAt));
 }
 
+export async function searchTransactionsByUser(userId: number, search: string) {
+  const db = await getDb();
+  if (!db) return [];
+  const term = `%${search.trim()}%`;
+  return db
+    .select()
+    .from(transactions)
+    .where(
+      and(
+        eq(transactions.userId, userId),
+        or(
+          like(transactions.payerName, term),
+          like(transactions.payerEmail, term),
+          like(transactions.operationNumber, term),
+          like(transactions.stripePaymentIntentId, term)
+        )
+      )
+    )
+    .orderBy(desc(transactions.createdAt));
+}
+
 export async function getAllTransactionsForAdmin(adminUserId: number) {
   // Admin ve todas las transacciones de sus clientes de plataforma + las propias
   const db = await getDb();

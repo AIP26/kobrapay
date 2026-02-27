@@ -491,13 +491,35 @@ function TransactionDetailModal({
   );
 }
 
+function groupByDate(txs: Transaction[]) {
+  const groups: { label: string; items: Transaction[] }[] = [];
+  const seen = new Map<string, Transaction[]>();
+  for (const tx of txs) {
+    const d = new Date(tx.createdAt);
+    const label = d.toLocaleDateString("es-MX", { day: "numeric", month: "long", year: "numeric" });
+    if (!seen.has(label)) {
+      seen.set(label, []);
+      groups.push({ label, items: seen.get(label)! });
+    }
+    seen.get(label)!.push(tx);
+  }
+  return groups;
+}
+
 export default function Sales() {
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [filter, setFilter] = useState<"all" | "succeeded" | "pending" | "failed">("all");
   const [selectedTx, setSelectedTx] = useState<Transaction | null>(null);
 
+  // Debounce the search input
+  useMemo(() => {
+    const timer = setTimeout(() => setDebouncedSearch(search), 400);
+    return () => clearTimeout(timer);
+  }, [search]);
+
   const { data: transactions, isLoading, refetch, isFetching } = trpc.transactions.list.useQuery(
-    undefined,
+    { search: debouncedSearch || undefined },
     { refetchInterval: 30000 }
   );
   const { data: stats } = trpc.transactions.stats.useQuery();
@@ -509,14 +531,12 @@ export default function Sales() {
   const filtered = useMemo(() => {
     if (!transactions) return [];
     return transactions.filter((tx) => {
-      const matchSearch =
-        !search ||
-        tx.payerName?.toLowerCase().includes(search.toLowerCase()) ||
-        tx.payerEmail?.toLowerCase().includes(search.toLowerCase());
       const matchFilter = filter === "all" || tx.status === filter;
-      return matchSearch && matchFilter;
+      return matchFilter;
     });
-  }, [transactions, search, filter]);
+  }, [transactions, filter]);
+
+  const groupedByDate = useMemo(() => groupByDate(filtered), [filtered]);
 
   const totalFiltered = filtered.reduce((sum, tx) => {
     if (tx.status === "succeeded") return sum + Number(tx.amount);
@@ -634,7 +654,7 @@ export default function Sales() {
               <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
                 <Input
-                  placeholder="Buscar por cliente o email..."
+                  placeholder="Buscar por cliente, email o N.° de operación..."
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   className="pl-9 h-8 text-sm border-gray-200"
@@ -689,137 +709,88 @@ export default function Sales() {
               </div>
             ) : (
               <>
-                {/* Desktop Table */}
-                <div className="hidden md:block overflow-x-auto">
-                  <table className="w-full">
-                    <thead>
-                      <tr className="border-b border-gray-100 bg-gray-50/50">
-                        <th className="text-left text-xs font-semibold text-gray-500 uppercase tracking-wide px-6 py-3">Cliente</th>
-                        <th className="text-left text-xs font-semibold text-gray-500 uppercase tracking-wide px-4 py-3">N.° Operación</th>
-                        <th className="text-left text-xs font-semibold text-gray-500 uppercase tracking-wide px-4 py-3">Tarjeta</th>
-                        <th className="text-right text-xs font-semibold text-gray-500 uppercase tracking-wide px-4 py-3">Monto</th>
-                        <th className="text-right text-xs font-semibold text-gray-500 uppercase tracking-wide px-4 py-3">Neto</th>
-                        <th className="text-center text-xs font-semibold text-gray-500 uppercase tracking-wide px-4 py-3">Estado</th>
-                        <th className="text-right text-xs font-semibold text-gray-500 uppercase tracking-wide px-6 py-3">Fecha</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {filtered.map((tx, i) => {
+                {/* Activity Feed agrupado por fecha - estilo MercadoPago */}
+                <div className="divide-y divide-gray-50">
+                  {groupedByDate.map(({ label, items }) => (
+                    <div key={label}>
+                      {/* Separador de fecha */}
+                      <div className="px-6 py-2 bg-gray-50/70 border-b border-gray-100">
+                        <p className="text-xs font-semibold text-gray-500 capitalize">{label}</p>
+                      </div>
+                      {/* Items del día */}
+                      {items.map((tx) => {
                         const cfg = statusConfig[tx.status as keyof typeof statusConfig] ?? statusConfig.pending;
-                        const StatusIcon = cfg.icon;
                         const gross = Number(tx.amount);
                         const commAmt = Number(tx.commissionAmount || 0);
                         const net = Number(tx.netAmount || gross);
                         const opNum = generateOperationNumber(tx as Transaction);
                         const failInfo = tx.status === "failed" ? getFailureDetails(tx.errorMessage) : null;
+                        const timeStr = new Date(tx.createdAt).toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit" });
                         return (
-                          <tr
+                          <div
                             key={tx.id}
                             onClick={() => setSelectedTx(tx as Transaction)}
-                            className={`border-b border-gray-50 hover:bg-cyan-50/30 transition-colors cursor-pointer ${i % 2 === 0 ? "" : "bg-gray-50/30"}`}
+                            className="flex items-center gap-4 px-6 py-4 hover:bg-cyan-50/30 transition-colors cursor-pointer border-b border-gray-50 last:border-0"
                           >
-                            <td className="px-6 py-4">
-                              <div className="flex items-center gap-3">
-                                <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${tx.status === "succeeded" ? "bg-green-100" : tx.status === "failed" ? "bg-red-100" : "bg-gray-100"}`}>
-                                  <CreditCard className={`w-4 h-4 ${tx.status === "succeeded" ? "text-green-600" : tx.status === "failed" ? "text-red-500" : "text-gray-400"}`} />
-                                </div>
-                                <div>
-                                  <p className="text-sm font-medium text-gray-800">{tx.payerName || "—"}</p>
-                                  <p className="text-xs text-gray-400">{tx.payerEmail || ""}</p>
-                                  {failInfo && (
-                                    <p className="text-xs text-red-500 font-medium mt-0.5">{failInfo.title}</p>
-                                  )}
-                                </div>
+                            {/* Ícono de bolsa con estado */}
+                            <div className="relative flex-shrink-0">
+                              <div className={`w-11 h-11 rounded-full flex items-center justify-center border-2 ${
+                                tx.status === "succeeded"
+                                  ? "bg-gray-100 border-gray-200"
+                                  : tx.status === "failed"
+                                  ? "bg-gray-100 border-red-200"
+                                  : "bg-gray-100 border-gray-200"
+                              }`}>
+                                <svg className="w-5 h-5 text-gray-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 10.5V6a3.75 3.75 0 10-7.5 0v4.5m11.356-1.993l1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 01-1.12-1.243l1.264-12A1.125 1.125 0 015.513 7.5h12.974c.576 0 1.059.435 1.119 1.007zM8.625 10.5a.375.375 0 11-.75 0 .375.375 0 01.75 0zm6.75 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
+                                </svg>
                               </div>
-                            </td>
-                            <td className="px-4 py-4">
-                              <span className="text-xs font-mono text-gray-500">{opNum}</span>
-                            </td>
-                            <td className="px-4 py-4">
-                              {tx.cardBrand && tx.cardLast4 ? (
-                                <span className="text-xs text-gray-500 capitalize font-mono">
-                                  {tx.cardBrand} •••• {tx.cardLast4}
-                                </span>
-                              ) : (
-                                <span className="text-xs text-gray-300">—</span>
+                              {tx.status === "failed" && (
+                                <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 bg-red-500 rounded-full flex items-center justify-center">
+                                  <span className="text-white text-xs font-bold leading-none">!</span>
+                                </div>
                               )}
-                            </td>
-                            <td className="px-4 py-4 text-right">
-                              <span className={`text-sm font-bold ${tx.status === "succeeded" ? "text-gray-800" : "text-gray-400 line-through"}`}>
-                                {formatCurrency(gross, tx.currency)}
-                              </span>
-                            </td>
-                            <td className="px-4 py-4 text-right">
-                              <span className={`text-sm font-bold ${tx.status === "succeeded" ? "text-green-600" : "text-gray-400"}`}>
-                                {tx.status === "succeeded" ? formatCurrency(net, tx.currency) : "—"}
-                              </span>
+                            </div>
+
+                            {/* Info central */}
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2">
+                                <p className="text-sm font-semibold text-gray-800 truncate">
+                                  {tx.status === "failed" ? (
+                                    <span className="text-red-600">Rechazado</span>
+                                  ) : tx.status === "succeeded" ? (
+                                    <span className="text-gray-800">Venta</span>
+                                  ) : (
+                                    <span className="text-amber-600">Pendiente</span>
+                                  )}
+                                  {tx.payerName ? ` · ${tx.payerName}` : ""}
+                                </p>
+                              </div>
+                              <p className="text-xs text-gray-400 mt-0.5 font-mono">Operación {opNum}</p>
+                              {failInfo && (
+                                <p className="text-xs text-red-500 mt-0.5">{failInfo.title}</p>
+                              )}
+                            </div>
+
+                            {/* Monto y hora */}
+                            <div className="text-right flex-shrink-0">
+                              <p className={`font-bold text-sm ${
+                                tx.status === "succeeded"
+                                  ? "text-green-600"
+                                  : "text-gray-400 line-through"
+                              }`}>
+                                {tx.status === "succeeded" ? "+" : ""}{formatCurrency(tx.status === "succeeded" ? net : gross, tx.currency)}
+                              </p>
                               {commAmt > 0 && tx.status === "succeeded" && (
-                                <p className="text-xs text-orange-500">-{formatCurrency(commAmt)}</p>
+                                <p className="text-xs text-orange-400">-{formatCurrency(commAmt)} comisión</p>
                               )}
-                            </td>
-                            <td className="px-4 py-4 text-center">
-                              <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium border ${cfg.color}`}>
-                                <StatusIcon className="w-3 h-3" />
-                                {cfg.label}
-                              </span>
-                            </td>
-                            <td className="px-6 py-4 text-right">
-                              <span className="text-xs text-gray-400">{formatDate(tx.createdAt)}</span>
-                            </td>
-                          </tr>
+                              <p className="text-xs text-gray-400 mt-0.5">{timeStr} hs</p>
+                            </div>
+                          </div>
                         );
                       })}
-                    </tbody>
-                  </table>
-                </div>
-
-                {/* Mobile Cards */}
-                <div className="md:hidden divide-y divide-gray-100">
-                  {filtered.map((tx) => {
-                    const cfg = statusConfig[tx.status as keyof typeof statusConfig] ?? statusConfig.pending;
-                    const StatusIcon = cfg.icon;
-                    const gross = Number(tx.amount);
-                    const commAmt = Number(tx.commissionAmount || 0);
-                    const net = Number(tx.netAmount || gross);
-                    const opNum = generateOperationNumber(tx as Transaction);
-                    const failInfo = tx.status === "failed" ? getFailureDetails(tx.errorMessage) : null;
-                    return (
-                      <div
-                        key={tx.id}
-                        className="px-4 py-4 cursor-pointer hover:bg-cyan-50/30 transition-colors"
-                        onClick={() => setSelectedTx(tx as Transaction)}
-                      >
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="flex items-center gap-3">
-                            <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ${tx.status === "succeeded" ? "bg-green-100" : tx.status === "failed" ? "bg-red-100" : "bg-gray-100"}`}>
-                              <CreditCard className={`w-4 h-4 ${tx.status === "succeeded" ? "text-green-600" : tx.status === "failed" ? "text-red-500" : "text-gray-400"}`} />
-                            </div>
-                            <div>
-                              <p className="text-sm font-medium text-gray-800">{tx.payerName || "—"}</p>
-                              <p className="text-xs text-gray-400">{tx.payerEmail || ""}</p>
-                              <p className="text-xs font-mono text-gray-400 mt-0.5">{opNum}</p>
-                              {failInfo && (
-                                <p className="text-xs text-red-500 font-medium mt-0.5">{failInfo.title}</p>
-                              )}
-                              <p className="text-xs text-gray-400 mt-0.5">{formatDate(tx.createdAt)}</p>
-                            </div>
-                          </div>
-                          <div className="text-right">
-                            <p className={`font-bold ${tx.status === "succeeded" ? "text-gray-800" : "text-gray-400 line-through"}`}>
-                              {formatCurrency(gross, tx.currency)}
-                            </p>
-                            {commAmt > 0 && tx.status === "succeeded" && (
-                              <p className="text-xs text-green-600 font-medium">Neto: {formatCurrency(net)}</p>
-                            )}
-                            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border mt-1 ${cfg.color}`}>
-                              <StatusIcon className="w-2.5 h-2.5" />
-                              {cfg.label}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
+                    </div>
+                  ))}
                 </div>
 
                 {/* Summary Footer */}

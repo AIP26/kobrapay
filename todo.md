@@ -221,3 +221,10 @@
 - [ ] Módulo de Clientes con buscador (nombre, email, teléfono)
 - [ ] Historial de compras por cliente
 - [ ] Botón de idioma ES/EN en la página de pago pública (toggle español/inglés)
+
+## Fase 12 - Búsqueda en Mis Ventas (estilo MercadoPago)
+- [ ] Barra de búsqueda en Mis Ventas por nombre de cliente o número de operación
+- [ ] Agrupación de ventas por fecha (ej: "26 de febrero")
+- [ ] Estatus visual: rechazado en rojo, exitoso en verde, con ícono de bolsa de compras
+- [ ] Número de operación visible debajo del nombre del cliente
+- [ ] Backend: procedimiento de búsqueda de transacciones por nombre/operación

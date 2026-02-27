@@ -149,6 +149,7 @@ export const transactions = mysqlTable("transactions", {
   // IP y dispositivo para auditoría
   ipAddress: varchar("ipAddress", { length: 64 }),
   userAgent: text("userAgent"),
+  operationNumber: varchar("operationNumber", { length: 32 }),
   errorMessage: text("errorMessage"),
   metadata: text("metadata"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
