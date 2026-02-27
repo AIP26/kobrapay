@@ -109,6 +109,9 @@ export const paymentLinks = mysqlTable("payment_links", {
   // Verificación de identidad requerida
   requireOtp: boolean("requireOtp").default(false).notNull(),
   requireSelfie: boolean("requireSelfie").default(false).notNull(),
+  // Firma digital e identificación
+  requireSignature: boolean("requireSignature").default(false).notNull(),
+  requireIdUpload: boolean("requireIdUpload").default(false).notNull(),
   // Texto de protección contracargos
   chargebackProtectionText: text("chargebackProtectionText"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
@@ -146,6 +149,9 @@ export const transactions = mysqlTable("transactions", {
   selfieVerified: boolean("selfieVerified").default(false).notNull(),
   selfieUrl: text("selfieUrl"),
   faceMatchScore: decimal("faceMatchScore", { precision: 5, scale: 2 }),
+  // Firma digital e identificación
+  signatureUrl: text("signatureUrl"),
+  idDocumentUrl: text("idDocumentUrl"),
   // IP y dispositivo para auditoría
   ipAddress: varchar("ipAddress", { length: 64 }),
   userAgent: text("userAgent"),

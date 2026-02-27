@@ -33,11 +33,14 @@ import {
   ArrowLeft,
   RefreshCw,
   XCircle,
+  PenLine,
+  Trash2,
+  Upload,
 } from "lucide-react";
 
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || "");
 
-type Step = "info" | "customer" | "otp" | "selfie" | "payment" | "success";
+type Step = "info" | "customer" | "otp" | "selfie" | "signature" | "id_upload" | "payment" | "success";
 
 interface CustomerData {
   firstName: string;
@@ -72,6 +75,16 @@ function PaymentForm({ token }: { token: string }) {
   const [selfieVerified, setSelfieVerified] = useState(false);
   const [selfieUrl, setSelfieUrl] = useState("");
   const [faceMatchScore, setFaceMatchScore] = useState(0);
+  // Firma digital
+  const [signatureUrl, setSignatureUrl] = useState("");
+  const [signatureConfirmed, setSignatureConfirmed] = useState(false);
+  const [isDrawing, setIsDrawing] = useState(false);
+  const [hasDrawn, setHasDrawn] = useState(false);
+  const signatureCanvasRef = useRef<HTMLCanvasElement>(null);
+  // Carga de ID
+  const [idDocumentUrl, setIdDocumentUrl] = useState("");
+  const [idDocumentConfirmed, setIdDocumentConfirmed] = useState(false);
+  const [idFileName, setIdFileName] = useState("");
   const [clientSecret, setClientSecret] = useState("");
   const [paymentIntentId, setPaymentIntentId] = useState("");
   const [processing, setProcessing] = useState(false);
@@ -94,6 +107,8 @@ function PaymentForm({ token }: { token: string }) {
   const sendOtp = trpc.otp.send.useMutation();
   const verifyOtp = trpc.otp.verify.useMutation();
   const uploadSelfie = trpc.identity.uploadSelfie.useMutation();
+  const uploadSignature = trpc.identity.uploadSignature.useMutation();
+  const uploadIdDocument = trpc.identity.uploadIdDocument.useMutation();
   const createIntent = trpc.payments.createIntent.useMutation();
   const confirmPayment = trpc.payments.confirmPayment.useMutation();
 
@@ -131,6 +146,8 @@ function PaymentForm({ token }: { token: string }) {
             selfieVerified,
             selfieUrl,
             faceMatchScore,
+            signatureUrl,
+            idDocumentUrl,
             userAgent: navigator.userAgent,
           });
           secret = res.clientSecret;
@@ -211,6 +228,8 @@ function PaymentForm({ token }: { token: string }) {
     : "Comercio";
   const requireOtp = Boolean((linkData as Record<string, unknown>).requireOtp);
   const requireSelfie = Boolean((linkData as Record<string, unknown>).requireSelfie);
+  const requireSignature = Boolean((linkData as Record<string, unknown>).requireSignature);
+  const requireIdUpload = Boolean((linkData as Record<string, unknown>).requireIdUpload);
   const chargebackText = (linkData as Record<string, unknown>).chargebackProtectionText as string | undefined;
 
   const getNextStep = (current: Step): Step => {
@@ -218,14 +237,87 @@ function PaymentForm({ token }: { token: string }) {
     if (current === "customer") {
       if (requireOtp) return "otp";
       if (requireSelfie) return "selfie";
+      if (requireSignature) return "signature";
+      if (requireIdUpload) return "id_upload";
       return "payment";
     }
     if (current === "otp") {
       if (requireSelfie) return "selfie";
+      if (requireSignature) return "signature";
+      if (requireIdUpload) return "id_upload";
       return "payment";
     }
-    if (current === "selfie") return "payment";
+    if (current === "selfie") {
+      if (requireSignature) return "signature";
+      if (requireIdUpload) return "id_upload";
+      return "payment";
+    }
+    if (current === "signature") {
+      if (requireIdUpload) return "id_upload";
+      return "payment";
+    }
+    if (current === "id_upload") return "payment";
     return "success";
+  };
+
+  // ─── Firma digital: helpers de canvas ────────────────────────────────────
+  const getCanvasPoint = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
+    const canvas = signatureCanvasRef.current!;
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    if ("touches" in e) {
+      return { x: (e.touches[0].clientX - rect.left) * scaleX, y: (e.touches[0].clientY - rect.top) * scaleY };
+    }
+    return { x: (e.clientX - rect.left) * scaleX, y: (e.clientY - rect.top) * scaleY };
+  };
+  const startDraw = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
+    e.preventDefault();
+    const canvas = signatureCanvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d")!;
+    const pt = getCanvasPoint(e);
+    ctx.beginPath();
+    ctx.moveTo(pt.x, pt.y);
+    setIsDrawing(true);
+    setHasDrawn(true);
+  };
+  const draw = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
+    e.preventDefault();
+    if (!isDrawing) return;
+    const canvas = signatureCanvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d")!;
+    ctx.lineWidth = 2.5;
+    ctx.lineCap = "round";
+    ctx.strokeStyle = "#1e3a5f";
+    const pt = getCanvasPoint(e);
+    ctx.lineTo(pt.x, pt.y);
+    ctx.stroke();
+  };
+  const stopDraw = () => setIsDrawing(false);
+  const clearSignature = () => {
+    const canvas = signatureCanvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d")!;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    setHasDrawn(false);
+    setSignatureConfirmed(false);
+    setSignatureUrl("");
+  };
+  const confirmSignature = async () => {
+    const canvas = signatureCanvasRef.current;
+    if (!canvas || !hasDrawn) return;
+    const imageBase64 = canvas.toDataURL("image/png");
+    try {
+      const result = await uploadSignature.mutateAsync({ token, imageBase64 });
+      setSignatureUrl(result.signatureUrl);
+      setSignatureConfirmed(true);
+      toast.success("¡Firma registrada!");
+      setTimeout(() => setStep(getNextStep("signature")), 800);
+    } catch {
+      toast.error("Error al guardar la firma. Intenta de nuevo.");
+    }
   };
 
   const handleSendOtp = async () => {
@@ -300,6 +392,8 @@ function PaymentForm({ token }: { token: string }) {
         selfieVerified,
         selfieUrl,
         faceMatchScore,
+        signatureUrl,
+        idDocumentUrl,
         userAgent: navigator.userAgent,
       });
       setClientSecret(result.clientSecret);
@@ -404,7 +498,7 @@ function PaymentForm({ token }: { token: string }) {
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       <PageHeader businessName={businessName} lang={lang} onToggleLang={() => setLang(l => l === "es" ? "en" : "es")} />
-      <StepProgress step={step} requireOtp={requireOtp} requireSelfie={requireSelfie} />
+      <StepProgress step={step} requireOtp={requireOtp} requireSelfie={requireSelfie} requireSignature={requireSignature} requireIdUpload={requireIdUpload} />
 
       <div className="flex-1 flex items-start justify-center p-4 pt-6">
         <div className="w-full max-w-2xl">
@@ -595,7 +689,112 @@ function PaymentForm({ token }: { token: string }) {
                 </div>
               )}
 
-              {/* PASO 5: Pago con tarjeta */}
+              {/* PASO 5: Firma digital */}
+              {step === "signature" && (
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-800 mb-2">Firma digital</h3>
+                  <p className="text-gray-500 text-sm mb-4">Firma con tu dedo (celular) o mouse (computadora) en el recuadro de abajo.</p>
+                  {signatureConfirmed ? (
+                    <div className="text-center py-4">
+                      <CheckCircle2 className="w-16 h-16 text-green-500 mx-auto mb-3" />
+                      <p className="text-green-700 font-semibold">¡Firma registrada!</p>
+                    </div>
+                  ) : (
+                    <div>
+                      <div className="border-2 border-dashed border-gray-300 rounded-xl overflow-hidden mb-3 bg-gray-50 touch-none" style={{ height: 180 }}>
+                        <canvas
+                          ref={signatureCanvasRef}
+                          width={600}
+                          height={180}
+                          className="w-full h-full cursor-crosshair"
+                          onMouseDown={startDraw}
+                          onMouseMove={draw}
+                          onMouseUp={stopDraw}
+                          onMouseLeave={stopDraw}
+                          onTouchStart={startDraw}
+                          onTouchMove={draw}
+                          onTouchEnd={stopDraw}
+                        />
+                      </div>
+                      {!hasDrawn && (
+                        <p className="text-gray-400 text-xs text-center mb-3">Dibuja tu firma aquí</p>
+                      )}
+                      <div className="bg-red-50 border border-red-200 rounded-xl p-3 mb-4">
+                        <p className="text-red-700 text-xs font-semibold">⚠️ POLÍTICA: No se aceptan cancelaciones ni devoluciones. Una vez completada la compra, el pedido no puede ser modificado.</p>
+                      </div>
+                      <div className="flex gap-3">
+                        <Button variant="outline" onClick={clearSignature} className="flex-1">
+                          <Trash2 className="w-4 h-4 mr-1" /> Limpiar
+                        </Button>
+                        <Button
+                          className="flex-[2] bg-green-600 hover:bg-green-700 text-white py-3 rounded-xl font-semibold"
+                          disabled={!hasDrawn || uploadSignature.isPending}
+                          onClick={confirmSignature}
+                        >
+                          {uploadSignature.isPending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <CheckCircle2 className="w-4 h-4 mr-2" />}
+                          Confirmar firma
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* PASO 6: Carga de identificación */}
+              {step === "id_upload" && (
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-800 mb-2">Cargar identificación</h3>
+                  <p className="text-gray-500 text-sm mb-4">Sube una foto de tu INE, pasaporte o identificación oficial (JPG, PNG o PDF).</p>
+                  {idDocumentConfirmed ? (
+                    <div className="text-center py-4">
+                      <CheckCircle2 className="w-16 h-16 text-green-500 mx-auto mb-3" />
+                      <p className="text-green-700 font-semibold">¡Identificación cargada!</p>
+                      <p className="text-gray-400 text-sm">{idFileName}</p>
+                    </div>
+                  ) : (
+                    <div>
+                      <label className="block border-2 border-dashed border-gray-300 rounded-xl p-8 text-center cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-all mb-4">
+                        <Upload className="w-10 h-10 text-gray-400 mx-auto mb-3" />
+                        <p className="text-gray-600 font-medium mb-1">{idFileName || "Haz clic para cargar tu ID"}</p>
+                        <p className="text-gray-400 text-xs">(JPG, PNG, PDF — máx. 10 MB)</p>
+                        <input
+                          type="file"
+                          accept="image/jpeg,image/png,application/pdf"
+                          className="hidden"
+                          onChange={async (e) => {
+                            const file = e.target.files?.[0];
+                            if (!file) return;
+                            if (file.size > 10 * 1024 * 1024) { toast.error("El archivo no debe superar 10 MB"); return; }
+                            setIdFileName(file.name);
+                            const reader = new FileReader();
+                            reader.onload = async (ev) => {
+                              const fileBase64 = ev.target?.result as string;
+                              try {
+                                const result = await uploadIdDocument.mutateAsync({ token, fileBase64, mimeType: file.type, fileName: file.name });
+                                setIdDocumentUrl(result.idDocumentUrl);
+                                setIdDocumentConfirmed(true);
+                                toast.success("¡Identificación cargada!");
+                                setTimeout(() => setStep(getNextStep("id_upload")), 800);
+                              } catch {
+                                toast.error("Error al cargar el archivo. Intenta de nuevo.");
+                              }
+                            };
+                            reader.readAsDataURL(file);
+                          }}
+                        />
+                      </label>
+                      {uploadIdDocument.isPending && (
+                        <div className="flex items-center justify-center gap-2 text-blue-600">
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          <span className="text-sm">Subiendo identificación...</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* PASO 7: Pago con tarjeta */}
               {step === "payment" && (
                 <div>
                   <h3 className="text-lg font-semibold text-gray-800 mb-4">Método de pago</h3>
@@ -790,12 +989,14 @@ function InfoRow({ label, value }: { label: string; value: string }) {
   );
 }
 
-function StepProgress({ step, requireOtp, requireSelfie }: { step: Step; requireOtp: boolean; requireSelfie: boolean }) {
+function StepProgress({ step, requireOtp, requireSelfie, requireSignature, requireIdUpload }: { step: Step; requireOtp: boolean; requireSelfie: boolean; requireSignature: boolean; requireIdUpload: boolean }) {
   const steps = [
     { id: "info", label: "Pago" },
     { id: "customer", label: "Datos" },
     ...(requireOtp ? [{ id: "otp", label: "Verificar" }] : []),
     ...(requireSelfie ? [{ id: "selfie", label: "Selfie" }] : []),
+    ...(requireSignature ? [{ id: "signature", label: "Firma" }] : []),
+    ...(requireIdUpload ? [{ id: "id_upload", label: "ID" }] : []),
     { id: "payment", label: "Pagar" },
   ];
   const currentIndex = steps.findIndex((s) => s.id === step);

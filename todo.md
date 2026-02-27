@@ -265,3 +265,35 @@
 - [x] POS: botón de compartir por WhatsApp
 - [x] 28 nuevos tests para módulo de productos y carrito POS (61 tests totales)
 - [ ] Planificación Stripe Connect para que negocios conecten su banco
+
+## Fase 17 - Firma Digital + Carga de Identificación en Pago
+- [x] Schema DB: campos requireSignature, requireIdUpload en payment_links
+- [x] Schema DB: campos signatureUrl, idDocumentUrl en transactions
+- [x] Migración SQL aplicada
+- [x] Backend: procedimiento uploadSignature (base64 → S3)
+- [x] Backend: procedimiento uploadIdDocument (archivo → S3)
+- [x] Backend: validaciones en createIntent (requireSignature, requireIdUpload)
+- [x] Toggle en CreateLink: activar firma digital y/o carga de ID
+- [x] Paso de firma en PayPage: canvas con firma dedo/mouse, botón limpiar y confirmar
+- [x] Paso de carga de ID en PayPage: click para subir INE, pasaporte o PDF
+- [x] Política de no cancelaciones visible en el paso de firma
+- [x] StepProgress actualizado con pasos de firma e ID
+- [ ] Mostrar firma e ID en el detalle de transacción del panel del comercio
+- [ ] Checkpoint guardado
+
+## Fase 18 - Flujo de registro controlado por super-admin
+- [ ] Registro público crea cuenta en estado "pendiente"
+- [ ] Super-admin recibe notificación de nuevo registro
+- [ ] Panel de aprobación de cuentas en admin
+- [ ] Al aprobar: cuenta activa + email de bienvenida
+- [ ] Al rechazar: cuenta bloqueada + email de rechazo
+
+## Fase 19 - Manual instructivo KobraPay
+- [ ] Manual Markdown/PDF con capturas de pantalla
+- [ ] Sección: Qué es KobraPay y cómo funciona
+- [ ] Sección: Registro y activación de cuenta
+- [ ] Sección: Crear primer cobro
+- [ ] Sección: Opciones avanzadas (OTP, selfie, firma, ID)
+- [ ] Sección: POS y catálogo
+- [ ] Sección: Reportes y exportación
+- [ ] Sección: Para el super-admin (gestión de clientes)

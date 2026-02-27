@@ -50,6 +50,13 @@
       "when": 1772219439104,
       "tag": "0006_omniscient_hawkeye",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "5",
+      "when": 1772229165885,
+      "tag": "0007_parallel_zodiak",
+      "breakpoints": true
     }
   ]
 }

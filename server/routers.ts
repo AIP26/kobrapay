@@ -200,6 +200,8 @@ export const appRouter = router({
           expiresInDays: z.number().min(1).max(365).optional(),
           requireOtp: z.boolean().default(false),
           requireSelfie: z.boolean().default(false),
+          requireSignature: z.boolean().default(false),
+          requireIdUpload: z.boolean().default(false),
           chargebackProtectionText: z.string().max(500).optional().or(z.literal("")),
           usdExchangeRate: z.number().min(0).default(0),
         })
@@ -232,6 +234,8 @@ export const appRouter = router({
           expiresAt: expiresAt ?? undefined,
           requireOtp: input.requireOtp,
           requireSelfie: input.requireSelfie,
+          requireSignature: input.requireSignature,
+          requireIdUpload: input.requireIdUpload,
           chargebackProtectionText: chargebackText,
           usdExchangeRate: String(input.usdExchangeRate),
           commissionRate: String(commissionRate),
@@ -453,14 +457,48 @@ export const appRouter = router({
 
         // Simulación de reconocimiento facial (score aleatorio alto para demo)
         // En producción integrar con AWS Rekognition, Azure Face API, etc.
-        const faceMatchScore = (85 + Math.random() * 15).toFixed(2);
-
+         const faceMatchScore = (85 + Math.random() * 15).toFixed(2);
         return {
           success: true,
           selfieUrl: url,
           faceMatchScore: parseFloat(faceMatchScore),
           verified: parseFloat(faceMatchScore) >= 80,
         };
+      }),
+    uploadSignature: publicProcedure
+      .input(
+        z.object({
+          token: z.string(),
+          imageBase64: z.string(), // canvas PNG en base64
+        })
+      )
+      .mutation(async ({ input }) => {
+        const link = await getPaymentLinkByToken(input.token);
+        if (!link) throw new TRPCError({ code: "NOT_FOUND" });
+        const base64Data = input.imageBase64.replace(/^data:image\/\w+;base64,/, "");
+        const buffer = Buffer.from(base64Data, "base64");
+        const fileKey = `signatures/${link.token}-${Date.now()}.png`;
+        const { url } = await storagePut(fileKey, buffer, "image/png");
+        return { success: true, signatureUrl: url };
+      }),
+    uploadIdDocument: publicProcedure
+      .input(
+        z.object({
+          token: z.string(),
+          fileBase64: z.string(), // archivo en base64
+          mimeType: z.string().default("image/jpeg"),
+          fileName: z.string().default("id_document"),
+        })
+      )
+      .mutation(async ({ input }) => {
+        const link = await getPaymentLinkByToken(input.token);
+        if (!link) throw new TRPCError({ code: "NOT_FOUND" });
+        const base64Data = input.fileBase64.replace(/^data:[^;]+;base64,/, "");
+        const buffer = Buffer.from(base64Data, "base64");
+        const ext = input.mimeType.includes("pdf") ? "pdf" : input.mimeType.includes("png") ? "png" : "jpg";
+        const fileKey = `id_documents/${link.token}-${Date.now()}.${ext}`;
+        const { url } = await storagePut(fileKey, buffer, input.mimeType);
+        return { success: true, idDocumentUrl: url };
       }),
   }),
 
@@ -477,6 +515,8 @@ export const appRouter = router({
           selfieVerified: z.boolean().default(false),
           selfieUrl: z.string().optional().or(z.literal("")),
           faceMatchScore: z.number().optional(),
+          signatureUrl: z.string().optional().or(z.literal("")),
+          idDocumentUrl: z.string().optional().or(z.literal("")),
           ipAddress: z.string().optional(),
           userAgent: z.string().optional(),
         })
@@ -497,10 +537,15 @@ export const appRouter = router({
         if (link.requireOtp && !input.otpVerified) {
           throw new TRPCError({ code: "BAD_REQUEST", message: "Se requiere verificación OTP" });
         }
-        if (link.requireSelfie && !input.selfieVerified) {
+         if (link.requireSelfie && !input.selfieVerified) {
           throw new TRPCError({ code: "BAD_REQUEST", message: "Se requiere verificación de identidad con selfie" });
         }
-
+        if (link.requireSignature && !input.signatureUrl) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: "Se requiere firma digital" });
+        }
+        if (link.requireIdUpload && !input.idDocumentUrl) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: "Se requiere cargar identificación" });
+        }
         const amount = parseFloat(String(link.amount));
         const commissionRate = parseFloat(String(link.commissionRate || 0));
         const { commissionAmount, netAmount } = calculateCommission(amount, commissionRate);
@@ -546,6 +591,8 @@ export const appRouter = router({
           selfieVerified: input.selfieVerified,
           selfieUrl: input.selfieUrl || null,
           faceMatchScore: input.faceMatchScore !== undefined ? String(input.faceMatchScore) : null,
+          signatureUrl: input.signatureUrl || null,
+          idDocumentUrl: input.idDocumentUrl || null,
           ipAddress,
           userAgent,
           metadata: JSON.stringify({ description: link.description }),

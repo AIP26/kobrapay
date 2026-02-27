@@ -26,6 +26,8 @@ import {
   DollarSign,
   Clock,
   Info,
+  PenLine,
+  CreditCard,
 } from "lucide-react";
 
 function formatCurrency(amount: number, currency = "MXN") {
@@ -42,6 +44,8 @@ export default function CreateLink() {
     expiresInDays: "0",
     requireOtp: false,
     requireSelfie: false,
+    requireSignature: false,
+    requireIdUpload: false,
     usdExchangeRate: "",
     chargebackProtectionText: "",
   });
@@ -102,6 +106,8 @@ export default function CreateLink() {
       expiresInDays: (form.expiresInDays && form.expiresInDays !== "0") ? parseInt(form.expiresInDays) : undefined,
       requireOtp: form.requireOtp,
       requireSelfie: form.requireSelfie,
+      requireSignature: form.requireSignature,
+      requireIdUpload: form.requireIdUpload,
       usdExchangeRate: exchangeRate,
       chargebackProtectionText: form.chargebackProtectionText.trim() || undefined,
     });
@@ -156,7 +162,7 @@ export default function CreateLink() {
   const handleReset = () => {
     setCreatedLink(null);
     setCopied(false);
-    setForm({ clientName: "", clientEmail: "", amount: "", description: "", currency: "MXN", expiresInDays: "0", requireOtp: false, requireSelfie: false, usdExchangeRate: "", chargebackProtectionText: "" });
+    setForm({ clientName: "", clientEmail: "", amount: "", description: "", currency: "MXN", expiresInDays: "0", requireOtp: false, requireSelfie: false, requireSignature: false, requireIdUpload: false, usdExchangeRate: "", chargebackProtectionText: "" });
   };
 
   const commissionRate = parseFloat(String(settings?.commissionRate || 0));
@@ -467,6 +473,38 @@ export default function CreateLink() {
                       />
                     </div>
 
+                    {/* Firma digital */}
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-start gap-3">
+                        <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                          <PenLine className="w-4 h-4 text-green-600" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-gray-800">Firma digital</p>
+                          <p className="text-xs text-gray-500">El cliente debe firmar con dedo o mouse antes de pagar</p>
+                        </div>
+                      </div>
+                      <Switch
+                        checked={form.requireSignature}
+                        onCheckedChange={(v) => setForm({ ...form, requireSignature: v })}
+                      />
+                    </div>
+                    {/* Carga de identificación */}
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-start gap-3">
+                        <div className="w-8 h-8 bg-orange-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                          <CreditCard className="w-4 h-4 text-orange-600" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-gray-800">Cargar identificación</p>
+                          <p className="text-xs text-gray-500">El cliente debe subir foto de su INE, pasaporte o ID</p>
+                        </div>
+                      </div>
+                      <Switch
+                        checked={form.requireIdUpload}
+                        onCheckedChange={(v) => setForm({ ...form, requireIdUpload: v })}
+                      />
+                    </div>
                     {/* Tipo de cambio USD */}
                     <div className="space-y-1.5">
                       <Label className="text-gray-700 font-medium flex items-center gap-1.5">
