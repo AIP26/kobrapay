@@ -8,10 +8,13 @@ import {
   InsertTransaction,
   InsertUser,
   InsertVendorSettings,
+  InsertProduct,
+  Product,
   customers,
   otpVerifications,
   paymentLinks,
   platformClients,
+  products,
   transactions,
   users,
   vendorSettings,
@@ -474,4 +477,50 @@ export async function verifyOtp(paymentLinkToken: string, code: string) {
 
   await db.update(otpVerifications).set({ verified: true }).where(eq(otpVerifications.id, otp.id));
   return { success: true };
+}
+
+// ─── PRODUCTOS / CATÁLOGO ────────────────────────────────────────────────────
+
+export async function getProductsByUser(userId: number, includeInactive = false) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const conditions = [eq(products.userId, userId)];
+  if (!includeInactive) conditions.push(eq(products.isActive, true));
+  return db.select().from(products).where(and(...conditions)).orderBy(desc(products.createdAt));
+}
+
+export async function getProductById(id: number, userId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.select().from(products).where(and(eq(products.id, id), eq(products.userId, userId))).limit(1);
+  return result[0] ?? null;
+}
+
+export async function createProduct(data: InsertProduct) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.insert(products).values(data);
+  const result = await db.select().from(products).where(and(eq(products.userId, data.userId), eq(products.name, data.name))).orderBy(desc(products.createdAt)).limit(1);
+  return result[0];
+}
+
+export async function updateProduct(id: number, userId: number, data: Partial<InsertProduct>) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(products).set(data).where(and(eq(products.id, id), eq(products.userId, userId)));
+  return getProductById(id, userId);
+}
+
+export async function deleteProduct(id: number, userId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(products).set({ isActive: false }).where(and(eq(products.id, id), eq(products.userId, userId)));
+  return { success: true };
+}
+
+export async function adjustProductStock(id: number, userId: number, delta: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(products).set({ stock: sql`stock + ${delta}` }).where(and(eq(products.id, id), eq(products.userId, userId)));
+  return getProductById(id, userId);
 }

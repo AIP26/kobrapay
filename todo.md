@@ -245,3 +245,23 @@
 - [x] Módulo de colaboradores/empleados por negocio con permisos limitados
 - [ ] Modal de detalle de transacción con recibo PDF descargable (próxima sesión)
 - [ ] Reporte de comisiones para superadmin (próxima sesión)
+
+## Fase 15 - Catálogo, POS, Facturación y Pago de Servicios
+- [x] Schema DB: tabla products (nombre, precio, foto opcional, categoría, stock opcional, activo)
+- [x] Backend CRUD de productos (crear, editar, eliminar, listar por negocio)
+- [x] Página Catálogo/Inventario con toggle de stock, subida de foto opcional
+- [x] Página POS con carrito: seleccionar productos, ajustar cantidades, generar cobro
+- [x] Integrar catálogo al crear cobro (elegir producto en lugar de escribir manualmente)
+- [ ] Módulo de Facturación: datos fiscales del negocio, generar factura PDF
+- [ ] Módulo de Pago de Servicios: CFE, Telmex, agua, etc.
+
+## Fase 16 - QR automático, Apple Pay/Google Pay, Stripe Connect
+- [x] QR automático en modal de detalle de enlace de pago
+- [x] Botón de descarga del QR como PNG
+- [x] Apple Pay / Google Pay en página de pago (Stripe Payment Request Button)
+- [x] Sidebar actualizado con Catálogo y POS
+- [x] POS: cobro manual (sin catálogo) con QR y WhatsApp
+- [x] POS: QR del enlace generado en modal
+- [x] POS: botón de compartir por WhatsApp
+- [x] 28 nuevos tests para módulo de productos y carrito POS (61 tests totales)
+- [ ] Planificación Stripe Connect para que negocios conecten su banco

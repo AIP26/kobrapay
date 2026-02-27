@@ -22,6 +22,8 @@ import Reader from "./pages/Reader";
 import SecurityAudit from "./pages/SecurityAudit";
 import Payers from "./pages/Payers";
 import Staff from "./pages/Staff";
+import Catalog from "./pages/Catalog";
+import POS from "./pages/POS";
 
 function Router() {
   return (
@@ -44,6 +46,8 @@ function Router() {
       <Route path="/dashboard/security" component={SecurityAudit} />
       <Route path="/dashboard/payers" component={Payers} />
       <Route path="/dashboard/staff" component={Staff} />
+      <Route path="/dashboard/catalog" component={Catalog} />
+      <Route path="/dashboard/pos" component={POS} />
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
     </Switch>

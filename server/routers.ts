@@ -27,6 +27,12 @@ import {
   upsertCustomer,
   upsertVendorSettings,
   verifyOtp,
+  getProductsByUser,
+  getProductById,
+  createProduct,
+  updateProduct,
+  deleteProduct,
+  adjustProductStock,
 } from "./db";
 import { COOKIE_NAME } from "@shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
@@ -740,20 +746,87 @@ export const appRouter = router({
       }),
   }),
 
-  // ─── Base de datos de clientes (pagadores) ──────────────────────────────────────
+    // ─── Base de datos de clientes (pagadores) ──────────────────────────────────────
   customers: router({
     list: protectedProcedure
       .input(z.object({ search: z.string().optional() }))
       .query(async ({ ctx, input }) => {
         return getCustomersByUser(ctx.user.id, input.search);
       }),
-
     getTransactions: protectedProcedure
       .input(z.object({ email: z.string().email() }))
       .query(async ({ ctx, input }) => {
         return getCustomerTransactions(ctx.user.id, input.email);
       }),
   }),
+  // ─── Catálogo / Inventario ────────────────────────────────────────────────────
+  products: router({
+    list: protectedProcedure
+      .input(z.object({ includeInactive: z.boolean().optional() }))
+      .query(async ({ ctx, input }) => {
+        return getProductsByUser(ctx.user.id, input.includeInactive ?? false);
+      }),
+    get: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .query(async ({ ctx, input }) => {
+        const product = await getProductById(input.id, ctx.user.id);
+        if (!product) throw new TRPCError({ code: "NOT_FOUND", message: "Producto no encontrado" });
+        return product;
+      }),
+    create: protectedProcedure
+      .input(z.object({
+        name: z.string().min(1).max(255),
+        description: z.string().optional(),
+        price: z.number().positive(),
+        category: z.string().optional(),
+        imageUrl: z.string().url().optional(),
+        trackStock: z.boolean().default(false),
+        stock: z.number().int().min(0).default(0),
+        lowStockAlert: z.number().int().min(0).default(5),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        return createProduct({
+          userId: ctx.user.id,
+          name: input.name,
+          description: input.description ?? null,
+          price: String(input.price),
+          category: input.category ?? null,
+          imageUrl: input.imageUrl ?? null,
+          trackStock: input.trackStock,
+          stock: input.stock,
+          lowStockAlert: input.lowStockAlert,
+          isActive: true,
+        });
+      }),
+    update: protectedProcedure
+      .input(z.object({
+        id: z.number(),
+        name: z.string().min(1).max(255).optional(),
+        description: z.string().optional().nullable(),
+        price: z.number().positive().optional(),
+        category: z.string().optional().nullable(),
+        imageUrl: z.string().url().optional().nullable(),
+        trackStock: z.boolean().optional(),
+        stock: z.number().int().min(0).optional(),
+        lowStockAlert: z.number().int().min(0).optional(),
+        isActive: z.boolean().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const { id, price, ...rest } = input;
+        const data: Record<string, unknown> = { ...rest };
+        if (price !== undefined) data.price = String(price);
+        return updateProduct(id, ctx.user.id, data);
+      }),
+    delete: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        return deleteProduct(input.id, ctx.user.id);
+      }),
+    adjustStock: protectedProcedure
+      .input(z.object({ id: z.number(), delta: z.number().int() }))
+      .mutation(async ({ ctx, input }) => {
+        return adjustProductStock(input.id, ctx.user.id, input.delta);
+      }),
+  }),
 });
-
 export type AppRouter = typeof appRouter;

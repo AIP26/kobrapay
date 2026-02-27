@@ -233,3 +233,27 @@ export const customers = mysqlTable("customers", {
 
 export type Customer = typeof customers.$inferSelect;
 export type InsertCustomer = typeof customers.$inferInsert;
+
+/**
+ * Catálogo de productos del negocio (para POS e inventario)
+ */
+export const products = mysqlTable("products", {
+  id: int("id").autoincrement().primaryKey(),
+  // El vendedor (usuario de la plataforma) al que pertenece este producto
+  userId: int("userId").notNull(),
+  name: varchar("name", { length: 255 }).notNull(),
+  description: text("description"),
+  price: decimal("price", { precision: 12, scale: 2 }).notNull(),
+  category: varchar("category", { length: 128 }),
+  imageUrl: text("imageUrl"),
+  // Control de stock (opcional — si trackStock=false, stock se ignora)
+  trackStock: boolean("trackStock").default(false).notNull(),
+  stock: int("stock").default(0).notNull(),
+  lowStockAlert: int("lowStockAlert").default(5).notNull(),
+  // Estado del producto
+  isActive: boolean("isActive").default(true).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type Product = typeof products.$inferSelect;
+export type InsertProduct = typeof products.$inferInsert;

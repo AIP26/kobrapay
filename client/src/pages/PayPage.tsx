@@ -11,7 +11,9 @@ import {
   CardCvcElement,
   useStripe,
   useElements,
+  PaymentRequestButtonElement,
 } from "@stripe/react-stripe-js";
+import type { PaymentRequest } from "@stripe/stripe-js";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -79,6 +81,8 @@ function PaymentForm({ token }: { token: string }) {
   const [cameraActive, setCameraActive] = useState(false);
   const [lang, setLang] = useState<"es" | "en">("es");
   const [paymentError, setPaymentError] = useState<{ title: string; description: string; action: string } | null>(null);
+  const [paymentRequest, setPaymentRequest] = useState<PaymentRequest | null>(null);
+  const [walletAvailable, setWalletAvailable] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -98,6 +102,66 @@ function PaymentForm({ token }: { token: string }) {
       if (streamRef.current) streamRef.current.getTracks().forEach((t) => t.stop());
     };
   }, []);
+
+  // ─── Apple Pay / Google Pay ───────────────────────────────────────────────
+  useEffect(() => {
+    if (!stripe || !linkData) return;
+    const amountCents = Math.round(parseFloat(String(linkData.amount)) * 100);
+    const pr = stripe.paymentRequest({
+      country: "MX",
+      currency: "mxn",
+      total: { label: linkData.description || "Pago KobraPay", amount: amountCents },
+      requestPayerName: false,
+      requestPayerEmail: false,
+    });
+    pr.canMakePayment().then((result) => {
+      if (result) { setPaymentRequest(pr); setWalletAvailable(true); }
+    });
+    pr.on("paymentmethod", async (ev) => {
+      try {
+        let secret = clientSecret;
+        let intentId = paymentIntentId;
+        if (!secret) {
+          const res = await createIntent.mutateAsync({
+            token,
+            payerName: `${customer.firstName} ${customer.lastName}`.trim() || "Cliente",
+            payerEmail: customer.email || "",
+            payerPhone: customer.phone || "",
+            otpVerified,
+            selfieVerified,
+            selfieUrl,
+            faceMatchScore,
+            userAgent: navigator.userAgent,
+          });
+          secret = res.clientSecret;
+          intentId = res.paymentIntentId;
+          setClientSecret(secret);
+          setPaymentIntentId(intentId);
+        }
+        const { error: confirmError, paymentIntent } = await stripe.confirmCardPayment(
+          secret,
+          { payment_method: ev.paymentMethod.id },
+          { handleActions: false }
+        );
+        if (confirmError) { ev.complete("fail"); toast.error(confirmError.message || "Pago rechazado"); return; }
+        ev.complete("success");
+        if (paymentIntent?.status === "requires_action") {
+          const { error } = await stripe.confirmCardPayment(secret);
+          if (error) { toast.error(error.message || "Error al autenticar"); return; }
+        }
+        const confirmed = await confirmPayment.mutateAsync({ paymentIntentId: intentId, token });
+        const bName = (linkData as Record<string, unknown>).vendorSettings
+          ? (((linkData as Record<string, unknown>).vendorSettings as Record<string, string>)?.businessName ?? "")
+          : "";
+        setSuccessData({ amount: confirmed.amount ?? "", currency: confirmed.currency ?? "MXN", description: confirmed.description ?? "", email: customer.email, businessName: bName });
+        setStep("success");
+      } catch (e: unknown) {
+        ev.complete("fail");
+        toast.error((e as { message?: string })?.message || "Error al procesar el pago");
+      }
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stripe, linkData]);
 
   if (isLoading) {
     return (
@@ -540,6 +604,29 @@ function PaymentForm({ token }: { token: string }) {
                     <p className="text-3xl font-bold text-gray-900">{formatMXN(amount)} <span className="text-lg text-gray-400">{currency}</span></p>
                     {usdEquivalent && <p className="text-gray-400 text-xs mt-1">≈ USD ${usdEquivalent}</p>}
                   </div>
+
+                  {/* Apple Pay / Google Pay */}
+                  {walletAvailable && paymentRequest && (
+                    <div className="mb-4">
+                      <PaymentRequestButtonElement
+                        options={{
+                          paymentRequest,
+                          style: {
+                            paymentRequestButton: {
+                              type: "buy",
+                              theme: "dark",
+                              height: "48px",
+                            },
+                          },
+                        }}
+                      />
+                      <div className="flex items-center gap-3 my-4">
+                        <div className="flex-1 h-px bg-gray-200" />
+                        <span className="text-gray-400 text-xs font-medium">O paga con tarjeta</span>
+                        <div className="flex-1 h-px bg-gray-200" />
+                      </div>
+                    </div>
+                  )}
 
                   {!clientSecret ? (
                     <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl mb-4 font-semibold"
