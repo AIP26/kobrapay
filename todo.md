@@ -228,3 +228,12 @@
 - [ ] Estatus visual: rechazado en rojo, exitoso en verde, con ícono de bolsa de compras
 - [ ] Número de operación visible debajo del nombre del cliente
 - [ ] Backend: procedimiento de búsqueda de transacciones por nombre/operación
+
+## Fase 13 - OTP, Moneda, Superadmin y Comisiones
+- [ ] Arreglar OTP por email real con Resend (configurar RESEND_API_KEY)
+- [ ] Eliminar opción USD en enlaces de pago — solo MXN
+- [ ] Panel superadmin: crear cuentas de clientes con usuario/contraseña
+- [ ] Panel superadmin: asignar límites y permisos por cliente
+- [ ] Reporte privado de comisiones para superadmin (no visible al cliente)
+- [ ] CSV de exportación con tabla separada: ingresos del cliente vs comisiones de KobraPay
+- [ ] Investigar e implementar Stripe Connect para separación automática de fondos
