@@ -53,6 +53,8 @@ import {
   getClientRecords,
   getClientRecordById,
   getTransactionsByPayerEmail,
+  getUserProfile,
+  upsertUserProfile,
 } from "./db";
 import { COOKIE_NAME } from "@shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
@@ -1488,5 +1490,44 @@ export const appRouter = router({
       };
     }),
   }),
+
+  // ─── Perfil extendido del usuario (registro) ──────────────────────────────
+  profile: router({
+    get: protectedProcedure.query(async ({ ctx }) => {
+      return getUserProfile(ctx.user.id);
+    }),
+
+    save: protectedProcedure
+      .input(
+        z.object({
+          fullName: z.string().min(2).max(255),
+          birthDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Formato YYYY-MM-DD"),
+          curp: z.string().length(18).regex(/^[A-Z]{4}\d{6}[HM][A-Z]{5}[A-Z0-9]\d$/, "CURP inválida"),
+          rfc: z.string().min(12).max(13).optional().or(z.literal("")),
+          phone: z.string().min(10).max(32),
+          businessName: z.string().min(2).max(255),
+          businessType: z.string().max(128).optional().or(z.literal("")),
+        })
+      )
+      .mutation(async ({ ctx, input }) => {
+        await upsertUserProfile(ctx.user.id, {
+          fullName: input.fullName,
+          birthDate: input.birthDate,
+          curp: input.curp.toUpperCase(),
+          rfc: input.rfc ? input.rfc.toUpperCase() : null,
+          phone: input.phone,
+          businessName: input.businessName,
+          businessType: input.businessType || null,
+          profileCompleted: true,
+        });
+        // Notificar al super-admin de nuevo registro
+        await notifyOwner({
+          title: "Nuevo registro en KobraPay",
+          content: `${input.fullName} (${ctx.user.email}) completó su perfil. Negocio: ${input.businessName}. Revisa y aprueba la cuenta en el panel de Registros.`,
+        });
+        return { success: true };
+      }),
+  }),
 });
 export type AppRouter = typeof appRouter;
+

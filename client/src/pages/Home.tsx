@@ -175,6 +175,7 @@ const KOBRAPAY_ICON = "https://files.manuscdn.com/user_upload_by_module/session_
 export default function Home() {
   const { isAuthenticated, loading } = useAuth();
   const [activeFeature, setActiveFeature] = useState<typeof FEATURES[0] | null>(null);
+  const [activeTab, setActiveTab] = useState<"acceso" | "registrar">("acceso");
 
   return (
     <div className="min-h-screen bg-[#0f1420]">
@@ -254,41 +255,95 @@ export default function Home() {
               <img src={KOBRAPAY_LOGO} alt="KobraPay" className="h-8 object-contain mx-auto opacity-80" />
             </div>
             <div className="bg-[#141c2e] border border-white/10 rounded-2xl overflow-hidden shadow-2xl">
-              {/* Tabs */}
+              {/* Tabs funcionales */}
               <div className="grid grid-cols-2 border-b border-white/10">
-                <div className="py-4 text-center bg-[#141c2e] border-r border-white/10">
-                  <span className="text-sm font-semibold text-gray-300">Acceso</span>
-                </div>
-                <div className="py-4 text-center bg-emerald-500">
-                  <span className="text-sm font-semibold text-white">Registrar</span>
-                </div>
-              </div>
-              {/* Body */}
-              <div className="p-8">
-                <p className="text-gray-400 text-sm text-center mb-6">
-                  Inicia sesión o crea tu cuenta con Manus para acceder a tu panel de cobros.
-                </p>
-                <a
-                  href={getLoginUrl("/dashboard")}
-                  className="w-full flex items-center justify-center gap-3 bg-emerald-500 hover:bg-emerald-400 text-white font-semibold py-3.5 px-6 rounded-xl transition-colors mb-4 text-sm"
+                <button
+                  onClick={() => setActiveTab("acceso")}
+                  className={`py-4 text-center border-r border-white/10 transition-all text-sm font-semibold ${
+                    activeTab === "acceso"
+                      ? "bg-emerald-500 text-white"
+                      : "bg-[#141c2e] text-gray-400 hover:text-white hover:bg-white/5"
+                  }`}
                 >
-                  <Shield className="w-4 h-4" />
-                  Iniciar sesión / Registrarse
-                </a>
-                <div className="flex items-center gap-3 my-5">
-                  <div className="flex-1 h-px bg-white/10" />
-                  <span className="text-xs text-gray-500">Acceso seguro con Manus OAuth</span>
-                  <div className="flex-1 h-px bg-white/10" />
-                </div>
-                <div className="space-y-3">
-                  {["Cuenta gratuita, sin costos fijos", "Cobra en menos de 2 minutos", "Pagos procesados por Stripe"].map((benefit) => (
-                    <div key={benefit} className="flex items-center gap-2 text-sm text-gray-400">
-                      <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
-                      {benefit}
-                    </div>
-                  ))}
-                </div>
+                  Acceso
+                </button>
+                <button
+                  onClick={() => setActiveTab("registrar")}
+                  className={`py-4 text-center transition-all text-sm font-semibold ${
+                    activeTab === "registrar"
+                      ? "bg-emerald-500 text-white"
+                      : "bg-[#141c2e] text-gray-400 hover:text-white hover:bg-white/5"
+                  }`}
+                >
+                  Registrar
+                </button>
               </div>
+
+              {/* Tab: Acceso */}
+              {activeTab === "acceso" && (
+                <div className="p-8">
+                  <p className="text-gray-400 text-sm text-center mb-6">
+                    Ingresa a tu panel de cobros con tu cuenta existente.
+                  </p>
+                  <a
+                    href={getLoginUrl("/dashboard")}
+                    className="w-full flex items-center justify-center gap-3 bg-emerald-500 hover:bg-emerald-400 text-white font-semibold py-3.5 px-6 rounded-xl transition-colors mb-4 text-sm"
+                  >
+                    <Shield className="w-4 h-4" />
+                    Iniciar sesión
+                  </a>
+                  <div className="flex items-center gap-3 my-5">
+                    <div className="flex-1 h-px bg-white/10" />
+                    <span className="text-xs text-gray-500">Acceso seguro con OAuth</span>
+                    <div className="flex-1 h-px bg-white/10" />
+                  </div>
+                  <div className="space-y-3">
+                    {["Acceso inmediato a tu panel", "Historial de cobros completo", "Seguridad con cifrado SSL"].map((benefit) => (
+                      <div key={benefit} className="flex items-center gap-2 text-sm text-gray-400">
+                        <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+                        {benefit}
+                      </div>
+                    ))}
+                  </div>
+                  <p className="text-center text-xs text-gray-500 mt-6">
+                    ¿No tienes cuenta?{" "}
+                    <button onClick={() => setActiveTab("registrar")} className="text-emerald-400 hover:underline">Regístrate aquí</button>
+                  </p>
+                </div>
+              )}
+
+              {/* Tab: Registrar */}
+              {activeTab === "registrar" && (
+                <div className="p-8">
+                  <p className="text-gray-400 text-sm text-center mb-6">
+                    Crea tu cuenta y empieza a cobrar en minutos.
+                  </p>
+                  <a
+                    href={getLoginUrl("/complete-profile")}
+                    className="w-full flex items-center justify-center gap-3 bg-emerald-500 hover:bg-emerald-400 text-white font-semibold py-3.5 px-6 rounded-xl transition-colors mb-4 text-sm"
+                  >
+                    <ArrowRight className="w-4 h-4" />
+                    Crear cuenta gratis
+                  </a>
+                  <div className="flex items-center gap-3 my-5">
+                    <div className="flex-1 h-px bg-white/10" />
+                    <span className="text-xs text-gray-500">Sin costos fijos</span>
+                    <div className="flex-1 h-px bg-white/10" />
+                  </div>
+                  <div className="space-y-3">
+                    {["Nombre completo y CURP", "Datos de tu negocio", "Aprobación en menos de 24h"].map((step) => (
+                      <div key={step} className="flex items-center gap-2 text-sm text-gray-400">
+                        <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+                        {step}
+                      </div>
+                    ))}
+                  </div>
+                  <p className="text-center text-xs text-gray-500 mt-6">
+                    ¿Ya tienes cuenta?{" "}
+                    <button onClick={() => setActiveTab("acceso")} className="text-emerald-400 hover:underline">Inicia sesión</button>
+                  </p>
+                </div>
+              )}
             </div>
             <p className="text-center text-xs text-gray-500 mt-6">
               ¿Tienes dudas?{" "}

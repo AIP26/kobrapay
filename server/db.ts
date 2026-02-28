@@ -30,6 +30,9 @@ import {
   agentReferrals,
   clientRecords,
   ClientRecord,
+  userProfiles,
+  UserProfile,
+  InsertUserProfile,
 } from "../drizzle/schema";
 import { ENV } from "./_core/env";
 
@@ -836,4 +839,24 @@ export async function getTransactionsByPayerEmail(userId: number, payerEmail: st
       )
     )
     .orderBy(desc(transactions.createdAt));
+}
+
+// ─── User Profiles (perfil extendido de registro) ─────────────────────────────
+
+export async function getUserProfile(userId: number): Promise<UserProfile | undefined> {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(userProfiles).where(eq(userProfiles.userId, userId)).limit(1);
+  return result[0];
+}
+
+export async function upsertUserProfile(userId: number, data: Partial<InsertUserProfile>): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  const existing = await getUserProfile(userId);
+  if (existing) {
+    await db.update(userProfiles).set({ ...data, updatedAt: new Date() }).where(eq(userProfiles.userId, userId));
+  } else {
+    await db.insert(userProfiles).values({ userId, ...data });
+  }
 }

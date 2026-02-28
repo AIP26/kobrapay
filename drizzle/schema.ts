@@ -408,3 +408,24 @@ export const contractDocuments = mysqlTable("contract_documents", {
 });
 export type ContractDocument = typeof contractDocuments.$inferSelect;
 export type InsertContractDocument = typeof contractDocuments.$inferInsert;
+
+// Perfil extendido del usuario (completado al registrarse en KobraPay)
+export const userProfiles = mysqlTable("user_profiles", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull().unique(),
+  // Datos personales
+  fullName: varchar("fullName", { length: 255 }),
+  birthDate: varchar("birthDate", { length: 16 }),   // YYYY-MM-DD
+  curp: varchar("curp", { length: 18 }),
+  rfc: varchar("rfc", { length: 13 }),
+  phone: varchar("phone", { length: 32 }),
+  // Datos del negocio
+  businessName: varchar("businessName", { length: 255 }),
+  businessType: varchar("businessType", { length: 128 }),
+  // Estado del perfil
+  profileCompleted: boolean("profileCompleted").default(false).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type UserProfile = typeof userProfiles.$inferSelect;
+export type InsertUserProfile = typeof userProfiles.$inferInsert;

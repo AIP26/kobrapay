@@ -360,3 +360,12 @@
 - [x] Comprobante: botón "Ver" abre en nueva pestaña + botón "Descargar" en detalle de transacción
 - [x] TypeScript: 0 errores
 - [x] Tests: 61/61 pasando
+
+## Fase 23 - Flujo de Acceso y Registro en Home
+- [ ] Tab "Acceso" en Home: botón funcional que inicia sesión con OAuth
+- [ ] Tab "Registrar" en Home: formulario con nombre completo, fecha de nacimiento, CURP, contraseña
+- [ ] Tabla user_profiles en DB: nombre_completo, fecha_nacimiento, curp, rfc (opcional), telefono, negocio
+- [ ] Backend: guardar perfil extendido al registrarse
+- [ ] Validación de CURP (formato correcto 18 caracteres)
+- [ ] Flujo de aprobación: nuevo registro queda en estado "pendiente" hasta que super-admin apruebe
+- [ ] Email de bienvenida al aprobar cuenta
