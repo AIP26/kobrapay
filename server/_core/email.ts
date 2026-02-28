@@ -382,3 +382,87 @@ export async function sendWelcomeEmail(data: {
     return false;
   }
 }
+
+// ─── Factura por Email ────────────────────────────────────────────────────────
+
+export async function sendInvoiceEmail(data: {
+  to: string;
+  receptorNombre: string;
+  emisorNombre: string;
+  folio: string;
+  fecha: Date;
+  conceptos: Array<{ descripcion: string; cantidad: number; valorUnitario: number; importe: number }>;
+  subtotal: number;
+  iva: number;
+  total: number;
+  currency: string;
+}): Promise<boolean> {
+  const resend = getResend();
+  if (!resend) {
+    console.warn("[Email] Resend no configurado, no se puede enviar factura");
+    return false;
+  }
+  const fmt = (n: number) =>
+    new Intl.NumberFormat("es-MX", { style: "currency", currency: data.currency || "MXN" }).format(n);
+  const rows = data.conceptos
+    .map(
+      (c) =>
+        `<tr><td style="padding:8px 12px;font-size:13px;border-bottom:1px solid #f3f4f6;">${c.descripcion}</td>` +
+        `<td style="padding:8px 12px;font-size:13px;text-align:center;border-bottom:1px solid #f3f4f6;">${c.cantidad}</td>` +
+        `<td style="padding:8px 12px;font-size:13px;text-align:right;border-bottom:1px solid #f3f4f6;">${fmt(c.valorUnitario)}</td>` +
+        `<td style="padding:8px 12px;font-size:13px;text-align:right;font-weight:600;border-bottom:1px solid #f3f4f6;">${fmt(c.importe)}</td></tr>`
+    )
+    .join("");
+  const dateStr = new Date(data.fecha).toLocaleDateString("es-MX", {
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+  });
+  const html = `<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>Factura ${data.folio}</title></head>
+<body style="margin:0;padding:0;background:#f5f5f5;font-family:Arial,sans-serif;">
+<div style="max-width:600px;margin:40px auto;background:white;border-radius:16px;overflow:hidden;">
+  <div style="background:linear-gradient(135deg,#00c896,#00a8e0);padding:32px;text-align:center;">
+    <div style="font-size:24px;font-weight:900;color:white;">KobraPay</div>
+    <div style="color:rgba(255,255,255,0.85);margin-top:4px;">Factura Electrónica</div>
+    <div style="background:rgba(255,255,255,0.2);border-radius:20px;padding:6px 20px;display:inline-block;margin-top:12px;font-size:15px;font-weight:700;color:white;">${data.folio}</div>
+  </div>
+  <div style="padding:32px;">
+    <p>Estimado/a <strong>${data.receptorNombre}</strong>,</p>
+    <p style="color:#6b7280;">Factura emitida por <strong>${data.emisorNombre}</strong> con fecha ${dateStr}.</p>
+    <table width="100%" style="border:1px solid #e5e7eb;border-radius:10px;overflow:hidden;margin-bottom:24px;">
+      <thead><tr style="background:#f9fafb;">
+        <th style="padding:10px;text-align:left;font-size:12px;color:#6b7280;">Descripción</th>
+        <th style="padding:10px;text-align:center;font-size:12px;color:#6b7280;">Cant.</th>
+        <th style="padding:10px;text-align:right;font-size:12px;color:#6b7280;">P. Unit.</th>
+        <th style="padding:10px;text-align:right;font-size:12px;color:#6b7280;">Importe</th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+    <div style="text-align:right;">
+      <div style="font-size:13px;color:#6b7280;margin-bottom:4px;">Subtotal: <strong style="color:#1f2937;">${fmt(data.subtotal)}</strong></div>
+      <div style="font-size:13px;color:#6b7280;margin-bottom:4px;">IVA 16%: <strong style="color:#1f2937;">${fmt(data.iva)}</strong></div>
+      <div style="font-size:18px;font-weight:800;color:#00c896;border-top:2px solid #e5e7eb;margin-top:8px;padding-top:8px;">Total: ${fmt(data.total)}</div>
+    </div>
+  </div>
+  <div style="background:#f9fafb;padding:20px;text-align:center;border-top:1px solid #f3f4f6;">
+    <p style="margin:0;color:#9ca3af;font-size:12px;">Generado por <strong style="color:#00c853;">KobraPay</strong> · kobrapay.mx</p>
+  </div>
+</div>
+</body></html>`;
+  try {
+    const { error } = await resend.emails.send({
+      from: `KobraPay <${ENV.fromEmail}>`,
+      to: data.to,
+      subject: `Factura ${data.folio} de ${data.emisorNombre}`,
+      html,
+    });
+    if (error) {
+      console.error("[Email] Error al enviar factura:", error);
+      return false;
+    }
+    return true;
+  } catch (err) {
+    console.error("[Email] Excepción al enviar factura:", err);
+    return false;
+  }
+}

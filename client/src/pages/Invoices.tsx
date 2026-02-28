@@ -51,6 +51,18 @@ export default function Invoices() {
     onSuccess: () => { toast.success("Factura creada exitosamente"); refetch(); setShowForm(false); resetForm(); },
     onError: (e) => toast.error(e.message),
   });
+  const issueMutation = trpc.invoices.issue.useMutation({
+    onSuccess: () => { toast.success("Factura emitida correctamente"); refetch(); },
+    onError: (e) => toast.error(e.message),
+  });
+  const cancelMutation = trpc.invoices.cancel.useMutation({
+    onSuccess: () => { toast.success("Factura cancelada"); refetch(); },
+    onError: (e) => toast.error(e.message),
+  });
+  const sendEmailMutation = trpc.invoices.sendEmail.useMutation({
+    onSuccess: () => toast.success("Factura enviada por email al receptor"),
+    onError: (e) => toast.error(e.message),
+  });
 
   const [showForm, setShowForm] = useState(false);
   const [search, setSearch] = useState("");
@@ -204,22 +216,48 @@ export default function Invoices() {
                           <td className="px-4 py-4 text-sm font-bold text-gray-900 text-right">{formatMXN(inv.total / 100)}</td>
                           <td className="px-4 py-4">
                             <div className="flex items-center justify-center gap-1">
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                className="text-xs text-gray-500 hover:text-emerald-600"
-                                onClick={() => inv.pdfUrl ? window.open(inv.pdfUrl, '_blank') : toast.info("PDF no disponible aún")}
-                              >
-                                <Download className="w-3.5 h-3.5" />
-                              </Button>
+                              {inv.status === "draft" && (
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  className="text-xs text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
+                                  title="Emitir factura"
+                                  onClick={() => issueMutation.mutate({ id: inv.id })}
+                                  disabled={issueMutation.isPending}
+                                >
+                                  <FileText className="w-3.5 h-3.5" />
+                                </Button>
+                              )}
                               <Button
                                 size="sm"
                                 variant="ghost"
                                 className="text-xs text-gray-500 hover:text-blue-600"
-                                onClick={() => toast.info("Envío por email disponible próximamente")}
+                                title={inv.receptorEmail ? `Enviar por email a ${inv.receptorEmail}` : "Sin email del receptor"}
+                                onClick={() => {
+                                  if (!inv.receptorEmail) {
+                                    toast.error("Esta factura no tiene email del receptor");
+                                    return;
+                                  }
+                                  sendEmailMutation.mutate({ id: inv.id });
+                                }}
+                                disabled={sendEmailMutation.isPending || !inv.receptorEmail}
                               >
                                 <Send className="w-3.5 h-3.5" />
                               </Button>
+                              {inv.status !== "cancelled" && (
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  className="text-xs text-gray-400 hover:text-red-500 hover:bg-red-50"
+                                  title="Cancelar factura"
+                                  onClick={() => {
+                                    if (confirm("¿Cancelar esta factura?")) cancelMutation.mutate({ id: inv.id });
+                                  }}
+                                  disabled={cancelMutation.isPending}
+                                >
+                                  ×
+                                </Button>
+                              )}
                             </div>
                           </td>
                         </tr>

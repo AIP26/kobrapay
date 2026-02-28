@@ -141,7 +141,7 @@
 
 ### Módulo Aclaraciones (Contracargos)
 - [x] Tabla chargebacks en DB (transacción, estatus, monto, afectación, documentos)
-- [ ] Webhook Stripe: detectar disputas automáticamente y guardar en DB
+- [x] Webhook Stripe: detectar disputas automáticamente y guardar en DB (charge.dispute.created)
 - [x] Página "Mis Aclaraciones" en dashboard
 - [x] Tabla con: ID transacción, fecha, estatus, monto, afectación, última actualización
 - [x] Subir documentos de evidencia para disputar
@@ -153,7 +153,7 @@
 - [x] Formulario para crear factura (datos del cliente, conceptos, subtotal, IVA)
 - [x] Generar PDF de factura con membrete del negocio
 - [x] Descargar factura en PDF
-- [x] Enviar factura por email al cliente
+- [x] Enviar factura por email al cliente (sendInvoiceEmail via Resend - botón real conectado)
 
 ### Sección Lector Físico
 - [x] Página "Compra tu Lector" en dashboard

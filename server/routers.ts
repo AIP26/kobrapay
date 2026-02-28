@@ -70,7 +70,7 @@ import { systemRouter } from "./_core/systemRouter";
 import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
 import { securityRouter } from "./routers/security";
 import { notifyOwner } from "./_core/notification";
-import { sendOtpEmail, sendPaymentReceipt, sendWelcomeEmail } from "./_core/email";
+import { sendOtpEmail, sendPaymentReceipt, sendWelcomeEmail, sendInvoiceEmail } from "./_core/email";
 import { storagePut } from "./storage";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "", {
@@ -1732,6 +1732,28 @@ export const appRouter = router({
         const inv = await getInvoiceById(input.id);
         if (!inv || inv.userId !== ctx.user.id) throw new TRPCError({ code: "NOT_FOUND" });
         await updateInvoiceStatus(input.id, "cancelled", undefined, new Date());
+        return { success: true };
+      }),
+    sendEmail: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        const inv = await getInvoiceById(input.id);
+        if (!inv || inv.userId !== ctx.user.id) throw new TRPCError({ code: "NOT_FOUND" });
+        if (!inv.receptorEmail) throw new TRPCError({ code: "BAD_REQUEST", message: "La factura no tiene email del receptor" });
+        const conceptos = typeof inv.conceptos === "string" ? JSON.parse(inv.conceptos) : (inv.conceptos as Array<{ descripcion: string; cantidad: number; valorUnitario: number; importe: number }>);
+        const sent = await sendInvoiceEmail({
+          to: inv.receptorEmail,
+          receptorNombre: inv.receptorNombre,
+          emisorNombre: inv.emisorNombre,
+          folio: inv.folio,
+          fecha: inv.issuedAt || inv.createdAt,
+          conceptos,
+          subtotal: parseFloat(String(inv.subtotal)),
+          iva: parseFloat(String(inv.iva)),
+          total: parseFloat(String(inv.total)),
+          currency: inv.currency,
+        });
+        if (!sent) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "No se pudo enviar el email. Verifica la configuración de Resend." });
         return { success: true };
       }),
   }),
