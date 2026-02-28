@@ -31,6 +31,7 @@ import {
   HelpCircle,
   UserCircle2,
   Clock,
+  Calculator,
 } from "lucide-react";
 import { useState } from "react";
 import GlobalSearch from "./GlobalSearch";
@@ -55,6 +56,7 @@ const navItems = [
   { href: "/dashboard/staff", icon: UserCheck, label: "Colaboradores", section: "main" },
   { href: "/dashboard/hr", icon: Briefcase, label: "Expedientes RH", section: "main" },
   { href: "/dashboard/checador", icon: Clock, label: "Reloj Checador", section: "main" },
+  { href: "/dashboard/nomina", icon: Calculator, label: "Nómina", section: "main" },
   { href: "/dashboard/invoices", icon: FileText, label: "Mis Facturas", section: "main" },
   { href: "/dashboard/widget", icon: Code2, label: "Widget de Pago", section: "main" },
   { href: "/dashboard/reader", icon: ShoppingCart, label: "Compra tu Lector", section: "main" },

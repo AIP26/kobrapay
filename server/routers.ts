@@ -86,6 +86,8 @@ import {
   getSubscriptionsByOwner,
   getSubscriptionById,
   updateSubscription,
+  updateEmployeePayrollData,
+  getAttendanceForPayroll,
 } from "./db";
 import { COOKIE_NAME } from "@shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
@@ -2360,6 +2362,139 @@ export const appRouter = router({
         }
         await updateSubscription(input.id, ctx.user.id, { status: "active" });
         return { success: true };
+      }),
+  }),
+
+  // ─── Nómina ───────────────────────────────────────────────────────────────
+  payroll: router({
+    // Calcular nómina de un período
+    calculate: protectedProcedure
+      .input(z.object({
+        startDate: z.string(),
+        endDate: z.string(),
+        cycle: z.enum(["weekly", "biweekly", "monthly"]).default("biweekly"),
+      }))
+      .query(async ({ ctx, input }) => {
+        const employees = await getEmployeeRecordsByOwner(ctx.user.id);
+        const start = new Date(input.startDate);
+        const end = new Date(input.endDate);
+        end.setHours(23, 59, 59, 999);
+        const attendance = await getAttendanceForPayroll(ctx.user.id, start, end);
+
+        // Agrupar registros por empleado
+        const byEmployee = new Map<number, typeof attendance>();
+        for (const rec of attendance) {
+          if (!byEmployee.has(rec.employeeId)) byEmployee.set(rec.employeeId, []);
+          byEmployee.get(rec.employeeId)!.push(rec);
+        }
+
+        const payrollRows = employees.map(emp => {
+          const records = byEmployee.get(emp.id) ?? [];
+          let totalMinutes = 0;
+          let checkInTime: Date | null = null;
+          const days = new Set<string>();
+          for (const rec of records) {
+            if (rec.type === "check_in") {
+              checkInTime = new Date(rec.timestamp);
+            } else if (rec.type === "check_out" && checkInTime) {
+              const outTime = new Date(rec.timestamp);
+              totalMinutes += Math.max(0, (outTime.getTime() - checkInTime.getTime()) / 60000);
+              days.add(checkInTime.toISOString().slice(0, 10));
+              checkInTime = null;
+            }
+          }
+          const totalHours = totalMinutes / 60;
+          const hourlyRate = parseFloat(emp.hourlyRate ?? "0");
+          const grossPay = totalHours * hourlyRate;
+          const imss = grossPay * 0.0175;
+          const isr = grossPay > 10000 ? grossPay * 0.10 : grossPay > 5000 ? grossPay * 0.064 : 0;
+          const netPay = grossPay - imss - isr;
+          return {
+            employeeId: emp.id,
+            employeeNumber: emp.employeeNumber ?? "",
+            fullName: emp.fullName,
+            position: emp.position ?? "",
+            department: emp.department ?? "",
+            hourlyRate,
+            totalHours: Math.round(totalHours * 100) / 100,
+            daysWorked: days.size,
+            grossPay: Math.round(grossPay * 100) / 100,
+            imss: Math.round(imss * 100) / 100,
+            isr: Math.round(isr * 100) / 100,
+            netPay: Math.round(netPay * 100) / 100,
+            paymentCycle: emp.paymentCycle ?? "biweekly",
+            bankName: emp.bankName ?? "",
+            clabe: emp.clabe ?? "",
+            bankAccountHolder: emp.bankAccountHolder ?? "",
+            status: emp.status,
+          };
+        });
+
+        return { rows: payrollRows, startDate: input.startDate, endDate: input.endDate, cycle: input.cycle };
+      }),
+
+    // Actualizar datos de nómina de un colaborador
+    updatePayrollData: protectedProcedure
+      .input(z.object({
+        employeeId: z.number(),
+        hourlyRate: z.string().optional(),
+        paymentCycle: z.enum(["weekly", "biweekly", "monthly"]).optional(),
+        bankName: z.string().optional(),
+        clabe: z.string().max(18).optional(),
+        bankAccountHolder: z.string().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        await updateEmployeePayrollData(input.employeeId, ctx.user.id, {
+          hourlyRate: input.hourlyRate,
+          paymentCycle: input.paymentCycle,
+          bankName: input.bankName,
+          clabe: input.clabe,
+          bankAccountHolder: input.bankAccountHolder,
+        });
+        return { success: true };
+      }),
+
+    // Historial de asistencia detallado de un colaborador
+    employeeHistory: protectedProcedure
+      .input(z.object({
+        employeeId: z.number(),
+        startDate: z.string(),
+        endDate: z.string(),
+      }))
+      .query(async ({ ctx, input }) => {
+        const start = new Date(input.startDate);
+        const end = new Date(input.endDate);
+        end.setHours(23, 59, 59, 999);
+        const records = await getAttendanceForPayroll(ctx.user.id, start, end);
+        const empRecords = records.filter(r => r.employeeId === input.employeeId);
+
+        // Agrupar por día
+        const byDay = new Map<string, { checkIn?: string; checkOut?: string; hoursWorked: number }>();
+        let pendingIn: Date | null = null;
+        for (const rec of empRecords) {
+          const day = new Date(rec.timestamp).toISOString().slice(0, 10);
+          if (!byDay.has(day)) byDay.set(day, { hoursWorked: 0 });
+          const entry = byDay.get(day)!;
+          if (rec.type === "in") {
+            entry.checkIn = new Date(rec.timestamp).toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit" });
+            pendingIn = new Date(rec.timestamp);
+          } else if (rec.type === "out") {
+            entry.checkOut = new Date(rec.timestamp).toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit" });
+            if (pendingIn) {
+              entry.hoursWorked += Math.max(0, (new Date(rec.timestamp).getTime() - pendingIn.getTime()) / 3600000);
+              pendingIn = null;
+            }
+          }
+        }
+
+        const days = Array.from(byDay.entries()).map(([date, data]) => ({
+          date,
+          checkIn: data.checkIn ?? null,
+          checkOut: data.checkOut ?? null,
+          hoursWorked: Math.round(data.hoursWorked * 100) / 100,
+        })).sort((a, b) => b.date.localeCompare(a.date));
+
+        return { days };
       }),
   }),
 });

@@ -1177,3 +1177,34 @@ export async function getSubscriptionByCustomerId(stripeCustomerId: string): Pro
   return result[0];
 }
 
+
+// ─── Nómina (Payroll) ─────────────────────────────────────────────────────────
+export async function updateEmployeePayrollData(
+  id: number,
+  ownerId: number,
+  data: { hourlyRate?: string; paymentCycle?: string; bankName?: string; clabe?: string; bankAccountHolder?: string }
+): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(employeeRecords)
+    .set({ ...data, updatedAt: new Date() })
+    .where(and(eq(employeeRecords.id, id), eq(employeeRecords.ownerId, ownerId)));
+}
+
+export async function getAttendanceForPayroll(
+  ownerId: number,
+  startDate: Date,
+  endDate: Date
+): Promise<AttendanceRecord[]> {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(attendanceRecords)
+    .where(
+      and(
+        eq(attendanceRecords.ownerId, ownerId),
+        gte(attendanceRecords.timestamp, startDate),
+        lte(attendanceRecords.timestamp, endDate)
+      )
+    )
+    .orderBy(attendanceRecords.employeeId, attendanceRecords.timestamp);
+}

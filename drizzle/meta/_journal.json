@@ -162,6 +162,13 @@
       "when": 1772316583406,
       "tag": "0022_goofy_power_man",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "5",
+      "when": 1772318947642,
+      "tag": "0023_real_mad_thinker",
+      "breakpoints": true
     }
   ]
 }

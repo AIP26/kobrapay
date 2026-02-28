@@ -534,6 +534,12 @@ export const employeeRecords = mysqlTable("employee_records", {
   photoUrl: text("photoUrl"),
   photoKey: varchar("photoKey", { length: 512 }),
   notes: text("notes"),
+  // Nómina
+  hourlyRate: decimal("hourlyRate", { precision: 10, scale: 2 }), // Salario por hora en MXN
+  paymentCycle: varchar("paymentCycle", { length: 16 }).default("biweekly"), // "weekly" | "biweekly" | "monthly"
+  bankName: varchar("bankName", { length: 128 }),
+  clabe: varchar("clabe", { length: 18 }),
+  bankAccountHolder: varchar("bankAccountHolder", { length: 255 }),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });

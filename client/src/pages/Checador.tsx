@@ -5,6 +5,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { toast } from "sonner";
 import {
   Clock,
@@ -16,6 +23,9 @@ import {
   Timer,
   Download,
   FileText,
+  ChevronRight,
+  CheckCircle,
+  XCircle,
 } from "lucide-react";
 
 const MONTH_NAMES = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
@@ -23,6 +33,11 @@ const MONTH_NAMES = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","A
 function formatTime(date: Date | string | null) {
   if (!date) return "—";
   return new Date(date).toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+}
+
+function formatDate(dateStr: string) {
+  const d = new Date(dateStr + "T12:00:00");
+  return d.toLocaleDateString("es-MX", { weekday: "short", day: "numeric", month: "short" });
 }
 
 // Reloj en tiempo real
@@ -44,12 +59,135 @@ function LiveClock() {
   );
 }
 
+// Modal historial de un colaborador
+function EmployeeHistoryModal({
+  employee,
+  onClose,
+}: {
+  employee: { id: number; fullName: string; employeeNumber?: string | null; position?: string | null } | null;
+  onClose: () => void;
+}) {
+  const today = new Date();
+  const [startDate, setStartDate] = useState(() => {
+    const d = new Date(today.getFullYear(), today.getMonth(), 1);
+    return d.toISOString().slice(0, 10);
+  });
+  const [endDate, setEndDate] = useState(() => today.toISOString().slice(0, 10));
+
+  const historyQuery = trpc.payroll.employeeHistory.useQuery(
+    { employeeId: employee?.id ?? 0, startDate, endDate },
+    { enabled: !!employee }
+  );
+
+  const days = historyQuery.data?.days ?? [];
+  const totalHours = days.reduce((s, d) => s + d.hoursWorked, 0);
+
+  if (!employee) return null;
+
+  return (
+    <Dialog open={!!employee} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="max-w-lg max-h-[80vh] flex flex-col">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Clock className="w-5 h-5 text-primary" />
+            Historial — {employee.fullName}
+            {employee.employeeNumber && (
+              <span className="text-xs text-muted-foreground font-normal">#{employee.employeeNumber}</span>
+            )}
+          </DialogTitle>
+          {employee.position && (
+            <p className="text-sm text-muted-foreground">{employee.position}</p>
+          )}
+        </DialogHeader>
+
+        {/* Filtro de fechas */}
+        <div className="flex gap-3 items-end">
+          <div className="flex-1 space-y-1">
+            <Label className="text-xs">Desde</Label>
+            <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="h-8 text-sm" />
+          </div>
+          <div className="flex-1 space-y-1">
+            <Label className="text-xs">Hasta</Label>
+            <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="h-8 text-sm" />
+          </div>
+        </div>
+
+        {/* Resumen */}
+        {days.length > 0 && (
+          <div className="flex gap-4 bg-muted/40 rounded-lg p-3 text-sm">
+            <div className="text-center">
+              <p className="font-bold text-lg">{days.length}</p>
+              <p className="text-xs text-muted-foreground">Días</p>
+            </div>
+            <div className="text-center">
+              <p className="font-bold text-lg">{totalHours.toFixed(1)}h</p>
+              <p className="text-xs text-muted-foreground">Total horas</p>
+            </div>
+            <div className="text-center">
+              <p className="font-bold text-lg">{days.length > 0 ? (totalHours / days.length).toFixed(1) : "0"}h</p>
+              <p className="text-xs text-muted-foreground">Promedio/día</p>
+            </div>
+          </div>
+        )}
+
+        {/* Lista de días */}
+        <div className="flex-1 overflow-y-auto space-y-2 min-h-0">
+          {historyQuery.isLoading ? (
+            <p className="text-center text-muted-foreground py-6">Cargando historial...</p>
+          ) : days.length === 0 ? (
+            <div className="text-center py-10">
+              <Timer className="w-10 h-10 text-muted-foreground mx-auto mb-2 opacity-40" />
+              <p className="text-muted-foreground text-sm">Sin registros en este período</p>
+            </div>
+          ) : (
+            days.map((day) => (
+              <div key={day.date} className="flex items-center gap-3 p-3 rounded-lg border border-border bg-card">
+                <div className="text-center w-16 shrink-0">
+                  <p className="text-xs text-muted-foreground">{formatDate(day.date)}</p>
+                </div>
+                <div className="flex-1 grid grid-cols-2 gap-2">
+                  <div className="flex items-center gap-1.5">
+                    {day.checkIn ? (
+                      <CheckCircle className="w-3.5 h-3.5 text-green-500 shrink-0" />
+                    ) : (
+                      <XCircle className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                    )}
+                    <span className="text-xs">
+                      <span className="text-muted-foreground">Entrada: </span>
+                      <span className="font-mono font-medium">{day.checkIn ?? "—"}</span>
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    {day.checkOut ? (
+                      <CheckCircle className="w-3.5 h-3.5 text-red-500 shrink-0" />
+                    ) : (
+                      <XCircle className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                    )}
+                    <span className="text-xs">
+                      <span className="text-muted-foreground">Salida: </span>
+                      <span className="font-mono font-medium">{day.checkOut ?? "—"}</span>
+                    </span>
+                  </div>
+                </div>
+                <div className="shrink-0 text-right">
+                  <span className="text-sm font-bold text-primary">{day.hoursWorked.toFixed(1)}h</span>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 export default function Checador() {
   const [search, setSearch] = useState("");
   const [dateFilter, setDateFilter] = useState(new Date().toISOString().split("T")[0]);
   const [reportYear, setReportYear] = useState(new Date().getFullYear());
   const [reportMonth, setReportMonth] = useState(new Date().getMonth() + 1);
   const [generatingPdf, setGeneratingPdf] = useState(false);
+  const [selectedEmployee, setSelectedEmployee] = useState<{ id: number; fullName: string; employeeNumber?: string | null; position?: string | null } | null>(null);
 
   const employeesQuery = trpc.employees.list.useQuery();
   const attendanceQuery = trpc.attendance.getAll.useQuery({
@@ -152,7 +290,7 @@ export default function Checador() {
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
       toast.success(`Reporte de ${monthLabel} descargado`, { description: "Abre el archivo HTML en tu navegador e imprime como PDF." });
-    } catch (e) {
+    } catch {
       toast.error("Error al generar el reporte");
     } finally {
       setGeneratingPdf(false);
@@ -169,7 +307,7 @@ export default function Checador() {
               <Clock className="w-6 h-6 text-primary" />
               Reloj Checador
             </h1>
-            <p className="text-muted-foreground text-sm">Registra entradas y salidas de tus colaboradores</p>
+            <p className="text-muted-foreground text-sm">Registra entradas y salidas · Haz clic en un colaborador para ver su historial</p>
           </div>
           {/* Reporte mensual */}
           <div className="flex items-center gap-2 flex-wrap">
@@ -247,7 +385,7 @@ export default function Checador() {
                 />
               </div>
             </CardHeader>
-            <CardContent className="space-y-2 max-h-96 overflow-y-auto">
+            <CardContent className="max-h-[480px] overflow-y-auto space-y-2">
               {employeesQuery.isLoading ? (
                 <p className="text-center text-muted-foreground py-4">Cargando...</p>
               ) : filteredEmployees.length === 0 ? (
@@ -259,6 +397,7 @@ export default function Checador() {
                     employee={emp}
                     onCheckIn={(type) => checkInMutation.mutate({ employeeId: emp.id, type })}
                     isPending={checkInMutation.isPending && checkInMutation.variables?.employeeId === emp.id}
+                    onViewHistory={() => setSelectedEmployee({ id: emp.id, fullName: emp.fullName, employeeNumber: emp.employeeNumber, position: emp.position })}
                   />
                 ))
               )}
@@ -269,7 +408,7 @@ export default function Checador() {
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="text-base flex items-center gap-2">
-                <Calendar className="w-4 h-4" /> Historial
+                <Calendar className="w-4 h-4" /> Historial del Día
               </CardTitle>
               <Input
                 type="date"
@@ -278,7 +417,7 @@ export default function Checador() {
                 className="w-full"
               />
             </CardHeader>
-            <CardContent className="max-h-96 overflow-y-auto space-y-2">
+            <CardContent className="max-h-[480px] overflow-y-auto space-y-2">
               {attendanceQuery.isLoading ? (
                 <p className="text-center text-muted-foreground py-4">Cargando...</p>
               ) : attendance.length === 0 ? (
@@ -290,7 +429,12 @@ export default function Checador() {
                 attendance.map(record => {
                   const emp = employees.find(e => e.id === record.employeeId);
                   return (
-                    <div key={record.id} className="flex items-center gap-3 p-2 rounded-lg bg-muted/30">
+                    <div
+                      key={record.id}
+                      className="flex items-center gap-3 p-2 rounded-lg bg-muted/30 cursor-pointer hover:bg-muted/50 transition-colors"
+                      onClick={() => emp && setSelectedEmployee({ id: emp.id, fullName: emp.fullName, employeeNumber: emp.employeeNumber, position: emp.position })}
+                      title="Ver historial completo"
+                    >
                       <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${record.type === "in" ? "bg-green-100 dark:bg-green-900/30" : "bg-red-100 dark:bg-red-900/30"}`}>
                         {record.type === "in"
                           ? <LogIn className="w-4 h-4 text-green-600" />
@@ -306,6 +450,7 @@ export default function Checador() {
                           {record.type === "in" ? "Entrada" : "Salida"}
                         </Badge>
                       </div>
+                      <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
                     </div>
                   );
                 })
@@ -314,6 +459,12 @@ export default function Checador() {
           </Card>
         </div>
       </div>
+
+      {/* Modal historial por colaborador */}
+      <EmployeeHistoryModal
+        employee={selectedEmployee}
+        onClose={() => setSelectedEmployee(null)}
+      />
     </DashboardLayout>
   );
 }
@@ -323,10 +474,12 @@ function EmployeeCheckCard({
   employee,
   onCheckIn,
   isPending,
+  onViewHistory,
 }: {
   employee: { id: number; fullName: string; position?: string | null; photoUrl?: string | null; employeeNumber?: string | null };
   onCheckIn: (type: "in" | "out") => void;
   isPending: boolean;
+  onViewHistory: () => void;
 }) {
   const lastRecordQuery = trpc.attendance.getLastRecord.useQuery({ employeeId: employee.id });
   const lastRecord = lastRecordQuery.data;
@@ -334,17 +487,26 @@ function EmployeeCheckCard({
   const initials = employee.fullName.split(" ").map(n => n[0]).slice(0, 2).join("").toUpperCase();
 
   return (
-    <div className="flex items-center gap-3 p-3 rounded-lg border bg-card hover:bg-muted/30 transition-colors">
-      {employee.photoUrl ? (
-        <img src={employee.photoUrl} alt={employee.fullName} className="w-10 h-10 rounded-full object-cover flex-shrink-0" />
-      ) : (
-        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary/20 to-primary/40 flex items-center justify-center font-bold text-primary text-sm flex-shrink-0">
-          {initials}
-        </div>
-      )}
-      <div className="flex-1 min-w-0">
+    <div className="flex items-center gap-3 p-3 rounded-lg border bg-card hover:bg-muted/20 transition-colors">
+      {/* Avatar — clic para ver historial */}
+      <button
+        onClick={onViewHistory}
+        className="shrink-0 focus:outline-none focus:ring-2 focus:ring-primary rounded-full"
+        title={`Ver historial de ${employee.fullName}`}
+      >
+        {employee.photoUrl ? (
+          <img src={employee.photoUrl} alt={employee.fullName} className="w-10 h-10 rounded-full object-cover" />
+        ) : (
+          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary/20 to-primary/40 flex items-center justify-center font-bold text-primary text-sm">
+            {initials}
+          </div>
+        )}
+      </button>
+
+      {/* Nombre — clic para ver historial */}
+      <div className="flex-1 min-w-0 cursor-pointer" onClick={onViewHistory}>
         <div className="flex items-center gap-2">
-          <p className="font-medium text-sm truncate">{employee.fullName}</p>
+          <p className="font-medium text-sm truncate hover:text-primary transition-colors">{employee.fullName}</p>
           {employee.employeeNumber && (
             <span className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded">#{employee.employeeNumber}</span>
           )}
@@ -356,6 +518,8 @@ function EmployeeCheckCard({
           </p>
         )}
       </div>
+
+      {/* Botones de checado */}
       <div className="flex gap-1 flex-shrink-0">
         <Button
           size="sm"
