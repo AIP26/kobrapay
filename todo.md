@@ -342,3 +342,8 @@
 - [ ] Lista de contratos con estado visual
 - [ ] Página pública de firma (cliente ve contrato, firma y sube docs)
 - [ ] PDF descargable del contrato firmado
+
+## Rediseño Home - Layout tipo BillPocket (Feb 2026)
+- [ ] Layout split-screen: izquierda texto bienvenida, derecha card con tabs Acceso/Registrar
+- [ ] Features interactivas: clic en recuadro abre modal con descripción e imagen del panel
+- [ ] Mantener colores y diseño actual (dark navy + verde KobraPay)
