@@ -444,3 +444,12 @@
 - [ ] Eliminar USD de crear enlace (solo MXN)
 - [ ] Página de Ayuda con contenido real por sección
 - [ ] Cobros Recurrentes con funcionalidad real
+
+## Fase 24 - USD + Expedientes de Colaboradores
+- [ ] Regresar USD al formulario de crear enlace con nota contextual para cobros internacionales
+- [ ] Tabla employee_records en DB (nombre, foto, puesto, documentos, fecha ingreso)
+- [ ] Backend CRUD de expedientes de colaboradores (crear, leer, actualizar, eliminar)
+- [ ] Subida de documentos a S3 (CV, INE, comprobante domicilio, referencias laborales/personales)
+- [ ] Página de lista de expedientes con foto de perfil y datos básicos
+- [ ] Página de detalle de expediente con todos los documentos adjuntos
+- [ ] Cada admin solo ve los expedientes de sus propios colaboradores (tenant isolation)

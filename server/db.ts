@@ -42,6 +42,12 @@ import {
   notifications,
   Notification,
   InsertNotification,
+  employeeRecords,
+  EmployeeRecord,
+  InsertEmployeeRecord,
+  employeeDocuments,
+  EmployeeDocument,
+  InsertEmployeeDocument,
 } from "../drizzle/schema";
 import { ENV } from "./_core/env";
 
@@ -984,4 +990,72 @@ export async function getPendingRegistrationsOlderThan(hours: number) {
   return db.select({ id: users.id, name: users.name, email: users.email, createdAt: users.createdAt })
     .from(users)
     .where(and(eq(users.accountStatus, "pending"), lte(users.createdAt, cutoff)));
+}
+
+// ─── Employee Records (Expedientes de Colaboradores) ─────────────────────────
+
+export async function createEmployeeRecord(data: Omit<InsertEmployeeRecord, "id" | "createdAt" | "updatedAt">): Promise<EmployeeRecord> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.insert(employeeRecords).values(data as InsertEmployeeRecord);
+  const result = await db.select().from(employeeRecords)
+    .where(and(eq(employeeRecords.ownerId, data.ownerId), eq(employeeRecords.fullName, data.fullName)))
+    .orderBy(desc(employeeRecords.createdAt)).limit(1);
+  return result[0];
+}
+
+export async function getEmployeeRecordsByOwner(ownerId: number): Promise<EmployeeRecord[]> {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(employeeRecords)
+    .where(eq(employeeRecords.ownerId, ownerId))
+    .orderBy(desc(employeeRecords.createdAt));
+}
+
+export async function getEmployeeRecordById(id: number, ownerId: number): Promise<EmployeeRecord | undefined> {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(employeeRecords)
+    .where(and(eq(employeeRecords.id, id), eq(employeeRecords.ownerId, ownerId))).limit(1);
+  return result[0];
+}
+
+export async function updateEmployeeRecord(id: number, ownerId: number, data: Partial<InsertEmployeeRecord>): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(employeeRecords).set({ ...data, updatedAt: new Date() })
+    .where(and(eq(employeeRecords.id, id), eq(employeeRecords.ownerId, ownerId)));
+}
+
+export async function deleteEmployeeRecord(id: number, ownerId: number): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  // Eliminar documentos primero
+  await db.delete(employeeDocuments).where(and(eq(employeeDocuments.employeeId, id), eq(employeeDocuments.ownerId, ownerId)));
+  await db.delete(employeeRecords).where(and(eq(employeeRecords.id, id), eq(employeeRecords.ownerId, ownerId)));
+}
+
+// ─── Employee Documents ───────────────────────────────────────────────────────
+
+export async function createEmployeeDocument(data: Omit<InsertEmployeeDocument, "id" | "uploadedAt">): Promise<EmployeeDocument> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.insert(employeeDocuments).values(data as InsertEmployeeDocument);
+  const result = await db.select().from(employeeDocuments)
+    .where(and(eq(employeeDocuments.employeeId, data.employeeId), eq(employeeDocuments.fileKey, data.fileKey))).limit(1);
+  return result[0];
+}
+
+export async function getEmployeeDocuments(employeeId: number, ownerId: number): Promise<EmployeeDocument[]> {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(employeeDocuments)
+    .where(and(eq(employeeDocuments.employeeId, employeeId), eq(employeeDocuments.ownerId, ownerId)))
+    .orderBy(desc(employeeDocuments.uploadedAt));
+}
+
+export async function deleteEmployeeDocument(id: number, ownerId: number): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.delete(employeeDocuments).where(and(eq(employeeDocuments.id, id), eq(employeeDocuments.ownerId, ownerId)));
 }

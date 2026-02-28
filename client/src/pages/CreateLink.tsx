@@ -364,10 +364,20 @@ export default function CreateLink() {
                 </div>
                 <div className="space-y-1.5">
                   <Label className="text-gray-700 font-medium">Moneda</Label>
-                  <div className="flex items-center gap-2 border border-gray-200 rounded-md px-3 py-2 bg-gray-50 text-sm text-gray-700">
-                    <span>🇲🇽</span>
-                    <span className="font-medium">MXN — Pesos Mexicanos</span>
-                  </div>
+                  <Select value={form.currency} onValueChange={(v) => setForm({ ...form, currency: v })}>
+                    <SelectTrigger className="border-gray-200">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="MXN">🇲🇽 MXN — Pesos Mexicanos</SelectItem>
+                      <SelectItem value="USD">🇺🇸 USD — Dólares (cobros internacionales)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {form.currency === "USD" && (
+                    <p className="text-xs text-amber-600 flex items-center gap-1">
+                      <span>⚠️</span> Usa USD solo si tu cliente paga desde el extranjero o factura en dólares.
+                    </p>
+                  )}
                 </div>
               </div>
 

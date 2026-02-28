@@ -515,3 +515,42 @@ export const notifications = mysqlTable("notifications", {
 });
 export type Notification = typeof notifications.$inferSelect;
 export type InsertNotification = typeof notifications.$inferInsert;
+
+// *** EMPLOYEE RECORDS (Expedientes de Colaboradores) ***
+export const employeeRecords = mysqlTable("employee_records", {
+  id: int("id").primaryKey().autoincrement(),
+  ownerId: int("ownerId").notNull().references(() => users.id),
+  fullName: varchar("fullName", { length: 255 }).notNull(),
+  position: varchar("position", { length: 128 }),
+  department: varchar("department", { length: 128 }),
+  email: varchar("email", { length: 255 }),
+  phone: varchar("phone", { length: 32 }),
+  curp: varchar("curp", { length: 20 }),
+  rfc: varchar("rfc", { length: 15 }),
+  address: text("address"),
+  startDate: timestamp("startDate"),
+  status: varchar("status", { length: 32 }).default("active").notNull(),
+  photoUrl: text("photoUrl"),
+  photoKey: varchar("photoKey", { length: 512 }),
+  notes: text("notes"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type EmployeeRecord = typeof employeeRecords.$inferSelect;
+export type InsertEmployeeRecord = typeof employeeRecords.$inferInsert;
+
+// *** EMPLOYEE DOCUMENTS (Documentos del Expediente) ***
+export const employeeDocuments = mysqlTable("employee_documents", {
+  id: int("id").primaryKey().autoincrement(),
+  employeeId: int("employeeId").notNull().references(() => employeeRecords.id),
+  ownerId: int("ownerId").notNull().references(() => users.id),
+  type: varchar("type", { length: 64 }).notNull(), // cv, ine, domicilio, referencia_laboral, referencia_personal, otro
+  name: varchar("name", { length: 255 }).notNull(),
+  fileUrl: text("fileUrl").notNull(),
+  fileKey: varchar("fileKey", { length: 512 }).notNull(),
+  mimeType: varchar("mimeType", { length: 128 }),
+  fileSize: int("fileSize"),
+  uploadedAt: timestamp("uploadedAt").defaultNow().notNull(),
+});
+export type EmployeeDocument = typeof employeeDocuments.$inferSelect;
+export type InsertEmployeeDocument = typeof employeeDocuments.$inferInsert;

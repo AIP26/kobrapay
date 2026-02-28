@@ -27,6 +27,7 @@ import {
   UserPlus,
   FolderOpen,
   TrendingUp,
+  Briefcase,
   HelpCircle,
   UserCircle2,
 } from "lucide-react";
@@ -51,6 +52,7 @@ const navItems = [
   { href: "/dashboard/payers", icon: Users, label: "Mis Pagadores", section: "main" },
   { href: "/dashboard/expedientes", icon: FolderOpen, label: "Expedientes", section: "main" },
   { href: "/dashboard/staff", icon: UserCheck, label: "Colaboradores", section: "main" },
+  { href: "/dashboard/hr", icon: Briefcase, label: "Expedientes RH", section: "main" },
   { href: "/dashboard/invoices", icon: FileText, label: "Mis Facturas", section: "main" },
   { href: "/dashboard/widget", icon: Code2, label: "Widget de Pago", section: "main" },
   { href: "/dashboard/reader", icon: ShoppingCart, label: "Compra tu Lector", section: "main" },

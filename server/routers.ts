@@ -69,6 +69,14 @@ import {
   markNotificationRead,
   markAllNotificationsRead,
   getPendingRegistrationsOlderThan,
+  createEmployeeRecord,
+  getEmployeeRecordsByOwner,
+  getEmployeeRecordById,
+  updateEmployeeRecord,
+  deleteEmployeeRecord,
+  createEmployeeDocument,
+  getEmployeeDocuments,
+  deleteEmployeeDocument,
 } from "./db";
 import { COOKIE_NAME } from "@shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
@@ -1932,6 +1940,174 @@ export const appRouter = router({
       }
       return { pendingCount: pending.length };
     }),
+  }),
+
+  // ─── Expedientes de Colaboradores ────────────────────────────────────────
+  employees: router({
+    list: protectedProcedure.query(async ({ ctx }) => {
+      return getEmployeeRecordsByOwner(ctx.user.id);
+    }),
+
+    get: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .query(async ({ ctx, input }) => {
+        const emp = await getEmployeeRecordById(input.id, ctx.user.id);
+        if (!emp) throw new TRPCError({ code: "NOT_FOUND" });
+        const docs = await getEmployeeDocuments(input.id, ctx.user.id);
+        return { ...emp, documents: docs };
+      }),
+
+    create: protectedProcedure
+      .input(z.object({
+        fullName: z.string().min(2),
+        position: z.string().optional(),
+        department: z.string().optional(),
+        email: z.string().email().optional().or(z.literal("")),
+        phone: z.string().optional(),
+        curp: z.string().optional(),
+        rfc: z.string().optional(),
+        address: z.string().optional(),
+        startDate: z.string().optional(),
+        notes: z.string().optional(),
+        photoUrl: z.string().optional(),
+        photoKey: z.string().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const emp = await createEmployeeRecord({
+          ownerId: ctx.user.id,
+          fullName: input.fullName,
+          position: input.position ?? null,
+          department: input.department ?? null,
+          email: input.email || null,
+          phone: input.phone ?? null,
+          curp: input.curp ?? null,
+          rfc: input.rfc ?? null,
+          address: input.address ?? null,
+          startDate: input.startDate ? new Date(input.startDate) : null,
+          notes: input.notes ?? null,
+          photoUrl: input.photoUrl ?? null,
+          photoKey: input.photoKey ?? null,
+          status: "active",
+        });
+        return emp;
+      }),
+
+    update: protectedProcedure
+      .input(z.object({
+        id: z.number(),
+        fullName: z.string().min(2).optional(),
+        position: z.string().optional(),
+        department: z.string().optional(),
+        email: z.string().email().optional().or(z.literal("")),
+        phone: z.string().optional(),
+        curp: z.string().optional(),
+        rfc: z.string().optional(),
+        address: z.string().optional(),
+        startDate: z.string().optional(),
+        notes: z.string().optional(),
+        status: z.enum(["active", "inactive"]).optional(),
+        photoUrl: z.string().optional(),
+        photoKey: z.string().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const { id, startDate, ...rest } = input;
+        await updateEmployeeRecord(id, ctx.user.id, {
+          ...rest,
+          email: rest.email || null,
+          startDate: startDate ? new Date(startDate) : undefined,
+        });
+        return { success: true };
+      }),
+
+    delete: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        await deleteEmployeeRecord(input.id, ctx.user.id);
+        return { success: true };
+      }),
+
+    addDocument: protectedProcedure
+      .input(z.object({
+        employeeId: z.number(),
+        type: z.enum(["cv", "ine", "domicilio", "referencia_laboral", "referencia_personal", "otro"]),
+        name: z.string(),
+        fileUrl: z.string(),
+        fileKey: z.string(),
+        mimeType: z.string().optional(),
+        fileSize: z.number().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const emp = await getEmployeeRecordById(input.employeeId, ctx.user.id);
+        if (!emp) throw new TRPCError({ code: "NOT_FOUND" });
+        const doc = await createEmployeeDocument({
+          employeeId: input.employeeId,
+          ownerId: ctx.user.id,
+          type: input.type,
+          name: input.name,
+          fileUrl: input.fileUrl,
+          fileKey: input.fileKey,
+          mimeType: input.mimeType ?? null,
+          fileSize: input.fileSize ?? null,
+        });
+        return doc;
+      }),
+
+    deleteDocument: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        await deleteEmployeeDocument(input.id, ctx.user.id);
+        return { success: true };
+      }),
+
+    uploadPhoto: protectedProcedure
+      .input(z.object({
+        employeeId: z.number(),
+        fileBase64: z.string(),
+        mimeType: z.string().default("image/jpeg"),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const emp = await getEmployeeRecordById(input.employeeId, ctx.user.id);
+        if (!emp) throw new TRPCError({ code: "NOT_FOUND" });
+        const base64Data = input.fileBase64.replace(/^data:[^;]+;base64,/, "");
+        const buffer = Buffer.from(base64Data, "base64");
+        const ext = input.mimeType.includes("png") ? "png" : input.mimeType.includes("webp") ? "webp" : "jpg";
+        const suffix = Math.random().toString(36).slice(2, 8);
+        const key = `employees/${input.employeeId}/photo-${suffix}.${ext}`;
+        const { url } = await storagePut(key, buffer, input.mimeType);
+        await updateEmployeeRecord(input.employeeId, ctx.user.id, { photoUrl: url, photoKey: key });
+        return { success: true, photoUrl: url };
+      }),
+
+    uploadDocument: protectedProcedure
+      .input(z.object({
+        employeeId: z.number(),
+        type: z.enum(["cv", "ine", "domicilio", "referencia_laboral", "referencia_personal", "otro"]),
+        name: z.string(),
+        fileBase64: z.string(),
+        mimeType: z.string(),
+        fileSize: z.number().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const emp = await getEmployeeRecordById(input.employeeId, ctx.user.id);
+        if (!emp) throw new TRPCError({ code: "NOT_FOUND" });
+        const base64Data = input.fileBase64.replace(/^data:[^;]+;base64,/, "");
+        const buffer = Buffer.from(base64Data, "base64");
+        const ext = input.mimeType.includes("pdf") ? "pdf" : input.mimeType.includes("png") ? "png" : input.mimeType.includes("webp") ? "webp" : "jpg";
+        const suffix = Math.random().toString(36).slice(2, 8);
+        const key = `employees/${input.employeeId}/docs/${input.type}-${suffix}.${ext}`;
+        const { url } = await storagePut(key, buffer, input.mimeType);
+        const doc = await createEmployeeDocument({
+          employeeId: input.employeeId,
+          ownerId: ctx.user.id,
+          type: input.type,
+          name: input.name,
+          fileUrl: url,
+          fileKey: key,
+          mimeType: input.mimeType,
+          fileSize: input.fileSize ?? null,
+        });
+        return doc;
+      }),
   }),
 });
 export type AppRouter = typeof appRouter;

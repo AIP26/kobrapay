@@ -141,6 +141,13 @@
       "when": 1772313809480,
       "tag": "0019_red_mathemanic",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "5",
+      "when": 1772315733056,
+      "tag": "0020_solid_sunspot",
+      "breakpoints": true
     }
   ]
 }

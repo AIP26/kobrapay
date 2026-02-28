@@ -36,6 +36,7 @@ import CompleteProfile from "./pages/CompleteProfile";
 import PendingApproval from "./pages/PendingApproval";
 import MyProfile from "./pages/MyProfile";
 import Legal from "./pages/Legal";
+import Colaboradores from "./pages/Colaboradores";
 
 function Router() {
   return (
@@ -66,6 +67,7 @@ function Router() {
       <Route path="/dashboard/contracts" component={Contracts} />
       <Route path="/dashboard/agents" component={SalesAgents} />
       <Route path="/dashboard/expedientes" component={Expedientes} />
+      <Route path="/dashboard/hr" component={Colaboradores} />
       <Route path="/dashboard/commissions" component={CommissionsPanel} />
       <Route path="/sign-contract/:token" component={SignContract} />
       <Route path="/complete-profile" component={CompleteProfile} />
