@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { trpc } from "@/lib/trpc";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -109,13 +109,25 @@ function EmployeeFormModal({
 }) {
   const utils = trpc.useUtils();
   const createMutation = trpc.employees.create.useMutation({
-    onSuccess: () => { toast.success("Colaborador registrado exitosamente"); utils.employees.list.invalidate(); onSuccess(); onClose(); },
+    onSuccess: (data) => {
+      toast.success("Colaborador registrado exitosamente");
+      utils.employees.list.invalidate();
+      // Si hay foto pendiente, subirla
+      if (pendingPhoto && data.id) {
+        uploadPhotoMutation.mutate({ employeeId: data.id, fileBase64: pendingPhoto.base64, mimeType: pendingPhoto.mimeType });
+      }
+      onSuccess(); onClose();
+    },
     onError: (e) => toast.error(e.message),
   });
   const updateMutation = trpc.employees.update.useMutation({
     onSuccess: () => { toast.success("Colaborador actualizado"); utils.employees.list.invalidate(); onSuccess(); onClose(); },
     onError: (e) => toast.error(e.message),
   });
+  const uploadPhotoMutation = trpc.employees.uploadPhoto.useMutation({
+    onSuccess: () => utils.employees.list.invalidate(),
+  });
+  const nextNumberQuery = trpc.employees.nextNumber.useQuery(undefined, { enabled: !employee });
 
   const [form, setForm] = useState({
     fullName: employee?.fullName ?? "",
@@ -128,16 +140,42 @@ function EmployeeFormModal({
     address: employee?.address ?? "",
     startDate: employee?.startDate ? new Date(employee.startDate).toISOString().split("T")[0] : "",
     notes: employee?.notes ?? "",
+    employeeNumber: "",
   });
+  const [pendingPhoto, setPendingPhoto] = useState<{ base64: string; mimeType: string; preview: string } | null>(null);
+
+  // Auto-fill employee number when available
+  useEffect(() => {
+    if (!employee && nextNumberQuery.data) {
+      setForm(f => ({ ...f, employeeNumber: nextNumberQuery.data.employeeNumber }));
+    }
+  }, [nextNumberQuery.data, employee]);
 
   const set = (k: string, v: string) => setForm(f => ({ ...f, [k]: v }));
+
+  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const base64 = ev.target?.result as string;
+      setPendingPhoto({ base64, mimeType: file.type, preview: base64 });
+    };
+    reader.readAsDataURL(file);
+  };
 
   const handleSubmit = () => {
     if (!form.fullName.trim()) { toast.error("El nombre completo es requerido"); return; }
     if (employee) {
-      updateMutation.mutate({ id: employee.id, ...form });
+      const { employeeNumber: _en, ...updateForm } = form;
+      updateMutation.mutate({ id: employee.id, ...updateForm });
+      // Si hay foto nueva para edición, subirla directamente
+      if (pendingPhoto) {
+        uploadPhotoMutation.mutate({ employeeId: employee.id, fileBase64: pendingPhoto.base64, mimeType: pendingPhoto.mimeType });
+      }
     } else {
-      createMutation.mutate(form);
+      const { employeeNumber, ...createForm } = form;
+      createMutation.mutate({ ...createForm, employeeNumber: employeeNumber || undefined });
     }
   };
 
@@ -150,10 +188,37 @@ function EmployeeFormModal({
           <DialogTitle>{employee ? "Editar Colaborador" : "Nuevo Colaborador"}</DialogTitle>
         </DialogHeader>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+          {/* Foto de perfil */}
+          <div className="md:col-span-2 flex items-center gap-4">
+            <div className="relative">
+              {pendingPhoto?.preview || employee?.photoUrl ? (
+                <img src={pendingPhoto?.preview || employee?.photoUrl || ""} alt="Foto" className="w-20 h-20 rounded-full object-cover border-2 border-border" />
+              ) : (
+                <div className="w-20 h-20 rounded-full bg-muted flex items-center justify-center border-2 border-dashed border-border">
+                  <Camera className="w-8 h-8 text-muted-foreground" />
+                </div>
+              )}
+            </div>
+            <div>
+              <Label className="block mb-1">Foto del Colaborador</Label>
+              <input type="file" accept="image/*" className="hidden" id="photo-upload" onChange={handlePhotoChange} />
+              <Button type="button" variant="outline" size="sm" onClick={() => document.getElementById("photo-upload")?.click()}>
+                <Camera className="w-4 h-4 mr-2" />{pendingPhoto ? "Cambiar foto" : "Subir foto"}
+              </Button>
+              <p className="text-xs text-muted-foreground mt-1">JPG, PNG o WEBP. Máx 5MB.</p>
+            </div>
+          </div>
           <div className="md:col-span-2">
             <Label>Nombre Completo *</Label>
             <Input value={form.fullName} onChange={e => set("fullName", e.target.value)} placeholder="Juan Pérez García" />
           </div>
+          {!employee && (
+            <div>
+              <Label>Número de Colaborador</Label>
+              <Input value={form.employeeNumber} onChange={e => set("employeeNumber", e.target.value)} placeholder={nextNumberQuery.isLoading ? "Generando..." : "001"} />
+              <p className="text-xs text-muted-foreground mt-1">Se asigna automáticamente. Puedes cambiarlo.</p>
+            </div>
+          )}
           <div>
             <Label>Puesto / Cargo</Label>
             <Input value={form.position} onChange={e => set("position", e.target.value)} placeholder="Ej: Vendedor, Asistente" />

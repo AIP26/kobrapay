@@ -1,133 +1,538 @@
+import { useState, useEffect } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
+import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { toast } from "sonner";
 import {
   RefreshCw,
   Plus,
-  Clock,
+  Pause,
+  Play,
+  X,
+  Mail,
+  User,
+  DollarSign,
   Calendar,
-  Zap,
   CheckCircle2,
-  ArrowRight,
+  Clock,
+  AlertTriangle,
+  ExternalLink,
+  Loader2,
 } from "lucide-react";
-import { Link } from "wouter";
 
-const features = [
-  {
-    icon: RefreshCw,
-    title: "Cobros automáticos",
-    description: "Configura cobros que se repiten diario, semanal o mensualmente sin intervención manual.",
-    color: "text-cyan-600",
-    bg: "bg-cyan-100",
-  },
-  {
-    icon: Calendar,
-    title: "Cobro programado",
-    description: "Programa un cobro para una fecha futura específica. Ideal para pagos diferidos o apartados.",
-    color: "text-blue-600",
-    bg: "bg-blue-100",
-  },
-  {
-    icon: Zap,
-    title: "Notificaciones automáticas",
-    description: "El cliente recibe un recordatorio antes de cada cobro y un recibo al completarse.",
-    color: "text-amber-600",
-    bg: "bg-amber-100",
-  },
-  {
-    icon: CheckCircle2,
-    title: "Gestión de suscripciones",
-    description: "Pausa, cancela o modifica suscripciones desde el panel. El cliente también puede cancelar.",
-    color: "text-green-600",
-    bg: "bg-green-100",
-  },
-];
+// ─── Tipos ────────────────────────────────────────────────────────────────────
+type Subscription = {
+  id: number;
+  name: string;
+  description?: string | null;
+  amount: number;
+  currency: string;
+  interval: string;
+  intervalCount: number;
+  customerEmail: string;
+  customerName?: string | null;
+  status: string;
+  cancelAtPeriodEnd: boolean;
+  createdAt: Date | string;
+};
 
-const useCases = [
-  { title: "Membresías mensuales", example: "Gimnasio, club, asociación" },
-  { title: "Servicios de mantenimiento", example: "Limpieza, jardinería, vigilancia" },
-  { title: "Suscripciones digitales", example: "Software, contenido, cursos" },
-  { title: "Pagos en parcialidades", example: "Dividir un monto en cuotas fijas" },
-  { title: "Rentas mensuales", example: "Arrendamiento de local o equipo" },
-  { title: "Honorarios recurrentes", example: "Contabilidad, asesoría, consultoría" },
-];
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+function formatAmount(amount: number, currency: string) {
+  return new Intl.NumberFormat("es-MX", {
+    style: "currency",
+    currency: currency.toUpperCase(),
+    minimumFractionDigits: 2,
+  }).format(amount / 100);
+}
 
-export default function Recurring() {
+function intervalLabel(interval: string, count: number) {
+  const labels: Record<string, string> = {
+    day: count === 1 ? "Diario" : `Cada ${count} días`,
+    week: count === 1 ? "Semanal" : `Cada ${count} semanas`,
+    month: count === 1 ? "Mensual" : `Cada ${count} meses`,
+    year: count === 1 ? "Anual" : `Cada ${count} años`,
+  };
+  return labels[interval] ?? interval;
+}
+
+function statusBadge(status: string, cancelAtPeriodEnd: boolean) {
+  if (cancelAtPeriodEnd) return <Badge variant="destructive" className="text-xs">Cancelando</Badge>;
+  const map: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
+    active: { label: "Activa", variant: "default" },
+    paused: { label: "Pausada", variant: "secondary" },
+    incomplete: { label: "Pendiente pago", variant: "outline" },
+    canceled: { label: "Cancelada", variant: "destructive" },
+    past_due: { label: "Vencida", variant: "destructive" },
+  };
+  const info = map[status] ?? { label: status, variant: "outline" as const };
+  return <Badge variant={info.variant} className="text-xs">{info.label}</Badge>;
+}
+
+// ─── Modal de nueva suscripción ───────────────────────────────────────────────
+function NewSubscriptionModal({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const utils = trpc.useUtils();
+  const [form, setForm] = useState({
+    name: "",
+    description: "",
+    amount: "",
+    currency: "mxn",
+    interval: "month",
+    intervalCount: "1",
+    customerEmail: "",
+    customerName: "",
+  });
+
+  const createMutation = trpc.subscriptions.create.useMutation({
+    onSuccess: (data) => {
+      toast.success("Suscripción creada. Redirigiendo al checkout de Stripe...");
+      utils.subscriptions.list.invalidate();
+      onClose();
+      if (data.checkoutUrl) {
+        window.open(data.checkoutUrl, "_blank");
+      }
+    },
+    onError: (e) => toast.error(e.message),
+  });
+
+  const set = (k: string, v: string) => setForm(f => ({ ...f, [k]: v }));
+
+  const handleSubmit = () => {
+    if (!form.name.trim()) { toast.error("El nombre del plan es requerido"); return; }
+    if (!form.amount || isNaN(Number(form.amount)) || Number(form.amount) < 10) {
+      toast.error("El monto mínimo es $10 MXN"); return;
+    }
+    if (!form.customerEmail.includes("@")) { toast.error("Correo del cliente inválido"); return; }
+
+    createMutation.mutate({
+      name: form.name,
+      description: form.description || undefined,
+      amount: Number(form.amount),
+      currency: form.currency as "mxn" | "usd",
+      interval: form.interval as "day" | "week" | "month" | "year",
+      intervalCount: Number(form.intervalCount),
+      customerEmail: form.customerEmail,
+      customerName: form.customerName || undefined,
+      origin: window.location.origin,
+    });
+  };
+
   return (
-    <DashboardLayout title="Cobros Recurrentes">
-      <div className="space-y-5 max-w-4xl">
-        {/* Header */}
-        <div className="bg-gradient-to-r from-blue-600 to-indigo-700 rounded-2xl p-6 text-white">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
-              <RefreshCw className="w-5 h-5 text-white" />
+    <Dialog open={open} onOpenChange={onClose}>
+      <DialogContent className="max-w-lg">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <RefreshCw className="w-5 h-5 text-primary" />
+            Nueva Suscripción Recurrente
+          </DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4 pt-2">
+          {/* Nombre del plan */}
+          <div>
+            <Label>Nombre del Plan *</Label>
+            <Input value={form.name} onChange={e => set("name", e.target.value)} placeholder="Ej: Membresía Mensual Premium" />
+          </div>
+          <div>
+            <Label>Descripción (opcional)</Label>
+            <Input value={form.description} onChange={e => set("description", e.target.value)} placeholder="Ej: Acceso completo a todos los servicios" />
+          </div>
+
+          {/* Monto y moneda */}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label>Monto *</Label>
+              <div className="relative">
+                <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input
+                  type="number"
+                  min="10"
+                  step="0.01"
+                  className="pl-9"
+                  value={form.amount}
+                  onChange={e => set("amount", e.target.value)}
+                  placeholder="500.00"
+                />
+              </div>
             </div>
             <div>
-              <div className="flex items-center gap-2">
-                <h2 className="text-lg font-bold">Cobros Recurrentes</h2>
-                <Badge className="bg-white/20 text-white border-white/30 text-xs">Próximamente</Badge>
-              </div>
-              <p className="text-blue-100 text-sm">Automatiza tus cobros periódicos y suscripciones</p>
+              <Label>Moneda</Label>
+              <Select value={form.currency} onValueChange={v => set("currency", v)}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="mxn">MXN (Peso Mexicano)</SelectItem>
+                  <SelectItem value="usd">USD (Dólar)</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
-        </div>
 
-        {/* Features */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {features.map(({ icon: Icon, title, description, color, bg }) => (
-            <Card key={title} className="border-gray-200 shadow-sm hover:shadow-md transition-shadow">
-              <CardContent className="p-5">
-                <div className={`w-10 h-10 ${bg} rounded-xl flex items-center justify-center mb-3`}>
-                  <Icon className={`w-5 h-5 ${color}`} />
-                </div>
-                <h3 className="font-semibold text-gray-800 mb-1">{title}</h3>
-                <p className="text-sm text-gray-500">{description}</p>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-
-        {/* Use Cases */}
-        <Card className="border-gray-200 shadow-sm">
-          <CardHeader className="pb-3 border-b border-gray-100">
-            <CardTitle className="text-base font-semibold text-gray-800 flex items-center gap-2">
-              <Clock className="w-4 h-4 text-blue-500" />
-              Casos de uso comunes
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-              {useCases.map(({ title, example }) => (
-                <div key={title} className="p-3 bg-gray-50 rounded-xl border border-gray-100">
-                  <p className="text-sm font-medium text-gray-800">{title}</p>
-                  <p className="text-xs text-gray-400 mt-0.5">{example}</p>
-                </div>
-              ))}
+          {/* Frecuencia */}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label>Frecuencia</Label>
+              <Select value={form.interval} onValueChange={v => set("interval", v)}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="day">Diario</SelectItem>
+                  <SelectItem value="week">Semanal</SelectItem>
+                  <SelectItem value="month">Mensual</SelectItem>
+                  <SelectItem value="year">Anual</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
-          </CardContent>
-        </Card>
+            <div>
+              <Label>Cada cuánto</Label>
+              <Select value={form.intervalCount} onValueChange={v => set("intervalCount", v)}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {[1, 2, 3, 6, 12].map(n => (
+                    <SelectItem key={n} value={String(n)}>{n === 1 ? "1 (estándar)" : `${n}`}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
 
-        {/* CTA */}
-        <Card className="border-blue-200 bg-blue-50 shadow-sm">
-          <CardContent className="p-6 flex flex-col sm:flex-row items-center gap-4">
-            <div className="flex-1">
-              <h3 className="font-semibold text-blue-900 mb-1">¿Necesitas cobros recurrentes ahora?</h3>
-              <p className="text-sm text-blue-700">
-                Por el momento puedes crear múltiples enlaces de pago individuales. Los cobros recurrentes automatizados
-                estarán disponibles en la próxima actualización.
+          {/* Datos del cliente */}
+          <div className="border-t pt-4">
+            <p className="text-sm font-medium text-muted-foreground mb-3">Datos del Cliente</p>
+            <div className="space-y-3">
+              <div>
+                <Label>Correo del Cliente *</Label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Input type="email" className="pl-9" value={form.customerEmail} onChange={e => set("customerEmail", e.target.value)} placeholder="cliente@ejemplo.com" />
+                </div>
+              </div>
+              <div>
+                <Label>Nombre del Cliente (opcional)</Label>
+                <div className="relative">
+                  <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Input className="pl-9" value={form.customerName} onChange={e => set("customerName", e.target.value)} placeholder="Juan Pérez" />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Resumen */}
+          {form.amount && form.name && (
+            <div className="bg-muted/50 rounded-lg p-3 text-sm">
+              <p className="font-medium">Resumen:</p>
+              <p className="text-muted-foreground">
+                Se cobrará <strong>{form.currency.toUpperCase()} ${form.amount}</strong> {intervalLabel(form.interval, Number(form.intervalCount)).toLowerCase()} a {form.customerEmail || "el cliente"}.
+              </p>
+              <p className="text-xs text-muted-foreground mt-1">
+                El cliente recibirá un link de Stripe para ingresar su tarjeta.
               </p>
             </div>
-            <Button asChild className="bg-blue-600 hover:bg-blue-700 text-white flex-shrink-0">
-              <Link href="/dashboard/create">
+          )}
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>Cancelar</Button>
+          <Button onClick={handleSubmit} disabled={createMutation.isPending}>
+            {createMutation.isPending ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Creando...</> : <><ExternalLink className="w-4 h-4 mr-2" />Crear y Enviar Link</>}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// ─── Tarjeta de suscripción ───────────────────────────────────────────────────
+function SubscriptionCard({ sub, onAction }: { sub: Subscription; onAction: (action: "pause" | "resume" | "cancel", id: number) => void }) {
+  const isActive = sub.status === "active" && !sub.cancelAtPeriodEnd;
+  const isPaused = sub.status === "paused";
+  const isCanceled = sub.status === "canceled" || sub.cancelAtPeriodEnd;
+
+  return (
+    <Card className="hover:shadow-md transition-shadow">
+      <CardContent className="p-5">
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 mb-1">
+              <h3 className="font-semibold truncate">{sub.name}</h3>
+              {statusBadge(sub.status, sub.cancelAtPeriodEnd)}
+            </div>
+            {sub.description && <p className="text-sm text-muted-foreground mb-2 truncate">{sub.description}</p>}
+            <div className="flex flex-wrap gap-3 text-sm text-muted-foreground">
+              <span className="flex items-center gap-1">
+                <DollarSign className="w-3.5 h-3.5" />
+                {formatAmount(sub.amount, sub.currency)}
+              </span>
+              <span className="flex items-center gap-1">
+                <RefreshCw className="w-3.5 h-3.5" />
+                {intervalLabel(sub.interval, sub.intervalCount)}
+              </span>
+              <span className="flex items-center gap-1">
+                <Mail className="w-3.5 h-3.5" />
+                {sub.customerEmail}
+              </span>
+              <span className="flex items-center gap-1">
+                <Calendar className="w-3.5 h-3.5" />
+                {new Date(sub.createdAt).toLocaleDateString("es-MX")}
+              </span>
+            </div>
+          </div>
+          {/* Acciones */}
+          {!isCanceled && (
+            <div className="flex gap-2 flex-shrink-0">
+              {isActive && (
+                <Button size="sm" variant="outline" onClick={() => onAction("pause", sub.id)} title="Pausar">
+                  <Pause className="w-4 h-4" />
+                </Button>
+              )}
+              {isPaused && (
+                <Button size="sm" variant="outline" onClick={() => onAction("resume", sub.id)} title="Reanudar">
+                  <Play className="w-4 h-4" />
+                </Button>
+              )}
+              <Button size="sm" variant="outline" className="text-destructive hover:text-destructive" onClick={() => onAction("cancel", sub.id)} title="Cancelar">
+                <X className="w-4 h-4" />
+              </Button>
+            </div>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+// ─── Página principal ─────────────────────────────────────────────────────────
+export default function Recurring() {
+  const [showCreate, setShowCreate] = useState(false);
+  const [confirmCancel, setConfirmCancel] = useState<number | null>(null);
+  const [searchParams] = useState(() => new URLSearchParams(window.location.search));
+
+  const subsQuery = trpc.subscriptions.list.useQuery();
+  const utils = trpc.useUtils();
+
+  const pauseMutation = trpc.subscriptions.pause.useMutation({
+    onSuccess: () => { toast.success("Suscripción pausada"); utils.subscriptions.list.invalidate(); },
+    onError: (e) => toast.error(e.message),
+  });
+  const resumeMutation = trpc.subscriptions.resume.useMutation({
+    onSuccess: () => { toast.success("Suscripción reanudada"); utils.subscriptions.list.invalidate(); },
+    onError: (e) => toast.error(e.message),
+  });
+  const cancelMutation = trpc.subscriptions.cancel.useMutation({
+    onSuccess: () => { toast.success("Suscripción cancelada al final del período"); utils.subscriptions.list.invalidate(); setConfirmCancel(null); },
+    onError: (e) => toast.error(e.message),
+  });
+
+  // Notificación de éxito/cancelación desde Stripe redirect
+  useEffect(() => {
+    if (searchParams.get("success") === "1") {
+      toast.success("¡Suscripción activada exitosamente!");
+      window.history.replaceState({}, "", window.location.pathname);
+    } else if (searchParams.get("canceled") === "1") {
+      toast.info("El cliente canceló el proceso de pago.");
+      window.history.replaceState({}, "", window.location.pathname);
+    }
+  }, [searchParams]);
+
+  const subs = (subsQuery.data ?? []) as Subscription[];
+  const activeSubs = subs.filter(s => s.status === "active" && !s.cancelAtPeriodEnd);
+  const pausedSubs = subs.filter(s => s.status === "paused");
+  const pendingSubs = subs.filter(s => s.status === "incomplete");
+  const canceledSubs = subs.filter(s => s.status === "canceled" || s.cancelAtPeriodEnd);
+
+  const handleAction = (action: "pause" | "resume" | "cancel", id: number) => {
+    if (action === "pause") pauseMutation.mutate({ id });
+    else if (action === "resume") resumeMutation.mutate({ id });
+    else if (action === "cancel") setConfirmCancel(id);
+  };
+
+  return (
+    <DashboardLayout>
+      <div className="p-6 space-y-6 max-w-4xl mx-auto">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold flex items-center gap-2">
+              <RefreshCw className="w-6 h-6 text-primary" />
+              Cobros Recurrentes
+            </h1>
+            <p className="text-muted-foreground text-sm">Gestiona suscripciones y cobros automáticos con Stripe Billing</p>
+          </div>
+          <Button onClick={() => setShowCreate(true)}>
+            <Plus className="w-4 h-4 mr-2" />
+            Nueva Suscripción
+          </Button>
+        </div>
+
+        {/* KPIs */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <Card>
+            <CardContent className="pt-5">
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className="w-5 h-5 text-green-500" />
+                <div>
+                  <p className="text-2xl font-bold">{activeSubs.length}</p>
+                  <p className="text-xs text-muted-foreground">Activas</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-5">
+              <div className="flex items-center gap-2">
+                <Pause className="w-5 h-5 text-amber-500" />
+                <div>
+                  <p className="text-2xl font-bold">{pausedSubs.length}</p>
+                  <p className="text-xs text-muted-foreground">Pausadas</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-5">
+              <div className="flex items-center gap-2">
+                <Clock className="w-5 h-5 text-blue-500" />
+                <div>
+                  <p className="text-2xl font-bold">{pendingSubs.length}</p>
+                  <p className="text-xs text-muted-foreground">Pendientes</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-5">
+              <div className="flex items-center gap-2">
+                <DollarSign className="w-5 h-5 text-primary" />
+                <div>
+                  <p className="text-2xl font-bold">
+                    {activeSubs.length > 0
+                      ? new Intl.NumberFormat("es-MX", { style: "currency", currency: "MXN", maximumFractionDigits: 0 }).format(
+                          activeSubs.filter(s => s.currency === "mxn").reduce((sum, s) => sum + s.amount / 100, 0)
+                        )
+                      : "$0"}
+                  </p>
+                  <p className="text-xs text-muted-foreground">Ingreso recurrente</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Lista de suscripciones */}
+        {subsQuery.isLoading ? (
+          <div className="flex items-center justify-center py-12">
+            <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+          </div>
+        ) : subs.length === 0 ? (
+          <Card>
+            <CardContent className="py-12 text-center">
+              <RefreshCw className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
+              <h3 className="font-semibold text-lg mb-1">Sin suscripciones aún</h3>
+              <p className="text-muted-foreground text-sm mb-4">
+                Crea tu primera suscripción recurrente para automatizar tus cobros.
+              </p>
+              <Button onClick={() => setShowCreate(true)}>
                 <Plus className="w-4 h-4 mr-2" />
-                Crear enlace de pago
-                <ArrowRight className="w-4 h-4 ml-2" />
-              </Link>
-            </Button>
-          </CardContent>
-        </Card>
+                Crear primera suscripción
+              </Button>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="space-y-4">
+            {/* Activas */}
+            {activeSubs.length > 0 && (
+              <div>
+                <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-2 flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-green-500" /> Activas ({activeSubs.length})
+                </h2>
+                <div className="space-y-3">
+                  {activeSubs.map(s => <SubscriptionCard key={s.id} sub={s} onAction={handleAction} />)}
+                </div>
+              </div>
+            )}
+            {/* Pendientes de pago */}
+            {pendingSubs.length > 0 && (
+              <div>
+                <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-2 flex items-center gap-2">
+                  <Clock className="w-4 h-4 text-blue-500" /> Pendientes de pago ({pendingSubs.length})
+                </h2>
+                <div className="space-y-3">
+                  {pendingSubs.map(s => <SubscriptionCard key={s.id} sub={s} onAction={handleAction} />)}
+                </div>
+              </div>
+            )}
+            {/* Pausadas */}
+            {pausedSubs.length > 0 && (
+              <div>
+                <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-2 flex items-center gap-2">
+                  <Pause className="w-4 h-4 text-amber-500" /> Pausadas ({pausedSubs.length})
+                </h2>
+                <div className="space-y-3">
+                  {pausedSubs.map(s => <SubscriptionCard key={s.id} sub={s} onAction={handleAction} />)}
+                </div>
+              </div>
+            )}
+            {/* Canceladas */}
+            {canceledSubs.length > 0 && (
+              <div>
+                <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-2 flex items-center gap-2">
+                  <AlertTriangle className="w-4 h-4 text-destructive" /> Canceladas ({canceledSubs.length})
+                </h2>
+                <div className="space-y-3 opacity-60">
+                  {canceledSubs.map(s => <SubscriptionCard key={s.id} sub={s} onAction={handleAction} />)}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
       </div>
+
+      {/* Modal de nueva suscripción */}
+      <NewSubscriptionModal open={showCreate} onClose={() => setShowCreate(false)} />
+
+      {/* Confirmación de cancelación */}
+      <AlertDialog open={confirmCancel !== null} onOpenChange={() => setConfirmCancel(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Cancelar suscripción?</AlertDialogTitle>
+            <AlertDialogDescription>
+              La suscripción se cancelará al final del período actual. El cliente no será cobrado nuevamente.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>No, mantener</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => confirmCancel !== null && cancelMutation.mutate({ id: confirmCancel })}
+            >
+              Sí, cancelar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </DashboardLayout>
   );
 }

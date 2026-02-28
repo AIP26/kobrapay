@@ -453,3 +453,15 @@
 - [ ] Página de lista de expedientes con foto de perfil y datos básicos
 - [ ] Página de detalle de expediente con todos los documentos adjuntos
 - [ ] Cada admin solo ve los expedientes de sus propios colaboradores (tenant isolation)
+
+## Fase 25 - ES/EN, Reporte PDF y Cobros Recurrentes
+- [ ] Selector de idioma ES/EN en la página de pago pública (PayPage)
+- [ ] Reporte mensual PDF con membrete KobraPay descargable desde el panel
+- [ ] Cobros recurrentes con Stripe Billing (suscripciones automáticas)
+
+## Fase 26 - Mejoras Módulo RH y Reloj Checador
+- [ ] Campo employeeNumber en tabla employee_records (automático o manual)
+- [ ] Foto del colaborador en formulario de alta (subida directa desde el formulario)
+- [ ] Tabla attendance_records para reloj checador (entrada/salida con timestamp y ubicación)
+- [ ] Página de Reloj Checador: botón de entrada/salida y historial por colaborador
+- [ ] Reporte de asistencia por período (exportar CSV)

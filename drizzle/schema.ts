@@ -520,6 +520,7 @@ export type InsertNotification = typeof notifications.$inferInsert;
 export const employeeRecords = mysqlTable("employee_records", {
   id: int("id").primaryKey().autoincrement(),
   ownerId: int("ownerId").notNull().references(() => users.id),
+  employeeNumber: varchar("employeeNumber", { length: 32 }), // Número de colaborador (automático o manual)
   fullName: varchar("fullName", { length: 255 }).notNull(),
   position: varchar("position", { length: 128 }),
   department: varchar("department", { length: 128 }),
@@ -554,3 +555,45 @@ export const employeeDocuments = mysqlTable("employee_documents", {
 });
 export type EmployeeDocument = typeof employeeDocuments.$inferSelect;
 export type InsertEmployeeDocument = typeof employeeDocuments.$inferInsert;
+
+// *** SUBSCRIPTIONS (Cobros Recurrentes con Stripe Billing) ***
+export const subscriptions = mysqlTable("subscriptions", {
+  id: int("id").primaryKey().autoincrement(),
+  ownerId: int("ownerId").notNull().references(() => users.id),
+  stripeProductId: varchar("stripeProductId", { length: 128 }),
+  stripePriceId: varchar("stripePriceId", { length: 128 }),
+  stripeSubscriptionId: varchar("stripeSubscriptionId", { length: 128 }),
+  stripeCustomerId: varchar("stripeCustomerId", { length: 128 }),
+  name: varchar("name", { length: 255 }).notNull(),
+  description: text("description"),
+  amount: int("amount").notNull(), // en centavos MXN
+  currency: varchar("currency", { length: 8 }).default("mxn").notNull(),
+  interval: varchar("interval", { length: 32 }).notNull(), // day, week, month, year
+  intervalCount: int("intervalCount").default(1).notNull(),
+  customerEmail: varchar("customerEmail", { length: 255 }).notNull(),
+  customerName: varchar("customerName", { length: 255 }),
+  status: varchar("status", { length: 32 }).default("active").notNull(), // active, paused, canceled, past_due, incomplete
+  currentPeriodStart: timestamp("currentPeriodStart"),
+  currentPeriodEnd: timestamp("currentPeriodEnd"),
+  cancelAtPeriodEnd: boolean("cancelAtPeriodEnd").default(false).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type Subscription = typeof subscriptions.$inferSelect;
+export type InsertSubscription = typeof subscriptions.$inferInsert;
+
+// *** ATTENDANCE RECORDS (Reloj Checador) ***
+export const attendanceRecords = mysqlTable("attendance_records", {
+  id: int("id").primaryKey().autoincrement(),
+  employeeId: int("employeeId").notNull().references(() => employeeRecords.id),
+  ownerId: int("ownerId").notNull().references(() => users.id),
+  type: varchar("type", { length: 16 }).notNull(), // "in" = entrada, "out" = salida
+  timestamp: timestamp("timestamp").defaultNow().notNull(),
+  ipAddress: varchar("ipAddress", { length: 64 }),
+  latitude: varchar("latitude", { length: 32 }),
+  longitude: varchar("longitude", { length: 32 }),
+  notes: text("notes"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type AttendanceRecord = typeof attendanceRecords.$inferSelect;
+export type InsertAttendanceRecord = typeof attendanceRecords.$inferInsert;

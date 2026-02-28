@@ -148,6 +148,20 @@
       "when": 1772315733056,
       "tag": "0020_solid_sunspot",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "5",
+      "when": 1772316512884,
+      "tag": "0021_reflective_mordo",
+      "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "5",
+      "when": 1772316583406,
+      "tag": "0022_goofy_power_man",
+      "breakpoints": true
     }
   ]
 }

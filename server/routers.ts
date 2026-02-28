@@ -77,6 +77,15 @@ import {
   createEmployeeDocument,
   getEmployeeDocuments,
   deleteEmployeeDocument,
+  getNextEmployeeNumber,
+  createAttendanceRecord,
+  getAttendanceByEmployee,
+  getAttendanceByOwner,
+  getLastAttendanceRecord,
+  createSubscription,
+  getSubscriptionsByOwner,
+  getSubscriptionById,
+  updateSubscription,
 } from "./db";
 import { COOKIE_NAME } from "@shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
@@ -1971,8 +1980,11 @@ export const appRouter = router({
         notes: z.string().optional(),
         photoUrl: z.string().optional(),
         photoKey: z.string().optional(),
+        employeeNumber: z.string().optional(),
       }))
       .mutation(async ({ ctx, input }) => {
+        // Auto-generar número si no se proporciona
+        const empNumber = input.employeeNumber || await getNextEmployeeNumber(ctx.user.id);
         const emp = await createEmployeeRecord({
           ownerId: ctx.user.id,
           fullName: input.fullName,
@@ -1988,6 +2000,7 @@ export const appRouter = router({
           photoUrl: input.photoUrl ?? null,
           photoKey: input.photoKey ?? null,
           status: "active",
+          employeeNumber: empNumber,
         });
         return emp;
       }),
@@ -2107,6 +2120,186 @@ export const appRouter = router({
           fileSize: input.fileSize ?? null,
         });
         return doc;
+      }),
+
+    nextNumber: protectedProcedure.query(async ({ ctx }) => {
+      const next = await getNextEmployeeNumber(ctx.user.id);
+      return { employeeNumber: next };
+    }),
+  }),
+
+  // ─── Reloj Checador ──────────────────────────────────────────────────────────
+  attendance: router({
+    checkIn: protectedProcedure
+      .input(z.object({
+        employeeId: z.number(),
+        type: z.enum(["in", "out"]),
+        latitude: z.string().optional(),
+        longitude: z.string().optional(),
+        notes: z.string().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const emp = await getEmployeeRecordById(input.employeeId, ctx.user.id);
+        if (!emp) throw new TRPCError({ code: "NOT_FOUND", message: "Colaborador no encontrado" });
+        const record = await createAttendanceRecord({
+          employeeId: input.employeeId,
+          ownerId: ctx.user.id,
+          type: input.type,
+          timestamp: new Date(),
+          ipAddress: ctx.req.ip || null,
+          latitude: input.latitude || null,
+          longitude: input.longitude || null,
+          notes: input.notes || null,
+        });
+        return record;
+      }),
+
+    getByEmployee: protectedProcedure
+      .input(z.object({ employeeId: z.number(), limit: z.number().optional() }))
+      .query(async ({ ctx, input }) => {
+        return getAttendanceByEmployee(input.employeeId, ctx.user.id, input.limit ?? 50);
+      }),
+
+    getAll: protectedProcedure
+      .input(z.object({
+        startDate: z.string().optional(),
+        endDate: z.string().optional(),
+      }).optional())
+      .query(async ({ ctx, input }) => {
+        const start = input?.startDate ? new Date(input.startDate) : undefined;
+        const end = input?.endDate ? new Date(input.endDate) : undefined;
+        return getAttendanceByOwner(ctx.user.id, start, end);
+      }),
+
+    getLastRecord: protectedProcedure
+      .input(z.object({ employeeId: z.number() }))
+      .query(async ({ ctx, input }) => {
+        return getLastAttendanceRecord(input.employeeId, ctx.user.id);
+      }),
+  }),
+
+  // ─── Cobros Recurrentes (Stripe Billing) ─────────────────────────────────────
+  subscriptions: router({
+    list: protectedProcedure.query(async ({ ctx }) => {
+      return getSubscriptionsByOwner(ctx.user.id);
+    }),
+
+    create: protectedProcedure
+      .input(z.object({
+        name: z.string().min(1).max(255),
+        description: z.string().optional(),
+        amount: z.number().positive().min(10), // mínimo $10 MXN
+        currency: z.enum(["mxn", "usd"]).default("mxn"),
+        interval: z.enum(["day", "week", "month", "year"]),
+        intervalCount: z.number().int().min(1).max(12).default(1),
+        customerEmail: z.string().email(),
+        customerName: z.string().optional(),
+        origin: z.string().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        // 1. Crear producto en Stripe
+        const product = await stripe.products.create({
+          name: input.name,
+          description: input.description || undefined,
+        });
+
+        // 2. Crear precio recurrente en Stripe
+        const price = await stripe.prices.create({
+          product: product.id,
+          unit_amount: Math.round(input.amount * 100), // centavos
+          currency: input.currency,
+          recurring: {
+            interval: input.interval as "day" | "week" | "month" | "year",
+            interval_count: input.intervalCount,
+          },
+        });
+
+        // 3. Crear o recuperar cliente en Stripe
+        const stripeCustomers = await stripe.customers.list({ email: input.customerEmail, limit: 1 });
+        let customer = stripeCustomers.data[0];
+        if (!customer) {
+          customer = await stripe.customers.create({
+            email: input.customerEmail,
+            name: input.customerName || undefined,
+            metadata: { ownerId: String(ctx.user.id) },
+          });
+        }
+
+        // 4. Crear sesión de checkout para la suscripción
+        const origin = input.origin || "https://kobrapay.mx";
+        const session = await stripe.checkout.sessions.create({
+          customer: customer.id,
+          mode: "subscription",
+          line_items: [{ price: price.id, quantity: 1 }],
+          success_url: `${origin}/dashboard/recurring?success=1`,
+          cancel_url: `${origin}/dashboard/recurring?canceled=1`,
+          allow_promotion_codes: true,
+          metadata: {
+            user_id: String(ctx.user.id),
+            customer_email: input.customerEmail,
+            customer_name: input.customerName || "",
+          },
+        });
+
+        // 5. Guardar en BD con estado "incomplete" hasta que el cliente pague
+        const sub = await createSubscription({
+          ownerId: ctx.user.id,
+          stripeProductId: product.id,
+          stripePriceId: price.id,
+          stripeCustomerId: customer.id,
+          name: input.name,
+          description: input.description || null,
+          amount: Math.round(input.amount * 100),
+          currency: input.currency,
+          interval: input.interval,
+          intervalCount: input.intervalCount,
+          customerEmail: input.customerEmail,
+          customerName: input.customerName || null,
+          status: "incomplete",
+          cancelAtPeriodEnd: false,
+        });
+
+        return { subscription: sub, checkoutUrl: session.url };
+      }),
+
+    cancel: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        const sub = await getSubscriptionById(input.id, ctx.user.id);
+        if (!sub) throw new TRPCError({ code: "NOT_FOUND" });
+        if (sub.stripeSubscriptionId) {
+          await stripe.subscriptions.update(sub.stripeSubscriptionId, { cancel_at_period_end: true });
+        }
+        await updateSubscription(input.id, ctx.user.id, { cancelAtPeriodEnd: true, status: "canceled" });
+        return { success: true };
+      }),
+
+    pause: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        const sub = await getSubscriptionById(input.id, ctx.user.id);
+        if (!sub) throw new TRPCError({ code: "NOT_FOUND" });
+        if (sub.stripeSubscriptionId) {
+          await stripe.subscriptions.update(sub.stripeSubscriptionId, {
+            pause_collection: { behavior: "void" },
+          });
+        }
+        await updateSubscription(input.id, ctx.user.id, { status: "paused" });
+        return { success: true };
+      }),
+
+    resume: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        const sub = await getSubscriptionById(input.id, ctx.user.id);
+        if (!sub) throw new TRPCError({ code: "NOT_FOUND" });
+        if (sub.stripeSubscriptionId) {
+          await stripe.subscriptions.update(sub.stripeSubscriptionId, {
+            pause_collection: "",
+          } as Parameters<typeof stripe.subscriptions.update>[1]);
+        }
+        await updateSubscription(input.id, ctx.user.id, { status: "active" });
+        return { success: true };
       }),
   }),
 });

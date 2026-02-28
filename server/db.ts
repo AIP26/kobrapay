@@ -48,6 +48,12 @@ import {
   employeeDocuments,
   EmployeeDocument,
   InsertEmployeeDocument,
+  attendanceRecords,
+  AttendanceRecord,
+  InsertAttendanceRecord,
+  subscriptions,
+  Subscription,
+  InsertSubscription,
 } from "../drizzle/schema";
 import { ENV } from "./_core/env";
 
@@ -1058,4 +1064,97 @@ export async function deleteEmployeeDocument(id: number, ownerId: number): Promi
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   await db.delete(employeeDocuments).where(and(eq(employeeDocuments.id, id), eq(employeeDocuments.ownerId, ownerId)));
+}
+
+// ─── Attendance Records (Reloj Checador) ─────────────────────────────────────
+
+export async function getNextEmployeeNumber(ownerId: number): Promise<string> {
+  const db = await getDb();
+  if (!db) return "001";
+  const result = await db.select().from(employeeRecords)
+    .where(eq(employeeRecords.ownerId, ownerId))
+    .orderBy(desc(employeeRecords.createdAt));
+  const count = result.length + 1;
+  return String(count).padStart(3, "0");
+}
+
+export async function createAttendanceRecord(data: Omit<InsertAttendanceRecord, "id" | "createdAt">): Promise<AttendanceRecord> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.insert(attendanceRecords).values(data as InsertAttendanceRecord);
+  const result = await db.select().from(attendanceRecords)
+    .where(and(eq(attendanceRecords.employeeId, data.employeeId), eq(attendanceRecords.ownerId, data.ownerId)))
+    .orderBy(desc(attendanceRecords.createdAt)).limit(1);
+  return result[0];
+}
+
+export async function getAttendanceByEmployee(employeeId: number, ownerId: number, limit = 50): Promise<AttendanceRecord[]> {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(attendanceRecords)
+    .where(and(eq(attendanceRecords.employeeId, employeeId), eq(attendanceRecords.ownerId, ownerId)))
+    .orderBy(desc(attendanceRecords.timestamp)).limit(limit);
+}
+
+export async function getAttendanceByOwner(ownerId: number, startDate?: Date, endDate?: Date): Promise<AttendanceRecord[]> {
+  const db = await getDb();
+  if (!db) return [];
+  const conditions = [eq(attendanceRecords.ownerId, ownerId)];
+  if (startDate) conditions.push(gte(attendanceRecords.timestamp, startDate));
+  if (endDate) conditions.push(lte(attendanceRecords.timestamp, endDate));
+  return db.select().from(attendanceRecords)
+    .where(and(...conditions))
+    .orderBy(desc(attendanceRecords.timestamp)).limit(500);
+}
+
+export async function getLastAttendanceRecord(employeeId: number, ownerId: number): Promise<AttendanceRecord | undefined> {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(attendanceRecords)
+    .where(and(eq(attendanceRecords.employeeId, employeeId), eq(attendanceRecords.ownerId, ownerId)))
+    .orderBy(desc(attendanceRecords.timestamp)).limit(1);
+  return result[0];
+}
+
+// ─── Subscriptions (Cobros Recurrentes) ──────────────────────────────────────
+
+export async function createSubscription(data: Omit<InsertSubscription, "id" | "createdAt" | "updatedAt">): Promise<Subscription> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.insert(subscriptions).values(data as InsertSubscription);
+  const result = await db.select().from(subscriptions)
+    .where(and(eq(subscriptions.ownerId, data.ownerId), eq(subscriptions.customerEmail, data.customerEmail)))
+    .orderBy(desc(subscriptions.createdAt)).limit(1);
+  return result[0];
+}
+
+export async function getSubscriptionsByOwner(ownerId: number): Promise<Subscription[]> {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(subscriptions)
+    .where(eq(subscriptions.ownerId, ownerId))
+    .orderBy(desc(subscriptions.createdAt));
+}
+
+export async function getSubscriptionById(id: number, ownerId: number): Promise<Subscription | undefined> {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(subscriptions)
+    .where(and(eq(subscriptions.id, id), eq(subscriptions.ownerId, ownerId))).limit(1);
+  return result[0];
+}
+
+export async function updateSubscription(id: number, ownerId: number, data: Partial<InsertSubscription>): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(subscriptions).set({ ...data, updatedAt: new Date() })
+    .where(and(eq(subscriptions.id, id), eq(subscriptions.ownerId, ownerId)));
+}
+
+export async function getSubscriptionByStripeId(stripeSubscriptionId: string): Promise<Subscription | undefined> {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(subscriptions)
+    .where(eq(subscriptions.stripeSubscriptionId, stripeSubscriptionId)).limit(1);
+  return result[0];
 }
