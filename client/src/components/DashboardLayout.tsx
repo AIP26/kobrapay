@@ -31,6 +31,7 @@ import {
   UserCircle2,
 } from "lucide-react";
 import { useState } from "react";
+import GlobalSearch from "./GlobalSearch";
 import { Link, useLocation } from "wouter";
 import { Button } from "./ui/button";
 import { Avatar, AvatarFallback } from "./ui/avatar";
@@ -264,16 +265,27 @@ export default function DashboardLayout({ children, title }: DashboardLayoutProp
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Mobile Header */}
-        <header className="lg:hidden flex items-center gap-3 px-4 py-3 bg-[#1a1f2e] border-b border-white/10">
+        {/* Top Header with Global Search */}
+        <header className="flex items-center gap-3 px-4 py-3 border-b border-white/10" style={{ background: "#1a1f2e" }}>
+          {/* Mobile menu button */}
           <button
             onClick={() => setSidebarOpen(true)}
-            className="text-gray-400 hover:text-white transition-colors"
+            className="lg:hidden text-gray-400 hover:text-white transition-colors flex-shrink-0"
           >
             <Menu className="w-6 h-6" />
           </button>
-          <img src={KOBRAPAY_ICON} alt="KobraPay" className="w-7 h-7 object-contain" />
-          <span className="font-bold text-white text-sm">KobraPay</span>
+          {/* Mobile logo */}
+          <div className="lg:hidden flex items-center gap-2 flex-shrink-0">
+            <img src={KOBRAPAY_ICON} alt="KobraPay" className="w-7 h-7 object-contain" />
+          </div>
+          {/* Global Search - takes remaining space */}
+          <div className="flex-1 max-w-lg">
+            <GlobalSearch />
+          </div>
+          {/* Right side: page title */}
+          {title && (
+            <span className="hidden lg:block text-sm text-gray-400 flex-shrink-0 truncate max-w-[200px]">{title}</span>
+          )}
         </header>
 
         {/* Page Content */}

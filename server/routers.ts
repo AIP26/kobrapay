@@ -1757,6 +1757,104 @@ export const appRouter = router({
         return { success: true };
       }),
   }),
+
+  // ─── BÚSQUEDA GLOBAL ───────────────────────────────────────────────────────
+  search: router({
+    global: protectedProcedure
+      .input(z.object({ query: z.string().min(1).max(100) }))
+      .query(async ({ ctx, input }) => {
+        const q = input.query.trim();
+        if (q.length < 2) return { transactions: [], links: [], customers: [], pages: [] };
+
+        // Buscar transacciones
+        const txs = await searchTransactionsByUser(ctx.user.id, q);
+        const txResults = txs.slice(0, 5).map(t => ({
+          type: "transaction" as const,
+          id: t.id,
+          title: t.payerName || "Cliente",
+          subtitle: t.operationNumber ? `#${t.operationNumber}` : (t.payerEmail || ""),
+          amount: t.amount,
+          currency: t.currency,
+          status: t.status,
+          href: "/dashboard/sales",
+        }));
+
+        // Buscar enlaces de pago
+        const allLinks = await getPaymentLinksByUser(ctx.user.id);
+        const term = q.toLowerCase();
+        const linkResults = allLinks
+          .filter(l =>
+            l.clientName?.toLowerCase().includes(term) ||
+            l.description?.toLowerCase().includes(term) ||
+            l.clientEmail?.toLowerCase().includes(term)
+          )
+          .slice(0, 5)
+          .map(l => ({
+            type: "link" as const,
+            id: l.id,
+            title: l.clientName || "Sin nombre",
+            subtitle: l.description || "",
+            amount: l.amount,
+            currency: l.currency,
+            status: l.status,
+            href: "/dashboard/links",
+          }));
+
+        // Buscar clientes/pagadores
+        const customerResults = await getCustomersByUser(ctx.user.id, q);
+        const custResults = customerResults.slice(0, 5).map(c => ({
+          type: "customer" as const,
+          id: c.id,
+          title: c.name || c.email,
+          subtitle: c.email,
+          amount: c.totalPaid,
+          currency: "MXN",
+          status: "active",
+          href: "/dashboard/payers",
+        }));
+
+        // Buscar páginas del menú por palabras clave
+        const pages = [
+          { label: "Panel", href: "/dashboard", keywords: ["panel", "inicio", "dashboard", "home"] },
+          { label: "Mis Ventas", href: "/dashboard/sales", keywords: ["ventas", "sales", "transacciones", "cobros"] },
+          { label: "Links de Pago", href: "/dashboard/links", keywords: ["links", "enlaces", "pago"] },
+          { label: "Nuevo Cobro", href: "/dashboard/create", keywords: ["nuevo", "cobro", "crear", "enlace"] },
+          { label: "Mis Facturas", href: "/dashboard/invoices", keywords: ["facturas", "cfdi", "factura"] },
+          { label: "Aclaraciones", href: "/dashboard/chargebacks", keywords: ["aclaraciones", "contracargos", "disputas"] },
+          { label: "Mis Pagadores", href: "/dashboard/payers", keywords: ["pagadores", "clientes", "payers"] },
+          { label: "Expedientes", href: "/dashboard/expedientes", keywords: ["expedientes", "archivos"] },
+          { label: "Catálogo", href: "/dashboard/catalog", keywords: ["catalogo", "productos", "inventario"] },
+          { label: "Punto de Venta", href: "/dashboard/pos", keywords: ["pos", "punto", "venta", "terminal"] },
+          { label: "Contratos", href: "/dashboard/contracts", keywords: ["contratos", "firma"] },
+          { label: "Reporte Mensual", href: "/dashboard/report", keywords: ["reporte", "mensual", "pdf"] },
+          { label: "Configuración", href: "/dashboard/settings", keywords: ["configuracion", "ajustes", "settings"] },
+          { label: "Ayuda", href: "/dashboard/help", keywords: ["ayuda", "help", "soporte"] },
+          { label: "Colaboradores", href: "/dashboard/staff", keywords: ["colaboradores", "empleados", "staff"] },
+          { label: "Widget de Pago", href: "/dashboard/widget", keywords: ["widget", "embebible", "codigo"] },
+          { label: "Cobros Recurrentes", href: "/dashboard/recurring", keywords: ["recurrentes", "suscripciones", "automaticos"] },
+        ];
+        const pageResults = pages
+          .filter(p => p.keywords.some(k => k.includes(term) || term.includes(k)))
+          .slice(0, 4)
+          .map(p => ({
+            type: "page" as const,
+            id: 0,
+            title: p.label,
+            subtitle: p.href,
+            amount: 0,
+            currency: "",
+            status: "",
+            href: p.href,
+          }));
+
+        return {
+          transactions: txResults,
+          links: linkResults,
+          customers: custResults,
+          pages: pageResults,
+        };
+      }),
+  }),
 });
 export type AppRouter = typeof appRouter;
 

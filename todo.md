@@ -398,3 +398,9 @@
 - [x] Subida de documentos funcional con vista previa y descarga
 - [x] Ruta /dashboard/profile en App.tsx + acceso desde sidebar y header
 - [x] Email de bienvenida con guía de uso de 5 pasos
+
+## Fase 20 - Búsqueda Global + Comprobante PDF + Mejoras UX
+- [x] Barra de búsqueda global en el header del dashboard (busca ventas, clientes, enlaces, páginas)
+- [x] Comprobante PDF descargable desde el detalle de transacción en Mis Ventas (ya existía)
+- [x] Firma e ID visibles en el modal de detalle de transacción (ya existía)
+- [x] Búsqueda en Mis Ventas por nombre de cliente o número de operación (ya existía con debounce)
