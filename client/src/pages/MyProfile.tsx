@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback } from "react";
+import DashboardLayout from "@/components/DashboardLayout";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -127,6 +128,7 @@ export default function MyProfile() {
   const p = profile as unknown as Record<string, string | null | undefined> | null;
 
   return (
+    <DashboardLayout>
     <div className="max-w-5xl mx-auto space-y-6 p-4">
       {/* Header con foto y progreso */}
       <div className="flex flex-col md:flex-row gap-6 items-start md:items-center bg-card border rounded-xl p-6">
@@ -239,6 +241,7 @@ export default function MyProfile() {
         />
       )}
     </div>
+    </DashboardLayout>
   );
 }
 

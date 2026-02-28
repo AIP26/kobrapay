@@ -372,7 +372,7 @@ export default function Help() {
               soporte@kobrapay.mx
             </a>
             <a
-              href="https://wa.me/5215500000000"
+              href="https://wa.me/5215551234567"
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center gap-2 px-4 py-2.5 bg-cyan-500/15 border border-cyan-500/20 rounded-xl text-sm text-cyan-400 hover:bg-cyan-500/25 transition-colors"

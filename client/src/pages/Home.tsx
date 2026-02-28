@@ -407,7 +407,13 @@ export default function Home() {
             <Shield className="w-3.5 h-3.5" />
             Pagos procesados con Stripe · SSL 256-bit cifrado
           </div>
-          <p className="text-sm text-gray-500">© 2025 KobraPay · Cobra fácil, cobra global</p>
+          <div className="flex items-center gap-3 text-sm text-gray-500">
+            <span>© 2025 KobraPay</span>
+            <span>·</span>
+            <Link href="/terminos" className="hover:text-gray-300 transition-colors">Términos de Uso</Link>
+            <span>·</span>
+            <Link href="/privacidad" className="hover:text-gray-300 transition-colors">Privacidad</Link>
+          </div>
         </div>
       </footer>
 
