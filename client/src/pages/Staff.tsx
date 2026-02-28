@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Dialog,
   DialogContent,
@@ -20,12 +21,40 @@ import {
   User,
   Trash2,
   ShieldCheck,
-  Eye,
-  EyeOff,
   Copy,
   Check,
+  Briefcase,
+  CreditCard,
+  FileText,
 } from "lucide-react";
 import { toast } from "sonner";
+
+type StaffRole = "asistente" | "operador";
+
+const ROLE_INFO: Record<StaffRole, { label: string; color: string; description: string; permissions: string[] }> = {
+  asistente: {
+    label: "Asistente",
+    color: "bg-purple-100 text-purple-700 border-purple-200",
+    description: "Puede gestionar contratos y crear cobros",
+    permissions: [
+      "Crear y enviar enlaces de cobro",
+      "Ver historial de ventas",
+      "Gestionar contratos de clientes",
+      "Ver expedientes de clientes",
+      "Usar el punto de venta (POS)",
+    ],
+  },
+  operador: {
+    label: "Operador",
+    color: "bg-blue-100 text-blue-700 border-blue-200",
+    description: "Solo puede crear y gestionar cobros",
+    permissions: [
+      "Crear y enviar enlaces de cobro",
+      "Ver historial de ventas",
+      "Usar el punto de venta (POS)",
+    ],
+  },
+};
 
 export default function Staff() {
   const { user } = useAuth();
@@ -34,6 +63,7 @@ export default function Staff() {
   const [selectedStaff, setSelectedStaff] = useState<{ id: number; name: string } | null>(null);
   const [inviteName, setInviteName] = useState("");
   const [inviteEmail, setInviteEmail] = useState("");
+  const [inviteRole, setInviteRole] = useState<StaffRole>("operador");
   const [copiedId, setCopiedId] = useState<number | null>(null);
 
   const { data: staffList, isLoading, refetch } = trpc.staff.list.useQuery();
@@ -44,6 +74,7 @@ export default function Staff() {
       setShowInviteDialog(false);
       setInviteName("");
       setInviteEmail("");
+      setInviteRole("operador");
       refetch();
     },
     onError: (err) => {
@@ -68,7 +99,7 @@ export default function Staff() {
       toast.error("Completa nombre y email");
       return;
     }
-    inviteMutation.mutate({ name: inviteName.trim(), email: inviteEmail.trim() });
+    inviteMutation.mutate({ name: inviteName.trim(), email: inviteEmail.trim(), staffRole: inviteRole });
   };
 
   const handleCopyEmail = (email: string, id: number) => {
@@ -76,6 +107,9 @@ export default function Staff() {
     setCopiedId(id);
     setTimeout(() => setCopiedId(null), 2000);
   };
+
+  const asistentes = staffList?.filter(m => m.staffRole === "asistente") ?? [];
+  const operadores = staffList?.filter(m => m.staffRole !== "asistente") ?? [];
 
   return (
     <DashboardLayout title="Colaboradores">
@@ -85,7 +119,7 @@ export default function Staff() {
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Colaboradores</h1>
             <p className="text-sm text-gray-500 mt-1">
-              Agrega empleados que puedan crear cobros en tu nombre
+              Agrega empleados con roles específicos para tu negocio
             </p>
           </div>
           <Button
@@ -97,25 +131,45 @@ export default function Staff() {
           </Button>
         </div>
 
-        {/* Info card */}
-        <Card className="border-cyan-100 bg-cyan-50">
-          <CardContent className="p-4">
-            <div className="flex gap-3">
-              <ShieldCheck className="w-5 h-5 text-cyan-600 flex-shrink-0 mt-0.5" />
-              <div className="text-sm text-cyan-800">
-                <p className="font-medium mb-1">¿Qué pueden hacer los colaboradores?</p>
-                <ul className="space-y-0.5 text-cyan-700">
-                  <li>• Crear y enviar enlaces de cobro</li>
-                  <li>• Ver el historial de ventas</li>
-                  <li>• Consultar el estado de pagos</li>
-                </ul>
-                <p className="mt-2 text-xs text-cyan-600">
-                  No pueden cambiar configuraciones, ver comisiones ni acceder a datos bancarios.
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        {/* Role comparison cards */}
+        <div className="grid grid-cols-2 gap-4">
+          {(["asistente", "operador"] as StaffRole[]).map(role => {
+            const info = ROLE_INFO[role];
+            const Icon = role === "asistente" ? Briefcase : CreditCard;
+            return (
+              <Card key={role} className="border-gray-200">
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className={`p-1.5 rounded-lg ${role === "asistente" ? "bg-purple-100" : "bg-blue-100"}`}>
+                      <Icon className={`w-4 h-4 ${role === "asistente" ? "text-purple-600" : "text-blue-600"}`} />
+                    </div>
+                    <div>
+                      <p className="font-semibold text-sm text-gray-900">{info.label}</p>
+                      <p className="text-xs text-gray-500">{info.description}</p>
+                    </div>
+                    <Badge className={`ml-auto text-xs ${info.color}`} variant="outline">
+                      {role === "asistente" ? asistentes.length : operadores.length}
+                    </Badge>
+                  </div>
+                  <ul className="space-y-1">
+                    {info.permissions.map(p => (
+                      <li key={p} className="flex items-center gap-1.5 text-xs text-gray-600">
+                        <Check className="w-3 h-3 text-green-500 flex-shrink-0" />
+                        {p}
+                      </li>
+                    ))}
+                    {role === "operador" && (
+                      <li className="flex items-center gap-1.5 text-xs text-gray-400">
+                        <span className="w-3 h-3 flex-shrink-0 text-center">✗</span>
+                        No accede a contratos
+                      </li>
+                    )}
+                  </ul>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
 
         {/* Staff list */}
         <Card>
@@ -164,65 +218,74 @@ export default function Staff() {
               </div>
             ) : (
               <div className="divide-y divide-gray-50">
-                {staffList.map((member) => (
-                  <div key={member.id} className="flex items-center gap-4 px-6 py-4 hover:bg-gray-50 transition-colors">
-                    {/* Avatar */}
-                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-cyan-400 to-teal-500 flex items-center justify-center flex-shrink-0">
-                      <span className="text-white font-semibold text-sm">
-                        {(member.name || member.email || "?").charAt(0).toUpperCase()}
-                      </span>
-                    </div>
-                    {/* Info */}
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium text-gray-900 text-sm truncate">
-                        {member.name || "Sin nombre"}
-                      </p>
-                      <div className="flex items-center gap-1.5 mt-0.5">
-                        <Mail className="w-3 h-3 text-gray-400" />
-                        <p className="text-xs text-gray-500 truncate">{member.email}</p>
-                        <button
-                          onClick={() => handleCopyEmail(member.email || "", member.id)}
-                          className="text-gray-300 hover:text-gray-500 transition-colors flex-shrink-0"
+                {staffList.map((member) => {
+                  const role = (member.staffRole || "operador") as StaffRole;
+                  const roleInfo = ROLE_INFO[role];
+                  return (
+                    <div key={member.id} className="flex items-center gap-4 px-6 py-4 hover:bg-gray-50 transition-colors">
+                      {/* Avatar */}
+                      <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${role === "asistente" ? "bg-gradient-to-br from-purple-400 to-violet-500" : "bg-gradient-to-br from-cyan-400 to-teal-500"}`}>
+                        <span className="text-white font-semibold text-sm">
+                          {(member.name || member.email || "?").charAt(0).toUpperCase()}
+                        </span>
+                      </div>
+                      {/* Info */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <p className="font-medium text-gray-900 text-sm truncate">
+                            {member.name || "Sin nombre"}
+                          </p>
+                          <Badge className={`text-xs ${roleInfo.color}`} variant="outline">
+                            {roleInfo.label}
+                          </Badge>
+                        </div>
+                        <div className="flex items-center gap-1.5 mt-0.5">
+                          <Mail className="w-3 h-3 text-gray-400" />
+                          <p className="text-xs text-gray-500 truncate">{member.email}</p>
+                          <button
+                            onClick={() => handleCopyEmail(member.email || "", member.id)}
+                            className="text-gray-300 hover:text-gray-500 transition-colors flex-shrink-0"
+                          >
+                            {copiedId === member.id ? (
+                              <Check className="w-3 h-3 text-green-500" />
+                            ) : (
+                              <Copy className="w-3 h-3" />
+                            )}
+                          </button>
+                        </div>
+                      </div>
+                      {/* Status */}
+                      <div className="flex items-center gap-3">
+                        <Badge
+                          className={
+                            member.isActive
+                              ? "bg-green-100 text-green-700 border-green-200"
+                              : "bg-yellow-100 text-yellow-700 border-yellow-200"
+                          }
+                          variant="outline"
                         >
-                          {copiedId === member.id ? (
-                            <Check className="w-3 h-3 text-green-500" />
-                          ) : (
-                            <Copy className="w-3 h-3" />
-                          )}
+                          {member.isActive ? "Activo" : "Pendiente"}
+                        </Badge>
+                        <p className="text-xs text-gray-400 hidden sm:block">
+                          {new Date(member.createdAt).toLocaleDateString("es-MX", {
+                            day: "2-digit",
+                            month: "short",
+                            year: "numeric",
+                          })}
+                        </p>
+                        <button
+                          onClick={() => {
+                            setSelectedStaff({ id: member.id, name: member.name || member.email || "" });
+                            setShowDeleteDialog(true);
+                          }}
+                          className="p-1.5 rounded-lg text-gray-300 hover:text-red-500 hover:bg-red-50 transition-all"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
                         </button>
                       </div>
                     </div>
-                    {/* Status */}
-                    <div className="flex items-center gap-3">
-                      <Badge
-                        className={
-                          member.isActive
-                            ? "bg-green-100 text-green-700 border-green-200"
-                            : "bg-yellow-100 text-yellow-700 border-yellow-200"
-                        }
-                        variant="outline"
-                      >
-                        {member.isActive ? "Activo" : "Pendiente"}
-                      </Badge>
-                      <p className="text-xs text-gray-400 hidden sm:block">
-                        {new Date(member.createdAt).toLocaleDateString("es-MX", {
-                          day: "2-digit",
-                          month: "short",
-                          year: "numeric",
-                        })}
-                      </p>
-                      <button
-                        onClick={() => {
-                          setSelectedStaff({ id: member.id, name: member.name || member.email || "" });
-                          setShowDeleteDialog(true);
-                        }}
-                        className="p-1.5 rounded-lg text-gray-300 hover:text-red-500 hover:bg-red-50 transition-all"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </CardContent>
@@ -265,8 +328,49 @@ export default function Staff() {
                 />
               </div>
             </div>
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium text-gray-700">Rol del colaborador</label>
+              <Select value={inviteRole} onValueChange={(v) => setInviteRole(v as StaffRole)}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="operador">
+                    <div className="flex items-center gap-2">
+                      <CreditCard className="w-4 h-4 text-blue-500" />
+                      <div>
+                        <p className="font-medium">Operador</p>
+                        <p className="text-xs text-gray-500">Solo puede crear y gestionar cobros</p>
+                      </div>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="asistente">
+                    <div className="flex items-center gap-2">
+                      <Briefcase className="w-4 h-4 text-purple-500" />
+                      <div>
+                        <p className="font-medium">Asistente</p>
+                        <p className="text-xs text-gray-500">Cobros + contratos de clientes</p>
+                      </div>
+                    </div>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            {/* Role preview */}
+            <div className={`rounded-lg p-3 text-sm ${inviteRole === "asistente" ? "bg-purple-50 border border-purple-100" : "bg-blue-50 border border-blue-100"}`}>
+              <p className={`font-medium mb-1 ${inviteRole === "asistente" ? "text-purple-800" : "text-blue-800"}`}>
+                Permisos del {ROLE_INFO[inviteRole].label}:
+              </p>
+              <ul className="space-y-0.5">
+                {ROLE_INFO[inviteRole].permissions.map(p => (
+                  <li key={p} className={`text-xs flex items-center gap-1 ${inviteRole === "asistente" ? "text-purple-700" : "text-blue-700"}`}>
+                    <Check className="w-3 h-3" /> {p}
+                  </li>
+                ))}
+              </ul>
+            </div>
             <p className="text-xs text-gray-500 bg-gray-50 rounded-lg p-3">
-              El colaborador recibirá un email con instrucciones para acceder a la plataforma con acceso limitado.
+              El colaborador recibirá un email con instrucciones para acceder a la plataforma.
             </p>
           </div>
           <DialogFooter>

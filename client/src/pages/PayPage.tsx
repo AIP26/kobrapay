@@ -95,6 +95,7 @@ function PaymentForm({ token }: { token: string }) {
   const [selfiePreview, setSelfiePreview] = useState("");
   const [lang, setLang] = useState<"es" | "en">("es");
   const [paymentError, setPaymentError] = useState<{ title: string; description: string; action: string } | null>(null);
+  const [selectedMsi, setSelectedMsi] = useState<number | null>(null);
   const [paymentRequest, setPaymentRequest] = useState<PaymentRequest | null>(null);
   const [walletAvailable, setWalletAvailable] = useState(false);
   const [walletChecked, setWalletChecked] = useState(false);
@@ -454,6 +455,7 @@ function PaymentForm({ token }: { token: string }) {
         signatureUrl,
         idDocumentUrl,
         userAgent: navigator.userAgent,
+        msiMonths: selectedMsi || undefined,
       });
       setClientSecret(result.clientSecret);
       setPaymentIntentId(result.paymentIntentId);
@@ -915,11 +917,57 @@ function PaymentForm({ token }: { token: string }) {
                   )}
 
                   {!clientSecret ? (
-                    <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl mb-4 font-semibold"
-                      onClick={handleCreateIntent} disabled={processing}>
-                      {processing ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <CreditCard className="w-4 h-4 mr-2" />}
-                      Ingresar datos de tarjeta
-                    </Button>
+                    <div>
+                      {/* MSI Selector */}
+                      {(() => {
+                        const rawMsi = (linkData as Record<string, unknown>).msiOptions;
+                        if (!rawMsi) return null;
+                        const opts = JSON.parse(String(rawMsi)) as number[];
+                        if (!opts || opts.length === 0) return null;
+                        return (
+                          <div className="mb-4">
+                            <p className="text-sm font-semibold text-gray-700 mb-2">Elige tu plan de pago</p>
+                            <div className="grid grid-cols-2 gap-2">
+                              <button
+                                type="button"
+                                onClick={() => setSelectedMsi(null)}
+                                className={`px-3 py-2.5 rounded-xl border text-sm font-medium transition-all ${
+                                  selectedMsi === null
+                                    ? "bg-blue-600 text-white border-blue-600"
+                                    : "bg-white text-gray-700 border-gray-200 hover:border-blue-300"
+                                }`}
+                              >
+                                Pago de contado
+                              </button>
+                              {opts.map(m => (
+                                <button
+                                  key={m}
+                                  type="button"
+                                  onClick={() => setSelectedMsi(m)}
+                                  className={`px-3 py-2.5 rounded-xl border text-sm font-medium transition-all ${
+                                    selectedMsi === m
+                                      ? "bg-blue-600 text-white border-blue-600"
+                                      : "bg-white text-gray-700 border-gray-200 hover:border-blue-300"
+                                  }`}
+                                >
+                                  {m} meses sin intereses
+                                </button>
+                              ))}
+                            </div>
+                            {selectedMsi !== null && (
+                              <p className="text-xs text-blue-600 mt-2 text-center">
+                                {selectedMsi} pagos de aprox. {formatMXN(amount / selectedMsi)} / mes
+                              </p>
+                            )}
+                          </div>
+                        );
+                      })()}
+                      <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl mb-4 font-semibold"
+                        onClick={handleCreateIntent} disabled={processing}>
+                        {processing ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <CreditCard className="w-4 h-4 mr-2" />}
+                        Ingresar datos de tarjeta
+                      </Button>
+                    </div>
                   ) : (
                     <form onSubmit={handlePayment}>
                       {/* Selector de método */}

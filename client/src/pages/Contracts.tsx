@@ -1,15 +1,15 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { FileText, Plus, Send, Eye, Copy, CheckCircle, Clock, Archive, Edit } from "lucide-react";
+import { FileText, Plus, Send, Eye, Copy, CheckCircle, Clock, Archive, Edit, Download, Search, X, ExternalLink } from "lucide-react";
+import jsPDF from "jspdf";
 
 type ContractStatus = "draft" | "sent" | "signed" | "archived";
 
@@ -27,16 +27,213 @@ const STATUS_ICONS: Record<ContractStatus, React.ReactNode> = {
   archived: <Archive className="w-3 h-3" />,
 };
 
+type ContractData = {
+  id: number;
+  clientName: string;
+  clientEmail: string;
+  clientPhone?: string | null;
+  clientRfc?: string | null;
+  clientCurp?: string | null;
+  clientAddress?: string | null;
+  businessName?: string | null;
+  clientIneNumber?: string | null;
+  commissionRate: string;
+  contractDurationMonths: number;
+  includeExclusivityClause: boolean | number;
+  customTerms?: string | null;
+  internalNotes?: string | null;
+  status: string;
+  signToken?: string | null;
+  signedAt?: Date | string | null;
+  signedFromIp?: string | null;
+  signatureUrl?: string | null;
+  ineUrl?: string | null;
+  passportUrl?: string | null;
+  addressProofUrl?: string | null;
+  rfcDocUrl?: string | null;
+  curpDocUrl?: string | null;
+  createdAt?: Date | string | null;
+};
+
+async function generateContractPDF(contract: ContractData) {
+  const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+  const pageW = 210;
+  const margin = 20;
+  const contentW = pageW - margin * 2;
+  let y = 20;
+
+  const addText = (text: string, x: number, yPos: number, opts: { size?: number; bold?: boolean; color?: [number,number,number]; maxWidth?: number } = {}) => {
+    doc.setFontSize(opts.size || 10);
+    doc.setFont("helvetica", opts.bold ? "bold" : "normal");
+    if (opts.color) doc.setTextColor(...opts.color);
+    else doc.setTextColor(30, 30, 30);
+    if (opts.maxWidth) {
+      const lines = doc.splitTextToSize(text, opts.maxWidth);
+      doc.text(lines, x, yPos);
+      return (lines.length - 1) * (opts.size || 10) * 0.35;
+    }
+    doc.text(text, x, yPos);
+    return 0;
+  };
+
+  // Header
+  doc.setFillColor(14, 116, 144);
+  doc.rect(0, 0, pageW, 28, "F");
+  doc.setFontSize(18);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(255, 255, 255);
+  doc.text("CONTRATO DE SERVICIOS", margin, 13);
+  doc.setFontSize(10);
+  doc.setFont("helvetica", "normal");
+  doc.text("KobraPay — Plataforma de Procesamiento de Pagos Digitales", margin, 21);
+  y = 38;
+
+  // Contract number
+  doc.setFillColor(240, 249, 255);
+  doc.roundedRect(margin, y - 5, contentW, 10, 2, 2, "F");
+  addText(`Contrato No. KP-${String(contract.id).padStart(5, "0")}`, margin + 3, y + 1, { size: 9, bold: true, color: [14, 116, 144] });
+  const dateStr = contract.createdAt ? new Date(contract.createdAt).toLocaleDateString("es-MX", { day: "numeric", month: "long", year: "numeric" }) : new Date().toLocaleDateString("es-MX", { day: "numeric", month: "long", year: "numeric" });
+  addText(`Fecha: ${dateStr}`, pageW - margin - 60, y + 1, { size: 9, color: [80, 80, 80] });
+  y += 14;
+
+  // Parties
+  addText("COMPARECIENTES", margin, y, { size: 11, bold: true, color: [14, 116, 144] });
+  y += 6;
+  doc.setDrawColor(14, 116, 144);
+  doc.setLineWidth(0.5);
+  doc.line(margin, y, margin + contentW, y);
+  y += 5;
+
+  addText("EL PRESTADOR DE SERVICIOS:", margin, y, { size: 10, bold: true });
+  y += 5;
+  addText("KobraPay, plataforma de procesamiento de pagos digitales, con domicilio en Ciudad de México.", margin, y, { size: 9, maxWidth: contentW });
+  y += 8;
+
+  addText("EL CLIENTE:", margin, y, { size: 10, bold: true });
+  y += 5;
+  const clientInfo = [
+    `Nombre: ${contract.clientName}`,
+    contract.businessName ? `Negocio: ${contract.businessName}` : null,
+    contract.clientRfc ? `RFC: ${contract.clientRfc}` : null,
+    contract.clientCurp ? `CURP: ${contract.clientCurp}` : null,
+    contract.clientIneNumber ? `INE/Pasaporte: ${contract.clientIneNumber}` : null,
+    `Email: ${contract.clientEmail}`,
+    contract.clientPhone ? `Teléfono: ${contract.clientPhone}` : null,
+    contract.clientAddress ? `Domicilio: ${contract.clientAddress}` : null,
+  ].filter(Boolean) as string[];
+
+  for (const line of clientInfo) {
+    addText(line, margin, y, { size: 9 });
+    y += 5;
+  }
+  y += 4;
+
+  // Clauses
+  addText("CLÁUSULAS DEL CONTRATO", margin, y, { size: 11, bold: true, color: [14, 116, 144] });
+  y += 6;
+  doc.line(margin, y, margin + contentW, y);
+  y += 5;
+
+  const clauses = [
+    { title: "PRIMERA. OBJETO", text: "KobraPay prestará al Cliente servicios de procesamiento de pagos en línea mediante enlaces de cobro, punto de venta digital, y herramientas de gestión financiera." },
+    { title: "SEGUNDA. COMISIÓN", text: `El Cliente acepta una comisión del ${contract.commissionRate}% sobre cada transacción procesada a través de la plataforma. Esta comisión incluye el procesamiento del pago, la gestión de disputas y el soporte técnico.` },
+    ...(Number(contract.contractDurationMonths) > 0 ? [{ title: "TERCERA. VIGENCIA", text: `El presente contrato tendrá una duración de ${contract.contractDurationMonths} meses a partir de la fecha de firma. La terminación anticipada generará una penalización equivalente a 2 meses de comisiones promedio.` }] : []),
+    ...(contract.includeExclusivityClause ? [{ title: "CLÁUSULA DE EXCLUSIVIDAD", text: "Durante la vigencia del contrato, el Cliente se compromete a utilizar únicamente KobraPay como plataforma de procesamiento de pagos digitales para su negocio, absteniéndose de contratar servicios similares con terceros." }] : []),
+    { title: "PROTECCIÓN DE DATOS", text: "KobraPay se compromete a proteger los datos personales del Cliente conforme a la Ley Federal de Protección de Datos Personales en Posesión de los Particulares (LFPDPPP) y su Reglamento." },
+    { title: "CONFIDENCIALIDAD", text: "Ambas partes se obligan a mantener la confidencialidad de la información intercambiada durante la prestación de los servicios." },
+    { title: "RESPONSABILIDAD", text: "KobraPay no será responsable por interrupciones del servicio causadas por terceros (procesadores de pago, proveedores de internet) o por fuerza mayor." },
+    { title: "JURISDICCIÓN", text: "Para la interpretación y cumplimiento del presente contrato, las partes se someten a la jurisdicción de los tribunales competentes de la Ciudad de México." },
+  ];
+
+  for (const clause of clauses) {
+    if (y > 250) { doc.addPage(); y = 20; }
+    addText(clause.title, margin, y, { size: 9, bold: true, color: [14, 116, 144] });
+    y += 5;
+    const extra = addText(clause.text, margin, y, { size: 9, maxWidth: contentW });
+    y += 5 + extra;
+  }
+
+  if (contract.customTerms) {
+    if (y > 250) { doc.addPage(); y = 20; }
+    addText("TÉRMINOS ADICIONALES", margin, y, { size: 9, bold: true, color: [180, 100, 0] });
+    y += 5;
+    const extra = addText(contract.customTerms, margin, y, { size: 9, maxWidth: contentW });
+    y += 5 + extra;
+  }
+
+  // Signature section
+  if (y > 220) { doc.addPage(); y = 20; }
+  y += 5;
+  addText("FIRMAS", margin, y, { size: 11, bold: true, color: [14, 116, 144] });
+  y += 6;
+  doc.line(margin, y, margin + contentW, y);
+  y += 10;
+
+  if (contract.status === "signed" && contract.signedAt) {
+    doc.setFillColor(240, 253, 244);
+    doc.roundedRect(margin, y - 4, contentW, 12, 2, 2, "F");
+    addText(`✓ Contrato firmado digitalmente el ${new Date(contract.signedAt).toLocaleString("es-MX")}`, margin + 3, y + 3, { size: 9, bold: true, color: [22, 163, 74] });
+    if (contract.signedFromIp) addText(`IP de firma: ${contract.signedFromIp}`, pageW - margin - 60, y + 3, { size: 8, color: [100, 100, 100] });
+    y += 16;
+
+    if (contract.signatureUrl) {
+      try {
+        const response = await fetch(`/api/image-proxy?url=${encodeURIComponent(contract.signatureUrl)}`);
+        const blob = await response.blob();
+        const base64 = await new Promise<string>((resolve) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result as string);
+          reader.readAsDataURL(blob);
+        });
+        doc.text("Firma digital del cliente:", margin, y);
+        y += 5;
+        doc.addImage(base64, "PNG", margin, y, 60, 25);
+        y += 30;
+      } catch {
+        addText("Firma digital: (imagen no disponible)", margin, y, { size: 9, color: [150, 150, 150] });
+        y += 8;
+      }
+    }
+  } else {
+    // Blank signature lines
+    const halfW = contentW / 2 - 10;
+    doc.line(margin, y + 15, margin + halfW, y + 15);
+    addText("KobraPay", margin + halfW / 2 - 10, y + 20, { size: 8, color: [100, 100, 100] });
+    doc.line(margin + halfW + 20, y + 15, margin + contentW, y + 15);
+    addText(contract.clientName, margin + halfW + 20 + halfW / 2 - 15, y + 20, { size: 8, color: [100, 100, 100] });
+    y += 28;
+  }
+
+  // Footer
+  const pageCount = doc.getNumberOfPages();
+  for (let i = 1; i <= pageCount; i++) {
+    doc.setPage(i);
+    doc.setFillColor(245, 245, 245);
+    doc.rect(0, 287, pageW, 10, "F");
+    doc.setFontSize(7);
+    doc.setTextColor(150, 150, 150);
+    doc.text("KobraPay — kobrapay.mx | Documento generado electrónicamente", margin, 293);
+    doc.text(`Página ${i} de ${pageCount}`, pageW - margin - 20, 293);
+  }
+
+  const fileName = `Contrato_KP-${String(contract.id).padStart(5, "0")}_${contract.clientName.replace(/\s+/g, "_")}.pdf`;
+  doc.save(fileName);
+}
+
 export default function Contracts() {
   const [showCreate, setShowCreate] = useState(false);
   const [selectedContract, setSelectedContract] = useState<number | null>(null);
   const [sendingId, setSendingId] = useState<number | null>(null);
+  const [search, setSearch] = useState("");
+  const [filterStatus, setFilterStatus] = useState<ContractStatus | "all">("all");
+  const [generatingPdf, setGeneratingPdf] = useState<number | null>(null);
 
   const { data: contracts = [], refetch } = trpc.contracts.list.useQuery();
   const createMutation = trpc.contracts.create.useMutation({
     onSuccess: () => {
       toast.success("Contrato creado como borrador.");
       setShowCreate(false);
+      resetForm();
       refetch();
     },
     onError: (e) => toast.error(e.message),
@@ -45,7 +242,7 @@ export default function Contracts() {
     onSuccess: (data) => {
       const signUrl = `${window.location.origin}/sign-contract/${data.signToken}`;
       navigator.clipboard.writeText(signUrl).catch(() => {});
-      toast.success("Contrato enviado. Enlace copiado al portapapeles.");
+      toast.success("Contrato enviado al cliente. Enlace copiado al portapapeles.");
       setSendingId(null);
       refetch();
     },
@@ -56,12 +253,14 @@ export default function Contracts() {
     onError: (e) => toast.error(e.message),
   });
 
-  const [form, setForm] = useState({
+  const defaultForm = {
     clientName: "", clientEmail: "", clientPhone: "", clientRfc: "", clientCurp: "",
     clientAddress: "", businessName: "", clientIneNumber: "",
     commissionRate: 6, contractDurationMonths: 0, includeExclusivityClause: false,
     customTerms: "", internalNotes: "",
-  });
+  };
+  const [form, setForm] = useState(defaultForm);
+  const resetForm = () => setForm(defaultForm);
 
   const handleCreate = () => {
     createMutation.mutate(form);
@@ -76,10 +275,39 @@ export default function Contracts() {
     if (!token) return;
     const url = `${window.location.origin}/sign-contract/${token}`;
     navigator.clipboard.writeText(url);
-      toast.success("Enlace copiado: " + url);
+    toast.success("Enlace copiado al portapapeles");
   };
 
-  const selectedContractData = contracts.find(c => c.id === selectedContract);
+  const handleDownloadPDF = async (contract: ContractData) => {
+    setGeneratingPdf(contract.id);
+    try {
+      await generateContractPDF(contract);
+      toast.success("PDF descargado correctamente");
+    } catch (e) {
+      toast.error("Error al generar el PDF");
+    } finally {
+      setGeneratingPdf(null);
+    }
+  };
+
+  // Filtered contracts
+  const filtered = contracts.filter(c => {
+    const matchSearch = !search ||
+      c.clientName.toLowerCase().includes(search.toLowerCase()) ||
+      c.clientEmail.toLowerCase().includes(search.toLowerCase()) ||
+      (c.businessName || "").toLowerCase().includes(search.toLowerCase());
+    const matchStatus = filterStatus === "all" || c.status === filterStatus;
+    return matchSearch && matchStatus;
+  });
+
+  const selectedContractData = contracts.find(c => c.id === selectedContract) as ContractData | undefined;
+
+  const stats = {
+    draft: contracts.filter(c => c.status === "draft").length,
+    sent: contracts.filter(c => c.status === "sent").length,
+    signed: contracts.filter(c => c.status === "signed").length,
+    archived: contracts.filter(c => c.status === "archived").length,
+  };
 
   return (
     <div className="p-6 max-w-6xl mx-auto">
@@ -87,9 +315,9 @@ export default function Contracts() {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Contratos Digitales</h1>
-          <p className="text-gray-500 text-sm mt-1">Gestiona los contratos de tus clientes — solo visible para ti</p>
+          <p className="text-gray-500 text-sm mt-1">Gestiona contratos con tus clientes — solo visible para ti</p>
         </div>
-        <Dialog open={showCreate} onOpenChange={setShowCreate}>
+        <Dialog open={showCreate} onOpenChange={(v) => { setShowCreate(v); if (!v) resetForm(); }}>
           <DialogTrigger asChild>
             <Button className="bg-cyan-700 hover:bg-cyan-800 text-white gap-2">
               <Plus className="w-4 h-4" /> Nuevo Contrato
@@ -153,7 +381,7 @@ export default function Contracts() {
                 <Switch checked={form.includeExclusivityClause} onCheckedChange={v => setForm(f => ({ ...f, includeExclusivityClause: v }))} />
                 <div>
                   <p className="font-medium text-sm">Cláusula de exclusividad</p>
-                  <p className="text-xs text-gray-500">El cliente se compromete a usar únicamente KobraPay como plataforma de cobros durante la vigencia del contrato</p>
+                  <p className="text-xs text-gray-500">El cliente se compromete a usar únicamente KobraPay durante la vigencia del contrato</p>
                 </div>
               </div>
               <div className="col-span-2">
@@ -166,7 +394,7 @@ export default function Contracts() {
               </div>
             </div>
             <div className="flex gap-3 mt-4">
-              <Button variant="outline" onClick={() => setShowCreate(false)} className="flex-1">Cancelar</Button>
+              <Button variant="outline" onClick={() => { setShowCreate(false); resetForm(); }} className="flex-1">Cancelar</Button>
               <Button onClick={handleCreate} disabled={createMutation.isPending || !form.clientName || !form.clientEmail} className="flex-1 bg-cyan-700 hover:bg-cyan-800 text-white">
                 {createMutation.isPending ? "Guardando..." : "Guardar Borrador"}
               </Button>
@@ -178,26 +406,53 @@ export default function Contracts() {
       {/* Stats */}
       <div className="grid grid-cols-4 gap-4 mb-6">
         {(["draft", "sent", "signed", "archived"] as ContractStatus[]).map(status => {
-          const count = contracts.filter(c => c.status === status).length;
+          const count = stats[status];
           const { label, color } = STATUS_LABELS[status];
           return (
-            <div key={status} className="bg-white rounded-xl border border-gray-200 p-4">
+            <button
+              key={status}
+              onClick={() => setFilterStatus(filterStatus === status ? "all" : status)}
+              className={`bg-white rounded-xl border p-4 text-left transition-all ${filterStatus === status ? "border-cyan-500 shadow-md" : "border-gray-200 hover:border-gray-300"}`}
+            >
               <div className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-medium ${color} mb-2`}>
                 {STATUS_ICONS[status]} {label}
               </div>
               <p className="text-2xl font-bold text-gray-900">{count}</p>
-            </div>
+            </button>
           );
         })}
       </div>
 
+      {/* Search & filter bar */}
+      <div className="flex gap-3 mb-4">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <Input
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            placeholder="Buscar por nombre, email o negocio..."
+            className="pl-9"
+          />
+          {search && (
+            <button onClick={() => setSearch("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+              <X className="w-4 h-4" />
+            </button>
+          )}
+        </div>
+        {filterStatus !== "all" && (
+          <Button variant="outline" onClick={() => setFilterStatus("all")} className="gap-1 text-sm">
+            <X className="w-3 h-3" /> Limpiar filtro
+          </Button>
+        )}
+      </div>
+
       {/* Table */}
       <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-        {contracts.length === 0 ? (
+        {filtered.length === 0 ? (
           <div className="text-center py-16 text-gray-500">
             <FileText className="w-12 h-12 mx-auto mb-3 text-gray-300" />
-            <p className="font-medium">No hay contratos aún</p>
-            <p className="text-sm">Crea tu primer contrato para un cliente</p>
+            <p className="font-medium">{contracts.length === 0 ? "No hay contratos aún" : "Sin resultados"}</p>
+            <p className="text-sm">{contracts.length === 0 ? "Crea tu primer contrato para un cliente" : "Intenta con otro término de búsqueda"}</p>
           </div>
         ) : (
           <table className="w-full">
@@ -213,11 +468,12 @@ export default function Contracts() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {contracts.map(contract => {
+              {filtered.map(contract => {
                 const status = contract.status as ContractStatus;
                 const { label, color } = STATUS_LABELS[status];
+                const isSelected = contract.id === selectedContract;
                 return (
-                  <tr key={contract.id} className="hover:bg-gray-50">
+                  <tr key={contract.id} className={`hover:bg-gray-50 ${isSelected ? "bg-cyan-50" : ""}`}>
                     <td className="px-4 py-3">
                       <p className="font-medium text-gray-900 text-sm">{contract.clientName}</p>
                       <p className="text-xs text-gray-500">{contract.clientEmail}</p>
@@ -239,10 +495,22 @@ export default function Contracts() {
                       <div className="flex items-center gap-1 justify-end">
                         <Button
                           size="sm" variant="ghost"
-                          onClick={() => setSelectedContract(contract.id === selectedContract ? null : contract.id)}
+                          onClick={() => setSelectedContract(isSelected ? null : contract.id)}
                           title="Ver detalles"
+                          className={isSelected ? "text-cyan-700" : ""}
                         >
                           <Eye className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          size="sm" variant="ghost"
+                          onClick={() => handleDownloadPDF(contract as ContractData)}
+                          disabled={generatingPdf === contract.id}
+                          title="Descargar PDF"
+                          className="text-gray-500 hover:text-gray-700"
+                        >
+                          {generatingPdf === contract.id
+                            ? <div className="w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" />
+                            : <Download className="w-4 h-4" />}
                         </Button>
                         {status === "draft" && (
                           <Button
@@ -252,7 +520,9 @@ export default function Contracts() {
                             className="text-blue-600 hover:text-blue-700"
                             title="Enviar al cliente"
                           >
-                            <Send className="w-4 h-4" />
+                            {sendingId === contract.id
+                              ? <div className="w-4 h-4 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
+                              : <Send className="w-4 h-4" />}
                           </Button>
                         )}
                         {(status === "sent" || status === "signed") && contract.signToken && (
@@ -288,10 +558,40 @@ export default function Contracts() {
       {/* Detail panel */}
       {selectedContractData && (
         <div className="mt-6 bg-white rounded-xl border border-gray-200 p-6">
-          <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-            <FileText className="w-5 h-5 text-cyan-700" />
-            Detalle del Contrato — {selectedContractData.clientName}
-          </h2>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+              <FileText className="w-5 h-5 text-cyan-700" />
+              Detalle del Contrato — {selectedContractData.clientName}
+            </h2>
+            <div className="flex gap-2">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => handleDownloadPDF(selectedContractData)}
+                disabled={generatingPdf === selectedContractData.id}
+                className="gap-2 text-cyan-700 border-cyan-200 hover:bg-cyan-50"
+              >
+                {generatingPdf === selectedContractData.id
+                  ? <div className="w-4 h-4 border-2 border-cyan-600 border-t-transparent rounded-full animate-spin" />
+                  : <Download className="w-4 h-4" />}
+                Descargar PDF
+              </Button>
+              {selectedContractData.signToken && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    const url = `${window.location.origin}/sign-contract/${selectedContractData.signToken}`;
+                    window.open(url, "_blank");
+                  }}
+                  className="gap-2"
+                >
+                  <ExternalLink className="w-4 h-4" /> Ver enlace
+                </Button>
+              )}
+            </div>
+          </div>
+
           <div className="grid grid-cols-3 gap-4 text-sm">
             <div><span className="text-gray-500">Email:</span> <span className="font-medium">{selectedContractData.clientEmail}</span></div>
             <div><span className="text-gray-500">Teléfono:</span> <span className="font-medium">{selectedContractData.clientPhone || "—"}</span></div>
@@ -311,28 +611,31 @@ export default function Contracts() {
               </div>
             )}
           </div>
+
           {/* Documentos subidos */}
           {(selectedContractData.ineUrl || selectedContractData.passportUrl || selectedContractData.addressProofUrl || selectedContractData.rfcDocUrl || selectedContractData.curpDocUrl) && (
             <div className="mt-4">
               <p className="text-sm font-semibold text-gray-700 mb-2">Documentos recibidos:</p>
               <div className="flex flex-wrap gap-2">
-                {selectedContractData.ineUrl && <a href={selectedContractData.ineUrl} target="_blank" rel="noopener noreferrer" className="text-xs bg-cyan-50 text-cyan-700 border border-cyan-200 px-3 py-1 rounded-full hover:bg-cyan-100">INE / Credencial</a>}
-                {selectedContractData.passportUrl && <a href={selectedContractData.passportUrl} target="_blank" rel="noopener noreferrer" className="text-xs bg-cyan-50 text-cyan-700 border border-cyan-200 px-3 py-1 rounded-full hover:bg-cyan-100">Pasaporte</a>}
-                {selectedContractData.addressProofUrl && <a href={selectedContractData.addressProofUrl} target="_blank" rel="noopener noreferrer" className="text-xs bg-cyan-50 text-cyan-700 border border-cyan-200 px-3 py-1 rounded-full hover:bg-cyan-100">Comprobante de domicilio</a>}
-                {selectedContractData.rfcDocUrl && <a href={selectedContractData.rfcDocUrl} target="_blank" rel="noopener noreferrer" className="text-xs bg-cyan-50 text-cyan-700 border border-cyan-200 px-3 py-1 rounded-full hover:bg-cyan-100">RFC</a>}
-                {selectedContractData.curpDocUrl && <a href={selectedContractData.curpDocUrl} target="_blank" rel="noopener noreferrer" className="text-xs bg-cyan-50 text-cyan-700 border border-cyan-200 px-3 py-1 rounded-full hover:bg-cyan-100">CURP</a>}
+                {selectedContractData.ineUrl && <a href={selectedContractData.ineUrl} target="_blank" rel="noopener noreferrer" className="text-xs bg-cyan-50 text-cyan-700 border border-cyan-200 px-3 py-1 rounded-full hover:bg-cyan-100 flex items-center gap-1"><ExternalLink className="w-3 h-3" /> INE / Credencial</a>}
+                {selectedContractData.passportUrl && <a href={selectedContractData.passportUrl} target="_blank" rel="noopener noreferrer" className="text-xs bg-cyan-50 text-cyan-700 border border-cyan-200 px-3 py-1 rounded-full hover:bg-cyan-100 flex items-center gap-1"><ExternalLink className="w-3 h-3" /> Pasaporte</a>}
+                {selectedContractData.addressProofUrl && <a href={selectedContractData.addressProofUrl} target="_blank" rel="noopener noreferrer" className="text-xs bg-cyan-50 text-cyan-700 border border-cyan-200 px-3 py-1 rounded-full hover:bg-cyan-100 flex items-center gap-1"><ExternalLink className="w-3 h-3" /> Comprobante de domicilio</a>}
+                {selectedContractData.rfcDocUrl && <a href={selectedContractData.rfcDocUrl} target="_blank" rel="noopener noreferrer" className="text-xs bg-cyan-50 text-cyan-700 border border-cyan-200 px-3 py-1 rounded-full hover:bg-cyan-100 flex items-center gap-1"><ExternalLink className="w-3 h-3" /> RFC</a>}
+                {selectedContractData.curpDocUrl && <a href={selectedContractData.curpDocUrl} target="_blank" rel="noopener noreferrer" className="text-xs bg-cyan-50 text-cyan-700 border border-cyan-200 px-3 py-1 rounded-full hover:bg-cyan-100 flex items-center gap-1"><ExternalLink className="w-3 h-3" /> CURP</a>}
               </div>
             </div>
           )}
+
           {selectedContractData.signatureUrl && (
             <div className="mt-4">
               <p className="text-sm font-semibold text-gray-700 mb-2">Firma digital del cliente:</p>
               <img src={selectedContractData.signatureUrl} alt="Firma digital" className="border border-gray-200 rounded-lg max-h-24 bg-white" />
             </div>
           )}
+
           {selectedContractData.internalNotes && (
             <div className="mt-4 p-3 bg-yellow-50 rounded-lg border border-yellow-200">
-              <p className="text-xs font-semibold text-yellow-700 mb-1">Notas internas:</p>
+              <p className="text-xs font-semibold text-yellow-700 mb-1">Notas internas (privadas):</p>
               <p className="text-sm text-yellow-800">{selectedContractData.internalNotes}</p>
             </div>
           )}

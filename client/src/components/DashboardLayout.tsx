@@ -26,6 +26,7 @@ import {
   Handshake,
   UserPlus,
   FolderOpen,
+  TrendingUp,
 } from "lucide-react";
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
@@ -56,6 +57,7 @@ const navItems = [
   { href: "/dashboard/registrations", icon: UserCog, label: "Registros", section: "superadmin" },
   { href: "/dashboard/contracts", icon: Handshake, label: "Contratos", section: "superadmin" },
   { href: "/dashboard/agents", icon: UserPlus, label: "Vendedores", section: "superadmin" },
+  { href: "/dashboard/commissions", icon: TrendingUp, label: "Comisiones", section: "superadmin" },
   { href: "/dashboard/settings", icon: Settings, label: "Configuración", section: "settings" },
 ];
 

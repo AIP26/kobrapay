@@ -224,6 +224,8 @@ export const appRouter = router({
           requireIdUpload: z.boolean().default(false),
           chargebackProtectionText: z.string().max(500).optional().or(z.literal("")),
           usdExchangeRate: z.number().min(0).default(0),
+          // MSI: array de meses habilitados (ej: [3, 6, 9, 12])
+          msiOptions: z.array(z.number().int().min(3).max(24)).optional(),
         })
       )
       .mutation(async ({ ctx, input }) => {
@@ -260,6 +262,7 @@ export const appRouter = router({
           usdExchangeRate: String(input.usdExchangeRate),
           commissionRate: String(commissionRate),
           commissionAmount: String(commissionAmount),
+          msiOptions: input.msiOptions && input.msiOptions.length > 0 ? JSON.stringify(input.msiOptions) : null,
         });
 
         return { ...link, netAmount };
@@ -539,6 +542,7 @@ export const appRouter = router({
           idDocumentUrl: z.string().optional().or(z.literal("")),
           ipAddress: z.string().optional(),
           userAgent: z.string().optional(),
+          msiMonths: z.number().int().min(3).max(24).optional(),
         })
       )
       .mutation(async ({ input, ctx }) => {
@@ -615,7 +619,8 @@ export const appRouter = router({
           idDocumentUrl: input.idDocumentUrl || null,
           ipAddress,
           userAgent,
-          metadata: JSON.stringify({ description: link.description }),
+          msiMonths: input.msiMonths || null,
+          metadata: JSON.stringify({ description: link.description, msiMonths: input.msiMonths || null }),
         });
 
         return {
@@ -757,6 +762,7 @@ export const appRouter = router({
         name: users.name,
         email: users.email,
         isActive: users.isActive,
+        staffRole: users.staffRole,
         createdAt: users.createdAt,
       }).from(users).where(
         and(
@@ -767,7 +773,7 @@ export const appRouter = router({
     }),
 
     invite: protectedProcedure
-      .input(z.object({ name: z.string().min(1), email: z.string().email() }))
+      .input(z.object({ name: z.string().min(1), email: z.string().email(), staffRole: z.enum(["asistente", "operador"]).default("operador") }))
       .mutation(async ({ ctx, input }) => {
         const db = await import('./db').then(m => m.getDb());
         if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
@@ -781,7 +787,7 @@ export const appRouter = router({
           if (u.createdByUserId && u.createdByUserId !== ctx.user.id) {
             throw new TRPCError({ code: 'CONFLICT', message: 'Este email ya pertenece a otro negocio' });
           }
-          await db.update(users).set({ createdByUserId: ctx.user.id, role: 'user', isActive: true }).where(eq(users.id, u.id));
+          await db.update(users).set({ createdByUserId: ctx.user.id, role: 'user', isActive: true, staffRole: input.staffRole }).where(eq(users.id, u.id));
         } else {
           // Crear usuario pendiente (sin openId, se asignará al primer login)
           await db.insert(users).values({
@@ -789,6 +795,7 @@ export const appRouter = router({
             name: input.name,
             email: input.email,
             role: 'user',
+            staffRole: input.staffRole,
             createdByUserId: ctx.user.id,
             isActive: false,
           });
@@ -1327,6 +1334,110 @@ export const appRouter = router({
         }
         return { updated };
       }),
+  }),
+
+  // ─── Panel de Comisiones de la Plataforma (solo super-admin) ────────────────────────
+  commissions: router({
+    // Resumen general de comisiones de la plataforma
+    summary: protectedProcedure.query(async ({ ctx }) => {
+      if (!ctx.isSuperAdmin) throw new TRPCError({ code: "FORBIDDEN" });
+      const db = await import('./db').then(m => m.getDb());
+      if (!db) return { totalEarned: 0, totalTransactions: 0, clients: [] };
+      const { eq, and, desc, sql } = await import('drizzle-orm');
+      const { transactions, users, platformClients } = await import('../drizzle/schema');
+
+      // Obtener todas las transacciones exitosas
+      const allTxs = await db.select({
+        id: transactions.id,
+        userId: transactions.userId,
+        amount: transactions.amount,
+        commissionRate: transactions.commissionRate,
+        commissionAmount: transactions.commissionAmount,
+        netAmount: transactions.netAmount,
+        status: transactions.status,
+        createdAt: transactions.createdAt,
+        payerName: transactions.payerName,
+        payerEmail: transactions.payerEmail,
+      }).from(transactions)
+        .where(eq(transactions.status, 'succeeded'))
+        .orderBy(desc(transactions.createdAt));
+
+      // Obtener todos los clientes de la plataforma
+      const clients = await db.select({
+        id: platformClients.id,
+        userId: platformClients.userId,
+        name: platformClients.name,
+        email: platformClients.email,
+        businessName: platformClients.businessName,
+        commissionRate: platformClients.commissionRate,
+        status: platformClients.status,
+      }).from(platformClients);
+
+      // Agrupar comisiones por cliente
+      const clientMap = new Map<number, {
+        clientId: number;
+        name: string;
+        email: string;
+        businessName: string | null;
+        commissionRate: string | null;
+        status: string;
+        totalTransactions: number;
+        totalVolume: number;
+        totalCommission: number;
+        lastTransactionAt: Date | null;
+      }>();
+
+      for (const client of clients) {
+        if (!client.userId) continue;
+        clientMap.set(client.userId, {
+          clientId: client.id,
+          name: client.name,
+          email: client.email,
+          businessName: client.businessName,
+          commissionRate: client.commissionRate,
+          status: client.status,
+          totalTransactions: 0,
+          totalVolume: 0,
+          totalCommission: 0,
+          lastTransactionAt: null,
+        });
+      }
+
+      let totalEarned = 0;
+      for (const tx of allTxs) {
+        const clientData = clientMap.get(tx.userId);
+        if (clientData) {
+          const comm = parseFloat(String(tx.commissionAmount || 0));
+          const vol = parseFloat(String(tx.amount || 0));
+          clientData.totalTransactions++;
+          clientData.totalVolume += vol;
+          clientData.totalCommission += comm;
+          totalEarned += comm;
+          if (!clientData.lastTransactionAt || new Date(tx.createdAt) > clientData.lastTransactionAt) {
+            clientData.lastTransactionAt = new Date(tx.createdAt);
+          }
+        }
+      }
+
+      // Comisiones por mes (últimos 12 meses)
+      const monthlyMap = new Map<string, number>();
+      for (const tx of allTxs) {
+        const d = new Date(tx.createdAt);
+        const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+        monthlyMap.set(key, (monthlyMap.get(key) || 0) + parseFloat(String(tx.commissionAmount || 0)));
+      }
+      const monthly = Array.from(monthlyMap.entries())
+        .sort((a, b) => a[0].localeCompare(b[0]))
+        .slice(-12)
+        .map(([month, amount]) => ({ month, amount }));
+
+      return {
+        totalEarned,
+        totalTransactions: allTxs.length,
+        clients: Array.from(clientMap.values()).sort((a, b) => b.totalCommission - a.totalCommission),
+        monthly,
+      };
+    }),
   }),
 });
 export type AppRouter = typeof appRouter;

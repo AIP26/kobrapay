@@ -29,6 +29,7 @@ import Contracts from "./pages/Contracts";
 import SalesAgents from "./pages/SalesAgents";
 import SignContract from "./pages/SignContract";
 import Expedientes from "./pages/Expedientes";
+import CommissionsPanel from "./pages/CommissionsPanel";
 
 function Router() {
   return (
@@ -57,6 +58,7 @@ function Router() {
       <Route path="/dashboard/contracts" component={Contracts} />
       <Route path="/dashboard/agents" component={SalesAgents} />
       <Route path="/dashboard/expedientes" component={Expedientes} />
+      <Route path="/dashboard/commissions" component={CommissionsPanel} />
       <Route path="/sign-contract/:token" component={SignContract} />
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />

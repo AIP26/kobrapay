@@ -1,0 +1,1 @@
+ALTER TABLE `users` ADD `staffRole` enum('asistente','operador') DEFAULT 'operador';

@@ -49,6 +49,7 @@ export default function CreateLink() {
     usdExchangeRate: "",
     chargebackProtectionText: "",
   });
+  const [msiOptions, setMsiOptions] = useState<number[]>([]);
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [createdLink, setCreatedLink] = useState<{
     token: string;
@@ -110,6 +111,7 @@ export default function CreateLink() {
       requireIdUpload: form.requireIdUpload,
       usdExchangeRate: exchangeRate,
       chargebackProtectionText: form.chargebackProtectionText.trim() || undefined,
+      msiOptions: msiOptions.length > 0 ? msiOptions : undefined,
     });
   };
 
@@ -162,6 +164,7 @@ export default function CreateLink() {
   const handleReset = () => {
     setCreatedLink(null);
     setCopied(false);
+    setMsiOptions([]);
     setForm({ clientName: "", clientEmail: "", amount: "", description: "", currency: "MXN", expiresInDays: "0", requireOtp: false, requireSelfie: false, requireSignature: false, requireIdUpload: false, usdExchangeRate: "", chargebackProtectionText: "" });
   };
 
@@ -523,6 +526,38 @@ export default function CreateLink() {
                       <p className="text-xs text-gray-400">
                         Si el cliente paga con tarjeta USD, se mostrará el equivalente en dólares en la página de pago.
                       </p>
+                    </div>
+
+                    {/* MSI - Meses Sin Intereses */}
+                    <div className="space-y-2">
+                      <Label className="text-gray-700 font-medium flex items-center gap-1.5">
+                        <CreditCard className="w-3.5 h-3.5 text-gray-400" />
+                        Meses sin intereses (MSI)
+                      </Label>
+                      <p className="text-xs text-gray-400">Selecciona las opciones de MSI que quieres ofrecer al cliente. Requiere tarjeta de crédito.</p>
+                      <div className="flex flex-wrap gap-2">
+                        {[3, 6, 9, 12, 18, 24].map(months => (
+                          <button
+                            key={months}
+                            type="button"
+                            onClick={() => setMsiOptions(prev =>
+                              prev.includes(months) ? prev.filter(m => m !== months) : [...prev, months].sort((a, b) => a - b)
+                            )}
+                            className={`px-3 py-1.5 rounded-lg text-sm font-medium border transition-all ${
+                              msiOptions.includes(months)
+                                ? "bg-cyan-500 text-white border-cyan-500"
+                                : "bg-white text-gray-600 border-gray-200 hover:border-cyan-300"
+                            }`}
+                          >
+                            {months} meses
+                          </button>
+                        ))}
+                      </div>
+                      {msiOptions.length > 0 && (
+                        <p className="text-xs text-cyan-600">
+                          El cliente podrá elegir entre: contado, {msiOptions.map(m => `${m} meses`).join(", ")}
+                        </p>
+                      )}
                     </div>
 
                     {/* Texto anti-contracargos */}

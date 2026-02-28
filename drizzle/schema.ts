@@ -20,6 +20,8 @@ export const users = mysqlTable("users", {
   loginMethod: varchar("loginMethod", { length: 64 }),
   // superadmin = dueño de la plataforma (tú), admin = cliente de la plataforma, user = empleado del cliente
   role: mysqlEnum("role", ["user", "admin", "superadmin"]).default("user").notNull(),
+  // Rol específico para colaboradores (staff): asistente = contratos+pagos, operador = solo pagos
+  staffRole: mysqlEnum("staffRole", ["asistente", "operador"]).default("operador"),
   // Estado de la cuenta: pending = esperando aprobación, active = aprobado, blocked = rechazado/bloqueado
   accountStatus: mysqlEnum("accountStatus", ["pending", "active", "blocked"]).default("pending").notNull(),
   // Multi-tenant: si es cliente de la plataforma, quién lo creó
@@ -116,6 +118,8 @@ export const paymentLinks = mysqlTable("payment_links", {
   requireIdUpload: boolean("requireIdUpload").default(false).notNull(),
   // Texto de protección contracargos
   chargebackProtectionText: text("chargebackProtectionText"),
+  // MSI: meses sin intereses habilitados (JSON array: [3,6,9,12])
+  msiOptions: text("msiOptions"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
@@ -160,6 +164,8 @@ export const transactions = mysqlTable("transactions", {
   operationNumber: varchar("operationNumber", { length: 32 }),
   errorMessage: text("errorMessage"),
   metadata: text("metadata"),
+  // MSI seleccionado por el pagador (null = pago de contado)
+  msiMonths: int("msiMonths"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
@@ -282,6 +288,8 @@ export const contracts = mysqlTable("contracts", {
   clientAddress: text("clientAddress"),
   businessName: varchar("businessName", { length: 255 }),
   clientIneNumber: varchar("clientIneNumber", { length: 50 }),
+  // Título del contrato
+  title: varchar("title", { length: 255 }),
   // Términos del contrato
   commissionRate: decimal("commissionRate", { precision: 5, scale: 2 }).default("6.00").notNull(),
   contractDurationMonths: int("contractDurationMonths").default(0).notNull(),
@@ -389,3 +397,14 @@ export const clientRecords = mysqlTable("client_records", {
 });
 export type ClientRecord = typeof clientRecords.$inferSelect;
 export type InsertClientRecord = typeof clientRecords.$inferInsert;
+// Documentos adjuntos al contrato (INE, comprobante domicilio, RFC, CURP, etc.)
+export const contractDocuments = mysqlTable("contract_documents", {
+  id: int("id").autoincrement().primaryKey(),
+  contractId: int("contractId").notNull(),
+  documentType: mysqlEnum("documentType", ["ine", "domicilio", "rfc", "curp", "pasaporte", "otro"]).notNull(),
+  documentUrl: text("documentUrl").notNull(),
+  fileName: varchar("fileName", { length: 255 }),
+  uploadedAt: timestamp("uploadedAt").defaultNow().notNull(),
+});
+export type ContractDocument = typeof contractDocuments.$inferSelect;
+export type InsertContractDocument = typeof contractDocuments.$inferInsert;

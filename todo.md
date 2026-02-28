@@ -105,8 +105,8 @@
 - [x] Descargar QR como imagen PNG desde el panel
 - [x] Nota legal de no cancelación visible en página de pago
 - [x] Checkbox de aceptación de términos antes de pagar
-- [ ] Meses Sin Intereses: opciones 3, 6, 9, 12 meses en página de pago (requiere Stripe MSI)
-- [ ] Configurar MSI disponibles al crear enlace
+- [x] Meses Sin Intereses: opciones 3, 6, 9, 12 meses en página de pago (requiere Stripe MSI)
+- [x] Configurar MSI disponibles al crear enlace
 
 ## Fase 5 - Cobros Recurrentes y Programados
 - [x] Página de Cobros Recurrentes (UI con casos de uso y roadmap)
@@ -326,3 +326,19 @@
 - [ ] Manual de asistente: contratos, documentos, gestión de clientes
 - [ ] Manual de super-admin: administración completa de la plataforma
 - [ ] Capturas de pantalla y pasos numerados en cada sección del manual
+
+## Fase 20 (Activa) - Módulo de Contratos
+- [ ] Schema DB: tabla contracts (template, datos cliente, estado, firma_url, token único)
+- [ ] Schema DB: tabla contract_documents (contrato, tipo doc, url S3)
+- [ ] Migración SQL aplicada
+- [ ] Backend: crear contrato con datos del cliente
+- [ ] Backend: generar token único para enlace de firma
+- [ ] Backend: subir firma digital del cliente (base64 → S3)
+- [ ] Backend: subir documentos del cliente (INE, domicilio, RFC, CURP)
+- [ ] Backend: actualizar estado del contrato (borrador→enviado→firmado→archivado)
+- [ ] Backend: generar PDF del contrato con datos insertados
+- [ ] Página Contratos en panel (solo super-admin/asistente)
+- [ ] Formulario crear contrato con datos del cliente
+- [ ] Lista de contratos con estado visual
+- [ ] Página pública de firma (cliente ve contrato, firma y sube docs)
+- [ ] PDF descargable del contrato firmado
