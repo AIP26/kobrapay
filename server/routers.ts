@@ -679,19 +679,19 @@ export const appRouter = router({
           }
 
           // Registrar/actualizar expediente del cliente
+          // Usamos el objeto tx que ya tenemos (tiene selfieUrl, signatureUrl, idDocumentUrl)
+          // Si tx no tiene los archivos aún, los tomamos del metadata del paymentIntent
           try {
             if (paymentIntent.metadata.payerEmail) {
-              const txsFull = await getTransactionsByUser(link.userId);
-              const txFull = txsFull.find((t) => t.stripePaymentIntentId === input.paymentIntentId);
               await upsertClientRecord(link.userId, {
                 payerEmail: paymentIntent.metadata.payerEmail,
                 payerName: paymentIntent.metadata.payerName || undefined,
                 payerPhone: paymentIntent.metadata.payerPhone || undefined,
-                selfieUrl: txFull?.selfieUrl || undefined,
-                signatureUrl: txFull?.signatureUrl || undefined,
-                idDocumentUrl: txFull?.idDocumentUrl || undefined,
-                faceMatchScore: txFull?.faceMatchScore ? parseFloat(String(txFull.faceMatchScore)) : undefined,
-                selfieVerified: txFull?.selfieVerified ?? false,
+                selfieUrl: tx?.selfieUrl || paymentIntent.metadata.selfieUrl || undefined,
+                signatureUrl: tx?.signatureUrl || paymentIntent.metadata.signatureUrl || undefined,
+                idDocumentUrl: tx?.idDocumentUrl || paymentIntent.metadata.idDocumentUrl || undefined,
+                faceMatchScore: tx?.faceMatchScore ? parseFloat(String(tx.faceMatchScore)) : undefined,
+                selfieVerified: tx?.selfieVerified ?? false,
                 amount: parseFloat(String(link.amount)),
               });
             }
@@ -1272,6 +1272,60 @@ export const appRouter = router({
         const record = records[0];
         if (!record) throw new TRPCError({ code: "NOT_FOUND", message: "Expediente no encontrado para esta transacción" });
         return record;
+      }),
+
+    // Sincronizar un expediente con los datos de sus transacciones
+    syncFromTransactions: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        const record = await getClientRecordById(ctx.user.id, input.id);
+        if (!record) throw new TRPCError({ code: "NOT_FOUND" });
+        // Obtener todas las transacciones de este pagador
+        const txHistory = await getTransactionsByPayerEmail(ctx.user.id, record.payerEmail);
+        // Buscar la más reciente con evidencia
+        const withSelfie = txHistory.find((t) => t.selfieUrl);
+        const withSignature = txHistory.find((t) => t.signatureUrl);
+        const withId = txHistory.find((t) => t.idDocumentUrl);
+        await upsertClientRecord(ctx.user.id, {
+          payerEmail: record.payerEmail,
+          payerName: record.payerName || undefined,
+          payerPhone: record.payerPhone || undefined,
+          selfieUrl: withSelfie?.selfieUrl || undefined,
+          signatureUrl: withSignature?.signatureUrl || undefined,
+          idDocumentUrl: withId?.idDocumentUrl || undefined,
+          faceMatchScore: withSelfie?.faceMatchScore ? parseFloat(String(withSelfie.faceMatchScore)) : undefined,
+          selfieVerified: withSelfie?.selfieVerified ?? false,
+          amount: 0, // No sumar monto, solo actualizar evidencia
+        });
+        return { success: true };
+      }),
+
+    // Sincronizar TODOS los expedientes del usuario con datos de transacciones
+    syncAll: protectedProcedure
+      .mutation(async ({ ctx }) => {
+        const allRecords = await getClientRecords(ctx.user.id);
+        let updated = 0;
+        for (const record of allRecords) {
+          const txHistory = await getTransactionsByPayerEmail(ctx.user.id, record.payerEmail);
+          const withSelfie = txHistory.find((t) => t.selfieUrl);
+          const withSignature = txHistory.find((t) => t.signatureUrl);
+          const withId = txHistory.find((t) => t.idDocumentUrl);
+          if (withSelfie || withSignature || withId) {
+            await upsertClientRecord(ctx.user.id, {
+              payerEmail: record.payerEmail,
+              payerName: record.payerName || undefined,
+              payerPhone: record.payerPhone || undefined,
+              selfieUrl: withSelfie?.selfieUrl || record.latestSelfieUrl || undefined,
+              signatureUrl: withSignature?.signatureUrl || record.latestSignatureUrl || undefined,
+              idDocumentUrl: withId?.idDocumentUrl || record.latestIdDocumentUrl || undefined,
+              faceMatchScore: withSelfie?.faceMatchScore ? parseFloat(String(withSelfie.faceMatchScore)) : undefined,
+              selfieVerified: withSelfie?.selfieVerified ?? record.selfieVerified ?? false,
+              amount: 0,
+            });
+            updated++;
+          }
+        }
+        return { updated };
       }),
   }),
 });
