@@ -435,3 +435,12 @@
 - [ ] Pagina publica de Reglamento de Uso (/reglamento)
 - [ ] Pagina publica de Aviso de Privacidad (/privacidad)
 - [ ] Link a reglamento y privacidad en la pagina de pago publica y en el footer
+
+## Fase 23 - UX y Mejoras Finales
+- [ ] Favicon KobraPay en el navegador
+- [ ] Datos fiscales en registro (RFC, CURP, nombre completo)
+- [ ] Botón WhatsApp en detalle de transacción
+- [ ] Notificación push al cobrar exitosamente
+- [ ] Eliminar USD de crear enlace (solo MXN)
+- [ ] Página de Ayuda con contenido real por sección
+- [ ] Cobros Recurrentes con funcionalidad real

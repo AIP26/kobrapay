@@ -23,6 +23,7 @@ import {
   Hash,
   ArrowLeft,
   ShieldCheck,
+  MessageCircle,
 } from "lucide-react";
 import { useState, useMemo } from "react";
 import { generateEvidencePdf } from "@/lib/generateEvidencePdf";
@@ -562,6 +563,22 @@ function TransactionDetailModal({
               >
                 <ShieldCheck className="w-4 h-4 mr-2" />
                 {isGeneratingEvidencePdf ? "Generando PDF..." : "Descargar evidencia (PDF)"}
+              </Button>
+            )}
+            {tx.status === "succeeded" && tx.payerPhone && (
+              <Button
+                onClick={() => {
+                  const phone = tx.payerPhone!.replace(/[^0-9]/g, "");
+                  const msg = encodeURIComponent(
+                    `Hola ${tx.payerName || ""}, te confirmamos que tu pago de $${new Intl.NumberFormat("es-MX", { minimumFractionDigits: 2 }).format(Number(tx.amount))} MXN fue procesado exitosamente.\n\nN° de operación: ${operationNumber}\nFecha: ${new Date(tx.createdAt).toLocaleDateString("es-MX", { day: "2-digit", month: "long", year: "numeric" })}\n\nGracias por tu pago. — KobraPay`
+                  );
+                  window.open(`https://wa.me/${phone}?text=${msg}`, "_blank");
+                  toast.success("Abriendo WhatsApp...");
+                }}
+                className="w-full bg-[#25D366] hover:bg-[#1ebe57] text-white"
+              >
+                <MessageCircle className="w-4 h-4 mr-2" />
+                Enviar comprobante por WhatsApp
               </Button>
             )}
             <div className="flex gap-3">

@@ -9,6 +9,7 @@ import {
   createChargeback,
 } from "./db";
 import { notifyOwner } from "./_core/notification";
+import { createNotification } from "./db";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "", {
   apiVersion: "2026-02-25.clover",
@@ -94,11 +95,21 @@ export function registerStripeWebhook(app: express.Application) {
                   });
                 }
 
-                // Notify vendor
+                // Notify vendor via Manus push
                 try {
                   await notifyOwner({
                     title: `✅ Pago recibido: $${link.amount} ${link.currency}`,
                     content: `El cliente ${pi.metadata.payerName || "desconocido"} (${pi.metadata.payerEmail || ""}) pagó $${link.amount} ${link.currency} por "${link.description}".`,
+                  });
+                } catch (_) {}
+                // Notificación en el panel (campana) al vendedor
+                try {
+                  await createNotification({
+                    userId,
+                    type: "payment_received",
+                    title: `💰 Pago recibido: $${link.amount} ${link.currency}`,
+                    message: `${pi.metadata?.payerName || "Cliente"} pagó $${link.amount} ${link.currency} por "${link.description || "enlace de pago"}".`,
+                    actionUrl: "/dashboard/ventas",
                   });
                 } catch (_) {}
               }
