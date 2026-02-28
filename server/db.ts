@@ -120,7 +120,20 @@ export async function getAllRegistrations() {
     createdAt: users.createdAt,
     lastSignedIn: users.lastSignedIn,
     loginMethod: users.loginMethod,
-  }).from(users).orderBy(users.createdAt);
+    // Perfil extendido (puede ser null si no completó el perfil)
+    fullName: userProfiles.fullName,
+    birthDate: userProfiles.birthDate,
+    curp: userProfiles.curp,
+    rfc: userProfiles.rfc,
+    phone: userProfiles.phone,
+    businessName: userProfiles.businessName,
+    businessType: userProfiles.businessType,
+    accountType: userProfiles.accountType,
+    permissions: userProfiles.permissions,
+    profileCompleted: userProfiles.profileCompleted,
+  }).from(users)
+    .leftJoin(userProfiles, eq(users.id, userProfiles.userId))
+    .orderBy(users.createdAt);
 }
 
 export async function updateUserAccountStatus(

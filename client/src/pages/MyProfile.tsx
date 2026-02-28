@@ -1,0 +1,583 @@
+import { useState, useRef, useCallback } from "react";
+import { trpc } from "@/lib/trpc";
+import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
+import {
+  User, Building2, CreditCard, FileText, Camera, Upload,
+  CheckCircle2, AlertCircle, Eye, ExternalLink, Loader2, Save
+} from "lucide-react";
+
+// ─── Tipos ────────────────────────────────────────────────────────────────────
+type Section = "personal" | "negocio" | "bancario" | "documentos";
+
+const SECTIONS: { id: Section; label: string; icon: React.ElementType; desc: string }[] = [
+  { id: "personal", label: "Datos Personales", icon: User, desc: "Nombre, CURP, RFC, fecha de nacimiento" },
+  { id: "negocio", label: "Mi Negocio", icon: Building2, desc: "Razón social, dirección fiscal, giro" },
+  { id: "bancario", label: "Datos Bancarios", icon: CreditCard, desc: "CLABE, banco, titular de cuenta" },
+  { id: "documentos", label: "Documentos", icon: FileText, desc: "INE, comprobante de domicilio, acta" },
+];
+
+const ESTADOS_MX = [
+  "Aguascalientes","Baja California","Baja California Sur","Campeche","Chiapas","Chihuahua",
+  "Ciudad de México","Coahuila","Colima","Durango","Estado de México","Guanajuato","Guerrero",
+  "Hidalgo","Jalisco","Michoacán","Morelos","Nayarit","Nuevo León","Oaxaca","Puebla","Querétaro",
+  "Quintana Roo","San Luis Potosí","Sinaloa","Sonora","Tabasco","Tamaulipas","Tlaxcala",
+  "Veracruz","Yucatán","Zacatecas",
+];
+
+const BANCOS_MX = [
+  "BBVA","Banamex (Citibanamex)","Santander","Banorte","HSBC","Scotiabank","Inbursa",
+  "Azteca","BanBajío","Afirme","Multiva","Bansí","Mifel","Monexcb","Ve por Más",
+  "Intercam","Actinver","Invex","CIBanco","Compartamos","Hey Banco","Nu (Nubank)",
+  "Spin by OXXO","Mercado Pago","Otro",
+];
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+function fileToBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+function calcProgress(profile: Record<string, unknown> | null | undefined): number {
+  if (!profile) return 0;
+  const fields = [
+    "fullName","birthDate","curp","rfc","phone",
+    "businessName","razonSocial","direccionFiscal","ciudad","estado",
+    "clabe","banco","titularCuenta",
+    "ineUrl","domicilioUrl","avatarUrl",
+  ];
+  const filled = fields.filter(f => !!profile[f]).length;
+  return Math.round((filled / fields.length) * 100);
+}
+
+// ─── Componente principal ─────────────────────────────────────────────────────
+export default function MyProfile() {
+  const [activeSection, setActiveSection] = useState<Section>("personal");
+  const utils = trpc.useUtils();
+
+  const { data: profile, isLoading } = trpc.profile.get.useQuery();
+
+  const updateMutation = trpc.profile.update.useMutation({
+    onSuccess: () => {
+      toast.success("Datos guardados correctamente");
+      utils.profile.get.invalidate();
+    },
+    onError: (err) => toast.error(err.message),
+  });
+
+  const uploadAvatarMutation = trpc.profile.uploadAvatar.useMutation({
+    onSuccess: (data) => {
+      toast.success("Foto de perfil actualizada");
+      setAvatarPreview(data.url);
+      utils.profile.get.invalidate();
+    },
+    onError: (err) => toast.error(err.message),
+  });
+
+  const uploadDocMutation = trpc.profile.uploadDocument.useMutation({
+    onSuccess: (_, vars) => {
+      toast.success(`Documento "${vars.docType}" subido correctamente`);
+      utils.profile.get.invalidate();
+    },
+    onError: (err) => toast.error(err.message),
+  });
+
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const avatarInputRef = useRef<HTMLInputElement>(null);
+
+  const handleAvatarChange = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) { toast.error("La imagen no puede superar 5MB"); return; }
+    const base64 = await fileToBase64(file);
+    setAvatarPreview(base64);
+    uploadAvatarMutation.mutate({ base64, mimeType: file.type });
+  }, [uploadAvatarMutation]);
+
+  const handleDocUpload = useCallback(async (
+    e: React.ChangeEvent<HTMLInputElement>,
+    docType: "ine" | "domicilio" | "acta"
+  ) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 10 * 1024 * 1024) { toast.error("El archivo no puede superar 10MB"); return; }
+    const base64 = await fileToBase64(file);
+    uploadDocMutation.mutate({ base64, mimeType: file.type, docType });
+  }, [uploadDocMutation]);
+
+  const progress = calcProgress(profile as Record<string, unknown> | null);
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  const p = profile as unknown as Record<string, string | null | undefined> | null;
+
+  return (
+    <div className="max-w-5xl mx-auto space-y-6 p-4">
+      {/* Header con foto y progreso */}
+      <div className="flex flex-col md:flex-row gap-6 items-start md:items-center bg-card border rounded-xl p-6">
+        {/* Avatar */}
+        <div className="relative group">
+          <div className="w-24 h-24 rounded-full overflow-hidden bg-muted border-4 border-background shadow-lg">
+            {(avatarPreview || p?.avatarUrl) ? (
+              <img
+                src={avatarPreview || p?.avatarUrl || ""}
+                alt="Foto de perfil"
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center bg-primary/10">
+                <User className="h-10 w-10 text-primary/50" />
+              </div>
+            )}
+          </div>
+          <button
+            onClick={() => avatarInputRef.current?.click()}
+            className="absolute inset-0 rounded-full bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer"
+            disabled={uploadAvatarMutation.isPending}
+          >
+            {uploadAvatarMutation.isPending
+              ? <Loader2 className="h-6 w-6 text-white animate-spin" />
+              : <Camera className="h-6 w-6 text-white" />
+            }
+          </button>
+          <input
+            ref={avatarInputRef}
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            className="hidden"
+            onChange={handleAvatarChange}
+          />
+        </div>
+
+        {/* Info y progreso */}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-3 flex-wrap">
+            <h1 className="text-2xl font-bold truncate">
+              {p?.fullName || "Mi Perfil"}
+            </h1>
+            {p?.accountType && (
+              <Badge variant="secondary" className="capitalize">
+                {p.accountType === "business" ? "Negocio" :
+                 p.accountType === "admin" ? "Administrador" :
+                 p.accountType === "employee" ? "Empleado" : p.accountType}
+              </Badge>
+            )}
+          </div>
+          <p className="text-muted-foreground text-sm mt-1">{p?.businessName || "Sin negocio registrado"}</p>
+          <div className="mt-3 space-y-1">
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-muted-foreground">Perfil completado</span>
+              <span className="font-semibold text-primary">{progress}%</span>
+            </div>
+            <Progress value={progress} className="h-2" />
+          </div>
+          {progress < 100 && (
+            <p className="text-xs text-amber-600 mt-1 flex items-center gap-1">
+              <AlertCircle className="h-3 w-3" />
+              Completa tu perfil para acceder a todas las funciones
+            </p>
+          )}
+        </div>
+      </div>
+
+      {/* Navegación de secciones */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        {SECTIONS.map(({ id, label, icon: Icon, desc }) => (
+          <button
+            key={id}
+            onClick={() => setActiveSection(id)}
+            className={`text-left p-4 rounded-xl border transition-all ${
+              activeSection === id
+                ? "border-primary bg-primary/5 shadow-sm"
+                : "border-border hover:border-primary/40 hover:bg-muted/50"
+            }`}
+          >
+            <Icon className={`h-5 w-5 mb-2 ${activeSection === id ? "text-primary" : "text-muted-foreground"}`} />
+            <div className={`font-semibold text-sm ${activeSection === id ? "text-primary" : ""}`}>{label}</div>
+            <div className="text-xs text-muted-foreground mt-0.5 hidden md:block">{desc}</div>
+          </button>
+        ))}
+      </div>
+
+      {/* Sección Datos Personales */}
+      {activeSection === "personal" && (
+        <PersonalSection profile={p} onSave={(data) => updateMutation.mutate(data)} saving={updateMutation.isPending} />
+      )}
+
+      {/* Sección Negocio */}
+      {activeSection === "negocio" && (
+        <NegocioSection profile={p} onSave={(data) => updateMutation.mutate(data)} saving={updateMutation.isPending} />
+      )}
+
+      {/* Sección Bancario */}
+      {activeSection === "bancario" && (
+        <BancarioSection profile={p} onSave={(data) => updateMutation.mutate(data)} saving={updateMutation.isPending} />
+      )}
+
+      {/* Sección Documentos */}
+      {activeSection === "documentos" && (
+        <DocumentosSection
+          profile={p}
+          onUpload={handleDocUpload}
+          uploading={uploadDocMutation.isPending}
+          uploadingDocType={uploadDocMutation.variables?.docType}
+        />
+      )}
+    </div>
+  );
+}
+
+// ─── Sección: Datos Personales ────────────────────────────────────────────────
+function PersonalSection({
+  profile, onSave, saving
+}: {
+  profile: Record<string, string | null | undefined> | null;
+  onSave: (data: Record<string, string>) => void;
+  saving: boolean;
+}) {
+  const [form, setForm] = useState({
+    fullName: profile?.fullName || "",
+    birthDate: profile?.birthDate || "",
+    curp: profile?.curp || "",
+    rfc: profile?.rfc || "",
+    phone: profile?.phone || "",
+  });
+
+  const set = (k: string) => (e: React.ChangeEvent<HTMLInputElement>) =>
+    setForm(prev => ({ ...prev, [k]: e.target.value }));
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2"><User className="h-5 w-5" /> Datos Personales</CardTitle>
+        <CardDescription>Información personal requerida para verificación de identidad</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="fullName">Nombre completo <span className="text-destructive">*</span></Label>
+            <Input id="fullName" value={form.fullName} onChange={set("fullName")} placeholder="Nombre Apellido Apellido" />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="birthDate">Fecha de nacimiento <span className="text-destructive">*</span></Label>
+            <Input id="birthDate" type="date" value={form.birthDate} onChange={set("birthDate")} />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="curp">CURP <span className="text-destructive">*</span></Label>
+            <Input
+              id="curp"
+              value={form.curp}
+              onChange={set("curp")}
+              placeholder="XXXX000000XXXXXX00"
+              maxLength={18}
+              className="uppercase"
+            />
+            <p className="text-xs text-muted-foreground">18 caracteres. <a href="https://www.gob.mx/curp/" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Consultar CURP</a></p>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="rfc">RFC <span className="text-muted-foreground text-xs">(opcional)</span></Label>
+            <Input
+              id="rfc"
+              value={form.rfc}
+              onChange={set("rfc")}
+              placeholder="XXXX000000XXX"
+              maxLength={13}
+              className="uppercase"
+            />
+          </div>
+          <div className="space-y-2 md:col-span-2">
+            <Label htmlFor="phone">Teléfono celular <span className="text-destructive">*</span></Label>
+            <Input id="phone" value={form.phone} onChange={set("phone")} placeholder="+52 55 1234 5678" />
+          </div>
+        </div>
+        <div className="flex justify-end pt-2">
+          <Button onClick={() => onSave(form)} disabled={saving}>
+            {saving ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Guardando...</> : <><Save className="h-4 w-4 mr-2" />Guardar datos personales</>}
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+// ─── Sección: Negocio ─────────────────────────────────────────────────────────
+function NegocioSection({
+  profile, onSave, saving
+}: {
+  profile: Record<string, string | null | undefined> | null;
+  onSave: (data: Record<string, string>) => void;
+  saving: boolean;
+}) {
+  const [form, setForm] = useState({
+    businessName: profile?.businessName || "",
+    businessType: profile?.businessType || "",
+    razonSocial: profile?.razonSocial || "",
+    direccionFiscal: profile?.direccionFiscal || "",
+    codigoPostal: profile?.codigoPostal || "",
+    ciudad: profile?.ciudad || "",
+    estado: profile?.estado || "",
+    sitioWeb: profile?.sitioWeb || "",
+  });
+
+  const set = (k: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
+    setForm(prev => ({ ...prev, [k]: e.target.value }));
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2"><Building2 className="h-5 w-5" /> Datos del Negocio</CardTitle>
+        <CardDescription>Información de tu empresa para facturación y cobros</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="businessName">Nombre comercial <span className="text-destructive">*</span></Label>
+            <Input id="businessName" value={form.businessName} onChange={set("businessName")} placeholder="Mi Empresa SA" />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="businessType">Giro del negocio</Label>
+            <Input id="businessType" value={form.businessType} onChange={set("businessType")} placeholder="Ej: Venta de ropa, Servicios médicos..." />
+          </div>
+          <div className="space-y-2 md:col-span-2">
+            <Label htmlFor="razonSocial">
+              Razón social
+              <Badge variant="outline" className="ml-2 text-xs">Requerida para facturación</Badge>
+            </Label>
+            <Input id="razonSocial" value={form.razonSocial} onChange={set("razonSocial")} placeholder="MI EMPRESA SOCIEDAD ANONIMA DE CV" className="uppercase" />
+          </div>
+          <div className="space-y-2 md:col-span-2">
+            <Label htmlFor="direccionFiscal">Dirección fiscal</Label>
+            <Input id="direccionFiscal" value={form.direccionFiscal} onChange={set("direccionFiscal")} placeholder="Calle, Número, Colonia" />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="codigoPostal">Código postal</Label>
+            <Input id="codigoPostal" value={form.codigoPostal} onChange={set("codigoPostal")} placeholder="06600" maxLength={5} />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="ciudad">Ciudad</Label>
+            <Input id="ciudad" value={form.ciudad} onChange={set("ciudad")} placeholder="Ciudad de México" />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="estado">Estado</Label>
+            <select
+              id="estado"
+              value={form.estado}
+              onChange={set("estado")}
+              className="w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring"
+            >
+              <option value="">Seleccionar estado</option>
+              {ESTADOS_MX.map(e => <option key={e} value={e}>{e}</option>)}
+            </select>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="sitioWeb">Sitio web</Label>
+            <Input id="sitioWeb" value={form.sitioWeb} onChange={set("sitioWeb")} placeholder="https://minegocio.com" type="url" />
+          </div>
+        </div>
+        <div className="flex justify-end pt-2">
+          <Button onClick={() => onSave(form)} disabled={saving}>
+            {saving ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Guardando...</> : <><Save className="h-4 w-4 mr-2" />Guardar datos del negocio</>}
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+// ─── Sección: Bancario ────────────────────────────────────────────────────────
+function BancarioSection({
+  profile, onSave, saving
+}: {
+  profile: Record<string, string | null | undefined> | null;
+  onSave: (data: Record<string, string>) => void;
+  saving: boolean;
+}) {
+  const [form, setForm] = useState({
+    clabe: profile?.clabe || "",
+    banco: profile?.banco || "",
+    titularCuenta: profile?.titularCuenta || "",
+    rfcTitular: profile?.rfcTitular || "",
+  });
+  const [showClabe, setShowClabe] = useState(false);
+
+  const set = (k: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
+    setForm(prev => ({ ...prev, [k]: e.target.value }));
+
+  const clabeDisplay = showClabe ? form.clabe : form.clabe.replace(/\d(?=\d{4})/g, "•");
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2"><CreditCard className="h-5 w-5" /> Datos Bancarios</CardTitle>
+        <CardDescription>Información para recibir transferencias y pagos a tu cuenta</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-800 flex items-start gap-2">
+          <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" />
+          <span>Esta información es confidencial y solo se usa para procesar transferencias a tu cuenta. Nunca se comparte con terceros.</span>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-2 md:col-span-2">
+            <Label htmlFor="clabe">CLABE interbancaria (18 dígitos)</Label>
+            <div className="relative">
+              <Input
+                id="clabe"
+                value={showClabe ? form.clabe : clabeDisplay}
+                onChange={set("clabe")}
+                placeholder="000000000000000000"
+                maxLength={18}
+                className="pr-10 font-mono"
+                onFocus={() => setShowClabe(true)}
+                onBlur={() => setShowClabe(false)}
+              />
+              <button
+                type="button"
+                onClick={() => setShowClabe(!showClabe)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+              >
+                <Eye className="h-4 w-4" />
+              </button>
+            </div>
+            <p className="text-xs text-muted-foreground">18 dígitos. La puedes encontrar en tu app bancaria o estado de cuenta.</p>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="banco">Banco</Label>
+            <select
+              id="banco"
+              value={form.banco}
+              onChange={set("banco")}
+              className="w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring"
+            >
+              <option value="">Seleccionar banco</option>
+              {BANCOS_MX.map(b => <option key={b} value={b}>{b}</option>)}
+            </select>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="titularCuenta">Titular de la cuenta</Label>
+            <Input id="titularCuenta" value={form.titularCuenta} onChange={set("titularCuenta")} placeholder="Nombre completo del titular" />
+          </div>
+          <div className="space-y-2 md:col-span-2">
+            <Label htmlFor="rfcTitular">RFC del titular <span className="text-muted-foreground text-xs">(para transferencias SPEI)</span></Label>
+            <Input
+              id="rfcTitular"
+              value={form.rfcTitular}
+              onChange={set("rfcTitular")}
+              placeholder="XXXX000000XXX"
+              maxLength={13}
+              className="uppercase"
+            />
+          </div>
+        </div>
+        <div className="flex justify-end pt-2">
+          <Button onClick={() => onSave(form)} disabled={saving}>
+            {saving ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Guardando...</> : <><Save className="h-4 w-4 mr-2" />Guardar datos bancarios</>}
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+// ─── Sección: Documentos ──────────────────────────────────────────────────────
+type DocType = "ine" | "domicilio" | "acta";
+
+function DocumentosSection({
+  profile, onUpload, uploading, uploadingDocType
+}: {
+  profile: Record<string, string | null | undefined> | null;
+  onUpload: (e: React.ChangeEvent<HTMLInputElement>, docType: DocType) => void;
+  uploading: boolean;
+  uploadingDocType?: string;
+}) {
+  const docs: { id: DocType; label: string; desc: string; urlKey: string; required: boolean }[] = [
+    { id: "ine", label: "INE / Pasaporte", desc: "Identificación oficial vigente (ambos lados)", urlKey: "ineUrl", required: true },
+    { id: "domicilio", label: "Comprobante de domicilio", desc: "No mayor a 3 meses (CFE, agua, teléfono, etc.)", urlKey: "domicilioUrl", required: true },
+    { id: "acta", label: "Acta constitutiva", desc: "Solo para personas morales (SA, SAPI, SC, etc.)", urlKey: "actaConstitutiva", required: false },
+  ];
+
+  const inputRefs = useRef<Record<DocType, HTMLInputElement | null>>({ ine: null, domicilio: null, acta: null });
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2"><FileText className="h-5 w-5" /> Documentos de Verificación</CardTitle>
+        <CardDescription>Sube tus documentos para verificar tu identidad y habilitar cobros</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-800">
+          Formatos aceptados: JPG, PNG, PDF. Tamaño máximo: 10MB por archivo.
+        </div>
+        <div className="space-y-4">
+          {docs.map(({ id, label, desc, urlKey, required }) => {
+            const uploaded = !!profile?.[urlKey];
+            const isUploading = uploading && uploadingDocType === id;
+
+            return (
+              <div key={id} className="flex items-center gap-4 p-4 border rounded-xl">
+                <div className={`w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 ${uploaded ? "bg-green-100" : "bg-muted"}`}>
+                  {uploaded
+                    ? <CheckCircle2 className="h-6 w-6 text-green-600" />
+                    : <FileText className="h-6 w-6 text-muted-foreground" />
+                  }
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="font-semibold text-sm">{label}</span>
+                    {required && <Badge variant="outline" className="text-xs">Requerido</Badge>}
+                    {uploaded && <Badge className="text-xs bg-green-100 text-green-700 hover:bg-green-100">Subido</Badge>}
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-0.5">{desc}</p>
+                </div>
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  {uploaded && (
+                    <a
+                      href={profile?.[urlKey] || ""}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
+                    >
+                      <ExternalLink className="h-3 w-3" /> Ver
+                    </a>
+                  )}
+                  <input
+                    ref={el => { inputRefs.current[id] = el; }}
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp,application/pdf"
+                    className="hidden"
+                    onChange={(e) => onUpload(e, id)}
+                  />
+                  <Button
+                    variant={uploaded ? "outline" : "default"}
+                    size="sm"
+                    onClick={() => inputRefs.current[id]?.click()}
+                    disabled={isUploading}
+                  >
+                    {isUploading
+                      ? <><Loader2 className="h-3 w-3 mr-1 animate-spin" />Subiendo...</>
+                      : <><Upload className="h-3 w-3 mr-1" />{uploaded ? "Reemplazar" : "Subir"}</>
+                    }
+                  </Button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}

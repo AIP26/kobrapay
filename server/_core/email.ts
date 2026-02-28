@@ -278,3 +278,107 @@ export async function sendPaymentReceipt(data: {
     return false;
   }
 }
+
+// ─── Email de Bienvenida ──────────────────────────────────────────────────────
+
+export async function sendWelcomeEmail(data: {
+  to: string;
+  name: string;
+  businessName: string;
+  accountType?: string;
+}): Promise<boolean> {
+  const resend = getResend();
+
+  console.log(`[Welcome Email] Enviando bienvenida a ${data.to} (${data.businessName})`);
+
+  if (!resend) {
+    console.warn("[Email] RESEND_API_KEY no configurada. No se envió email de bienvenida.");
+    return false;
+  }
+
+  const accountTypeLabel: Record<string, string> = {
+    business: "Negocio Cliente",
+    admin: "Administrador de Empresa",
+    employee: "Empleado / Operador",
+    assistant: "Asistente",
+  };
+  const typeLabel = accountTypeLabel[data.accountType || "business"] || "Negocio Cliente";
+
+  const html = `<!DOCTYPE html>
+<html lang="es">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"></head>
+<body style="margin:0;padding:0;background:#f3f4f6;font-family:'Segoe UI',Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f3f4f6;padding:40px 20px;">
+    <tr>
+      <td align="center">
+        <table width="600" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);">
+          <tr>
+            <td style="background:linear-gradient(135deg,#1a1a2e 0%,#16213e 100%);padding:40px;text-align:center;">
+              <img src="https://files.manuscdn.com/user_upload_by_module/session_file/310519663381362445/yMTQoaqGYTxuRnnF.png" alt="KobraPay" width="64" style="margin-bottom:12px;" />
+              <h1 style="margin:0;color:#ffffff;font-size:28px;font-weight:800;">¡Bienvenido a KobraPay!</h1>
+              <p style="margin:8px 0 0;color:#9ca3af;font-size:14px;">Tu cuenta ha sido aprobada</p>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:40px;">
+              <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:12px;padding:24px;text-align:center;margin-bottom:32px;">
+                <p style="margin:0 0 4px;color:#16a34a;font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:1px;">✓ Cuenta Activada — ${typeLabel}</p>
+                <p style="margin:0;color:#14532d;font-size:22px;font-weight:700;">${data.businessName}</p>
+              </div>
+              <p style="color:#374151;font-size:16px;line-height:1.6;">Hola <strong>${data.name}</strong>,</p>
+              <p style="color:#6b7280;font-size:15px;line-height:1.6;">
+                Tu cuenta en KobraPay ha sido <strong style="color:#16a34a;">aprobada y activada</strong> como <strong>${typeLabel}</strong>.
+                Ya puedes ingresar a tu panel y comenzar a cobrar con tarjeta de forma segura.
+              </p>
+              <!-- Guía de inicio rápido 5 pasos -->
+              <h3 style="color:#1a1a2e;font-size:17px;margin:24px 0 6px;font-weight:700;">🚀 Guía de inicio rápido — 5 pasos</h3>
+              <p style="color:#6b7280;font-size:13px;margin:0 0 18px;">Nadie más te da esto. Sigue estos pasos y cobra en menos de 5 minutos.</p>
+              <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:10px;">
+                <tr><td style="vertical-align:top;width:34px;"><div style="width:28px;height:28px;background:#00c853;border-radius:50%;text-align:center;line-height:28px;color:#fff;font-weight:800;font-size:13px;">1</div></td><td style="padding-left:12px;padding-bottom:14px;"><p style="margin:0 0 2px;color:#1a1a2e;font-size:14px;font-weight:700;">Completa tu perfil</p><p style="margin:0;color:#6b7280;font-size:13px;">Ve a <strong>Mi Perfil</strong> y agrega tu foto, datos bancarios (CLABE), RFC y nombre de tu negocio. Esto personaliza tus recibos y habilita transferencias.</p></td></tr>
+                <tr><td style="vertical-align:top;width:34px;"><div style="width:28px;height:28px;background:#00c853;border-radius:50%;text-align:center;line-height:28px;color:#fff;font-weight:800;font-size:13px;">2</div></td><td style="padding-left:12px;padding-bottom:14px;"><p style="margin:0 0 2px;color:#1a1a2e;font-size:14px;font-weight:700;">Crea tu primer enlace de pago</p><p style="margin:0;color:#6b7280;font-size:13px;">Haz clic en <strong>Nuevo Cobro</strong>, escribe el monto, descripción y el correo de tu cliente. En segundos tendrás un enlace listo para compartir por WhatsApp, email o redes.</p></td></tr>
+                <tr><td style="vertical-align:top;width:34px;"><div style="width:28px;height:28px;background:#00c853;border-radius:50%;text-align:center;line-height:28px;color:#fff;font-weight:800;font-size:13px;">3</div></td><td style="padding-left:12px;padding-bottom:14px;"><p style="margin:0 0 2px;color:#1a1a2e;font-size:14px;font-weight:700;">Tu cliente paga con tarjeta</p><p style="margin:0;color:#6b7280;font-size:13px;">Tu cliente abre el enlace, ingresa su tarjeta (Visa, Mastercard, Amex), verifica con OTP por SMS y listo. Acepta pagos en 3, 6, 9 o 12 MSI.</p></td></tr>
+                <tr><td style="vertical-align:top;width:34px;"><div style="width:28px;height:28px;background:#00c853;border-radius:50%;text-align:center;line-height:28px;color:#fff;font-weight:800;font-size:13px;">4</div></td><td style="padding-left:12px;padding-bottom:14px;"><p style="margin:0 0 2px;color:#1a1a2e;font-size:14px;font-weight:700;">Monitorea tus cobros en tiempo real</p><p style="margin:0;color:#6b7280;font-size:13px;">En <strong>Mis Ventas</strong> verás cada transacción con su estatus, comprobante descargable y número de operación. Filtra por fecha, monto o cliente.</p></td></tr>
+                <tr><td style="vertical-align:top;width:34px;"><div style="width:28px;height:28px;background:#00c853;border-radius:50%;text-align:center;line-height:28px;color:#fff;font-weight:800;font-size:13px;">5</div></td><td style="padding-left:12px;"><p style="margin:0 0 2px;color:#1a1a2e;font-size:14px;font-weight:700;">Descarga tu reporte mensual</p><p style="margin:0;color:#6b7280;font-size:13px;">Cada mes genera un PDF con tu resumen de ventas, comisiones y estadísticas. Perfecto para contabilidad y declaraciones fiscales.</p></td></tr>
+              </table>
+              <div style="background:#fef3c7;border:1px solid #fcd34d;border-radius:10px;padding:14px;margin:18px 0;">
+                <p style="margin:0 0 4px;color:#92400e;font-size:13px;font-weight:700;">🛡️ Tu protección anti-contracargos</p>
+                <p style="margin:0;color:#78350f;font-size:12px;line-height:1.6;">KobraPay es el único procesador que incluye <strong>OTP por SMS</strong>, <strong>selfie de verificación</strong> y <strong>firma digital</strong> en cada cobro. Esto te protege legalmente ante cualquier disputa.</p>
+              </div>
+              <div style="text-align:center;margin-top:24px;">
+                <a href="https://kobrapay.mx/dashboard" style="display:inline-block;background:#00c853;color:#ffffff;font-weight:700;font-size:16px;padding:14px 40px;border-radius:10px;text-decoration:none;margin-bottom:10px;">Ir a mi panel →</a><br/>
+                <a href="https://kobrapay.mx/dashboard/help" style="display:inline-block;color:#6b7280;font-size:13px;text-decoration:underline;">Ver guía completa de uso</a>
+              </div>
+            </td>
+          </tr>
+          <tr>
+            <td style="background:#1a1a2e;padding:24px 40px;">
+              <p style="margin:0;color:#9ca3af;font-size:12px;text-align:center;">
+                Procesado de forma segura por <strong style="color:#00c853;">KobraPay</strong><br>
+                Powered by Stripe · Cifrado SSL/TLS · © ${new Date().getFullYear()} KobraPay
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
+
+  try {
+    const { error } = await resend.emails.send({
+      from: `KobraPay <${ENV.fromEmail}>`,
+      to: data.to,
+      subject: `¡Bienvenido a KobraPay! Tu cuenta ha sido aprobada`,
+      html,
+    });
+    if (error) {
+      console.error("[Email] Error al enviar bienvenida:", error);
+      return false;
+    }
+    return true;
+  } catch (err) {
+    console.error("[Email] Excepción al enviar bienvenida:", err);
+    return false;
+  }
+}

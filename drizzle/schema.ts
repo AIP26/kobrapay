@@ -422,6 +422,28 @@ export const userProfiles = mysqlTable("user_profiles", {
   // Datos del negocio
   businessName: varchar("businessName", { length: 255 }),
   businessType: varchar("businessType", { length: 128 }),
+  // Foto de perfil
+  avatarUrl: text("avatarUrl"),
+  // Datos adicionales del negocio
+  razonSocial: varchar("razonSocial", { length: 255 }),
+  direccionFiscal: text("direccionFiscal"),
+  codigoPostal: varchar("codigoPostal", { length: 10 }),
+  ciudad: varchar("ciudad", { length: 128 }),
+  estado: varchar("estado", { length: 64 }),
+  sitioWeb: varchar("sitioWeb", { length: 255 }),
+  // Datos bancarios (para recibir transferencias SPEI)
+  clabe: varchar("clabe", { length: 18 }),
+  banco: varchar("banco", { length: 128 }),
+  titularCuenta: varchar("titularCuenta", { length: 255 }),
+  rfcTitular: varchar("rfcTitular", { length: 13 }),
+  // Documentos subidos (URLs en S3)
+  ineUrl: text("ineUrl"),
+  domicilioUrl: text("domicilioUrl"),
+  actaConstitutiva: text("actaConstitutiva"),
+  // Tipo de cuenta asignado por super-admin al aprobar: business, admin, employee, assistant
+  accountType: varchar("accountType", { length: 32 }).default("business"),
+  // JSON con permisos granulares asignados al aprobar
+  permissions: text("permissions"),
   // Estado del perfil
   profileCompleted: boolean("profileCompleted").default(false).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),

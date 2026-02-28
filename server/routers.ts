@@ -62,7 +62,7 @@ import { systemRouter } from "./_core/systemRouter";
 import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
 import { securityRouter } from "./routers/security";
 import { notifyOwner } from "./_core/notification";
-import { sendOtpEmail, sendPaymentReceipt } from "./_core/email";
+import { sendOtpEmail, sendPaymentReceipt, sendWelcomeEmail } from "./_core/email";
 import { storagePut } from "./storage";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "", {
@@ -984,10 +984,20 @@ export const appRouter = router({
     }),
 
     approve: protectedProcedure
-      .input(z.object({ userId: z.number(), commissionRate: z.number().min(0).max(100).default(5) }))
+      .input(z.object({
+        userId: z.number(),
+        commissionRate: z.number().min(0).max(100).default(5),
+        accountType: z.string().default("business"),
+        permissions: z.string().optional(),
+      }))
       .mutation(async ({ ctx, input }) => {
         if (!ctx.isSuperAdmin) throw new TRPCError({ code: "FORBIDDEN" });
         await updateUserAccountStatus(input.userId, "active");
+        // Guardar accountType y permissions en user_profiles
+        await upsertUserProfile(input.userId, {
+          accountType: input.accountType,
+          permissions: input.permissions,
+        });
         // Buscar si ya existe como cliente del admin
         const targetUser = await getUserById(input.userId);
         if (targetUser) {
@@ -1007,6 +1017,19 @@ export const appRouter = router({
           }
         }
         await notifyOwner({ title: "Cuenta aprobada", content: `La cuenta de ${targetUser?.name || targetUser?.email || `ID ${input.userId}`} ha sido aprobada y asignada como cliente con ${input.commissionRate}% de comisión.` });
+        // Enviar email de bienvenida al nuevo usuario
+        if (targetUser?.email) {
+          try {
+            const profile = await getUserProfile(input.userId);
+            await sendWelcomeEmail({
+              to: targetUser.email,
+              name: profile?.fullName || targetUser.name || "Usuario",
+              businessName: profile?.businessName || targetUser.name || "Tu negocio",
+            });
+          } catch (emailErr) {
+            console.error("[Registrations] Error al enviar email de bienvenida:", emailErr);
+          }
+        }
         return { success: true };
       }),
 
@@ -1526,6 +1549,75 @@ export const appRouter = router({
           content: `${input.fullName} (${ctx.user.email}) completó su perfil. Negocio: ${input.businessName}. Revisa y aprueba la cuenta en el panel de Registros.`,
         });
         return { success: true };
+      }),
+
+    // Actualizar datos extendidos: negocio, bancarios, etc.
+    update: protectedProcedure
+      .input(
+        z.object({
+          fullName: z.string().min(2).max(255).optional(),
+          birthDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().or(z.literal("")),
+          curp: z.string().length(18).optional().or(z.literal("")),
+          rfc: z.string().min(12).max(13).optional().or(z.literal("")),
+          phone: z.string().min(10).max(32).optional().or(z.literal("")),
+          businessName: z.string().max(255).optional().or(z.literal("")),
+          businessType: z.string().max(128).optional().or(z.literal("")),
+          razonSocial: z.string().max(255).optional().or(z.literal("")),
+          direccionFiscal: z.string().max(500).optional().or(z.literal("")),
+          codigoPostal: z.string().max(10).optional().or(z.literal("")),
+          ciudad: z.string().max(128).optional().or(z.literal("")),
+          estado: z.string().max(64).optional().or(z.literal("")),
+          sitioWeb: z.string().max(255).optional().or(z.literal("")),
+          clabe: z.string().max(18).optional().or(z.literal("")),
+          banco: z.string().max(128).optional().or(z.literal("")),
+          titularCuenta: z.string().max(255).optional().or(z.literal("")),
+          rfcTitular: z.string().max(13).optional().or(z.literal("")),
+        })
+      )
+      .mutation(async ({ ctx, input }) => {
+        const data: Record<string, unknown> = {};
+        for (const [k, v] of Object.entries(input)) {
+          if (v !== undefined) data[k] = v === "" ? null : v;
+        }
+        if (data.curp && typeof data.curp === "string") data.curp = data.curp.toUpperCase();
+        if (data.rfc && typeof data.rfc === "string") data.rfc = data.rfc.toUpperCase();
+        if (data.rfcTitular && typeof data.rfcTitular === "string") data.rfcTitular = data.rfcTitular.toUpperCase();
+        await upsertUserProfile(ctx.user.id, data as Parameters<typeof upsertUserProfile>[1]);
+        return { success: true };
+      }),
+
+    // Upload de foto de perfil (base64 → S3)
+    uploadAvatar: protectedProcedure
+      .input(z.object({
+        base64: z.string().min(10),
+        mimeType: z.string().default("image/jpeg"),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const buffer = Buffer.from(input.base64.replace(/^data:[^;]+;base64,/, ""), "base64");
+        if (buffer.length > 5 * 1024 * 1024) throw new TRPCError({ code: "BAD_REQUEST", message: "La imagen no puede superar 5MB" });
+        const ext = input.mimeType.split("/")[1] || "jpg";
+        const key = `avatars/${ctx.user.id}-${Date.now()}.${ext}`;
+        const { url } = await storagePut(key, buffer, input.mimeType);
+        await upsertUserProfile(ctx.user.id, { avatarUrl: url });
+        return { url };
+      }),
+
+    // Upload de documentos (INE, domicilio, acta)
+    uploadDocument: protectedProcedure
+      .input(z.object({
+        base64: z.string().min(10),
+        mimeType: z.string(),
+        docType: z.enum(["ine", "domicilio", "acta"]),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const buffer = Buffer.from(input.base64.replace(/^data:[^;]+;base64,/, ""), "base64");
+        if (buffer.length > 10 * 1024 * 1024) throw new TRPCError({ code: "BAD_REQUEST", message: "El archivo no puede superar 10MB" });
+        const ext = input.mimeType.includes("pdf") ? "pdf" : (input.mimeType.split("/")[1] || "jpg");
+        const key = `docs/${ctx.user.id}-${input.docType}-${Date.now()}.${ext}`;
+        const { url } = await storagePut(key, buffer, input.mimeType);
+        const fieldMap: Record<string, string> = { ine: "ineUrl", domicilio: "domicilioUrl", acta: "actaConstitutiva" };
+        await upsertUserProfile(ctx.user.id, { [fieldMap[input.docType]]: url } as Parameters<typeof upsertUserProfile>[1]);
+        return { url };
       }),
   }),
 });

@@ -4,20 +4,82 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import {
-  CheckCircle2,
-  XCircle,
-  Clock,
-  Users,
-  Search,
-  RefreshCw,
-  Shield,
-  Mail,
-  Calendar,
-  LogIn,
+  CheckCircle2, XCircle, Clock, Users, Search, RefreshCw, Shield,
+  Mail, Calendar, LogIn, ChevronRight, Building2, CreditCard, FileText,
+  User, Phone, MapPin, Globe, Banknote, Lock, Eye, Settings2, X,
+  Briefcase, UserCheck, UserCog, UserX,
 } from "lucide-react";
 import { useState, useMemo } from "react";
+
+// ─── Tipos de cuenta disponibles ─────────────────────────────────────────────
+const ACCOUNT_TYPES = [
+  {
+    id: "business",
+    label: "Negocio Cliente",
+    icon: <Building2 className="w-5 h-5" />,
+    color: "bg-blue-50 border-blue-200 text-blue-700",
+    activeColor: "bg-blue-600 border-blue-600 text-white",
+    description: "Puede cobrar, crear enlaces de pago, ver sus ventas y gestionar sus clientes.",
+    defaultPermissions: {
+      canCreateLinks: true, canViewSales: true, canManageContracts: false,
+      canManageClients: true, canViewReports: true, canManageStaff: false,
+      canAccessSettings: true, canViewCommissions: false,
+    },
+  },
+  {
+    id: "admin",
+    label: "Admin de Empresa",
+    icon: <UserCog className="w-5 h-5" />,
+    color: "bg-purple-50 border-purple-200 text-purple-700",
+    activeColor: "bg-purple-600 border-purple-600 text-white",
+    description: "Gestiona su propio equipo de cobros, puede invitar empleados y ver reportes completos.",
+    defaultPermissions: {
+      canCreateLinks: true, canViewSales: true, canManageContracts: true,
+      canManageClients: true, canViewReports: true, canManageStaff: true,
+      canAccessSettings: true, canViewCommissions: false,
+    },
+  },
+  {
+    id: "employee",
+    label: "Empleado / Operador",
+    icon: <UserCheck className="w-5 h-5" />,
+    color: "bg-green-50 border-green-200 text-green-700",
+    activeColor: "bg-green-600 border-green-600 text-white",
+    description: "Solo puede crear enlaces de pago y ver sus propias ventas. Sin acceso a configuración.",
+    defaultPermissions: {
+      canCreateLinks: true, canViewSales: true, canManageContracts: false,
+      canManageClients: false, canViewReports: false, canManageStaff: false,
+      canAccessSettings: false, canViewCommissions: false,
+    },
+  },
+  {
+    id: "assistant",
+    label: "Asistente",
+    icon: <Briefcase className="w-5 h-5" />,
+    color: "bg-amber-50 border-amber-200 text-amber-700",
+    activeColor: "bg-amber-600 border-amber-600 text-white",
+    description: "Gestiona contratos, documentos y clientes. No puede cobrar directamente.",
+    defaultPermissions: {
+      canCreateLinks: false, canViewSales: true, canManageContracts: true,
+      canManageClients: true, canViewReports: true, canManageStaff: false,
+      canAccessSettings: false, canViewCommissions: false,
+    },
+  },
+];
+
+const PERMISSIONS_LIST = [
+  { key: "canCreateLinks", label: "Crear enlaces de pago", icon: <CreditCard className="w-4 h-4" /> },
+  { key: "canViewSales", label: "Ver historial de ventas", icon: <Eye className="w-4 h-4" /> },
+  { key: "canManageContracts", label: "Gestionar contratos", icon: <FileText className="w-4 h-4" /> },
+  { key: "canManageClients", label: "Gestionar clientes", icon: <Users className="w-4 h-4" /> },
+  { key: "canViewReports", label: "Ver reportes y estadísticas", icon: <Settings2 className="w-4 h-4" /> },
+  { key: "canManageStaff", label: "Gestionar equipo / staff", icon: <UserCog className="w-4 h-4" /> },
+  { key: "canAccessSettings", label: "Acceder a configuración", icon: <Settings2 className="w-4 h-4" /> },
+  { key: "canViewCommissions", label: "Ver comisiones de plataforma", icon: <Banknote className="w-4 h-4" /> },
+];
 
 const STATUS_LABELS: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
   pending: { label: "Pendiente", color: "bg-amber-100 text-amber-800 border-amber-200", icon: <Clock className="w-3 h-3" /> },
@@ -25,264 +87,392 @@ const STATUS_LABELS: Record<string, { label: string; color: string; icon: React.
   blocked: { label: "Bloqueado", color: "bg-red-100 text-red-800 border-red-200", icon: <XCircle className="w-3 h-3" /> },
 };
 
-const ROLE_LABELS: Record<string, string> = {
-  user: "Usuario",
-  admin: "Admin",
-  superadmin: "Super Admin",
+type Registration = {
+  id: number; name: string | null; email: string | null; role: string;
+  accountStatus: string; isActive: boolean; createdAt: Date; lastSignedIn: Date;
+  loginMethod: string | null; fullName?: string | null; birthDate?: string | null;
+  curp?: string | null; rfc?: string | null; phone?: string | null;
+  businessName?: string | null; businessType?: string | null;
+  accountType?: string | null; permissions?: string | null;
+  profileCompleted?: boolean | null;
 };
+
+type Permissions = Record<string, boolean>;
 
 export default function Registrations() {
   const { user } = useAuth();
   const [search, setSearch] = useState("");
-  const [filterStatus, setFilterStatus] = useState<"all" | "pending" | "active" | "blocked">("all");
-  const [commissionRates, setCommissionRates] = useState<Record<number, number>>({});
+  const [filterStatus, setFilterStatus] = useState<"all" | "pending" | "active" | "blocked">("pending");
+  const [selectedReg, setSelectedReg] = useState<Registration | null>(null);
+  const [selectedAccountType, setSelectedAccountType] = useState("business");
+  const [permissions, setPermissions] = useState<Permissions>({});
+  const [commissionRate, setCommissionRate] = useState(5);
 
   const { data: registrations = [], isLoading, refetch } = trpc.registrations.list.useQuery(undefined, {
     refetchInterval: 30000,
   });
 
   const approve = trpc.registrations.approve.useMutation({
-    onSuccess: () => { toast.success("Cuenta aprobada correctamente"); refetch(); },
+    onSuccess: () => {
+      toast.success("✅ Cuenta aprobada y email de bienvenida enviado");
+      setSelectedReg(null);
+      refetch();
+    },
     onError: (e) => toast.error(e.message),
   });
   const reject = trpc.registrations.reject.useMutation({
-    onSuccess: () => { toast.success("Cuenta bloqueada"); refetch(); },
+    onSuccess: () => { toast.success("Cuenta bloqueada"); setSelectedReg(null); refetch(); },
     onError: (e) => toast.error(e.message),
   });
   const setPending = trpc.registrations.setPending.useMutation({
-    onSuccess: () => { toast.success("Cuenta puesta en pendiente"); refetch(); },
+    onSuccess: () => { toast.success("Cuenta puesta en pendiente"); setSelectedReg(null); refetch(); },
     onError: (e) => toast.error(e.message),
   });
 
-  // Verificar que el usuario es superadmin
-  const isSuperAdmin = user?.openId === import.meta.env.VITE_APP_ID || (user as Record<string, unknown>)?.isSuperAdmin;
+  const isSuperAdmin = (user as Record<string, unknown>)?.isSuperAdmin;
 
   const filtered = useMemo(() => {
-    return registrations.filter((r) => {
+    return (registrations as Registration[]).filter((r) => {
       const matchSearch = !search ||
         (r.name?.toLowerCase().includes(search.toLowerCase())) ||
-        (r.email?.toLowerCase().includes(search.toLowerCase()));
+        (r.email?.toLowerCase().includes(search.toLowerCase())) ||
+        (r.fullName?.toLowerCase().includes(search.toLowerCase())) ||
+        (r.businessName?.toLowerCase().includes(search.toLowerCase()));
       const matchStatus = filterStatus === "all" || r.accountStatus === filterStatus;
       return matchSearch && matchStatus;
     });
   }, [registrations, search, filterStatus]);
 
   const counts = useMemo(() => ({
-    total: registrations.length,
-    pending: registrations.filter((r) => r.accountStatus === "pending").length,
-    active: registrations.filter((r) => r.accountStatus === "active").length,
-    blocked: registrations.filter((r) => r.accountStatus === "blocked").length,
+    total: (registrations as Registration[]).length,
+    pending: (registrations as Registration[]).filter((r) => r.accountStatus === "pending").length,
+    active: (registrations as Registration[]).filter((r) => r.accountStatus === "active").length,
+    blocked: (registrations as Registration[]).filter((r) => r.accountStatus === "blocked").length,
   }), [registrations]);
 
+  const openApproval = (reg: Registration) => {
+    setSelectedReg(reg);
+    const type = reg.accountType || "business";
+    setSelectedAccountType(type);
+    const accountType = ACCOUNT_TYPES.find((t) => t.id === type) || ACCOUNT_TYPES[0];
+    // Cargar permisos existentes o usar los por defecto del tipo
+    if (reg.permissions) {
+      try { setPermissions(JSON.parse(reg.permissions)); return; } catch {}
+    }
+    setPermissions({ ...accountType.defaultPermissions });
+    setCommissionRate(5);
+  };
+
+  const handleAccountTypeChange = (typeId: string) => {
+    setSelectedAccountType(typeId);
+    const accountType = ACCOUNT_TYPES.find((t) => t.id === typeId) || ACCOUNT_TYPES[0];
+    setPermissions({ ...accountType.defaultPermissions });
+  };
+
+  const handleApprove = () => {
+    if (!selectedReg) return;
+    approve.mutate({
+      userId: selectedReg.id,
+      commissionRate,
+      accountType: selectedAccountType,
+      permissions: JSON.stringify(permissions),
+    });
+  };
+
+  if (!isSuperAdmin) {
+    return (
+      <DashboardLayout title="Solicitudes de Registro">
+        <div className="flex items-center justify-center py-32">
+          <div className="text-center">
+            <Lock className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+            <p className="text-gray-500 font-medium">Acceso restringido</p>
+            <p className="text-gray-400 text-sm">Solo el super-admin puede gestionar registros</p>
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
   return (
-    <DashboardLayout title="Gestión de Registros">
-      <div className="space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-              <Shield className="w-6 h-6 text-blue-600" />
-              Gestión de Registros
-            </h1>
-            <p className="text-gray-500 text-sm mt-1">
-              Aprueba o rechaza las cuentas que se registran en KobraPay.
-            </p>
-          </div>
-          <Button variant="outline" onClick={() => refetch()} className="gap-2">
-            <RefreshCw className="w-4 h-4" /> Actualizar
-          </Button>
-        </div>
-
-        {/* Métricas */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {[
-            { label: "Total", value: counts.total, color: "text-gray-700", bg: "bg-gray-50", icon: <Users className="w-5 h-5 text-gray-500" /> },
-            { label: "Pendientes", value: counts.pending, color: "text-amber-700", bg: "bg-amber-50", icon: <Clock className="w-5 h-5 text-amber-500" /> },
-            { label: "Activos", value: counts.active, color: "text-green-700", bg: "bg-green-50", icon: <CheckCircle2 className="w-5 h-5 text-green-500" /> },
-            { label: "Bloqueados", value: counts.blocked, color: "text-red-700", bg: "bg-red-50", icon: <XCircle className="w-5 h-5 text-red-500" /> },
-          ].map((m) => (
-            <div key={m.label} className={`${m.bg} rounded-xl p-4 flex items-center gap-3`}>
-              {m.icon}
-              <div>
-                <p className="text-xs text-gray-500">{m.label}</p>
-                <p className={`text-2xl font-bold ${m.color}`}>{m.value}</p>
-              </div>
+    <DashboardLayout title="Solicitudes de Registro">
+      <div className="flex gap-6 h-full">
+        {/* ── Columna izquierda: lista ── */}
+        <div className={`flex-1 space-y-5 transition-all ${selectedReg ? "max-w-[calc(100%-420px)]" : ""}`}>
+          {/* Header */}
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+                <Shield className="w-6 h-6 text-blue-600" />
+                Solicitudes de Registro
+              </h1>
+              <p className="text-gray-500 text-sm mt-1">
+                Revisa y aprueba las cuentas que se registran en KobraPay.
+              </p>
             </div>
-          ))}
-        </div>
-
-        {/* Filtros */}
-        <div className="flex flex-col sm:flex-row gap-3">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-            <Input
-              className="pl-9"
-              placeholder="Buscar por nombre o email..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
+            <Button variant="outline" onClick={() => refetch()} className="gap-2">
+              <RefreshCw className="w-4 h-4" /> Actualizar
+            </Button>
           </div>
-          <div className="flex gap-2">
-            {(["all", "pending", "active", "blocked"] as const).map((s) => (
-              <Button
-                key={s}
-                variant={filterStatus === s ? "default" : "outline"}
-                size="sm"
-                onClick={() => setFilterStatus(s)}
-                className={filterStatus === s ? "bg-blue-600 text-white" : ""}
-              >
-                {s === "all" ? "Todos" : STATUS_LABELS[s]?.label}
-              </Button>
+
+          {/* KPIs */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {[
+              { label: "Total", value: counts.total, color: "text-gray-700", bg: "bg-gray-50", icon: <Users className="w-5 h-5 text-gray-500" /> },
+              { label: "Pendientes", value: counts.pending, color: "text-amber-700", bg: "bg-amber-50", icon: <Clock className="w-5 h-5 text-amber-500" /> },
+              { label: "Activos", value: counts.active, color: "text-green-700", bg: "bg-green-50", icon: <CheckCircle2 className="w-5 h-5 text-green-500" /> },
+              { label: "Bloqueados", value: counts.blocked, color: "text-red-700", bg: "bg-red-50", icon: <XCircle className="w-5 h-5 text-red-500" /> },
+            ].map((m) => (
+              <div key={m.label} className={`${m.bg} rounded-xl p-4 flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity`}
+                onClick={() => setFilterStatus(m.label === "Total" ? "all" : m.label.toLowerCase() as "pending" | "active" | "blocked")}>
+                {m.icon}
+                <div>
+                  <p className="text-xs text-gray-500">{m.label}</p>
+                  <p className={`text-2xl font-bold ${m.color}`}>{m.value}</p>
+                </div>
+              </div>
             ))}
           </div>
-        </div>
 
-        {/* Tabla */}
-        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-          {isLoading ? (
-            <div className="flex items-center justify-center py-16">
-              <RefreshCw className="w-6 h-6 text-gray-400 animate-spin mr-2" />
-              <span className="text-gray-500">Cargando registros...</span>
+          {/* Filtros */}
+          <div className="flex flex-col sm:flex-row gap-3">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <Input className="pl-9" placeholder="Buscar por nombre, email o negocio..." value={search} onChange={(e) => setSearch(e.target.value)} />
             </div>
-          ) : filtered.length === 0 ? (
-            <div className="text-center py-16">
-              <Users className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-              <p className="text-gray-500 font-medium">No hay registros</p>
-              <p className="text-gray-400 text-sm">
-                {filterStatus !== "all" ? "Prueba cambiando el filtro" : "Aún no hay usuarios registrados"}
-              </p>
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="bg-gray-50 border-b border-gray-200">
-                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Usuario</th>
-                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Rol</th>
-                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Estado</th>
-                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Registro</th>
-                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Último acceso</th>
-                    <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Acciones</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100">
-                  {filtered.map((reg) => {
-                    const statusInfo = STATUS_LABELS[reg.accountStatus] || STATUS_LABELS.pending;
-                    const isPending = reg.accountStatus === "pending";
-                    const isApproving = approve.isPending && approve.variables?.userId === reg.id;
-                    const isRejecting = reject.isPending && reject.variables?.userId === reg.id;
-                    return (
-                      <tr key={reg.id} className="hover:bg-gray-50 transition-colors">
-                        <td className="px-4 py-4">
-                          <div className="flex items-center gap-3">
-                            <div className="w-9 h-9 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-bold text-sm flex-shrink-0">
-                              {reg.name ? reg.name.charAt(0).toUpperCase() : "?"}
-                            </div>
-                            <div>
-                              <p className="font-medium text-gray-900 text-sm">{reg.name || "Sin nombre"}</p>
-                              <p className="text-gray-400 text-xs flex items-center gap-1">
-                                <Mail className="w-3 h-3" /> {reg.email || "Sin email"}
-                              </p>
-                            </div>
-                          </div>
-                        </td>
-                        <td className="px-4 py-4">
-                          <span className="text-xs font-medium text-gray-600 bg-gray-100 px-2 py-1 rounded-full">
-                            {ROLE_LABELS[reg.role] || reg.role}
-                          </span>
-                        </td>
-                        <td className="px-4 py-4">
-                          <span className={`inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full border ${statusInfo.color}`}>
-                            {statusInfo.icon} {statusInfo.label}
-                          </span>
-                        </td>
-                        <td className="px-4 py-4">
-                          <p className="text-xs text-gray-500 flex items-center gap-1">
-                            <Calendar className="w-3 h-3" />
-                            {new Date(reg.createdAt).toLocaleDateString("es-MX", { day: "2-digit", month: "short", year: "numeric" })}
-                          </p>
-                        </td>
-                        <td className="px-4 py-4">
-                          <p className="text-xs text-gray-500 flex items-center gap-1">
-                            <LogIn className="w-3 h-3" />
-                            {new Date(reg.lastSignedIn).toLocaleDateString("es-MX", { day: "2-digit", month: "short", year: "numeric" })}
-                          </p>
-                        </td>
-                        <td className="px-4 py-4">
-                          <div className="flex items-center justify-end gap-2">
-                            {reg.accountStatus !== "active" && (
-                              <div className="flex items-center gap-1">
-                                <div className="flex items-center gap-1">
-                                  <input
-                                    type="number"
-                                    min="0"
-                                    max="100"
-                                    step="0.5"
-                                    value={commissionRates[reg.id] ?? 5}
-                                    onChange={(e) => setCommissionRates(prev => ({ ...prev, [reg.id]: parseFloat(e.target.value) || 5 }))}
-                                    className="w-14 text-xs border border-gray-200 rounded px-1.5 py-1 text-center"
-                                    title="Comisión %"
-                                  />
-                                  <span className="text-xs text-gray-400">%</span>
-                                </div>
-                                <Button
-                                  size="sm"
-                                  className="bg-green-600 hover:bg-green-700 text-white h-8 px-3 text-xs gap-1"
-                                  onClick={() => approve.mutate({ userId: reg.id, commissionRate: commissionRates[reg.id] ?? 5 })}
-                                  disabled={isApproving}
-                                >
-                                  <CheckCircle2 className="w-3.5 h-3.5" />
-                                  {isApproving ? "..." : "Aprobar"}
-                                </Button>
-                              </div>
-                            )}
-                            {reg.accountStatus !== "blocked" && reg.role !== "superadmin" && (
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="border-red-200 text-red-600 hover:bg-red-50 h-8 px-3 text-xs gap-1"
-                                onClick={() => reject.mutate({ userId: reg.id })}
-                                disabled={isRejecting}
-                              >
-                                <XCircle className="w-3.5 h-3.5" />
-                                {isRejecting ? "..." : "Bloquear"}
-                              </Button>
-                            )}
-                            {reg.accountStatus === "blocked" && (
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="border-amber-200 text-amber-600 hover:bg-amber-50 h-8 px-3 text-xs gap-1"
-                                onClick={() => setPending.mutate({ userId: reg.id })}
-                              >
-                                <Clock className="w-3.5 h-3.5" /> Pendiente
-                              </Button>
-                            )}
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-
-        {/* Nota informativa */}
-        <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
-          <div className="flex gap-3">
-            <Shield className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
-            <div>
-              <p className="font-semibold text-blue-800 text-sm">¿Cómo funciona el control de acceso?</p>
-              <p className="text-blue-700 text-sm mt-1">
-                Cuando alguien se registra en KobraPay, su cuenta queda en estado <strong>Pendiente</strong> y no puede acceder al panel.
-                Tú debes <strong>Aprobar</strong> la cuenta para que el usuario pueda usar la plataforma.
-                También puedes <strong>Bloquear</strong> cuentas en cualquier momento para revocar el acceso.
-              </p>
+            <div className="flex gap-2">
+              {(["all", "pending", "active", "blocked"] as const).map((s) => (
+                <Button key={s} variant={filterStatus === s ? "default" : "outline"} size="sm"
+                  onClick={() => setFilterStatus(s)}
+                  className={filterStatus === s ? "bg-blue-600 text-white" : ""}>
+                  {s === "all" ? "Todos" : STATUS_LABELS[s]?.label}
+                </Button>
+              ))}
             </div>
           </div>
+
+          {/* Lista de solicitudes */}
+          <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+            {isLoading ? (
+              <div className="flex items-center justify-center py-16">
+                <RefreshCw className="w-6 h-6 text-gray-400 animate-spin mr-2" />
+                <span className="text-gray-500">Cargando solicitudes...</span>
+              </div>
+            ) : filtered.length === 0 ? (
+              <div className="text-center py-16">
+                <Users className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                <p className="text-gray-500 font-medium">No hay solicitudes</p>
+                <p className="text-gray-400 text-sm">
+                  {filterStatus !== "all" ? "Prueba cambiando el filtro" : "Aún no hay usuarios registrados"}
+                </p>
+              </div>
+            ) : (
+              <div className="divide-y divide-gray-100">
+                {filtered.map((reg) => {
+                  const statusInfo = STATUS_LABELS[reg.accountStatus] || STATUS_LABELS.pending;
+                  const isSelected = selectedReg?.id === reg.id;
+                  const accountTypeInfo = ACCOUNT_TYPES.find((t) => t.id === (reg.accountType || "business"));
+                  return (
+                    <div key={reg.id}
+                      className={`flex items-center gap-4 px-5 py-4 hover:bg-gray-50 transition-colors cursor-pointer ${isSelected ? "bg-blue-50 border-l-4 border-blue-500" : ""}`}
+                      onClick={() => openApproval(reg)}>
+                      {/* Avatar */}
+                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
+                        {(reg.fullName || reg.name || "?").charAt(0).toUpperCase()}
+                      </div>
+                      {/* Info principal */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <p className="font-semibold text-gray-900 text-sm truncate">
+                            {reg.fullName || reg.name || "Sin nombre"}
+                          </p>
+                          {reg.profileCompleted && (
+                            <span className="text-xs bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded-full flex-shrink-0">Perfil completo</span>
+                          )}
+                        </div>
+                        <p className="text-xs text-gray-400 truncate flex items-center gap-1">
+                          <Mail className="w-3 h-3 flex-shrink-0" /> {reg.email || "Sin email"}
+                        </p>
+                        {reg.businessName && (
+                          <p className="text-xs text-gray-500 truncate flex items-center gap-1">
+                            <Building2 className="w-3 h-3 flex-shrink-0" /> {reg.businessName}
+                          </p>
+                        )}
+                      </div>
+                      {/* Estado y tipo */}
+                      <div className="flex flex-col items-end gap-1.5 flex-shrink-0">
+                        <span className={`inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full border ${statusInfo.color}`}>
+                          {statusInfo.icon} {statusInfo.label}
+                        </span>
+                        {accountTypeInfo && reg.accountStatus === "active" && (
+                          <span className="text-xs text-gray-400">{accountTypeInfo.label}</span>
+                        )}
+                        <p className="text-xs text-gray-400 flex items-center gap-1">
+                          <Calendar className="w-3 h-3" />
+                          {new Date(reg.createdAt).toLocaleDateString("es-MX", { day: "2-digit", month: "short" })}
+                        </p>
+                      </div>
+                      <ChevronRight className="w-4 h-4 text-gray-300 flex-shrink-0" />
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
         </div>
+
+        {/* ── Panel lateral de aprobación ── */}
+        {selectedReg && (
+          <div className="w-[400px] flex-shrink-0 bg-white border border-gray-200 rounded-xl overflow-y-auto max-h-[calc(100vh-120px)] sticky top-4">
+            {/* Header del panel */}
+            <div className="flex items-center justify-between p-5 border-b border-gray-100 bg-gray-50">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold text-sm">
+                  {(selectedReg.fullName || selectedReg.name || "?").charAt(0).toUpperCase()}
+                </div>
+                <div>
+                  <p className="font-semibold text-gray-900 text-sm">{selectedReg.fullName || selectedReg.name || "Sin nombre"}</p>
+                  <p className="text-xs text-gray-400">{selectedReg.email}</p>
+                </div>
+              </div>
+              <button onClick={() => setSelectedReg(null)} className="text-gray-400 hover:text-gray-600 p-1 rounded-lg hover:bg-gray-100">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-5 space-y-5">
+              {/* Datos del solicitante */}
+              <div>
+                <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Datos del Solicitante</h3>
+                <div className="space-y-2 text-sm">
+                  {[
+                    { icon: <User className="w-3.5 h-3.5" />, label: "Nombre", value: selectedReg.fullName || selectedReg.name },
+                    { icon: <Mail className="w-3.5 h-3.5" />, label: "Email", value: selectedReg.email },
+                    { icon: <Phone className="w-3.5 h-3.5" />, label: "Teléfono", value: selectedReg.phone },
+                    { icon: <FileText className="w-3.5 h-3.5" />, label: "CURP", value: selectedReg.curp },
+                    { icon: <FileText className="w-3.5 h-3.5" />, label: "RFC", value: selectedReg.rfc },
+                    { icon: <Building2 className="w-3.5 h-3.5" />, label: "Negocio", value: selectedReg.businessName },
+                    { icon: <Briefcase className="w-3.5 h-3.5" />, label: "Giro", value: selectedReg.businessType },
+                    { icon: <Calendar className="w-3.5 h-3.5" />, label: "Registro", value: new Date(selectedReg.createdAt).toLocaleDateString("es-MX", { day: "2-digit", month: "long", year: "numeric" }) },
+                    { icon: <LogIn className="w-3.5 h-3.5" />, label: "Último acceso", value: new Date(selectedReg.lastSignedIn).toLocaleDateString("es-MX", { day: "2-digit", month: "short", year: "numeric" }) },
+                  ].filter((f) => f.value).map((f) => (
+                    <div key={f.label} className="flex items-start gap-2">
+                      <span className="text-gray-400 mt-0.5 flex-shrink-0">{f.icon}</span>
+                      <span className="text-gray-500 flex-shrink-0 w-20">{f.label}:</span>
+                      <span className="text-gray-800 font-medium break-all">{f.value}</span>
+                    </div>
+                  ))}
+                  {!selectedReg.profileCompleted && (
+                    <div className="flex items-center gap-2 text-amber-600 bg-amber-50 rounded-lg p-2.5 text-xs">
+                      <Clock className="w-3.5 h-3.5 flex-shrink-0" />
+                      El usuario aún no ha completado su perfil extendido.
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Tipo de cuenta */}
+              <div>
+                <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Tipo de Cuenta</h3>
+                <div className="grid grid-cols-2 gap-2">
+                  {ACCOUNT_TYPES.map((type) => (
+                    <button
+                      key={type.id}
+                      onClick={() => handleAccountTypeChange(type.id)}
+                      className={`flex flex-col items-start gap-1.5 p-3 rounded-xl border-2 text-left transition-all ${selectedAccountType === type.id ? type.activeColor : "bg-white border-gray-200 hover:border-gray-300"}`}
+                    >
+                      <div className="flex items-center gap-2">
+                        {type.icon}
+                        <span className="text-xs font-semibold">{type.label}</span>
+                      </div>
+                      <p className={`text-xs leading-tight ${selectedAccountType === type.id ? "opacity-80" : "text-gray-400"}`}>
+                        {type.description}
+                      </p>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Permisos granulares */}
+              <div>
+                <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Permisos Asignados</h3>
+                <div className="space-y-2">
+                  {PERMISSIONS_LIST.map((perm) => (
+                    <label key={perm.key} className="flex items-center gap-3 cursor-pointer group">
+                      <div
+                        className={`w-9 h-5 rounded-full transition-colors flex-shrink-0 relative ${permissions[perm.key] ? "bg-blue-600" : "bg-gray-200"}`}
+                        onClick={() => setPermissions((prev) => ({ ...prev, [perm.key]: !prev[perm.key] }))}
+                      >
+                        <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${permissions[perm.key] ? "translate-x-4" : "translate-x-0.5"}`} />
+                      </div>
+                      <div className="flex items-center gap-2 text-sm">
+                        <span className={`${permissions[perm.key] ? "text-blue-600" : "text-gray-400"}`}>{perm.icon}</span>
+                        <span className={`${permissions[perm.key] ? "text-gray-800" : "text-gray-400"}`}>{perm.label}</span>
+                      </div>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              {/* Comisión */}
+              <div>
+                <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Comisión de Plataforma</h3>
+                <div className="flex items-center gap-3">
+                  <div className="flex-1">
+                    <input
+                      type="range" min="0" max="20" step="0.5"
+                      value={commissionRate}
+                      onChange={(e) => setCommissionRate(parseFloat(e.target.value))}
+                      className="w-full accent-blue-600"
+                    />
+                    <div className="flex justify-between text-xs text-gray-400 mt-1">
+                      <span>0%</span><span>10%</span><span>20%</span>
+                    </div>
+                  </div>
+                  <div className="w-16 text-center">
+                    <div className="text-2xl font-bold text-blue-600">{commissionRate}%</div>
+                    <div className="text-xs text-gray-400">por cobro</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Acciones */}
+              <div className="space-y-2 pt-2 border-t border-gray-100">
+                {selectedReg.accountStatus !== "active" && (
+                  <Button
+                    className="w-full bg-green-600 hover:bg-green-700 text-white gap-2"
+                    onClick={handleApprove}
+                    disabled={approve.isPending}
+                  >
+                    <CheckCircle2 className="w-4 h-4" />
+                    {approve.isPending ? "Aprobando..." : "Aprobar y Activar Cuenta"}
+                  </Button>
+                )}
+                {selectedReg.accountStatus !== "blocked" && (
+                  <Button
+                    variant="outline"
+                    className="w-full border-red-200 text-red-600 hover:bg-red-50 gap-2"
+                    onClick={() => reject.mutate({ userId: selectedReg.id })}
+                    disabled={reject.isPending}
+                  >
+                    <XCircle className="w-4 h-4" />
+                    {reject.isPending ? "Bloqueando..." : "Bloquear Cuenta"}
+                  </Button>
+                )}
+                {selectedReg.accountStatus !== "pending" && (
+                  <Button
+                    variant="outline"
+                    className="w-full gap-2 text-gray-600"
+                    onClick={() => setPending.mutate({ userId: selectedReg.id })}
+                    disabled={setPending.isPending}
+                  >
+                    <Clock className="w-4 h-4" />
+                    Poner en Pendiente
+                  </Button>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </DashboardLayout>
   );

@@ -369,3 +369,32 @@
 - [ ] Validación de CURP (formato correcto 18 caracteres)
 - [ ] Flujo de aprobación: nuevo registro queda en estado "pendiente" hasta que super-admin apruebe
 - [ ] Email de bienvenida al aprobar cuenta
+
+## Fase 24 - Flujo de Registro Propio + Panel de Aprobación Avanzado
+
+- [x] Agregar campos accountType y permissions en user_profiles (DB + migración)
+- [x] Crear página CompleteProfile.tsx con formulario completo post-OAuth
+- [x] Rediseñar Registrations.tsx con panel lateral de aprobación y tipos de cuenta
+- [x] Implementar permisos granulares en sidebar y rutas del dashboard
+- [x] Email de bienvenida con tipo de cuenta asignado
+- [x] Agregar sendWelcomeEmail en email.ts
+
+## Fase 25 - Perfil Completo del Cliente + Guía de Uso en Email
+
+- [x] Agregar campos bancarios y de empresa a user_profiles (CLABE, banco, razón social, dirección fiscal, etc.)
+- [x] Rediseñar panel de Solicitudes de Registro con panel lateral avanzado (tipos de cuenta + permisos granulares)
+- [x] Crear página de Perfil completo del cliente (4 secciones: personal, negocio, bancario, documentos)
+- [x] Actualizar email de bienvenida con guía de uso paso a paso (único en el mercado)
+- [x] Actualizar router de approve para guardar accountType y permissions en user_profiles
+
+## Fase 26 - Perfil Completo Funcional
+
+- [x] Campo avatarUrl en user_profiles + migración DB
+- [x] Endpoint de upload de foto de perfil a S3 (multipart/form-data)
+- [x] Endpoint de upload de documentos a S3 (INE, domicilio, acta)
+- [x] Router userProfile: get, update, uploadAvatar, uploadDocument
+- [x] Página MyProfile.tsx con 4 secciones: personal, negocio, bancario, documentos
+- [x] Subida de foto de perfil funcional con preview inmediato
+- [x] Subida de documentos funcional con vista previa y descarga
+- [x] Ruta /dashboard/profile en App.tsx + acceso desde sidebar y header
+- [x] Email de bienvenida con guía de uso de 5 pasos

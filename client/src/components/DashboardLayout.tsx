@@ -28,6 +28,7 @@ import {
   FolderOpen,
   TrendingUp,
   HelpCircle,
+  UserCircle2,
 } from "lucide-react";
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
@@ -220,23 +221,26 @@ export default function DashboardLayout({ children, title }: DashboardLayoutProp
       </nav>
 
       {/* User Profile */}
-      <div className="px-3 py-4 border-t border-white/10">
-        <div className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-white/5 transition-colors">
-          <Avatar className="w-8 h-8 flex-shrink-0">
-            <AvatarFallback className="bg-emerald-500/30 text-emerald-300 text-xs font-bold">{initials}</AvatarFallback>
-          </Avatar>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-white truncate">{user?.name || "Usuario"}</p>
-            <p className="text-xs text-gray-400 truncate">{user?.email || ""}</p>
+      <div className="px-3 py-4 border-t border-white/10 space-y-1">
+        <Link href="/dashboard/profile" onClick={() => setSidebarOpen(false)}>
+          <div className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-white/5 transition-colors cursor-pointer group">
+            <Avatar className="w-8 h-8 flex-shrink-0">
+              <AvatarFallback className="bg-emerald-500/30 text-emerald-300 text-xs font-bold">{initials}</AvatarFallback>
+            </Avatar>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-white truncate">{user?.name || "Usuario"}</p>
+              <p className="text-xs text-emerald-400/70 group-hover:text-emerald-400 truncate transition-colors">Ver mi perfil</p>
+            </div>
+            <UserCircle2 className="w-4 h-4 text-gray-500 group-hover:text-emerald-400 transition-colors flex-shrink-0" />
           </div>
-          <button
-            onClick={() => logout.mutate()}
-            className="text-gray-400 hover:text-red-400 transition-colors flex-shrink-0"
-            title="Cerrar sesión"
-          >
-            <LogOut className="w-4 h-4" />
-          </button>
-        </div>
+        </Link>
+        <button
+          onClick={() => logout.mutate()}
+          className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-red-500/10 text-gray-400 hover:text-red-400 transition-colors text-sm"
+        >
+          <LogOut className="w-4 h-4" />
+          <span>Cerrar sesión</span>
+        </button>
       </div>
     </aside>
   );

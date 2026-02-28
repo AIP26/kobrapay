@@ -34,6 +34,7 @@ import Help from "./pages/Help";
 import MonthlyReport from "./pages/MonthlyReport";
 import CompleteProfile from "./pages/CompleteProfile";
 import PendingApproval from "./pages/PendingApproval";
+import MyProfile from "./pages/MyProfile";
 
 function Router() {
   return (
@@ -67,6 +68,7 @@ function Router() {
       <Route path="/dashboard/commissions" component={CommissionsPanel} />
       <Route path="/sign-contract/:token" component={SignContract} />
       <Route path="/complete-profile" component={CompleteProfile} />
+      <Route path="/dashboard/profile" component={MyProfile} />
       <Route path="/pending">{() => <PendingApproval status="pending" />}</Route>
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
