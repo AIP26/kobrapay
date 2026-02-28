@@ -165,10 +165,13 @@ type Transaction = {
   metadata?: string | null;
   createdAt: Date | string;
   ipAddress?: string | null;
+  operationNumber?: string | null;
 };
 
 function generateOperationNumber(tx: Transaction): string {
-  // Generar número de operación único basado en ID + timestamp
+  // Usar el operationNumber guardado en BD si existe (es la fuente de verdad)
+  if (tx.operationNumber) return tx.operationNumber;
+  // Fallback: generar localmente
   const id = String(tx.id).padStart(6, "0");
   const ts = new Date(tx.createdAt).getTime().toString().slice(-8);
   return `KP${ts}${id}`;

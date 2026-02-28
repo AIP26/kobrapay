@@ -260,7 +260,16 @@ export async function createTransaction(data: InsertTransaction) {
     .where(eq(transactions.paymentLinkId, data.paymentLinkId))
     .orderBy(desc(transactions.createdAt))
     .limit(1);
-  return result[0];
+  const tx = result[0];
+  // Generar y guardar operationNumber basado en timestamp + id
+  if (tx && !tx.operationNumber) {
+    const ts = new Date(tx.createdAt).getTime().toString().slice(-8);
+    const id = String(tx.id).padStart(6, "0");
+    const operationNumber = `KP${ts}${id}`;
+    await db.update(transactions).set({ operationNumber }).where(eq(transactions.id, tx.id));
+    tx.operationNumber = operationNumber;
+  }
+  return tx;
 }
 
 export async function getTransactionsByUser(userId: number) {
