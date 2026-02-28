@@ -13,6 +13,7 @@ import {
   Briefcase, UserCheck, UserCog, UserX,
 } from "lucide-react";
 import { useState, useMemo } from "react";
+import { Textarea } from "@/components/ui/textarea";
 
 // ─── Tipos de cuenta disponibles ─────────────────────────────────────────────
 const ACCOUNT_TYPES = [
@@ -104,6 +105,8 @@ export default function Registrations() {
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState<"all" | "pending" | "active" | "blocked">("pending");
   const [selectedReg, setSelectedReg] = useState<Registration | null>(null);
+  const [rejectReason, setRejectReason] = useState("");
+  const [showRejectReason, setShowRejectReason] = useState(false);
   const [selectedAccountType, setSelectedAccountType] = useState("business");
   const [permissions, setPermissions] = useState<Permissions>({});
   const [commissionRate, setCommissionRate] = useState(5);
@@ -121,7 +124,13 @@ export default function Registrations() {
     onError: (e) => toast.error(e.message),
   });
   const reject = trpc.registrations.reject.useMutation({
-    onSuccess: () => { toast.success("Cuenta bloqueada"); setSelectedReg(null); refetch(); },
+    onSuccess: () => {
+      toast.success("Cuenta bloqueada y email de rechazo enviado");
+      setSelectedReg(null);
+      setShowRejectReason(false);
+      setRejectReason("");
+      refetch();
+    },
     onError: (e) => toast.error(e.message),
   });
   const setPending = trpc.registrations.setPending.useMutation({
@@ -448,15 +457,48 @@ export default function Registrations() {
                   </Button>
                 )}
                 {selectedReg.accountStatus !== "blocked" && (
-                  <Button
-                    variant="outline"
-                    className="w-full border-red-200 text-red-600 hover:bg-red-50 gap-2"
-                    onClick={() => reject.mutate({ userId: selectedReg.id })}
-                    disabled={reject.isPending}
-                  >
-                    <XCircle className="w-4 h-4" />
-                    {reject.isPending ? "Bloqueando..." : "Bloquear Cuenta"}
-                  </Button>
+                  <div className="w-full space-y-2">
+                    {showRejectReason ? (
+                      <>
+                        <label className="text-xs text-gray-500 font-medium">Motivo del rechazo (se enviará por email al usuario)</label>
+                        <Textarea
+                          placeholder="Ej: Información incompleta, actividad sospechosa..."
+                          value={rejectReason}
+                          onChange={(e) => setRejectReason(e.target.value)}
+                          rows={3}
+                          className="text-sm"
+                        />
+                        <div className="flex gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="flex-1"
+                            onClick={() => { setShowRejectReason(false); setRejectReason(""); }}
+                          >
+                            Cancelar
+                          </Button>
+                          <Button
+                            size="sm"
+                            className="flex-1 bg-red-600 hover:bg-red-700 text-white"
+                            onClick={() => reject.mutate({ userId: selectedReg.id, reason: rejectReason || undefined })}
+                            disabled={reject.isPending}
+                          >
+                            {reject.isPending ? "Bloqueando..." : "Confirmar Bloqueo"}
+                          </Button>
+                        </div>
+                      </>
+                    ) : (
+                      <Button
+                        variant="outline"
+                        className="w-full border-red-200 text-red-600 hover:bg-red-50 gap-2"
+                        onClick={() => setShowRejectReason(true)}
+                        disabled={reject.isPending}
+                      >
+                        <XCircle className="w-4 h-4" />
+                        Bloquear Cuenta
+                      </Button>
+                    )}
+                  </div>
                 )}
                 {selectedReg.accountStatus !== "pending" && (
                   <Button

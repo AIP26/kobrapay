@@ -32,6 +32,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import GlobalSearch from "./GlobalSearch";
+import { NotificationBell } from "./NotificationBell";
 import { Link, useLocation } from "wouter";
 import { Button } from "./ui/button";
 import { Avatar, AvatarFallback } from "./ui/avatar";
@@ -282,10 +283,15 @@ export default function DashboardLayout({ children, title }: DashboardLayoutProp
           <div className="flex-1 max-w-lg">
             <GlobalSearch />
           </div>
-          {/* Right side: page title */}
-          {title && (
-            <span className="hidden lg:block text-sm text-gray-400 flex-shrink-0 truncate max-w-[200px]">{title}</span>
-          )}
+          {/* Right side: campana de notificaciones + título */}
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <div className="[&_button]:text-gray-300 [&_button:hover]:bg-white/10">
+              <NotificationBell />
+            </div>
+            {title && (
+              <span className="hidden lg:block text-sm text-gray-400 truncate max-w-[200px]">{title}</span>
+            )}
+          </div>
         </header>
 
         {/* Page Content */}

@@ -1111,6 +1111,13 @@ function PageFooter() {
           <span className="text-gray-400 text-xs">SSL 256-bit</span>
         </div>
       </div>
+      <div className="flex items-center justify-center gap-4 mt-4 flex-wrap">
+        <a href="/legal" target="_blank" rel="noopener noreferrer" className="text-gray-400 text-xs hover:text-gray-600 underline underline-offset-2 transition-colors">Términos de Uso</a>
+        <span className="text-gray-300 text-xs">·</span>
+        <a href="/privacidad" target="_blank" rel="noopener noreferrer" className="text-gray-400 text-xs hover:text-gray-600 underline underline-offset-2 transition-colors">Aviso de Privacidad</a>
+        <span className="text-gray-300 text-xs">·</span>
+        <span className="text-gray-400 text-xs">© {new Date().getFullYear()} KobraPay</span>
+      </div>
     </div>
   );
 }

@@ -404,3 +404,34 @@
 - [x] Comprobante PDF descargable desde el detalle de transacción en Mis Ventas (ya existía)
 - [x] Firma e ID visibles en el modal de detalle de transacción (ya existía)
 - [x] Búsqueda en Mis Ventas por nombre de cliente o número de operación (ya existía con debounce)
+
+## Fase 21 - Registro Controlado + Contratos Completos
+- [ ] Flujo de registro: cuenta nueva queda en estado "pending" automáticamente
+- [ ] Super-admin recibe notificación al llegar registro nuevo
+- [ ] Panel de aprobación en Registros: botón Aprobar/Rechazar con email automático
+- [ ] Email de bienvenida al aprobar cuenta
+- [ ] Email de rechazo con motivo al bloquear cuenta
+- [ ] Schema DB: tabla contracts mejorada (template, datos cliente, token, estado, firma_url, docs)
+- [ ] Schema DB: tabla contract_documents (contrato, tipo doc, url S3)
+- [ ] Backend: CRUD completo de contratos (crear, listar, actualizar estado, subir firma, docs)
+- [ ] Backend: token único para enlace de firma pública
+- [ ] Backend: subir firma digital (base64 → S3)
+- [ ] Backend: subir documentos del cliente (INE, domicilio, RFC, CURP → S3)
+- [ ] Página pública de firma: cliente ve contrato completo, firma con canvas, sube docs
+- [ ] Panel de contratos en dashboard: lista con estados, descarga PDF firmado
+- [ ] Eliminar opción USD en crear enlace — solo MXN
+- [ ] Agregar favicon KobraPay
+- [ ] Reporte CSV de comisiones para superadmin (ingresos cliente vs comisiones KobraPay)
+
+## Fase 22 - Centro de Notificaciones y Bienvenida Completa
+
+- [ ] Tabla notifications en DB (tipo, titulo, mensaje, leida, userId, metadata, createdAt)
+- [ ] Router backend: crear, listar, marcar como leida, contar no leidas
+- [ ] Notificacion automatica al registrarse nuevo usuario (desde OAuth callback)
+- [ ] Centro de notificaciones en header (campana con badge rojo de no leidas)
+- [ ] Dropdown de notificaciones con link directo a Registros
+- [ ] Job de recordatorio 24hrs: detectar registros pendientes y crear notificacion
+- [ ] Email de bienvenida con certificado PDF al aprobar cuenta
+- [ ] Pagina publica de Reglamento de Uso (/reglamento)
+- [ ] Pagina publica de Aviso de Privacidad (/privacidad)
+- [ ] Link a reglamento y privacidad en la pagina de pago publica y en el footer

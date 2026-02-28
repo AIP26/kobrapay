@@ -39,6 +39,9 @@ import {
   invoices,
   Invoice,
   InsertInvoice,
+  notifications,
+  Notification,
+  InsertNotification,
 } from "../drizzle/schema";
 import { ENV } from "./_core/env";
 
@@ -935,4 +938,50 @@ export async function updateInvoiceStatus(id: number, status: string, issuedAt?:
   if (issuedAt) updateData.issuedAt = issuedAt;
   if (cancelledAt) updateData.cancelledAt = cancelledAt;
   await db.update(invoices).set(updateData).where(eq(invoices.id, id));
+}
+
+// ─── Notifications (Centro de Notificaciones) ─────────────────────────────────
+export async function createNotification(data: Omit<InsertNotification, "id" | "createdAt">): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  await db.insert(notifications).values(data as InsertNotification);
+}
+
+export async function getNotificationsByUser(userId: number, limit = 50): Promise<Notification[]> {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(notifications)
+    .where(eq(notifications.userId, userId))
+    .orderBy(desc(notifications.createdAt))
+    .limit(limit);
+}
+
+export async function countUnreadNotifications(userId: number): Promise<number> {
+  const db = await getDb();
+  if (!db) return 0;
+  const result = await db.select({ count: sql<number>`COUNT(*)` })
+    .from(notifications)
+    .where(and(eq(notifications.userId, userId), eq(notifications.isRead, false)));
+  return Number(result[0]?.count ?? 0);
+}
+
+export async function markNotificationRead(id: number, userId: number): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(notifications).set({ isRead: true }).where(and(eq(notifications.id, id), eq(notifications.userId, userId)));
+}
+
+export async function markAllNotificationsRead(userId: number): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(notifications).set({ isRead: true }).where(eq(notifications.userId, userId));
+}
+
+export async function getPendingRegistrationsOlderThan(hours: number) {
+  const db = await getDb();
+  if (!db) return [];
+  const cutoff = new Date(Date.now() - hours * 60 * 60 * 1000);
+  return db.select({ id: users.id, name: users.name, email: users.email, createdAt: users.createdAt })
+    .from(users)
+    .where(and(eq(users.accountStatus, "pending"), lte(users.createdAt, cutoff)));
 }

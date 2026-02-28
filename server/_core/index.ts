@@ -9,6 +9,9 @@ import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
 import { registerStripeWebhook } from "../stripeWebhook";
 import { registerSecurityMiddleware } from "../security";
+import { getPendingRegistrationsOlderThan, createNotification, getUserByOpenId } from "../db";
+import { ENV } from "./env";
+import { notifyOwner } from "./notification";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -98,6 +101,33 @@ async function startServer() {
   server.listen(port, () => {
     console.log(`Server running on http://localhost:${port}/`);
   });
+
+  // ⏰ Job: recordatorio cada hora para registros pendientes > 24hrs
+  setInterval(async () => {
+    try {
+      const pending = await getPendingRegistrationsOlderThan(24);
+      if (pending.length === 0) return;
+      const ownerUser = await getUserByOpenId(ENV.ownerOpenId);
+      if (ownerUser) {
+        await createNotification({
+          userId: ownerUser.id,
+          type: "pending_reminder",
+          title: `⏰ ${pending.length} registro(s) pendiente(s) sin revisar`,
+          message: `Tienes ${pending.length} solicitud(es) de registro con más de 24 horas sin revisar. Entra al panel de Registros para aprobar o rechazar.`,
+          isRead: false,
+          actionUrl: "/dashboard/registrations",
+          metadata: JSON.stringify({ pendingCount: pending.length, checkedAt: new Date().toISOString() }),
+        });
+      }
+      await notifyOwner({
+        title: `⏰ Recordatorio: ${pending.length} registro(s) pendiente(s)`,
+        content: `Llevas más de 24 horas sin revisar ${pending.length} solicitud(es) de registro en KobraPay. Entra al panel para aprobar o rechazar.`,
+      });
+      console.log(`[PendingReminder] Notificación: ${pending.length} registros pendientes > 24hrs`);
+    } catch (err) {
+      console.warn("[PendingReminder] Error en job de recordatorio:", err);
+    }
+  }, 60 * 60 * 1000); // cada hora
 }
 
 startServer().catch(console.error);

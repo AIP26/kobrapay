@@ -63,6 +63,12 @@ import {
   getInvoicesByUser,
   getInvoiceById,
   updateInvoiceStatus,
+  createNotification,
+  getNotificationsByUser,
+  countUnreadNotifications,
+  markNotificationRead,
+  markAllNotificationsRead,
+  getPendingRegistrationsOlderThan,
 } from "./db";
 import { COOKIE_NAME } from "@shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
@@ -1042,10 +1048,38 @@ export const appRouter = router({
       }),
 
     reject: protectedProcedure
-      .input(z.object({ userId: z.number() }))
+      .input(z.object({ userId: z.number(), reason: z.string().optional() }))
       .mutation(async ({ ctx, input }) => {
         if (!ctx.isSuperAdmin) throw new TRPCError({ code: "FORBIDDEN" });
         await updateUserAccountStatus(input.userId, "blocked");
+        // Send rejection email
+        const targetUser = await getUserById(input.userId);
+        if (targetUser?.email) {
+          try {
+            const { Resend } = await import('resend');
+            const resend = new Resend(process.env.RESEND_API_KEY || '');
+            const reason = input.reason || "No cumple con los requisitos actuales de la plataforma.";
+            await resend.emails.send({
+              from: 'KobraPay <noreply@kobrapay.mx>',
+              to: targetUser.email,
+              subject: 'Actualizaci\u00f3n sobre tu solicitud en KobraPay',
+              html: `<div style="font-family:sans-serif;max-width:560px;margin:0 auto;padding:24px">
+                <img src="https://files.manuscdn.com/user_upload_by_module/session_file/310519663381362445/yMTQoaqGYTxuRnnF.png" alt="KobraPay" style="width:48px;height:48px;margin-bottom:16px" />
+                <h2 style="color:#1a1f2e">Actualizaci\u00f3n de tu solicitud</h2>
+                <p>Hola <strong>${targetUser.name || 'Usuario'}</strong>,</p>
+                <p>Hemos revisado tu solicitud de acceso a KobraPay y lamentamos informarte que en este momento no podemos activar tu cuenta.</p>
+                <div style="background:#fef2f2;border-left:4px solid #ef4444;padding:12px 16px;border-radius:4px;margin:16px 0">
+                  <p style="color:#991b1b;margin:0"><strong>Motivo:</strong> ${reason}</p>
+                </div>
+                <p>Si crees que esto es un error o tienes m\u00e1s informaci\u00f3n que compartir, cont\u00e1ctanos directamente:</p>
+                <a href="mailto:soporte@kobrapay.mx" style="color:#0e7490">soporte@kobrapay.mx</a>
+                <p style="color:#6b7280;font-size:12px;margin-top:24px">KobraPay &mdash; kobrapay.mx</p>
+              </div>`,
+            });
+          } catch (emailErr) {
+            console.error('[Registrations] Error sending rejection email:', emailErr);
+          }
+        }
         return { success: true };
       }),
 
@@ -1854,6 +1888,50 @@ export const appRouter = router({
           pages: pageResults,
         };
       }),
+  }),
+
+  // ─── Notificaciones (Centro de Notificaciones del Super-Admin) ───────────────
+  notifications: router({
+    list: protectedProcedure.query(async ({ ctx }) => {
+      return getNotificationsByUser(ctx.user.id);
+    }),
+
+    countUnread: protectedProcedure.query(async ({ ctx }) => {
+      const count = await countUnreadNotifications(ctx.user.id);
+      return { count };
+    }),
+
+    markRead: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        await markNotificationRead(input.id, ctx.user.id);
+        return { success: true };
+      }),
+
+    markAllRead: protectedProcedure.mutation(async ({ ctx }) => {
+      await markAllNotificationsRead(ctx.user.id);
+      return { success: true };
+    }),
+
+    // Job: crear recordatorio si hay registros pendientes > 24hrs sin aprobar
+    checkPendingReminders: protectedProcedure.mutation(async ({ ctx }) => {
+      if (ctx.user.role !== "superadmin" && ctx.user.role !== "admin") {
+        throw new TRPCError({ code: "FORBIDDEN" });
+      }
+      const pending = await getPendingRegistrationsOlderThan(24);
+      if (pending.length > 0) {
+        await createNotification({
+          userId: ctx.user.id,
+          type: "pending_reminder",
+          title: `⏰ ${pending.length} registro(s) pendiente(s) de autorizar`,
+          message: `Tienes ${pending.length} solicitud(es) de registro que llevan más de 24 horas sin revisar. Por favor revisa y autoriza o rechaza cada una.`,
+          isRead: false,
+          actionUrl: "/dashboard/registrations",
+          metadata: JSON.stringify({ pendingCount: pending.length }),
+        });
+      }
+      return { pendingCount: pending.length };
+    }),
   }),
 });
 export type AppRouter = typeof appRouter;

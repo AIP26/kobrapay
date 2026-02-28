@@ -35,6 +35,7 @@ import MonthlyReport from "./pages/MonthlyReport";
 import CompleteProfile from "./pages/CompleteProfile";
 import PendingApproval from "./pages/PendingApproval";
 import MyProfile from "./pages/MyProfile";
+import Legal from "./pages/Legal";
 
 function Router() {
   return (
@@ -70,6 +71,9 @@ function Router() {
       <Route path="/complete-profile" component={CompleteProfile} />
       <Route path="/dashboard/profile" component={MyProfile} />
       <Route path="/pending">{() => <PendingApproval status="pending" />}</Route>
+      <Route path="/legal" component={Legal} />
+      <Route path="/terminos" component={Legal} />
+      <Route path="/privacidad" component={Legal} />
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
     </Switch>
