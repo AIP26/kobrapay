@@ -97,6 +97,7 @@ function PaymentForm({ token }: { token: string }) {
   const [paymentError, setPaymentError] = useState<{ title: string; description: string; action: string } | null>(null);
   const [paymentRequest, setPaymentRequest] = useState<PaymentRequest | null>(null);
   const [walletAvailable, setWalletAvailable] = useState(false);
+  const [walletChecked, setWalletChecked] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -131,6 +132,7 @@ function PaymentForm({ token }: { token: string }) {
       requestPayerEmail: false,
     });
     pr.canMakePayment().then((result) => {
+      setWalletChecked(true);
       if (result) { setPaymentRequest(pr); setWalletAvailable(true); }
     });
     pr.on("paymentmethod", async (ev) => {
@@ -345,20 +347,44 @@ function PaymentForm({ token }: { token: string }) {
 
   const startCamera = async () => {
     try {
+      // Detener cualquier stream anterior
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach((t) => t.stop());
+      }
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: "user", width: { ideal: 640 }, height: { ideal: 480 } }
+        video: {
+          facingMode: "user",
+          width: { ideal: 1280 },
+          height: { ideal: 720 },
+        },
+        audio: false,
       });
       streamRef.current = stream;
+      setCameraActive(true);
+      // Asignar stream después de que el componente se renderice
+      await new Promise<void>((resolve) => setTimeout(resolve, 100));
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
-        videoRef.current.onloadedmetadata = () => {
-          videoRef.current?.play().catch(() => {});
-        };
+        videoRef.current.setAttribute("playsinline", "true");
+        videoRef.current.setAttribute("muted", "true");
+        try {
+          await videoRef.current.play();
+        } catch (playErr) {
+          console.warn("Autoplay bloqueado, intentando de nuevo:", playErr);
+          // En iOS a veces necesita un segundo intento
+          setTimeout(() => videoRef.current?.play().catch(console.warn), 300);
+        }
       }
-      setCameraActive(true);
-    } catch (err) {
+    } catch (err: unknown) {
       console.error("Camera error:", err);
-      toast.error("No se pudo acceder a la cámara. Verifica los permisos del navegador.");
+      const msg = err instanceof Error ? err.message : String(err);
+      if (msg.includes("Permission") || msg.includes("NotAllowed")) {
+        toast.error("❌ Permiso de cámara denegado. Ve a Configuración > Safari/Chrome > Cámara y permite el acceso.");
+      } else if (msg.includes("NotFound") || msg.includes("DevicesNotFound")) {
+        toast.error("❌ No se encontró cámara en este dispositivo.");
+      } else {
+        toast.error("No se pudo acceder a la cámara. Verifica los permisos del navegador.");
+      }
     }
   };
 
@@ -398,6 +424,22 @@ function PaymentForm({ token }: { token: string }) {
   };
 
   const handleCreateIntent = async () => {
+    // Validar que todos los pasos requeridos estén completados antes de crear el intent
+    if (requireSelfie && !selfieVerified) {
+      toast.error("Debes completar la verificación de identidad (selfie) primero.");
+      setStep("selfie");
+      return;
+    }
+    if (requireSignature && !signatureUrl) {
+      toast.error("Debes completar la firma digital primero.");
+      setStep("signature");
+      return;
+    }
+    if (requireIdUpload && !idDocumentUrl) {
+      toast.error("Debes cargar tu identificación primero.");
+      setStep("id_upload");
+      return;
+    }
     setProcessing(true);
     try {
       const result = await createIntent.mutateAsync({
@@ -849,8 +891,8 @@ function PaymentForm({ token }: { token: string }) {
                     {usdEquivalent && <p className="text-gray-400 text-xs mt-1">≈ USD ${usdEquivalent}</p>}
                   </div>
 
-                  {/* Apple Pay / Google Pay */}
-                  {walletAvailable && paymentRequest && (
+                  {/* Apple Pay / Google Pay — solo mostrar si Stripe confirmó que hay wallet disponible */}
+                  {walletChecked && walletAvailable && paymentRequest && (
                     <div className="mb-4">
                       <PaymentRequestButtonElement
                         options={{
