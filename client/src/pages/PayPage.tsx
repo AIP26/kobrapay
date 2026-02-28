@@ -92,6 +92,7 @@ function PaymentForm({ token }: { token: string }) {
     amount: "", currency: "MXN", description: "", email: "", businessName: "",
   });
   const [cameraActive, setCameraActive] = useState(false);
+  const [selfiePreview, setSelfiePreview] = useState("");
   const [lang, setLang] = useState<"es" | "en">("es");
   const [paymentError, setPaymentError] = useState<{ title: string; description: string; action: string } | null>(null);
   const [paymentRequest, setPaymentRequest] = useState<PaymentRequest | null>(null);
@@ -344,12 +345,20 @@ function PaymentForm({ token }: { token: string }) {
 
   const startCamera = async () => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } });
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: "user", width: { ideal: 640 }, height: { ideal: 480 } }
+      });
       streamRef.current = stream;
-      if (videoRef.current) videoRef.current.srcObject = stream;
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        videoRef.current.onloadedmetadata = () => {
+          videoRef.current?.play().catch(() => {});
+        };
+      }
       setCameraActive(true);
-    } catch {
-      toast.error("No se pudo acceder a la cámara. Verifica los permisos.");
+    } catch (err) {
+      console.error("Camera error:", err);
+      toast.error("No se pudo acceder a la cámara. Verifica los permisos del navegador.");
     }
   };
 
@@ -357,26 +366,34 @@ function PaymentForm({ token }: { token: string }) {
     if (!videoRef.current || !canvasRef.current) return;
     const canvas = canvasRef.current;
     const video = videoRef.current;
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
+    const w = video.videoWidth || 640;
+    const h = video.videoHeight || 480;
+    canvas.width = w;
+    canvas.height = h;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
-    ctx.drawImage(video, 0, 0);
-    const imageBase64 = canvas.toDataURL("image/jpeg", 0.8);
-    if (streamRef.current) { streamRef.current.getTracks().forEach((t) => t.stop()); setCameraActive(false); }
+    ctx.drawImage(video, 0, 0, w, h);
+    const imageBase64 = canvas.toDataURL("image/jpeg", 0.85);
+    // Show preview immediately
+    setSelfiePreview(imageBase64);
+    // Stop camera
+    if (streamRef.current) { streamRef.current.getTracks().forEach((t) => t.stop()); }
+    setCameraActive(false);
     try {
       const result = await uploadSelfie.mutateAsync({ token, imageBase64, mimeType: "image/jpeg" });
       setSelfieUrl(result.selfieUrl);
       setFaceMatchScore(result.faceMatchScore);
       setSelfieVerified(result.verified);
       if (result.verified) {
-        toast.success(`Identidad verificada (${result.faceMatchScore.toFixed(0)}%)`);
-        setTimeout(() => setStep("payment"), 800);
+        toast.success(`¡Identidad verificada! (${result.faceMatchScore.toFixed(0)}%)`);
+        setTimeout(() => setStep(getNextStep("selfie")), 1000);
       } else {
         toast.error("No se pudo verificar. Intenta con mejor iluminación.");
+        setSelfiePreview("");
       }
     } catch {
       toast.error("Error al procesar la selfie. Intenta de nuevo.");
+      setSelfiePreview("");
     }
   };
 
@@ -658,21 +675,40 @@ function PaymentForm({ token }: { token: string }) {
                       <p className="text-green-700 font-semibold">¡Identidad verificada!</p>
                       <p className="text-gray-400 text-sm">Coincidencia: {faceMatchScore.toFixed(0)}%</p>
                     </div>
+                  ) : selfiePreview ? (
+                    <div className="text-center py-4">
+                      <img src={selfiePreview} alt="Selfie" className="w-48 h-48 object-cover rounded-xl mx-auto mb-3 border-4 border-blue-400" />
+                      <div className="flex items-center justify-center gap-2 text-blue-600">
+                        <Loader2 className="w-5 h-5 animate-spin" />
+                        <span className="text-sm font-medium">Verificando identidad...</span>
+                      </div>
+                    </div>
                   ) : !cameraActive ? (
                     <div className="text-center py-6">
                       <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
                         <Camera className="w-10 h-10 text-blue-600" />
                       </div>
+                      <p className="text-gray-500 text-sm mb-4">Asegúrate de tener buena iluminación y que tu rostro sea visible.</p>
                       <Button className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-xl" onClick={startCamera}>
                         <Camera className="w-4 h-4 mr-2" /> Activar cámara
                       </Button>
                     </div>
                   ) : (
                     <div className="text-center">
-                      <div className="relative inline-block rounded-xl overflow-hidden mb-4 border-4 border-blue-400">
-                        <video ref={videoRef} autoPlay playsInline className="w-64 h-64 object-cover" />
+                      <div className="relative mx-auto mb-4" style={{ width: 280, height: 280 }}>
+                        <video
+                          ref={videoRef}
+                          autoPlay
+                          playsInline
+                          muted
+                          style={{ width: 280, height: 280, objectFit: "cover", borderRadius: 12, border: "4px solid #3b82f6", display: "block", backgroundColor: "#000" }}
+                        />
+                        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                          <div className="border-2 border-white/60 rounded-full" style={{ width: 160, height: 200 }} />
+                        </div>
                       </div>
-                      <canvas ref={canvasRef} className="hidden" />
+                      <canvas ref={canvasRef} style={{ display: "none" }} />
+                      <p className="text-gray-400 text-xs mb-4">Centra tu rostro en el óvalo y toma la foto</p>
                       <div className="flex gap-3 justify-center">
                         <Button variant="outline" onClick={() => {
                           if (streamRef.current) streamRef.current.getTracks().forEach((t) => t.stop());
@@ -701,12 +737,21 @@ function PaymentForm({ token }: { token: string }) {
                     </div>
                   ) : (
                     <div>
-                      <div className="border-2 border-dashed border-gray-300 rounded-xl overflow-hidden mb-3 bg-gray-50 touch-none" style={{ height: 180 }}>
+                      <div
+                        className="relative border-2 border-dashed border-blue-300 rounded-xl bg-gray-50 mb-1 touch-none"
+                        style={{ height: 200, cursor: "crosshair", userSelect: "none" }}
+                      >
+                        {!hasDrawn && (
+                          <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                            <PenLine className="w-8 h-8 text-gray-300 mb-2" />
+                            <p className="text-gray-300 text-sm">Dibuja tu firma aquí</p>
+                          </div>
+                        )}
                         <canvas
                           ref={signatureCanvasRef}
                           width={600}
-                          height={180}
-                          className="w-full h-full cursor-crosshair"
+                          height={200}
+                          style={{ width: "100%", height: "200px", display: "block", touchAction: "none" }}
                           onMouseDown={startDraw}
                           onMouseMove={draw}
                           onMouseUp={stopDraw}
@@ -716,9 +761,9 @@ function PaymentForm({ token }: { token: string }) {
                           onTouchEnd={stopDraw}
                         />
                       </div>
-                      {!hasDrawn && (
-                        <p className="text-gray-400 text-xs text-center mb-3">Dibuja tu firma aquí</p>
-                      )}
+                      <p className="text-gray-400 text-xs text-center mb-3">
+                        {hasDrawn ? "¡Firma lista! Presiona \"Confirmar firma\" para continuar." : "Usa tu dedo o mouse para firmar"}
+                      </p>
                       <div className="bg-red-50 border border-red-200 rounded-xl p-3 mb-4">
                         <p className="text-red-700 text-xs font-semibold">⚠️ POLÍTICA: No se aceptan cancelaciones ni devoluciones. Una vez completada la compra, el pedido no puede ser modificado.</p>
                       </div>
