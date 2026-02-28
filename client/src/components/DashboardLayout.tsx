@@ -23,6 +23,8 @@ import {
   Package,
   MonitorSmartphone,
   UserCog,
+  Handshake,
+  UserPlus,
 } from "lucide-react";
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
@@ -50,6 +52,8 @@ const navItems = [
   { href: "/dashboard/clients", icon: Users, label: "Mis Clientes", section: "admin", adminOnly: true },
   { href: "/dashboard/security", icon: Shield, label: "Seguridad", section: "admin", adminOnly: true },
   { href: "/dashboard/registrations", icon: UserCog, label: "Registros", section: "superadmin" },
+  { href: "/dashboard/contracts", icon: Handshake, label: "Contratos", section: "superadmin" },
+  { href: "/dashboard/agents", icon: UserPlus, label: "Vendedores", section: "superadmin" },
   { href: "/dashboard/settings", icon: Settings, label: "Configuración", section: "settings" },
 ];
 

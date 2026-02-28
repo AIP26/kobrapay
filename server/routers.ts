@@ -36,6 +36,19 @@ import {
   getAllRegistrations,
   updateUserAccountStatus,
   getUserById,
+  createContract,
+  getContractsByAdmin,
+  getContractById,
+  getContractBySignToken,
+  updateContract,
+  createSalesAgent,
+  getSalesAgentsByAdmin,
+  getSalesAgentById,
+  updateSalesAgent,
+  getPendingCommissionsByAgent,
+  getCommissionSummaryByAgent,
+  markCommissionsAsPaid,
+  linkAgentToClient,
 } from "./db";
 import { COOKIE_NAME } from "@shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
@@ -927,6 +940,281 @@ export const appRouter = router({
       .mutation(async ({ ctx, input }) => {
         if (!ctx.isSuperAdmin) throw new TRPCError({ code: "FORBIDDEN" });
         await updateUserAccountStatus(input.userId, "pending");
+        return { success: true };
+      }),
+  }),
+  // ─── Contratos digitales (solo super-admin y asistente) ─────────────────────
+  contracts: router({
+    list: protectedProcedure.query(async ({ ctx }) => {
+      if (!ctx.isSuperAdmin) throw new TRPCError({ code: "FORBIDDEN" });
+      return getContractsByAdmin(ctx.user.id);
+    }),
+
+    get: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .query(async ({ ctx, input }) => {
+        if (!ctx.isSuperAdmin) throw new TRPCError({ code: "FORBIDDEN" });
+        const contract = await getContractById(input.id);
+        if (!contract || contract.createdByUserId !== ctx.user.id) throw new TRPCError({ code: "NOT_FOUND" });
+        return contract;
+      }),
+
+    getByToken: publicProcedure
+      .input(z.object({ token: z.string() }))
+      .query(async ({ input }) => {
+        const contract = await getContractBySignToken(input.token);
+        if (!contract) throw new TRPCError({ code: "NOT_FOUND", message: "Contrato no encontrado" });
+        if (contract.signTokenExpiresAt && new Date() > contract.signTokenExpiresAt) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: "Este enlace de contrato ha expirado" });
+        }
+        return contract;
+      }),
+
+    create: protectedProcedure
+      .input(z.object({
+        clientName: z.string().min(1).max(255),
+        clientEmail: z.string().email(),
+        clientPhone: z.string().max(32).optional().or(z.literal("")),
+        clientRfc: z.string().max(20).optional().or(z.literal("")),
+        clientCurp: z.string().max(20).optional().or(z.literal("")),
+        clientAddress: z.string().optional().or(z.literal("")),
+        businessName: z.string().max(255).optional().or(z.literal("")),
+        clientIneNumber: z.string().max(50).optional().or(z.literal("")),
+        commissionRate: z.number().min(0).max(100).default(6),
+        contractDurationMonths: z.number().int().min(0).max(60).default(0),
+        includeExclusivityClause: z.boolean().default(false),
+        customTerms: z.string().optional().or(z.literal("")),
+        internalNotes: z.string().optional().or(z.literal("")),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        if (!ctx.isSuperAdmin) throw new TRPCError({ code: "FORBIDDEN" });
+        const contract = await createContract({
+          createdByUserId: ctx.user.id,
+          clientName: input.clientName,
+          clientEmail: input.clientEmail,
+          clientPhone: input.clientPhone || null,
+          clientRfc: input.clientRfc || null,
+          clientCurp: input.clientCurp || null,
+          clientAddress: input.clientAddress || null,
+          businessName: input.businessName || null,
+          clientIneNumber: input.clientIneNumber || null,
+          commissionRate: String(input.commissionRate),
+          contractDurationMonths: input.contractDurationMonths,
+          includeExclusivityClause: input.includeExclusivityClause,
+          customTerms: input.customTerms || null,
+          internalNotes: input.internalNotes || null,
+          status: "draft",
+        });
+        return contract;
+      }),
+
+    update: protectedProcedure
+      .input(z.object({
+        id: z.number(),
+        clientName: z.string().min(1).max(255).optional(),
+        clientEmail: z.string().email().optional(),
+        clientPhone: z.string().max(32).optional().or(z.literal("")),
+        clientRfc: z.string().max(20).optional().or(z.literal("")),
+        clientCurp: z.string().max(20).optional().or(z.literal("")),
+        clientAddress: z.string().optional().or(z.literal("")),
+        businessName: z.string().max(255).optional().or(z.literal("")),
+        clientIneNumber: z.string().max(50).optional().or(z.literal("")),
+        commissionRate: z.number().min(0).max(100).optional(),
+        contractDurationMonths: z.number().int().min(0).max(60).optional(),
+        includeExclusivityClause: z.boolean().optional(),
+        customTerms: z.string().optional().or(z.literal("")),
+        internalNotes: z.string().optional().or(z.literal("")),
+        status: z.enum(["draft", "sent", "signed", "archived"]).optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        if (!ctx.isSuperAdmin) throw new TRPCError({ code: "FORBIDDEN" });
+        const { id, commissionRate, ...rest } = input;
+        const data: Record<string, unknown> = { ...rest };
+        if (commissionRate !== undefined) data.commissionRate = String(commissionRate);
+        return updateContract(id, data);
+      }),
+
+    sendToClient: protectedProcedure
+      .input(z.object({ id: z.number(), expiresInDays: z.number().int().min(1).max(30).default(7) }))
+      .mutation(async ({ ctx, input }) => {
+        if (!ctx.isSuperAdmin) throw new TRPCError({ code: "FORBIDDEN" });
+        const contract = await getContractById(input.id);
+        if (!contract || contract.createdByUserId !== ctx.user.id) throw new TRPCError({ code: "NOT_FOUND" });
+        const token = nanoid(32);
+        const expiresAt = new Date(Date.now() + input.expiresInDays * 24 * 60 * 60 * 1000);
+        await updateContract(input.id, { signToken: token, signTokenExpiresAt: expiresAt, status: "sent" });
+        // Enviar email al cliente
+        try {
+          const { Resend } = await import('resend');
+          const resend = new Resend(process.env.RESEND_API_KEY || '');
+          const signUrl = `${ctx.req.headers.origin || 'https://kobrapay.mx'}/sign-contract/${token}`;
+          await resend.emails.send({
+            from: 'KobraPay Contratos <noreply@kobrapay.mx>',
+            to: contract.clientEmail,
+            subject: `Contrato de servicios KobraPay — ${contract.clientName}`,
+            html: `<div style="font-family:sans-serif;max-width:560px;margin:0 auto;padding:24px">
+              <h2 style="color:#0e7490">Contrato de Servicios KobraPay</h2>
+              <p>Hola <strong>${contract.clientName}</strong>,</p>
+              <p>Te enviamos el contrato de servicios de KobraPay para tu revisión y firma digital.</p>
+              <p>Por favor revisa el contrato y firma digitalmente haciendo clic en el siguiente enlace:</p>
+              <a href="${signUrl}" style="display:inline-block;background:#0e7490;color:#fff;padding:12px 24px;border-radius:6px;text-decoration:none;font-weight:bold;margin:16px 0">Ver y Firmar Contrato</a>
+              <p style="color:#6b7280;font-size:13px">Este enlace expira en ${input.expiresInDays} días. Si tienes dudas, contáctanos.</p>
+            </div>`,
+          });
+        } catch (e) {
+          console.warn('[Contracts] Error enviando email:', e);
+        }
+        return { success: true, signToken: token };
+      }),
+
+    signContract: publicProcedure
+      .input(z.object({
+        token: z.string(),
+        signatureData: z.string(), // base64 de la firma
+        signerName: z.string().min(1),
+        signerIp: z.string().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const contract = await getContractBySignToken(input.token);
+        if (!contract) throw new TRPCError({ code: "NOT_FOUND", message: "Contrato no encontrado" });
+        if (contract.status === "signed") throw new TRPCError({ code: "BAD_REQUEST", message: "Este contrato ya fue firmado" });
+        if (contract.signTokenExpiresAt && new Date() > contract.signTokenExpiresAt) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: "El enlace ha expirado" });
+        }
+        // Guardar firma en S3
+        const base64Data = input.signatureData.replace(/^data:image\/\w+;base64,/, '');
+        const buffer = Buffer.from(base64Data, 'base64');
+        const fileKey = `contracts/signatures/${contract.id}-${Date.now()}.png`;
+        const { url: signatureUrl } = await storagePut(fileKey, buffer, 'image/png');
+        const ip = input.signerIp || (ctx.req.headers["x-forwarded-for"] as string) || ctx.req.socket?.remoteAddress || "";
+        await updateContract(contract.id, {
+          signatureUrl,
+          signedAt: new Date(),
+          signedFromIp: ip,
+          status: "signed",
+        });
+        return { success: true, signatureUrl };
+      }),
+
+    uploadDocument: publicProcedure
+      .input(z.object({
+        token: z.string(),
+        docType: z.enum(["ine", "passport", "addressProof", "rfc", "curp"]),
+        fileData: z.string(), // base64
+        mimeType: z.string(),
+      }))
+      .mutation(async ({ input }) => {
+        const contract = await getContractBySignToken(input.token);
+        if (!contract) throw new TRPCError({ code: "NOT_FOUND" });
+        const ext = input.mimeType.includes("pdf") ? "pdf" : input.mimeType.includes("png") ? "png" : "jpg";
+        const base64Data = input.fileData.replace(/^data:[^;]+;base64,/, '');
+        const buffer = Buffer.from(base64Data, 'base64');
+        const fileKey = `contracts/docs/${contract.id}-${input.docType}-${Date.now()}.${ext}`;
+        const { url } = await storagePut(fileKey, buffer, input.mimeType);
+        const fieldMap: Record<string, string> = {
+          ine: "ineUrl",
+          passport: "passportUrl",
+          addressProof: "addressProofUrl",
+          rfc: "rfcDocUrl",
+          curp: "curpDocUrl",
+        };
+        await updateContract(contract.id, { [fieldMap[input.docType]]: url });
+        return { success: true, url };
+      }),
+  }),
+
+  // ─── Vendedores/Afiliados (solo super-admin) ──────────────────────────────────
+  salesAgents: router({
+    list: protectedProcedure.query(async ({ ctx }) => {
+      if (!ctx.isSuperAdmin) throw new TRPCError({ code: "FORBIDDEN" });
+      return getSalesAgentsByAdmin(ctx.user.id);
+    }),
+
+    get: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .query(async ({ ctx, input }) => {
+        if (!ctx.isSuperAdmin) throw new TRPCError({ code: "FORBIDDEN" });
+        const agent = await getSalesAgentById(input.id);
+        if (!agent || agent.createdByUserId !== ctx.user.id) throw new TRPCError({ code: "NOT_FOUND" });
+        return agent;
+      }),
+
+    create: protectedProcedure
+      .input(z.object({
+        name: z.string().min(1).max(255),
+        email: z.string().email(),
+        phone: z.string().max(32).optional().or(z.literal("")),
+        commissionRate: z.number().min(0).max(100).default(0.5),
+        bankName: z.string().max(128).optional().or(z.literal("")),
+        clabe: z.string().length(18).optional().or(z.literal("")),
+        bankAccountHolder: z.string().max(255).optional().or(z.literal("")),
+        paymentCycle: z.enum(["weekly", "biweekly"]).default("biweekly"),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        if (!ctx.isSuperAdmin) throw new TRPCError({ code: "FORBIDDEN" });
+        const referralCode = nanoid(8).toUpperCase();
+        return createSalesAgent({
+          createdByUserId: ctx.user.id,
+          name: input.name,
+          email: input.email,
+          phone: input.phone || null,
+          commissionRate: String(input.commissionRate),
+          bankName: input.bankName || null,
+          clabe: input.clabe || null,
+          bankAccountHolder: input.bankAccountHolder || null,
+          paymentCycle: input.paymentCycle,
+          referralCode,
+          isActive: true,
+        });
+      }),
+
+    update: protectedProcedure
+      .input(z.object({
+        id: z.number(),
+        name: z.string().min(1).max(255).optional(),
+        phone: z.string().max(32).optional().or(z.literal("")),
+        commissionRate: z.number().min(0).max(100).optional(),
+        bankName: z.string().max(128).optional().or(z.literal("")),
+        clabe: z.string().length(18).optional().or(z.literal("")),
+        bankAccountHolder: z.string().max(255).optional().or(z.literal("")),
+        paymentCycle: z.enum(["weekly", "biweekly"]).optional(),
+        isActive: z.boolean().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        if (!ctx.isSuperAdmin) throw new TRPCError({ code: "FORBIDDEN" });
+        const { id, commissionRate, ...rest } = input;
+        const data: Record<string, unknown> = { ...rest };
+        if (commissionRate !== undefined) data.commissionRate = String(commissionRate);
+        return updateSalesAgent(id, data);
+      }),
+
+    getCommissionSummary: protectedProcedure
+      .input(z.object({ agentId: z.number() }))
+      .query(async ({ ctx, input }) => {
+        if (!ctx.isSuperAdmin) throw new TRPCError({ code: "FORBIDDEN" });
+        return getCommissionSummaryByAgent(input.agentId);
+      }),
+
+    getPendingCommissions: protectedProcedure
+      .input(z.object({ agentId: z.number() }))
+      .query(async ({ ctx, input }) => {
+        if (!ctx.isSuperAdmin) throw new TRPCError({ code: "FORBIDDEN" });
+        return getPendingCommissionsByAgent(input.agentId);
+      }),
+
+    markAsPaid: protectedProcedure
+      .input(z.object({ agentId: z.number(), paymentReference: z.string().min(1) }))
+      .mutation(async ({ ctx, input }) => {
+        if (!ctx.isSuperAdmin) throw new TRPCError({ code: "FORBIDDEN" });
+        await markCommissionsAsPaid(input.agentId, input.paymentReference);
+        return { success: true };
+      }),
+
+    linkToClient: protectedProcedure
+      .input(z.object({ agentId: z.number(), clientUserId: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        if (!ctx.isSuperAdmin) throw new TRPCError({ code: "FORBIDDEN" });
+        await linkAgentToClient(input.agentId, input.clientUserId);
         return { success: true };
       }),
   }),

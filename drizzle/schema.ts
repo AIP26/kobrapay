@@ -265,3 +265,103 @@ export const products = mysqlTable("products", {
 });
 export type Product = typeof products.$inferSelect;
 export type InsertProduct = typeof products.$inferInsert;
+
+/**
+ * Contratos digitales (solo visibles para super-admin y asistente)
+ * Los clientes (negocios) nunca ven esta sección
+ */
+export const contracts = mysqlTable("contracts", {
+  id: int("id").autoincrement().primaryKey(),
+  createdByUserId: int("createdByUserId").notNull(),
+  // Datos del cliente/negocio
+  clientName: varchar("clientName", { length: 255 }).notNull(),
+  clientEmail: varchar("clientEmail", { length: 320 }).notNull(),
+  clientPhone: varchar("clientPhone", { length: 32 }),
+  clientRfc: varchar("clientRfc", { length: 20 }),
+  clientCurp: varchar("clientCurp", { length: 20 }),
+  clientAddress: text("clientAddress"),
+  businessName: varchar("businessName", { length: 255 }),
+  clientIneNumber: varchar("clientIneNumber", { length: 50 }),
+  // Términos del contrato
+  commissionRate: decimal("commissionRate", { precision: 5, scale: 2 }).default("6.00").notNull(),
+  contractDurationMonths: int("contractDurationMonths").default(0).notNull(),
+  includeExclusivityClause: boolean("includeExclusivityClause").default(false).notNull(),
+  customTerms: text("customTerms"),
+  // Estado: draft, sent, signed, archived
+  status: varchar("status", { length: 32 }).default("draft").notNull(),
+  // Token único para que el cliente acceda al contrato
+  signToken: varchar("signToken", { length: 128 }).unique(),
+  signTokenExpiresAt: timestamp("signTokenExpiresAt"),
+  // Firma digital del cliente
+  signatureUrl: text("signatureUrl"),
+  signedAt: timestamp("signedAt"),
+  signedFromIp: varchar("signedFromIp", { length: 64 }),
+  // Documentos del cliente (URLs en S3)
+  ineUrl: text("ineUrl"),
+  passportUrl: text("passportUrl"),
+  addressProofUrl: text("addressProofUrl"),
+  rfcDocUrl: text("rfcDocUrl"),
+  curpDocUrl: text("curpDocUrl"),
+  // Notas internas (solo el admin las ve)
+  internalNotes: text("internalNotes"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type Contract = typeof contracts.$inferSelect;
+export type InsertContract = typeof contracts.$inferInsert;
+
+/**
+ * Vendedores/Afiliados que refieren clientes a la plataforma
+ */
+export const salesAgents = mysqlTable("sales_agents", {
+  id: int("id").autoincrement().primaryKey(),
+  createdByUserId: int("createdByUserId").notNull(),
+  name: varchar("name", { length: 255 }).notNull(),
+  email: varchar("email", { length: 320 }).notNull().unique(),
+  phone: varchar("phone", { length: 32 }),
+  // Comisión residual que gana el vendedor (%)
+  commissionRate: decimal("commissionRate", { precision: 5, scale: 2 }).default("0.50").notNull(),
+  // Datos bancarios para pago de comisiones
+  bankName: varchar("bankName", { length: 128 }),
+  clabe: varchar("clabe", { length: 18 }),
+  bankAccountHolder: varchar("bankAccountHolder", { length: 255 }),
+  // Ciclo de pago: weekly o biweekly
+  paymentCycle: varchar("paymentCycle", { length: 16 }).default("biweekly").notNull(),
+  isActive: boolean("isActive").default(true).notNull(),
+  referralCode: varchar("referralCode", { length: 32 }).unique(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type SalesAgent = typeof salesAgents.$inferSelect;
+export type InsertSalesAgent = typeof salesAgents.$inferInsert;
+
+/**
+ * Comisiones acumuladas de vendedores por transacción
+ */
+export const agentCommissions = mysqlTable("agent_commissions", {
+  id: int("id").autoincrement().primaryKey(),
+  agentId: int("agentId").notNull(),
+  transactionId: int("transactionId").notNull(),
+  clientUserId: int("clientUserId").notNull(),
+  transactionAmount: decimal("transactionAmount", { precision: 12, scale: 2 }).notNull(),
+  commissionRate: decimal("commissionRate", { precision: 5, scale: 2 }).notNull(),
+  commissionAmount: decimal("commissionAmount", { precision: 12, scale: 2 }).notNull(),
+  // Estado: pending, paid
+  status: varchar("status", { length: 32 }).default("pending").notNull(),
+  paidAt: timestamp("paidAt"),
+  paymentReference: varchar("paymentReference", { length: 255 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type AgentCommission = typeof agentCommissions.$inferSelect;
+export type InsertAgentCommission = typeof agentCommissions.$inferInsert;
+
+/**
+ * Relación entre vendedor y cliente referido
+ */
+export const agentReferrals = mysqlTable("agent_referrals", {
+  id: int("id").autoincrement().primaryKey(),
+  agentId: int("agentId").notNull(),
+  clientUserId: int("clientUserId").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type AgentReferral = typeof agentReferrals.$inferSelect;

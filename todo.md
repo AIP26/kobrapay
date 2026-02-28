@@ -297,3 +297,32 @@
 - [ ] Sección: POS y catálogo
 - [ ] Sección: Reportes y exportación
 - [ ] Sección: Para el super-admin (gestión de clientes)
+
+## Fase 20 - Módulo de Contratos (solo Super-Admin y Asistente)
+- [ ] Schema DB: tabla contracts (template, datos del cliente, estado, firma_url, documentos)
+- [ ] Plantilla de contrato legal en español con terminología mexicana (LFPDPPP)
+- [ ] Toggle de cláusula de exclusividad en la plantilla (activar/desactivar)
+- [ ] Panel privado "Contratos" solo visible para super-admin y asistente (no para clientes)
+- [ ] Crear contrato: llenar datos del cliente (nombre completo, RFC, INE, dirección, CURP, negocio)
+- [ ] Generar PDF del contrato con datos del cliente insertados automáticamente
+- [ ] Enviar enlace único al cliente para revisar y firmar
+- [ ] Página pública de firma: cliente ve contrato completo, firma con dedo/mouse
+- [ ] Carga de documentos en el mismo enlace: INE/Pasaporte, comprobante de domicilio, RFC, CURP
+- [ ] Guardar firma digital + documentos en S3
+- [ ] Estado del contrato: Borrador → Enviado → Firmado → Archivado
+- [ ] Descarga de contrato firmado en PDF con firma incluida
+
+## Fase 21 - Roles de Colaboradores Avanzados
+- [ ] Rol "asistente": acceso a contratos, documentos, cobros, clientes (sin comisiones ni reportes globales)
+- [ ] Rol "operador": solo crear cobros y ver sus propias ventas
+- [ ] Invitar colaborador por email con rol asignado desde el panel del super-admin
+- [ ] Panel de gestión de colaboradores solo para super-admin
+- [ ] Módulo de contratos visible solo para super-admin y asistente (nunca para clientes)
+
+## Fase 22 - Manual de Ayuda Contextual por Rol
+- [ ] Sección "Ayuda" en el panel con contenido diferente según el rol del usuario
+- [ ] Manual básico para negocios clientes: cobros, POS, catálogo, ventas, compartir links
+- [ ] Manual de colaboradores/operadores: funciones disponibles según su rol
+- [ ] Manual de asistente: contratos, documentos, gestión de clientes
+- [ ] Manual de super-admin: administración completa de la plataforma
+- [ ] Capturas de pantalla y pasos numerados en cada sección del manual

@@ -10,6 +10,12 @@ import {
   InsertVendorSettings,
   InsertProduct,
   Product,
+  Contract,
+  InsertContract,
+  SalesAgent,
+  InsertSalesAgent,
+  AgentCommission,
+  InsertAgentCommission,
   customers,
   otpVerifications,
   paymentLinks,
@@ -18,6 +24,10 @@ import {
   transactions,
   users,
   vendorSettings,
+  contracts,
+  salesAgents,
+  agentCommissions,
+  agentReferrals,
 } from "../drizzle/schema";
 import { ENV } from "./_core/env";
 
@@ -558,4 +568,129 @@ export async function adjustProductStock(id: number, userId: number, delta: numb
   if (!db) throw new Error("Database not available");
   await db.update(products).set({ stock: sql`stock + ${delta}` }).where(and(eq(products.id, id), eq(products.userId, userId)));
   return getProductById(id, userId);
+}
+
+// ─── Contratos ────────────────────────────────────────────────────────────────
+
+export async function createContract(data: InsertContract) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.insert(contracts).values(data);
+  const result = await db.select().from(contracts).where(eq(contracts.createdByUserId, data.createdByUserId)).orderBy(desc(contracts.createdAt)).limit(1);
+  return result[0];
+}
+
+export async function getContractsByAdmin(adminUserId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(contracts).where(eq(contracts.createdByUserId, adminUserId)).orderBy(desc(contracts.createdAt));
+}
+
+export async function getContractById(id: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(contracts).where(eq(contracts.id, id)).limit(1);
+  return result[0];
+}
+
+export async function getContractBySignToken(token: string) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(contracts).where(eq(contracts.signToken, token)).limit(1);
+  return result[0];
+}
+
+export async function updateContract(id: number, data: Partial<InsertContract>) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(contracts).set({ ...data, updatedAt: new Date() }).where(eq(contracts.id, id));
+  return getContractById(id);
+}
+
+// ─── Vendedores/Afiliados ─────────────────────────────────────────────────────
+
+export async function createSalesAgent(data: InsertSalesAgent) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.insert(salesAgents).values(data);
+  const result = await db.select().from(salesAgents).where(eq(salesAgents.email, data.email)).limit(1);
+  return result[0];
+}
+
+export async function getSalesAgentsByAdmin(adminUserId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(salesAgents).where(eq(salesAgents.createdByUserId, adminUserId)).orderBy(desc(salesAgents.createdAt));
+}
+
+export async function getSalesAgentById(id: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(salesAgents).where(eq(salesAgents.id, id)).limit(1);
+  return result[0];
+}
+
+export async function getSalesAgentByReferralCode(code: string) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(salesAgents).where(eq(salesAgents.referralCode, code)).limit(1);
+  return result[0];
+}
+
+export async function updateSalesAgent(id: number, data: Partial<InsertSalesAgent>) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(salesAgents).set({ ...data, updatedAt: new Date() }).where(eq(salesAgents.id, id));
+  return getSalesAgentById(id);
+}
+
+// ─── Comisiones de Vendedores ─────────────────────────────────────────────────
+
+export async function createAgentCommission(data: InsertAgentCommission) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.insert(agentCommissions).values(data);
+}
+
+export async function getPendingCommissionsByAgent(agentId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(agentCommissions).where(and(eq(agentCommissions.agentId, agentId), eq(agentCommissions.status, "pending"))).orderBy(desc(agentCommissions.createdAt));
+}
+
+export async function getCommissionSummaryByAgent(agentId: number) {
+  const db = await getDb();
+  if (!db) return { pending: "0", paid: "0", total: "0" };
+  const rows = await db.select({
+    status: agentCommissions.status,
+    total: sql<string>`SUM(${agentCommissions.commissionAmount})`,
+  }).from(agentCommissions).where(eq(agentCommissions.agentId, agentId)).groupBy(agentCommissions.status);
+  const pending = rows.find(r => r.status === "pending")?.total ?? "0";
+  const paid = rows.find(r => r.status === "paid")?.total ?? "0";
+  const total = (parseFloat(pending) + parseFloat(paid)).toFixed(2);
+  return { pending, paid, total };
+}
+
+export async function markCommissionsAsPaid(agentId: number, paymentReference: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(agentCommissions).set({ status: "paid", paidAt: new Date(), paymentReference }).where(and(eq(agentCommissions.agentId, agentId), eq(agentCommissions.status, "pending")));
+}
+
+export async function linkAgentToClient(agentId: number, clientUserId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  // Verificar si ya existe la relación
+  const existing = await db.select().from(agentReferrals).where(and(eq(agentReferrals.agentId, agentId), eq(agentReferrals.clientUserId, clientUserId))).limit(1);
+  if (existing.length === 0) {
+    await db.insert(agentReferrals).values({ agentId, clientUserId });
+  }
+}
+
+export async function getAgentByClientUserId(clientUserId: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select({ agentId: agentReferrals.agentId }).from(agentReferrals).where(eq(agentReferrals.clientUserId, clientUserId)).limit(1);
+  if (!result[0]) return undefined;
+  return getSalesAgentById(result[0].agentId);
 }
