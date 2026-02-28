@@ -1,72 +1,39 @@
 import DashboardLayout from "@/components/DashboardLayout";
+import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
 import {
   FileText,
   Plus,
   Download,
   Send,
-  CheckCircle2,
-  Clock,
   Search,
   Building2,
-  User,
-  Hash,
 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
-interface Invoice {
-  id: string;
-  folio: string;
-  date: string;
-  clientName: string;
-  clientRfc: string;
-  total: number;
-  status: "paid" | "pending" | "cancelled";
-  concept: string;
-}
+type InvStatus = "draft" | "sent" | "paid" | "cancelled" | "overdue";
 
-const MOCK_INVOICES: Invoice[] = [
-  {
-    id: "1",
-    folio: "F-2026-001",
-    date: "2026-01-15",
-    clientName: "Comercializadora ABC S.A. de C.V.",
-    clientRfc: "CAB200101ABC",
-    total: 15800,
-    status: "paid",
-    concept: "Servicios de consultoría enero 2026",
-  },
-  {
-    id: "2",
-    folio: "F-2026-002",
-    date: "2026-02-01",
-    clientName: "Juan Pérez Hernández",
-    clientRfc: "PEHJ850312XYZ",
-    total: 4640,
-    status: "pending",
-    concept: "Diseño de logotipo y branding",
-  },
-  {
-    id: "3",
-    folio: "F-2026-003",
-    date: "2026-02-10",
-    clientName: "Distribuidora Norte S.A.",
-    clientRfc: "DNO150601DEF",
-    total: 29000,
-    status: "paid",
-    concept: "Venta de mercancía febrero 2026",
-  },
-];
-
-const STATUS_CONFIG = {
+const STATUS_LABELS: Record<InvStatus, { label: string; color: string }> = {
+  draft: { label: "Borrador", color: "text-gray-500 bg-gray-50 border-gray-200" },
+  sent: { label: "Enviada", color: "text-blue-600 bg-blue-50 border-blue-200" },
   paid: { label: "Pagada", color: "text-green-600 bg-green-50 border-green-200" },
-  pending: { label: "Pendiente", color: "text-yellow-600 bg-yellow-50 border-yellow-200" },
   cancelled: { label: "Cancelada", color: "text-gray-500 bg-gray-50 border-gray-200" },
+  overdue: { label: "Vencida", color: "text-red-600 bg-red-50 border-red-200" },
 };
+
+
 
 function formatMXN(amount: number) {
   return new Intl.NumberFormat("es-MX", { style: "currency", currency: "MXN" }).format(amount);
@@ -79,41 +46,62 @@ function formatDate(dateStr: string) {
 }
 
 export default function Invoices() {
+  const { data: invoices = [], isLoading, refetch } = trpc.invoices.list.useQuery();
+  const createMutation = trpc.invoices.create.useMutation({
+    onSuccess: () => { toast.success("Factura creada exitosamente"); refetch(); setShowForm(false); resetForm(); },
+    onError: (e) => toast.error(e.message),
+  });
+
   const [showForm, setShowForm] = useState(false);
   const [search, setSearch] = useState("");
   const [form, setForm] = useState({
-    clientName: "",
-    clientRfc: "",
-    clientEmail: "",
-    concept: "",
-    quantity: "1",
-    unitPrice: "",
-    usoCfdi: "G03",
+    emisorRfc: "",
+    emisorNombre: "",
+    receptorRfc: "",
+    receptorNombre: "",
+    receptorEmail: "",
+    descripcion: "",
+    cantidad: "1",
+    valorUnitario: "",
   });
 
-  const filtered = MOCK_INVOICES.filter(inv =>
-    inv.clientName.toLowerCase().includes(search.toLowerCase()) ||
-    inv.folio.toLowerCase().includes(search.toLowerCase())
+  function resetForm() {
+    setForm({ emisorRfc: "", emisorNombre: "", receptorRfc: "", receptorNombre: "", receptorEmail: "", descripcion: "", cantidad: "1", valorUnitario: "" });
+  }
+
+  const filtered = invoices.filter(inv =>
+    (inv.receptorNombre || "").toLowerCase().includes(search.toLowerCase()) ||
+    (inv.folio || "").toLowerCase().includes(search.toLowerCase())
   );
 
-  const subtotal = parseFloat(form.unitPrice || "0") * parseFloat(form.quantity || "1");
-  const iva = subtotal * 0.16;
-  const total = subtotal + iva;
+  const cantidadNum = parseFloat(form.cantidad || "1");
+  const valorUnitarioNum = parseFloat(form.valorUnitario || "0");
+  const subtotalNum = cantidadNum * valorUnitarioNum;
+  const ivaNum = Math.round(subtotalNum * 0.16);
+  const totalNum = subtotalNum + ivaNum;
 
   const handleCreate = () => {
-    if (!form.clientName || !form.clientRfc || !form.concept || !form.unitPrice) {
+    if (!form.emisorRfc || !form.emisorNombre || !form.receptorRfc || !form.receptorNombre || !form.descripcion || !form.valorUnitario) {
       toast.error("Por favor completa todos los campos requeridos");
       return;
     }
-    toast.success(`Factura generada: ${formatMXN(total)} para ${form.clientName}`);
-    setShowForm(false);
-    setForm({ clientName: "", clientRfc: "", clientEmail: "", concept: "", quantity: "1", unitPrice: "", usoCfdi: "G03" });
+    createMutation.mutate({
+      emisorRfc: form.emisorRfc,
+      emisorNombre: form.emisorNombre,
+      receptorRfc: form.receptorRfc,
+      receptorNombre: form.receptorNombre,
+      receptorEmail: form.receptorEmail || "",
+      conceptos: [{ descripcion: form.descripcion, cantidad: cantidadNum, valorUnitario: valorUnitarioNum, importe: subtotalNum }],
+      subtotal: subtotalNum,
+      iva: ivaNum,
+      total: totalNum,
+      currency: "MXN",
+    });
   };
 
   return (
-    <DashboardLayout title="Mis Facturas">
+    <DashboardLayout>
       <div className="p-6 space-y-6">
-        {/* Header */}
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Mis Facturas</h1>
@@ -131,9 +119,9 @@ export default function Invoices() {
         {/* Stats */}
         <div className="grid grid-cols-3 gap-4">
           {[
-            { label: "Total facturas", value: MOCK_INVOICES.length, color: "text-gray-700" },
-            { label: "Pagadas", value: MOCK_INVOICES.filter(i => i.status === "paid").length, color: "text-green-600" },
-            { label: "Monto total", value: formatMXN(MOCK_INVOICES.reduce((s, i) => s + i.total, 0)), color: "text-emerald-600" },
+            { label: "Total facturas", value: invoices.length, color: "text-gray-700" },
+            { label: "Pagadas", value: invoices.filter(i => i.status === "paid").length, color: "text-green-600" },
+            { label: "Monto total", value: formatMXN(invoices.reduce((s, i) => s + (i.total || 0), 0)), color: "text-emerald-600" },
           ].map(({ label, value, color }) => (
             <Card key={label} className="border-0 shadow-sm">
               <CardContent className="p-4 text-center">
@@ -158,149 +146,159 @@ export default function Invoices() {
         {/* Table */}
         <Card className="border-0 shadow-sm">
           <CardContent className="p-0">
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-gray-100 bg-gray-50">
-                    <th className="text-left text-xs font-semibold text-gray-500 uppercase tracking-wider px-6 py-3">Folio</th>
-                    <th className="text-left text-xs font-semibold text-gray-500 uppercase tracking-wider px-4 py-3">Cliente</th>
-                    <th className="text-left text-xs font-semibold text-gray-500 uppercase tracking-wider px-4 py-3">Concepto</th>
-                    <th className="text-left text-xs font-semibold text-gray-500 uppercase tracking-wider px-4 py-3">Fecha</th>
-                    <th className="text-left text-xs font-semibold text-gray-500 uppercase tracking-wider px-4 py-3">Estatus</th>
-                    <th className="text-right text-xs font-semibold text-gray-500 uppercase tracking-wider px-4 py-3">Total</th>
-                    <th className="text-center text-xs font-semibold text-gray-500 uppercase tracking-wider px-4 py-3">Acciones</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-50">
-                  {filtered.map((inv) => (
-                    <tr key={inv.id} className="hover:bg-gray-50 transition-colors">
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-2">
-                          <FileText className="w-4 h-4 text-emerald-500" />
-                          <span className="text-sm font-mono font-medium text-gray-800">{inv.folio}</span>
-                        </div>
-                      </td>
-                      <td className="px-4 py-4">
-                        <div>
-                          <p className="text-sm font-medium text-gray-800">{inv.clientName}</p>
-                          <p className="text-xs text-gray-400 font-mono">{inv.clientRfc}</p>
-                        </div>
-                      </td>
-                      <td className="px-4 py-4 text-sm text-gray-600 max-w-[200px] truncate">{inv.concept}</td>
-                      <td className="px-4 py-4 text-sm text-gray-500">{formatDate(inv.date)}</td>
-                      <td className="px-4 py-4">
-                        <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border ${STATUS_CONFIG[inv.status].color}`}>
-                          {STATUS_CONFIG[inv.status].label}
-                        </span>
-                      </td>
-                      <td className="px-4 py-4 text-sm font-bold text-gray-900 text-right">{formatMXN(inv.total)}</td>
-                      <td className="px-4 py-4">
-                        <div className="flex items-center justify-center gap-1">
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="text-xs text-gray-500 hover:text-emerald-600"
-                            onClick={() => toast.success("Descargando PDF de " + inv.folio)}
-                          >
-                            <Download className="w-3.5 h-3.5" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="text-xs text-gray-500 hover:text-blue-600"
-                            onClick={() => toast.success("Factura enviada por email")}
-                          >
-                            <Send className="w-3.5 h-3.5" />
-                          </Button>
-                        </div>
-                      </td>
+            {isLoading ? (
+              <div className="text-center py-10 text-gray-400">Cargando...</div>
+            ) : filtered.length === 0 ? (
+              <div className="text-center py-16">
+                <FileText className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                <p className="text-gray-500 font-medium">Sin facturas registradas</p>
+                <p className="text-gray-400 text-sm mt-1">Crea tu primera factura para comenzar</p>
+                <Button variant="outline" className="mt-4" onClick={() => setShowForm(true)}>
+                  <Plus className="w-4 h-4 mr-2" /> Nueva Factura
+                </Button>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-gray-100 bg-gray-50">
+                      <th className="text-left text-xs font-semibold text-gray-500 uppercase tracking-wider px-6 py-3">Folio</th>
+                      <th className="text-left text-xs font-semibold text-gray-500 uppercase tracking-wider px-4 py-3">Receptor</th>
+                      <th className="text-left text-xs font-semibold text-gray-500 uppercase tracking-wider px-4 py-3">Emisor</th>
+                      <th className="text-left text-xs font-semibold text-gray-500 uppercase tracking-wider px-4 py-3">Fecha</th>
+                      <th className="text-left text-xs font-semibold text-gray-500 uppercase tracking-wider px-4 py-3">Estatus</th>
+                      <th className="text-right text-xs font-semibold text-gray-500 uppercase tracking-wider px-4 py-3">Total</th>
+                      <th className="text-center text-xs font-semibold text-gray-500 uppercase tracking-wider px-4 py-3">Acciones</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody className="divide-y divide-gray-50">
+                    {filtered.map((inv) => {
+                      const st = (inv.status as InvStatus) || "draft";
+                      const cfg = STATUS_LABELS[st] || STATUS_LABELS.draft;
+                      return (
+                        <tr key={inv.id} className="hover:bg-gray-50 transition-colors">
+                          <td className="px-6 py-4">
+                            <div className="flex items-center gap-2">
+                              <FileText className="w-4 h-4 text-emerald-500" />
+                              <span className="text-sm font-mono font-medium text-gray-800">{inv.folio}</span>
+                            </div>
+                          </td>
+                          <td className="px-4 py-4">
+                            <div>
+                              <p className="text-sm font-medium text-gray-800">{inv.receptorNombre}</p>
+                              <p className="text-xs text-gray-400 font-mono">{inv.receptorRfc}</p>
+                            </div>
+                          </td>
+                          <td className="px-4 py-4">
+                            <div>
+                              <p className="text-sm text-gray-700">{inv.emisorNombre}</p>
+                              <p className="text-xs text-gray-400 font-mono">{inv.emisorRfc}</p>
+                            </div>
+                          </td>
+                          <td className="px-4 py-4 text-sm text-gray-500">{new Date(inv.createdAt).toLocaleDateString("es-MX")}</td>
+                          <td className="px-4 py-4">
+                            <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border ${cfg.color}`}>
+                              {cfg.label}
+                            </span>
+                          </td>
+                          <td className="px-4 py-4 text-sm font-bold text-gray-900 text-right">{formatMXN(inv.total / 100)}</td>
+                          <td className="px-4 py-4">
+                            <div className="flex items-center justify-center gap-1">
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="text-xs text-gray-500 hover:text-emerald-600"
+                                onClick={() => inv.pdfUrl ? window.open(inv.pdfUrl, '_blank') : toast.info("PDF no disponible aún")}
+                              >
+                                <Download className="w-3.5 h-3.5" />
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="text-xs text-gray-500 hover:text-blue-600"
+                                onClick={() => toast.info("Envío por email disponible próximamente")}
+                              >
+                                <Send className="w-3.5 h-3.5" />
+                              </Button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </CardContent>
         </Card>
 
-        {/* Create Invoice Modal */}
-        {showForm && (
-          <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setShowForm(false)}>
-            <div className="bg-white rounded-2xl w-full max-w-lg shadow-2xl max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
-              <div className="p-6 border-b border-gray-100 flex items-center justify-between">
-                <h3 className="font-bold text-gray-900 text-lg">Nueva Factura</h3>
-                <button onClick={() => setShowForm(false)} className="text-gray-400 hover:text-gray-600 text-xl leading-none">×</button>
-              </div>
-              <div className="p-6 space-y-4">
-                <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-3 flex gap-2">
-                  <Building2 className="w-4 h-4 text-emerald-600 flex-shrink-0 mt-0.5" />
-                  <p className="text-xs text-emerald-700">Para emitir CFDI válidos ante el SAT, necesitas configurar tu RFC y certificados en <strong>Configuración → Datos Fiscales</strong>.</p>
-                </div>
-
-                <div className="space-y-1">
-                  <Label className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Datos del Cliente</Label>
-                  <Input placeholder="Nombre o razón social *" value={form.clientName} onChange={e => setForm(f => ({ ...f, clientName: e.target.value }))} />
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <Input placeholder="RFC del cliente *" value={form.clientRfc} onChange={e => setForm(f => ({ ...f, clientRfc: e.target.value }))} />
-                  <Input placeholder="Email (para envío)" type="email" value={form.clientEmail} onChange={e => setForm(f => ({ ...f, clientEmail: e.target.value }))} />
-                </div>
-
-                <div className="space-y-1">
-                  <Label className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Concepto</Label>
-                  <Input placeholder="Descripción del servicio o producto *" value={form.concept} onChange={e => setForm(f => ({ ...f, concept: e.target.value }))} />
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <Label className="text-xs text-gray-500 mb-1 block">Cantidad</Label>
-                    <Input type="number" min="1" value={form.quantity} onChange={e => setForm(f => ({ ...f, quantity: e.target.value }))} />
-                  </div>
-                  <div>
-                    <Label className="text-xs text-gray-500 mb-1 block">Precio unitario (MXN)</Label>
-                    <Input type="number" placeholder="0.00" value={form.unitPrice} onChange={e => setForm(f => ({ ...f, unitPrice: e.target.value }))} />
-                  </div>
-                </div>
-
-                <div>
-                  <Label className="text-xs text-gray-500 mb-1 block">Uso del CFDI</Label>
-                  <select
-                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-400"
-                    value={form.usoCfdi}
-                    onChange={e => setForm(f => ({ ...f, usoCfdi: e.target.value }))}
-                  >
-                    <option value="G01">G01 - Adquisición de mercancias</option>
-                    <option value="G03">G03 - Gastos en general</option>
-                    <option value="P01">P01 - Por definir</option>
-                    <option value="S01">S01 - Sin efectos fiscales</option>
-                  </select>
-                </div>
-
-                {/* Totals */}
-                {subtotal > 0 && (
-                  <div className="bg-gray-50 rounded-xl p-4 space-y-2">
-                    <div className="flex justify-between text-sm text-gray-600">
-                      <span>Subtotal</span><span>{formatMXN(subtotal)}</span>
-                    </div>
-                    <div className="flex justify-between text-sm text-gray-600">
-                      <span>IVA 16%</span><span>{formatMXN(iva)}</span>
-                    </div>
-                    <div className="flex justify-between text-base font-bold text-gray-900 border-t border-gray-200 pt-2">
-                      <span>Total</span><span className="text-emerald-600">{formatMXN(total)}</span>
-                    </div>
-                  </div>
-                )}
-
-                <div className="flex gap-3 pt-2">
-                  <Button variant="outline" className="flex-1" onClick={() => setShowForm(false)}>Cancelar</Button>
-                  <Button className="flex-1 bg-emerald-500 hover:bg-emerald-400 text-white" onClick={handleCreate}>
-                    <FileText className="w-4 h-4 mr-2" />
-                    Generar Factura
-                  </Button>
-                </div>
+      {/* Modal: Nueva Factura */}
+      <Dialog open={showForm} onOpenChange={setShowForm}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Nueva Factura</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-3 flex gap-2">
+              <Building2 className="w-4 h-4 text-emerald-600 flex-shrink-0 mt-0.5" />
+              <p className="text-xs text-emerald-700">Para emitir CFDI válidos ante el SAT, configura tu RFC y certificados en <strong>Configuración → Datos Fiscales</strong>.</p>
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs font-semibold text-gray-600 uppercase">Datos del Emisor (Tú)</Label>
+              <div className="grid grid-cols-2 gap-3">
+                <Input placeholder="RFC emisor *" value={form.emisorRfc} onChange={e => setForm(f => ({ ...f, emisorRfc: e.target.value }))} />
+                <Input placeholder="Nombre/Razón social emisor *" value={form.emisorNombre} onChange={e => setForm(f => ({ ...f, emisorNombre: e.target.value }))} />
               </div>
             </div>
+            <div className="space-y-1">
+              <Label className="text-xs font-semibold text-gray-600 uppercase">Datos del Receptor (Cliente)</Label>
+              <div className="grid grid-cols-2 gap-3">
+                <Input placeholder="RFC receptor *" value={form.receptorRfc} onChange={e => setForm(f => ({ ...f, receptorRfc: e.target.value }))} />
+                <Input placeholder="Nombre/Razón social receptor *" value={form.receptorNombre} onChange={e => setForm(f => ({ ...f, receptorNombre: e.target.value }))} />
+              </div>
+              <Input type="email" placeholder="Email del receptor" value={form.receptorEmail} onChange={e => setForm(f => ({ ...f, receptorEmail: e.target.value }))} />
+            </div>
+            <div>
+              <Label>Descripción del concepto *</Label>
+              <Input placeholder="Ej: Servicios de consultoría" value={form.descripcion} onChange={e => setForm(f => ({ ...f, descripcion: e.target.value }))} />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label>Cantidad</Label>
+                <Input type="number" min="1" value={form.cantidad} onChange={e => setForm(f => ({ ...f, cantidad: e.target.value }))} />
+              </div>
+              <div>
+                <Label>Valor unitario (MXN) *</Label>
+                <Input type="number" placeholder="0.00" value={form.valorUnitario} onChange={e => setForm(f => ({ ...f, valorUnitario: e.target.value }))} />
+              </div>
+            </div>
+            {subtotalNum > 0 && (
+              <div className="bg-gray-50 rounded-xl p-4 space-y-2">
+                <div className="flex justify-between text-sm text-gray-600">
+                  <span>Subtotal</span><span>{formatMXN(subtotalNum)}</span>
+                </div>
+                <div className="flex justify-between text-sm text-gray-600">
+                  <span>IVA (16%)</span><span>{formatMXN(ivaNum)}</span>
+                </div>
+                <div className="flex justify-between text-base font-bold text-gray-900 border-t border-gray-200 pt-2">
+                  <span>Total</span><span className="text-emerald-600">{formatMXN(totalNum)}</span>
+                </div>
+              </div>
+            )}
           </div>
-        )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setShowForm(false); resetForm(); }}>Cancelar</Button>
+            <Button
+              className="bg-emerald-500 hover:bg-emerald-400 text-white"
+              onClick={handleCreate}
+              disabled={createMutation.isPending}
+            >
+              <FileText className="w-4 h-4 mr-2" />
+              {createMutation.isPending ? "Guardando..." : "Crear Factura"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
       </div>
     </DashboardLayout>
   );

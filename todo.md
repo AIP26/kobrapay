@@ -140,7 +140,7 @@
 - [ ] Actualizar título de la app en settings
 
 ### Módulo Aclaraciones (Contracargos)
-- [ ] Tabla chargebacks en DB (transacción, estatus, monto, afectación, documentos)
+- [x] Tabla chargebacks en DB (transacción, estatus, monto, afectación, documentos)
 - [ ] Webhook Stripe: detectar disputas automáticamente y guardar en DB
 - [x] Página "Mis Aclaraciones" en dashboard
 - [x] Tabla con: ID transacción, fecha, estatus, monto, afectación, última actualización
@@ -148,7 +148,7 @@
 - [x] Notificación al admin cuando llega un contracargo nuevo
 
 ### Módulo Facturas
-- [ ] Tabla invoices en DB (folio, emisor RFC, receptor RFC, monto, conceptos, fecha)
+- [x] Tabla invoices en DB (folio, emisor RFC, receptor RFC, monto, conceptos, fecha)
 - [x] Página "Mis Facturas" en dashboard
 - [x] Formulario para crear factura (datos del cliente, conceptos, subtotal, IVA)
 - [x] Generar PDF de factura con membrete del negocio

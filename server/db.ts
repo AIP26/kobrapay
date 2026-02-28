@@ -33,6 +33,12 @@ import {
   userProfiles,
   UserProfile,
   InsertUserProfile,
+  chargebacks,
+  Chargeback,
+  InsertChargeback,
+  invoices,
+  Invoice,
+  InsertInvoice,
 } from "../drizzle/schema";
 import { ENV } from "./_core/env";
 
@@ -872,4 +878,61 @@ export async function upsertUserProfile(userId: number, data: Partial<InsertUser
   } else {
     await db.insert(userProfiles).values({ userId, ...data });
   }
+}
+
+// ─── Chargebacks (Aclaraciones) ───────────────────────────────────────────────
+export async function createChargeback(data: Omit<InsertChargeback, "id" | "createdAt" | "updatedAt">): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  await db.insert(chargebacks).values(data as InsertChargeback);
+}
+
+export async function getChargebacksByUser(userId: number): Promise<Chargeback[]> {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(chargebacks).where(eq(chargebacks.userId, userId)).orderBy(desc(chargebacks.createdAt));
+}
+
+export async function getAllChargebacks(): Promise<Chargeback[]> {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(chargebacks).orderBy(desc(chargebacks.createdAt));
+}
+
+export async function updateChargebackStatus(id: number, status: string, notes?: string, resolvedAt?: Date): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  const updateData: Record<string, unknown> = { status };
+  if (notes !== undefined) updateData.notes = notes;
+  if (resolvedAt) updateData.resolvedAt = resolvedAt;
+  await db.update(chargebacks).set(updateData).where(eq(chargebacks.id, id));
+}
+
+// ─── Invoices (Facturas) ──────────────────────────────────────────────────────
+export async function createInvoice(data: Omit<InsertInvoice, "id" | "createdAt" | "updatedAt">): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  await db.insert(invoices).values(data as InsertInvoice);
+}
+
+export async function getInvoicesByUser(userId: number): Promise<Invoice[]> {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(invoices).where(eq(invoices.userId, userId)).orderBy(desc(invoices.createdAt));
+}
+
+export async function getInvoiceById(id: number): Promise<Invoice | undefined> {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(invoices).where(eq(invoices.id, id)).limit(1);
+  return result[0];
+}
+
+export async function updateInvoiceStatus(id: number, status: string, issuedAt?: Date, cancelledAt?: Date): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  const updateData: Record<string, unknown> = { status };
+  if (issuedAt) updateData.issuedAt = issuedAt;
+  if (cancelledAt) updateData.cancelledAt = cancelledAt;
+  await db.update(invoices).set(updateData).where(eq(invoices.id, id));
 }

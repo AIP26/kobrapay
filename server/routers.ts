@@ -55,6 +55,14 @@ import {
   getTransactionsByPayerEmail,
   getUserProfile,
   upsertUserProfile,
+  createChargeback,
+  getChargebacksByUser,
+  getAllChargebacks,
+  updateChargebackStatus,
+  createInvoice,
+  getInvoicesByUser,
+  getInvoiceById,
+  updateInvoiceStatus,
 } from "./db";
 import { COOKIE_NAME } from "@shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
@@ -1618,6 +1626,113 @@ export const appRouter = router({
         const fieldMap: Record<string, string> = { ine: "ineUrl", domicilio: "domicilioUrl", acta: "actaConstitutiva" };
         await upsertUserProfile(ctx.user.id, { [fieldMap[input.docType]]: url } as Parameters<typeof upsertUserProfile>[1]);
         return { url };
+      }),
+  }),
+
+  // *** CHARGEBACKS (Aclaraciones) ***
+  chargebacks: router({
+    list: protectedProcedure.query(async ({ ctx }) => {
+      return getChargebacksByUser(ctx.user.id);
+    }),
+    listAll: protectedProcedure.query(async ({ ctx }) => {
+      if (ctx.user.role !== "admin" && ctx.user.role !== "superadmin") throw new TRPCError({ code: "FORBIDDEN" });
+      return getAllChargebacks();
+    }),
+    create: protectedProcedure
+      .input(z.object({
+        transactionId: z.number().optional(),
+        amount: z.number().min(1),
+        currency: z.string().default("MXN"),
+        reason: z.string().max(128).optional(),
+        reasonEs: z.string().max(255).optional(),
+        notes: z.string().max(1000).optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        await createChargeback({
+          userId: ctx.user.id,
+          transactionId: input.transactionId,
+          amount: input.amount,
+          currency: input.currency,
+          reason: input.reason,
+          reasonEs: input.reasonEs,
+          notes: input.notes,
+          status: "open",
+        });
+        return { success: true };
+      }),
+    updateStatus: protectedProcedure
+      .input(z.object({
+        id: z.number(),
+        status: z.enum(["open", "under_review", "won", "lost", "closed"]),
+        notes: z.string().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        if (ctx.user.role !== "admin" && ctx.user.role !== "superadmin") throw new TRPCError({ code: "FORBIDDEN" });
+        const resolvedAt = ["won","lost","closed"].includes(input.status) ? new Date() : undefined;
+        await updateChargebackStatus(input.id, input.status, input.notes, resolvedAt);
+        return { success: true };
+      }),
+  }),
+
+  // *** INVOICES (Facturas) ***
+  invoices: router({
+    list: protectedProcedure.query(async ({ ctx }) => {
+      return getInvoicesByUser(ctx.user.id);
+    }),
+    create: protectedProcedure
+      .input(z.object({
+        transactionId: z.number().optional(),
+        emisorRfc: z.string().max(13),
+        emisorNombre: z.string().max(255),
+        receptorRfc: z.string().max(13),
+        receptorNombre: z.string().max(255),
+        receptorEmail: z.string().email().optional().or(z.literal("")),
+        conceptos: z.array(z.object({
+          descripcion: z.string(),
+          cantidad: z.number(),
+          valorUnitario: z.number(),
+          importe: z.number(),
+        })),
+        subtotal: z.number(),
+        iva: z.number(),
+        total: z.number(),
+        currency: z.string().default("MXN"),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const folio = `KP-${Date.now().toString(36).toUpperCase()}`;
+        await createInvoice({
+          userId: ctx.user.id,
+          transactionId: input.transactionId,
+          folio,
+          emisorRfc: input.emisorRfc.toUpperCase(),
+          emisorNombre: input.emisorNombre,
+          receptorRfc: input.receptorRfc.toUpperCase(),
+          receptorNombre: input.receptorNombre,
+          receptorEmail: input.receptorEmail || null,
+          conceptos: JSON.stringify(input.conceptos),
+          subtotal: input.subtotal,
+          iva: input.iva,
+          total: input.total,
+          currency: input.currency,
+          status: "draft",
+        });
+        return { success: true, folio };
+      }),
+    issue: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        const inv = await getInvoiceById(input.id);
+        if (!inv || inv.userId !== ctx.user.id) throw new TRPCError({ code: "NOT_FOUND" });
+        await updateInvoiceStatus(input.id, "issued", new Date());
+        return { success: true };
+      }),
+    cancel: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        const inv = await getInvoiceById(input.id);
+        if (!inv || inv.userId !== ctx.user.id) throw new TRPCError({ code: "NOT_FOUND" });
+        await updateInvoiceStatus(input.id, "cancelled", undefined, new Date());
+        return { success: true };
       }),
   }),
 });

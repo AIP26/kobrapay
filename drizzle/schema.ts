@@ -451,3 +451,52 @@ export const userProfiles = mysqlTable("user_profiles", {
 });
 export type UserProfile = typeof userProfiles.$inferSelect;
 export type InsertUserProfile = typeof userProfiles.$inferInsert;
+
+// *** CHARGEBACKS (Aclaraciones/Disputas) ***
+export const chargebacks = mysqlTable("chargebacks", {
+  id: int("id").primaryKey().autoincrement(),
+  userId: int("userId").notNull().references(() => users.id),
+  transactionId: int("transactionId").references(() => transactions.id),
+  stripeDisputeId: varchar("stripeDisputeId", { length: 128 }),
+  amount: int("amount").notNull(), // en centavos
+  currency: varchar("currency", { length: 8 }).default("mxn").notNull(),
+  reason: varchar("reason", { length: 128 }),
+  reasonEs: varchar("reasonEs", { length: 255 }),
+  status: varchar("status", { length: 32 }).default("open").notNull(), // open, under_review, won, lost, closed
+  evidence: text("evidence"), // JSON con URLs de evidencia en S3
+  notes: text("notes"),
+  dueBy: timestamp("dueBy"),
+  resolvedAt: timestamp("resolvedAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type Chargeback = typeof chargebacks.$inferSelect;
+export type InsertChargeback = typeof chargebacks.$inferInsert;
+
+// *** INVOICES (Facturas CFDI) ***
+export const invoices = mysqlTable("invoices", {
+  id: int("id").primaryKey().autoincrement(),
+  userId: int("userId").notNull().references(() => users.id),
+  transactionId: int("transactionId").references(() => transactions.id),
+  folio: varchar("folio", { length: 32 }).notNull(),
+  uuid: varchar("uuid", { length: 64 }),
+  emisorRfc: varchar("emisorRfc", { length: 13 }).notNull(),
+  emisorNombre: varchar("emisorNombre", { length: 255 }).notNull(),
+  receptorRfc: varchar("receptorRfc", { length: 13 }).notNull(),
+  receptorNombre: varchar("receptorNombre", { length: 255 }).notNull(),
+  receptorEmail: varchar("receptorEmail", { length: 255 }),
+  conceptos: text("conceptos").notNull(), // JSON
+  subtotal: int("subtotal").notNull(), // en centavos
+  iva: int("iva").notNull(), // en centavos
+  total: int("total").notNull(), // en centavos
+  currency: varchar("currency", { length: 8 }).default("MXN").notNull(),
+  status: varchar("status", { length: 32 }).default("draft").notNull(), // draft, issued, cancelled
+  xmlUrl: text("xmlUrl"),
+  pdfUrl: text("pdfUrl"),
+  cancelledAt: timestamp("cancelledAt"),
+  issuedAt: timestamp("issuedAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type Invoice = typeof invoices.$inferSelect;
+export type InsertInvoice = typeof invoices.$inferInsert;
