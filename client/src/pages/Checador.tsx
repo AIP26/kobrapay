@@ -13,26 +13,16 @@ import {
   Users,
   Search,
   Calendar,
-  MapPin,
-  CheckCircle2,
-  XCircle,
   Timer,
-  TrendingUp,
+  Download,
+  FileText,
 } from "lucide-react";
+
+const MONTH_NAMES = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
 
 function formatTime(date: Date | string | null) {
   if (!date) return "—";
   return new Date(date).toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
-}
-
-function formatDate(date: Date | string | null) {
-  if (!date) return "—";
-  return new Date(date).toLocaleDateString("es-MX", { weekday: "short", day: "2-digit", month: "short", year: "numeric" });
-}
-
-function formatDateTime(date: Date | string | null) {
-  if (!date) return "—";
-  return new Date(date).toLocaleString("es-MX", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
 }
 
 // Reloj en tiempo real
@@ -56,8 +46,10 @@ function LiveClock() {
 
 export default function Checador() {
   const [search, setSearch] = useState("");
-  const [selectedEmployee, setSelectedEmployee] = useState<number | null>(null);
   const [dateFilter, setDateFilter] = useState(new Date().toISOString().split("T")[0]);
+  const [reportYear, setReportYear] = useState(new Date().getFullYear());
+  const [reportMonth, setReportMonth] = useState(new Date().getMonth() + 1);
+  const [generatingPdf, setGeneratingPdf] = useState(false);
 
   const employeesQuery = trpc.employees.list.useQuery();
   const attendanceQuery = trpc.attendance.getAll.useQuery({
@@ -85,22 +77,121 @@ export default function Checador() {
     (e.employeeNumber ?? "").includes(search)
   );
 
-  // Calcular estadísticas del día
   const todayIn = attendance.filter(a => a.type === "in").length;
   const todayOut = attendance.filter(a => a.type === "out").length;
-  const presentEmployees = new Set(attendance.filter(a => a.type === "in").map(a => a.employeeId)).size;
+
+  // Generar reporte mensual HTML descargable
+  const generateReport = async () => {
+    setGeneratingPdf(true);
+    try {
+      const result = await utils.attendance.getMonthlyReport.fetch({ year: reportYear, month: reportMonth });
+      if (!result) { toast.error("No se pudo obtener los datos"); return; }
+
+      const monthLabel = `${MONTH_NAMES[result.month - 1]} ${result.year}`;
+
+      const rows = result.employees.map(emp => {
+        const detail = emp.dailyDetails.map(d =>
+          `<tr><td style="padding:5px 10px;font-size:12px;border-bottom:1px solid #f3f4f6;">${d.date}</td><td style="padding:5px 10px;font-size:12px;border-bottom:1px solid #f3f4f6;">${d.checkIn}</td><td style="padding:5px 10px;font-size:12px;border-bottom:1px solid #f3f4f6;">${d.checkOut}</td><td style="padding:5px 10px;font-size:12px;border-bottom:1px solid #f3f4f6;font-weight:600;">${d.hours}</td></tr>`
+        ).join("");
+        return `
+          <div style="margin-bottom:28px;page-break-inside:avoid;">
+            <div style="background:#f0fdf4;border-left:4px solid #00c853;padding:10px 14px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;">
+              <div>
+                <strong style="font-size:14px;">${emp.name}</strong>
+                ${emp.employeeNumber ? `<span style="color:#6b7280;font-size:12px;margin-left:8px;">#${emp.employeeNumber}</span>` : ""}
+                ${emp.position ? `<span style="color:#6b7280;font-size:12px;margin-left:8px;">· ${emp.position}</span>` : ""}
+              </div>
+              <span style="font-size:13px;color:#00c853;font-weight:700;">${emp.daysWorked} días · ${emp.totalHours}</span>
+            </div>
+            <table width="100%" style="border-collapse:collapse;border:1px solid #e5e7eb;border-radius:6px;overflow:hidden;">
+              <thead><tr style="background:#f9fafb;">
+                <th style="padding:7px 10px;font-size:11px;text-align:left;color:#6b7280;">Fecha</th>
+                <th style="padding:7px 10px;font-size:11px;text-align:left;color:#6b7280;">Entrada</th>
+                <th style="padding:7px 10px;font-size:11px;text-align:left;color:#6b7280;">Salida</th>
+                <th style="padding:7px 10px;font-size:11px;text-align:left;color:#6b7280;">Horas</th>
+              </tr></thead>
+              <tbody>${detail || '<tr><td colspan="4" style="padding:10px;color:#9ca3af;font-size:12px;text-align:center;">Sin registros este mes</td></tr>'}</tbody>
+            </table>
+          </div>`;
+      }).join("");
+
+      const html = `<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Reporte de Asistencia ${monthLabel}</title>
+  <style>
+    @media print { body { margin: 0; } }
+    body { font-family: Arial, sans-serif; padding: 32px; color: #111; max-width: 800px; margin: 0 auto; }
+  </style>
+</head>
+<body>
+  <div style="text-align:center;margin-bottom:28px;border-bottom:2px solid #00c853;padding-bottom:16px;">
+    <h1 style="color:#00c853;font-size:26px;margin:0;font-weight:800;">KobraPay</h1>
+    <h2 style="font-size:18px;margin:6px 0 4px;color:#111;">Reporte de Asistencia</h2>
+    <p style="color:#6b7280;font-size:14px;margin:0;">${monthLabel} · Generado el ${new Date().toLocaleDateString("es-MX", { dateStyle: "full" })}</p>
+  </div>
+  <div style="margin-bottom:20px;background:#f9fafb;border-radius:8px;padding:12px 16px;display:flex;gap:24px;">
+    <div><span style="font-size:12px;color:#6b7280;">Total colaboradores</span><br><strong style="font-size:20px;">${result.employees.length}</strong></div>
+    <div><span style="font-size:12px;color:#6b7280;">Con registros</span><br><strong style="font-size:20px;">${result.employees.filter(e => e.daysWorked > 0).length}</strong></div>
+  </div>
+  ${rows}
+  <div style="margin-top:32px;text-align:center;color:#9ca3af;font-size:11px;border-top:1px solid #e5e7eb;padding-top:12px;">
+    KobraPay · kobrapay.mx · Reporte generado automáticamente
+  </div>
+</body>
+</html>`;
+
+      const blob = new Blob([html], { type: "text/html;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `Asistencia_${MONTH_NAMES[result.month - 1]}_${result.year}.html`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      toast.success(`Reporte de ${monthLabel} descargado`, { description: "Abre el archivo HTML en tu navegador e imprime como PDF." });
+    } catch (e) {
+      toast.error("Error al generar el reporte");
+    } finally {
+      setGeneratingPdf(false);
+    }
+  };
 
   return (
     <DashboardLayout>
       <div className="p-6 space-y-6 max-w-6xl mx-auto">
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between flex-wrap gap-3">
           <div>
             <h1 className="text-2xl font-bold flex items-center gap-2">
               <Clock className="w-6 h-6 text-primary" />
               Reloj Checador
             </h1>
             <p className="text-muted-foreground text-sm">Registra entradas y salidas de tus colaboradores</p>
+          </div>
+          {/* Reporte mensual */}
+          <div className="flex items-center gap-2 flex-wrap">
+            <select
+              value={reportMonth}
+              onChange={e => setReportMonth(Number(e.target.value))}
+              className="text-sm border border-border rounded-md px-2 py-1.5 bg-background"
+            >
+              {MONTH_NAMES.map((m, i) => <option key={i} value={i + 1}>{m}</option>)}
+            </select>
+            <select
+              value={reportYear}
+              onChange={e => setReportYear(Number(e.target.value))}
+              className="text-sm border border-border rounded-md px-2 py-1.5 bg-background"
+            >
+              {[2024, 2025, 2026, 2027].map(y => <option key={y} value={y}>{y}</option>)}
+            </select>
+            <Button variant="outline" size="sm" onClick={generateReport} disabled={generatingPdf}>
+              {generatingPdf
+                ? <><FileText className="w-4 h-4 mr-1.5 animate-pulse" />Generando...</>
+                : <><Download className="w-4 h-4 mr-1.5" />Reporte Mensual</>}
+            </Button>
           </div>
         </div>
 
@@ -166,9 +257,7 @@ export default function Checador() {
                   <EmployeeCheckCard
                     key={emp.id}
                     employee={emp}
-                    onCheckIn={(type) => {
-                      checkInMutation.mutate({ employeeId: emp.id, type });
-                    }}
+                    onCheckIn={(type) => checkInMutation.mutate({ employeeId: emp.id, type })}
                     isPending={checkInMutation.isPending && checkInMutation.variables?.employeeId === emp.id}
                   />
                 ))
@@ -242,12 +331,10 @@ function EmployeeCheckCard({
   const lastRecordQuery = trpc.attendance.getLastRecord.useQuery({ employeeId: employee.id });
   const lastRecord = lastRecordQuery.data;
   const isCurrentlyIn = lastRecord?.type === "in";
-
   const initials = employee.fullName.split(" ").map(n => n[0]).slice(0, 2).join("").toUpperCase();
 
   return (
     <div className="flex items-center gap-3 p-3 rounded-lg border bg-card hover:bg-muted/30 transition-colors">
-      {/* Avatar */}
       {employee.photoUrl ? (
         <img src={employee.photoUrl} alt={employee.fullName} className="w-10 h-10 rounded-full object-cover flex-shrink-0" />
       ) : (
@@ -255,7 +342,6 @@ function EmployeeCheckCard({
           {initials}
         </div>
       )}
-      {/* Info */}
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
           <p className="font-medium text-sm truncate">{employee.fullName}</p>
@@ -270,7 +356,6 @@ function EmployeeCheckCard({
           </p>
         )}
       </div>
-      {/* Botones */}
       <div className="flex gap-1 flex-shrink-0">
         <Button
           size="sm"

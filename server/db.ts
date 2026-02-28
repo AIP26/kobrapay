@@ -1158,3 +1158,22 @@ export async function getSubscriptionByStripeId(stripeSubscriptionId: string): P
     .where(eq(subscriptions.stripeSubscriptionId, stripeSubscriptionId)).limit(1);
   return result[0];
 }
+
+export async function getSubscriptionByCustomerAndPrice(stripeCustomerId: string, stripePriceId: string): Promise<Subscription | undefined> {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(subscriptions)
+    .where(and(eq(subscriptions.stripeCustomerId, stripeCustomerId), eq(subscriptions.stripePriceId, stripePriceId)))
+    .orderBy(desc(subscriptions.createdAt)).limit(1);
+  return result[0];
+}
+
+export async function getSubscriptionByCustomerId(stripeCustomerId: string): Promise<Subscription | undefined> {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(subscriptions)
+    .where(eq(subscriptions.stripeCustomerId, stripeCustomerId))
+    .orderBy(desc(subscriptions.createdAt)).limit(1);
+  return result[0];
+}
+

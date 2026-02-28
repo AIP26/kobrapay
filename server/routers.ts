@@ -2176,6 +2176,66 @@ export const appRouter = router({
       .query(async ({ ctx, input }) => {
         return getLastAttendanceRecord(input.employeeId, ctx.user.id);
       }),
+
+    getMonthlyReport: protectedProcedure
+      .input(z.object({ year: z.number(), month: z.number() }))
+      .query(async ({ ctx, input }) => {
+        // Calcular rango del mes
+        const start = new Date(input.year, input.month - 1, 1);
+        const end = new Date(input.year, input.month, 0, 23, 59, 59);
+        const records = await getAttendanceByOwner(ctx.user.id, start, end);
+        const employees = await getEmployeeRecordsByOwner(ctx.user.id);
+
+        // Agrupar registros por empleado
+        const reportMap = new Map<number, { employeeId: number; name: string; position: string | null; employeeNumber: string | null; records: typeof records }>();
+
+        for (const emp of employees) {
+          reportMap.set(emp.id, { employeeId: emp.id, name: emp.fullName, position: emp.position, employeeNumber: emp.employeeNumber, records: [] });
+        }
+        for (const rec of records) {
+          const entry = reportMap.get(rec.employeeId);
+          if (entry) entry.records.push(rec);
+        }
+
+        // Calcular horas trabajadas por empleado
+        const report = Array.from(reportMap.values()).map(emp => {
+          const days = new Map<string, { in?: Date; out?: Date }>();
+          for (const rec of emp.records) {
+            const day = new Date(rec.timestamp).toISOString().split("T")[0];
+            if (!days.has(day)) days.set(day, {});
+            const d = days.get(day)!;
+            if (rec.type === "in" && !d.in) d.in = new Date(rec.timestamp);
+            if (rec.type === "out") d.out = new Date(rec.timestamp);
+          }
+          let totalMinutes = 0;
+          let daysWorked = 0;
+          const dailyDetails: { date: string; checkIn: string; checkOut: string; hours: string }[] = [];
+          for (const [date, d] of Array.from(days.entries())) {
+            if (d.in && d.out) {
+              const mins = Math.round((d.out.getTime() - d.in.getTime()) / 60000);
+              if (mins > 0) { totalMinutes += mins; daysWorked++; }
+              dailyDetails.push({
+                date,
+                checkIn: d.in.toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit" }),
+                checkOut: d.out.toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit" }),
+                hours: `${Math.floor(mins / 60)}h ${mins % 60}m`,
+              });
+            } else if (d.in) {
+              dailyDetails.push({ date, checkIn: d.in.toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit" }), checkOut: "—", hours: "—" });
+            }
+          }
+          dailyDetails.sort((a, b) => a.date.localeCompare(b.date));
+          return {
+            ...emp,
+            daysWorked,
+            totalHours: `${Math.floor(totalMinutes / 60)}h ${totalMinutes % 60}m`,
+            totalMinutes,
+            dailyDetails,
+          };
+        });
+
+        return { year: input.year, month: input.month, employees: report };
+      }),
   }),
 
   // ─── Cobros Recurrentes (Stripe Billing) ─────────────────────────────────────

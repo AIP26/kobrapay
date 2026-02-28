@@ -7,9 +7,14 @@ import {
   updatePaymentLinkStatus,
   updateTransactionStatus,
   createChargeback,
+  getSubscriptionByStripeId,
+  getSubscriptionByCustomerId,
+  updateSubscription,
+  getUserById,
 } from "./db";
 import { notifyOwner } from "./_core/notification";
 import { createNotification } from "./db";
+import { sendRecurringPaymentEmail } from "./_core/email";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "", {
   apiVersion: "2026-02-25.clover",
@@ -192,6 +197,128 @@ export function registerStripeWebhook(app: express.Application) {
           case "charge.dispute.closed": {
             const dispute = event.data.object as Stripe.Dispute;
             console.log(`[Stripe Webhook] Disputa cerrada: ${dispute.id} status=${dispute.status}`);
+            break;
+          }
+
+          // ─── Suscripciones ─────────────────────────────────────────────────
+          case "customer.subscription.updated": {
+            const sub = event.data.object as Stripe.Subscription;
+            const dbSub = await getSubscriptionByStripeId(sub.id);
+            if (dbSub) {
+              const statusMap: Record<string, string> = {
+                active: "active",
+                paused: "paused",
+                canceled: "canceled",
+                past_due: "past_due",
+                incomplete: "incomplete",
+                trialing: "active",
+              };
+              const newStatus = statusMap[sub.status] ?? sub.status;
+              const cancelAtPeriodEnd = sub.cancel_at_period_end;
+              await updateSubscription(dbSub.id, dbSub.ownerId, {
+                status: newStatus,
+                cancelAtPeriodEnd,
+                stripeSubscriptionId: sub.id,
+              });
+              console.log(`[Stripe Webhook] Suscripción ${sub.id} actualizada: ${newStatus}`);
+            }
+            break;
+          }
+
+          case "customer.subscription.deleted": {
+            const sub = event.data.object as Stripe.Subscription;
+            const dbSub = await getSubscriptionByStripeId(sub.id);
+            if (dbSub) {
+              await updateSubscription(dbSub.id, dbSub.ownerId, { status: "canceled", cancelAtPeriodEnd: false });
+            }
+            break;
+          }
+
+          case "checkout.session.completed": {
+            const session = event.data.object as Stripe.Checkout.Session;
+            if (session.mode === "subscription" && session.subscription && session.customer) {
+              // Vincular stripeSubscriptionId a la suscripción en BD
+              const customerId = typeof session.customer === "string" ? session.customer : session.customer.id;
+              const dbSub = await getSubscriptionByCustomerId(customerId);
+              if (dbSub) {
+                const stripeSubId = typeof session.subscription === "string" ? session.subscription : session.subscription.id;
+                await updateSubscription(dbSub.id, dbSub.ownerId, {
+                  stripeSubscriptionId: stripeSubId,
+                  status: "active",
+                });
+                console.log(`[Stripe Webhook] Checkout completado, suscripción activada: ${stripeSubId}`);
+              }
+            }
+            break;
+          }
+
+          case "invoice.payment_succeeded": {
+            const invoice = event.data.object as Stripe.Invoice;
+            // Solo procesar facturas de suscripción (no las de pago único)
+            // En Stripe API v2026+, el parent contiene la referencia a la suscripción
+            const invSubId = (invoice as unknown as { subscription?: string | { id: string } }).subscription;
+            if (invSubId && invoice.customer) {
+              const stripeSubId = typeof invSubId === "string" ? invSubId : invSubId.id;
+              const dbSub = await getSubscriptionByStripeId(stripeSubId);
+              if (dbSub) {
+                // Obtener datos del dueño para enviar email
+                const owner = await getUserById(dbSub.ownerId);
+                if (owner?.email) {
+                  try {
+                    await sendRecurringPaymentEmail({
+                      ownerEmail: owner.email,
+                      ownerName: owner.name || "Usuario KobraPay",
+                      customerEmail: dbSub.customerEmail,
+                      customerName: dbSub.customerName,
+                      planName: dbSub.name,
+                      amount: invoice.amount_paid,
+                      currency: invoice.currency,
+                      interval: dbSub.interval,
+                      paidAt: new Date(invoice.created * 1000),
+                    });
+                  } catch (_) {}
+                }
+                // Notificación en el panel
+                try {
+                  await createNotification({
+                    userId: dbSub.ownerId,
+                    type: "payment_received",
+                    title: `🔄 Cobro recurrente: ${new Intl.NumberFormat("es-MX", { style: "currency", currency: invoice.currency.toUpperCase() }).format(invoice.amount_paid / 100)}`,
+                    message: `Se cobró exitosamente el plan "${dbSub.name}" a ${dbSub.customerEmail}.`,
+                    actionUrl: "/dashboard/recurring",
+                  });
+                } catch (_) {}
+                // Notificar al owner via push
+                try {
+                  await notifyOwner({
+                    title: `🔄 Cobro recurrente exitoso: ${new Intl.NumberFormat("es-MX", { style: "currency", currency: invoice.currency.toUpperCase() }).format(invoice.amount_paid / 100)}`,
+                    content: `Plan "${dbSub.name}" cobrado a ${dbSub.customerEmail}.`,
+                  });
+                } catch (_) {}
+              }
+            }
+            break;
+          }
+
+          case "invoice.payment_failed": {
+            const invoice = event.data.object as Stripe.Invoice;
+            const failedSubId = (invoice as unknown as { subscription?: string | { id: string } }).subscription;
+            if (failedSubId) {
+              const stripeSubId = typeof failedSubId === "string" ? failedSubId : failedSubId.id;
+              const dbSub = await getSubscriptionByStripeId(stripeSubId);
+              if (dbSub) {
+                await updateSubscription(dbSub.id, dbSub.ownerId, { status: "past_due" });
+                try {
+                  await createNotification({
+                    userId: dbSub.ownerId,
+                    type: "payment_received",
+                    title: `⚠️ Cobro recurrente fallido: ${dbSub.name}`,
+                    message: `No se pudo cobrar el plan "${dbSub.name}" a ${dbSub.customerEmail}. Revisa el estado de la suscripción.`,
+                    actionUrl: "/dashboard/recurring",
+                  });
+                } catch (_) {}
+              }
+            }
             break;
           }
 

@@ -466,3 +466,81 @@ export async function sendInvoiceEmail(data: {
     return false;
   }
 }
+
+// ─── Email de cobro recurrente exitoso ───────────────────────────────────────
+export async function sendRecurringPaymentEmail(data: {
+  ownerEmail: string;
+  ownerName: string;
+  customerEmail: string;
+  customerName?: string | null;
+  planName: string;
+  amount: number; // en centavos
+  currency: string;
+  interval: string;
+  paidAt: Date;
+}): Promise<boolean> {
+  const resend = getResend();
+  if (!resend) return false;
+
+  const amountFormatted = new Intl.NumberFormat("es-MX", {
+    style: "currency",
+    currency: data.currency.toUpperCase(),
+  }).format(data.amount / 100);
+
+  const dateFormatted = new Intl.DateTimeFormat("es-MX", {
+    dateStyle: "full",
+    timeStyle: "short",
+    timeZone: "America/Mexico_City",
+  }).format(data.paidAt);
+
+  const intervalMap: Record<string, string> = {
+    day: "diario", week: "semanal", month: "mensual", year: "anual",
+  };
+  const intervalLabel = intervalMap[data.interval] ?? data.interval;
+
+  const html = `<!DOCTYPE html>
+<html lang="es">
+<head><meta charset="UTF-8"><title>Cobro recurrente exitoso</title></head>
+<body style="margin:0;padding:0;background:#f4f4f5;font-family:'Helvetica Neue',Arial,sans-serif;">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f4f5;padding:40px 0;">
+  <tr><td align="center">
+    <table width="580" cellpadding="0" cellspacing="0" style="background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.08);">
+      <tr><td style="background:linear-gradient(135deg,#00c853,#00bcd4);padding:28px 40px;">
+        <h1 style="margin:0;color:#fff;font-size:22px;font-weight:800;">💳 Cobro Recurrente Exitoso</h1>
+        <p style="margin:6px 0 0;color:rgba(255,255,255,0.85);font-size:14px;">KobraPay · kobrapay.mx</p>
+      </td></tr>
+      <tr><td style="padding:32px 40px;">
+        <p style="color:#374151;font-size:15px;margin:0 0 20px;">Hola <strong>${data.ownerName}</strong>, se realizó un cobro recurrente exitoso en tu cuenta.</p>
+        <table width="100%" cellpadding="12" cellspacing="0" style="background:#f9fafb;border-radius:8px;border:1px solid #e5e7eb;">
+          <tr><td style="color:#6b7280;font-size:13px;">Plan</td><td style="color:#111827;font-weight:700;font-size:14px;">${data.planName}</td></tr>
+          <tr style="border-top:1px solid #e5e7eb;"><td style="color:#6b7280;font-size:13px;">Monto cobrado</td><td style="color:#00c853;font-weight:800;font-size:18px;">${amountFormatted}</td></tr>
+          <tr style="border-top:1px solid #e5e7eb;"><td style="color:#6b7280;font-size:13px;">Frecuencia</td><td style="color:#111827;font-size:14px;">${intervalLabel.charAt(0).toUpperCase() + intervalLabel.slice(1)}</td></tr>
+          <tr style="border-top:1px solid #e5e7eb;"><td style="color:#6b7280;font-size:13px;">Cliente</td><td style="color:#111827;font-size:14px;">${data.customerName || ""} &lt;${data.customerEmail}&gt;</td></tr>
+          <tr style="border-top:1px solid #e5e7eb;"><td style="color:#6b7280;font-size:13px;">Fecha</td><td style="color:#111827;font-size:14px;">${dateFormatted}</td></tr>
+        </table>
+        <div style="margin-top:24px;text-align:center;">
+          <a href="https://kobrapay.mx/dashboard/recurring" style="background:#00c853;color:#fff;padding:12px 28px;border-radius:8px;text-decoration:none;font-weight:700;font-size:14px;">Ver mis suscripciones</a>
+        </div>
+      </td></tr>
+      <tr><td style="background:#f9fafb;padding:16px 40px;text-align:center;border-top:1px solid #f3f4f6;">
+        <p style="margin:0;color:#9ca3af;font-size:12px;">Generado por <strong style="color:#00c853;">KobraPay</strong> · kobrapay.mx</p>
+      </td></tr>
+    </table>
+  </td></tr>
+</table>
+</body></html>`;
+
+  try {
+    const { error } = await resend.emails.send({
+      from: `KobraPay <${ENV.fromEmail}>`,
+      to: data.ownerEmail,
+      subject: `💳 Cobro recurrente exitoso: ${amountFormatted} - ${data.planName}`,
+      html,
+    });
+    if (error) { console.error("[Email] Error al enviar email de cobro recurrente:", error); return false; }
+    return true;
+  } catch (err) {
+    console.error("[Email] Excepción al enviar email de cobro recurrente:", err);
+    return false;
+  }
+}
