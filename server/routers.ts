@@ -372,6 +372,55 @@ export const appRouter = router({
       return getDashboardStats(ctx.user.id);
     }),
 
+    monthlyReport: protectedProcedure
+      .input(z.object({ year: z.number(), month: z.number() }))
+      .query(async ({ ctx, input }) => {
+        const txs = await getTransactionsByUser(ctx.user.id);
+        const settings = await getVendorSettings(ctx.user.id);
+        const { year, month } = input;
+        const filtered = txs.filter((t) => {
+          const d = new Date(t.createdAt);
+          return d.getFullYear() === year && d.getMonth() + 1 === month;
+        });
+        const succeeded = filtered.filter((t) => t.status === "succeeded");
+        const failed = filtered.filter((t) => t.status === "failed");
+        const totalBruto = succeeded.reduce((s, t) => s + parseFloat(String(t.amount)), 0);
+        const totalComision = succeeded.reduce((s, t) => s + parseFloat(String(t.commissionAmount || 0)), 0);
+        const totalNeto = succeeded.reduce((s, t) => s + parseFloat(String(t.netAmount || t.amount)), 0);
+        const byDay: Record<string, { count: number; total: number }> = {};
+        for (const t of succeeded) {
+          const day = new Date(t.createdAt).getDate().toString();
+          if (!byDay[day]) byDay[day] = { count: 0, total: 0 };
+          byDay[day].count++;
+          byDay[day].total += parseFloat(String(t.amount));
+        }
+        return {
+          year, month,
+          businessName: settings?.businessName || "Mi Negocio",
+          businessEmail: settings?.businessEmail || "",
+          totalTransactions: succeeded.length,
+          failedTransactions: failed.length,
+          totalBruto,
+          totalComision,
+          totalNeto,
+          commissionRate: parseFloat(String(settings?.commissionRate || 0)),
+          transactions: succeeded.map((t) => ({
+            id: t.id,
+            operationNumber: t.operationNumber,
+            date: t.createdAt,
+            payerName: t.payerName,
+            payerEmail: t.payerEmail,
+            amount: parseFloat(String(t.amount)),
+            commissionAmount: parseFloat(String(t.commissionAmount || 0)),
+            netAmount: parseFloat(String(t.netAmount || t.amount)),
+            cardBrand: t.cardBrand,
+            cardLast4: t.cardLast4,
+            msiMonths: t.msiMonths,
+          })),
+          byDay,
+        };
+      }),
+
     exportCsv: protectedProcedure.query(async ({ ctx }) => {
       const txs = await getTransactionsByUser(ctx.user.id);
       const succeeded = txs.filter((t) => t.status === "succeeded");

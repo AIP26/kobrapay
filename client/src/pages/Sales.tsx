@@ -570,11 +570,26 @@ function TransactionDetailModal({
               </Button>
               {tx.status === "succeeded" && (
                 <Button
+                  onClick={() => {
+                    const blob = new Blob([`<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>Comprobante - KobraPay</title><style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:'Helvetica Neue',Arial,sans-serif;background:#f5f5f5;padding:40px 20px;color:#1a1a1a}.receipt{max-width:520px;margin:0 auto;background:white;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.12)}.header{background:linear-gradient(135deg,#00c896 0%,#00a8e0 100%);padding:32px 36px;color:white;text-align:center}.brand{font-size:22px;font-weight:800;margin-bottom:16px}.amount{font-size:48px;font-weight:900}.badge{display:inline-block;background:rgba(255,255,255,0.25);border-radius:20px;padding:6px 16px;font-size:13px;font-weight:600;margin-top:12px}.body{padding:28px 36px}.row{display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid #f3f4f6;font-size:13px}.label{color:#6b7280}.value{font-weight:600;color:#1f2937}.op-box{background:#f9fafb;border:1px solid #e5e7eb;border-radius:10px;padding:14px 18px;margin:20px 0}.op-label{font-size:11px;color:#9ca3af;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:4px}.op-num{font-size:18px;font-weight:800;font-family:monospace}.footer{background:#f9fafb;border-top:1px solid #f3f4f6;padding:20px 36px;text-align:center;font-size:11px;color:#9ca3af}@media print{body{background:white;padding:0}.receipt{box-shadow:none;border-radius:0}}</style></head><body><div class="receipt"><div class="header"><div class="brand">&#x1F40D; KobraPay</div><div class="amount">$${new Intl.NumberFormat("es-MX",{minimumFractionDigits:2}).format(Number(tx.amount))} ${tx.currency}</div><div class="badge">&#x2713; Pago Exitoso</div></div><div class="body"><div class="op-box"><div class="op-label">N.&deg; de Operaci&oacute;n</div><div class="op-num">${operationNumber}</div></div><div class="row"><span class="label">Fecha</span><span class="value">${new Date(tx.createdAt).toLocaleDateString("es-MX",{day:"2-digit",month:"long",year:"numeric",hour:"2-digit",minute:"2-digit"})}</span></div><div class="row"><span class="label">Cliente</span><span class="value">${tx.payerName||"&mdash;"}</span></div><div class="row"><span class="label">Email</span><span class="value">${tx.payerEmail||"&mdash;"}</span></div>${description?`<div class="row"><span class="label">Descripci&oacute;n</span><span class="value">${description}</span></div>`:""}<div class="row"><span class="label">Tarjeta</span><span class="value">${tx.cardBrand?`${tx.cardBrand} ****${tx.cardLast4}`:"&mdash;"}</span></div><div class="row"><span class="label">Monto bruto</span><span class="value">$${new Intl.NumberFormat("es-MX",{minimumFractionDigits:2}).format(Number(tx.amount))} ${tx.currency}</span></div><div class="row"><span class="label">Comisi&oacute;n</span><span class="value">$${new Intl.NumberFormat("es-MX",{minimumFractionDigits:2}).format(Number(tx.commissionAmount||0))}</span></div><div class="row"><span class="label">Monto neto</span><span class="value" style="color:#16a34a;font-weight:800">$${new Intl.NumberFormat("es-MX",{minimumFractionDigits:2}).format(Number(tx.netAmount||tx.amount))} ${tx.currency}</span></div></div><div class="footer">KobraPay &mdash; kobrapay.mx &mdash; <a href="mailto:soporte@kobrapay.mx">soporte@kobrapay.mx</a><br>&copy; ${new Date().getFullYear()} KobraPay. Todos los derechos reservados.</div></div></body></html>`], { type: "text/html;charset=utf-8;" });
+                    const url = URL.createObjectURL(blob);
+                    window.open(url, "_blank");
+                    setTimeout(() => URL.revokeObjectURL(url), 15000);
+                  }}
+                  variant="outline"
+                  className="flex-1 border-green-500 text-green-600 hover:bg-green-50"
+                >
+                  <ShieldCheck className="w-4 h-4 mr-2" />
+                  Ver
+                </Button>
+              )}
+              {tx.status === "succeeded" && (
+                <Button
                   onClick={handleDownloadReceipt}
                   className="flex-1 bg-green-600 hover:bg-green-700 text-white"
                 >
                   <Download className="w-4 h-4 mr-2" />
-                  Comprobante
+                  Descargar
                 </Button>
               )}
             </div>

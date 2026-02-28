@@ -380,17 +380,24 @@ export async function updateTransactionStatus(
 
 export async function getDashboardStats(userId: number) {
   const db = await getDb();
-  if (!db) return { totalCollected: 0, totalNetAmount: 0, totalCommission: 0, totalLinks: 0, paidLinks: 0, pendingLinks: 0 };
+  if (!db) return { totalCollected: 0, totalNetAmount: 0, totalCommission: 0, totalLinks: 0, paidLinks: 0, pendingLinks: 0, monthCollected: 0, monthTransactions: 0, todayCollected: 0, todayTransactions: 0, totalCustomers: 0 };
 
   const links = await db.select().from(paymentLinks).where(eq(paymentLinks.userId, userId));
   const txs = await db
     .select()
     .from(transactions)
     .where(and(eq(transactions.userId, userId), eq(transactions.status, "succeeded")));
+  const customerCount = await db.select({ id: customers.id }).from(customers).where(eq(customers.userId, userId));
+
+  const now = new Date();
+  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
+  const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
 
   const totalCollected = txs.reduce((sum, t) => sum + parseFloat(String(t.amount)), 0);
   const totalNetAmount = txs.reduce((sum, t) => sum + parseFloat(String(t.netAmount || t.amount)), 0);
   const totalCommission = txs.reduce((sum, t) => sum + parseFloat(String(t.commissionAmount || 0)), 0);
+  const monthTxs = txs.filter(t => new Date(t.createdAt).getTime() >= startOfMonth);
+  const todayTxs = txs.filter(t => new Date(t.createdAt).getTime() >= startOfDay);
 
   return {
     totalCollected,
@@ -399,6 +406,11 @@ export async function getDashboardStats(userId: number) {
     totalLinks: links.length,
     paidLinks: links.filter((l) => l.status === "paid").length,
     pendingLinks: links.filter((l) => l.status === "pending").length,
+    monthCollected: monthTxs.reduce((sum, t) => sum + parseFloat(String(t.amount)), 0),
+    monthTransactions: monthTxs.length,
+    todayCollected: todayTxs.reduce((sum, t) => sum + parseFloat(String(t.amount)), 0),
+    todayTransactions: todayTxs.length,
+    totalCustomers: customerCount.length,
   };
 }
 

@@ -31,6 +31,7 @@ import SignContract from "./pages/SignContract";
 import Expedientes from "./pages/Expedientes";
 import CommissionsPanel from "./pages/CommissionsPanel";
 import Help from "./pages/Help";
+import MonthlyReport from "./pages/MonthlyReport";
 
 function Router() {
   return (
@@ -45,6 +46,7 @@ function Router() {
       <Route path="/dashboard/sales" component={Sales} />
       <Route path="/dashboard/clients" component={Clients} />
       <Route path="/dashboard/help" component={Help} />
+      <Route path="/dashboard/report" component={MonthlyReport} />
       <Route path="/dashboard/settings" component={Settings} />
       <Route path="/dashboard/widget" component={Widget} />
       <Route path="/dashboard/recurring" component={Recurring} />

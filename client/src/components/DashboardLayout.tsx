@@ -59,6 +59,7 @@ const navItems = [
   { href: "/dashboard/contracts", icon: Handshake, label: "Contratos", section: "superadmin" },
   { href: "/dashboard/agents", icon: UserPlus, label: "Vendedores", section: "superadmin" },
   { href: "/dashboard/commissions", icon: TrendingUp, label: "Comisiones", section: "superadmin" },
+  { href: "/dashboard/report", icon: FileText, label: "Reporte Mensual", section: "main" },
   { href: "/dashboard/help", icon: HelpCircle, label: "Ayuda", section: "settings" },
   { href: "/dashboard/settings", icon: Settings, label: "Configuración", section: "settings" },
 ];

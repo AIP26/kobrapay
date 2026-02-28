@@ -347,3 +347,16 @@
 - [ ] Layout split-screen: izquierda texto bienvenida, derecha card con tabs Acceso/Registrar
 - [ ] Features interactivas: clic en recuadro abre modal con descripción e imagen del panel
 - [ ] Mantener colores y diseño actual (dark navy + verde KobraPay)
+
+## Sesión Feb 28 - Completado
+- [x] Home rediseñado con layout split-screen tipo BillPocket (izquierda: bienvenida, derecha: card Acceso/Registrar)
+- [x] Features interactivas en Home: clic abre modal con explicación de cada funcionalidad
+- [x] Favicon KobraPay actualizado
+- [x] Página de Ayuda con manual por rol (vendedor, pagador, admin)
+- [x] Reporte Mensual PDF: página con tabla de transacciones, KPIs y descarga con jsPDF
+- [x] Reporte Mensual en sidebar del DashboardLayout
+- [x] Dashboard: 4 nuevos KPIs (Cobrado hoy, Este mes, Clientes, Monto neto)
+- [x] getDashboardStats mejorado con estadísticas del mes, hoy y total de clientes
+- [x] Comprobante: botón "Ver" abre en nueva pestaña + botón "Descargar" en detalle de transacción
+- [x] TypeScript: 0 errores
+- [x] Tests: 61/61 pasando
