@@ -147,6 +147,10 @@ function ExpedienteModal({
     try {
       // Usar la transacción más reciente con evidencia para el PDF
       const latestTx = data.transactions[0];
+      // Extraer descripción del metadata JSON de la transacción
+      const txDescription = latestTx?.metadata
+        ? (() => { try { return JSON.parse(latestTx.metadata).description || ""; } catch { return ""; } })()
+        : "";
       await generateEvidencePdf({
         payerName: data.record.payerName || "Cliente",
         payerEmail: data.record.payerEmail,
@@ -155,10 +159,10 @@ function ExpedienteModal({
         amount: latestTx?.amount || data.record.totalAmountPaid,
         currency: latestTx?.currency || "MXN",
         createdAt: latestTx?.createdAt || data.record.firstSeenAt,
-        description: (latestTx as unknown as { description?: string })?.description,
+        description: txDescription || undefined,
         cardBrand: latestTx?.cardBrand,
         cardLast4: latestTx?.cardLast4,
-        shippingAddress: (latestTx as unknown as { shippingAddress?: string })?.shippingAddress,
+        shippingAddress: undefined,
         selfieUrl: data.record.latestSelfieUrl,
         signatureUrl: data.record.latestSignatureUrl,
         idDocumentUrl: data.record.latestIdDocumentUrl,

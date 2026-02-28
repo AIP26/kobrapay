@@ -25,9 +25,17 @@ interface EvidencePdfData {
   businessName?: string;
 }
 
-async function loadImageAsBase64(url: string): Promise<string | null> {
+/**
+ * Carga una imagen a través del proxy del servidor para evitar bloqueos CORS.
+ * Convierte la imagen a base64 para insertarla en el PDF.
+ */
+async function loadImageViaProxy(url: string): Promise<string | null> {
+  if (!url) return null;
   try {
-    const response = await fetch(url);
+    // Usar el proxy del servidor para evitar CORS
+    const proxyUrl = `/api/image-proxy?url=${encodeURIComponent(url)}`;
+    const response = await fetch(proxyUrl);
+    if (!response.ok) return null;
     const blob = await response.blob();
     return new Promise((resolve) => {
       const reader = new FileReader();
@@ -74,7 +82,6 @@ export async function generateEvidencePdf(data: EvidencePdfData): Promise<void> 
   doc.setFont("helvetica", "normal");
   doc.text("Expediente de Evidencia de Pago", margin, 21);
 
-  // Número de operación en esquina derecha
   if (data.operationNumber) {
     doc.setFontSize(8);
     doc.text(`Op. #${data.operationNumber}`, pageW - margin, 14, { align: "right" });
@@ -85,8 +92,9 @@ export async function generateEvidencePdf(data: EvidencePdfData): Promise<void> 
   y = 42;
 
   // ── Datos del Cliente ────────────────────────────────────────────────────────
+  const clientBoxH = data.shippingAddress ? 46 : 38;
   doc.setFillColor(241, 245, 249);
-  doc.roundedRect(margin, y, contentW, 38, 3, 3, "F");
+  doc.roundedRect(margin, y, contentW, clientBoxH, 3, 3, "F");
 
   doc.setTextColor(30, 41, 59);
   doc.setFontSize(10);
@@ -117,18 +125,20 @@ export async function generateEvidencePdf(data: EvidencePdfData): Promise<void> 
 
   if (data.shippingAddress) {
     doc.setFont("helvetica", "bold");
-    doc.text("Dirección:", col2x, y + 25);
+    doc.text("Dirección:", col1x, y + 33);
     doc.setFont("helvetica", "normal");
-    const addrLines = doc.splitTextToSize(data.shippingAddress, contentW / 2 - 20);
-    doc.text(addrLines[0] || "—", col2x + 24, y + 25);
-    if (addrLines[1]) doc.text(addrLines[1], col2x + 24, y + 31);
+    const addrLines = doc.splitTextToSize(data.shippingAddress, contentW - 30);
+    doc.text(addrLines[0] || "—", col1x + 24, y + 33);
+    if (addrLines[1]) doc.text(addrLines[1], col1x + 24, y + 39);
   }
 
-  y += 48;
+  y += clientBoxH + 10;
 
   // ── Datos de la Transacción ──────────────────────────────────────────────────
+  // Altura dinámica según si hay descripción
+  const txBoxH = data.description ? 38 : 30;
   doc.setFillColor(220, 252, 231); // light green
-  doc.roundedRect(margin, y, contentW, 30, 3, 3, "F");
+  doc.roundedRect(margin, y, contentW, txBoxH, 3, 3, "F");
 
   doc.setTextColor(30, 41, 59);
   doc.setFontSize(10);
@@ -150,13 +160,6 @@ export async function generateEvidencePdf(data: EvidencePdfData): Promise<void> 
   doc.setFont("helvetica", "normal");
   doc.text(formatDate(data.createdAt), col2x + 16, y + 17);
 
-  if (data.description) {
-    doc.setFont("helvetica", "bold");
-    doc.text("Concepto:", col1x, y + 25);
-    doc.setFont("helvetica", "normal");
-    doc.text(data.description, col1x + 24, y + 25);
-  }
-
   if (data.cardBrand && data.cardLast4) {
     doc.setFont("helvetica", "bold");
     doc.text("Tarjeta:", col2x, y + 25);
@@ -164,7 +167,18 @@ export async function generateEvidencePdf(data: EvidencePdfData): Promise<void> 
     doc.text(`${data.cardBrand.toUpperCase()} ····${data.cardLast4}`, col2x + 18, y + 25);
   }
 
-  y += 40;
+  if (data.description) {
+    doc.setFont("helvetica", "bold");
+    doc.text("Producto:", col1x, y + 25);
+    doc.setFont("helvetica", "normal");
+    const descLines = doc.splitTextToSize(data.description, contentW - 30);
+    doc.text(descLines[0] || "—", col1x + 24, y + 25);
+    if (descLines[1]) {
+      doc.text(descLines[1], col1x + 24, y + 31);
+    }
+  }
+
+  y += txBoxH + 10;
 
   // ── Evidencia de Identidad ───────────────────────────────────────────────────
   doc.setTextColor(30, 41, 59);
@@ -172,25 +186,24 @@ export async function generateEvidencePdf(data: EvidencePdfData): Promise<void> 
   doc.setFont("helvetica", "bold");
   doc.text("EVIDENCIA DE IDENTIDAD", margin, y + 6);
 
-  // Línea separadora
   doc.setDrawColor(16, 185, 129);
   doc.setLineWidth(0.8);
   doc.line(margin, y + 9, pageW - margin, y + 9);
 
   y += 16;
 
-  // Cargar imágenes en paralelo
+  // Cargar imágenes en paralelo usando el proxy del servidor
   const [selfieB64, signatureB64, idB64] = await Promise.all([
-    data.selfieUrl ? loadImageAsBase64(data.selfieUrl) : Promise.resolve(null),
-    data.signatureUrl ? loadImageAsBase64(data.signatureUrl) : Promise.resolve(null),
-    data.idDocumentUrl ? loadImageAsBase64(data.idDocumentUrl) : Promise.resolve(null),
+    data.selfieUrl ? loadImageViaProxy(data.selfieUrl) : Promise.resolve(null),
+    data.signatureUrl ? loadImageViaProxy(data.signatureUrl) : Promise.resolve(null),
+    data.idDocumentUrl ? loadImageViaProxy(data.idDocumentUrl) : Promise.resolve(null),
   ]);
 
   const imgW = (contentW - 12) / 3;
   const imgH = 52;
   const imgY = y + 10;
 
-  // Selfie
+  // ── Selfie ──
   doc.setFillColor(248, 250, 252);
   doc.roundedRect(margin, y, imgW, imgH + 18, 3, 3, "F");
   doc.setDrawColor(203, 213, 225);
@@ -204,7 +217,8 @@ export async function generateEvidencePdf(data: EvidencePdfData): Promise<void> 
 
   if (selfieB64) {
     try {
-      doc.addImage(selfieB64, "JPEG", margin + 2, imgY, imgW - 4, imgH - 4, undefined, "FAST");
+      const imgType = selfieB64.includes("image/png") ? "PNG" : "JPEG";
+      doc.addImage(selfieB64, imgType, margin + 2, imgY, imgW - 4, imgH - 4, undefined, "FAST");
     } catch {
       doc.setFontSize(7);
       doc.setTextColor(148, 163, 184);
@@ -216,7 +230,6 @@ export async function generateEvidencePdf(data: EvidencePdfData): Promise<void> 
     doc.text("No disponible", margin + imgW / 2, imgY + imgH / 2, { align: "center" });
   }
 
-  // Score de verificación
   if (data.faceMatchScore) {
     doc.setFontSize(7);
     doc.setFont("helvetica", "bold");
@@ -224,7 +237,7 @@ export async function generateEvidencePdf(data: EvidencePdfData): Promise<void> 
     doc.text(`✓ ${Number(data.faceMatchScore).toFixed(1)}% match`, margin + imgW / 2, y + imgH + 13, { align: "center" });
   }
 
-  // Firma
+  // ── Firma ──
   const sigX = margin + imgW + 6;
   doc.setFillColor(248, 250, 252);
   doc.roundedRect(sigX, y, imgW, imgH + 18, 3, 3, "F");
@@ -238,7 +251,8 @@ export async function generateEvidencePdf(data: EvidencePdfData): Promise<void> 
 
   if (signatureB64) {
     try {
-      doc.addImage(signatureB64, "PNG", sigX + 2, imgY, imgW - 4, imgH - 4, undefined, "FAST");
+      const imgType = signatureB64.includes("image/png") ? "PNG" : "JPEG";
+      doc.addImage(signatureB64, imgType, sigX + 2, imgY, imgW - 4, imgH - 4, undefined, "FAST");
     } catch {
       doc.setFontSize(7);
       doc.setTextColor(148, 163, 184);
@@ -255,7 +269,7 @@ export async function generateEvidencePdf(data: EvidencePdfData): Promise<void> 
   doc.setTextColor(100, 116, 139);
   doc.text("Firmado digitalmente", sigX + imgW / 2, y + imgH + 13, { align: "center" });
 
-  // ID / Identificación
+  // ── Identificación ──
   const idX = margin + (imgW + 6) * 2;
   doc.setFillColor(248, 250, 252);
   doc.roundedRect(idX, y, imgW, imgH + 18, 3, 3, "F");
@@ -269,7 +283,8 @@ export async function generateEvidencePdf(data: EvidencePdfData): Promise<void> 
 
   if (idB64) {
     try {
-      doc.addImage(idB64, "JPEG", idX + 2, imgY, imgW - 4, imgH - 4, undefined, "FAST");
+      const imgType = idB64.includes("image/png") ? "PNG" : "JPEG";
+      doc.addImage(idB64, imgType, idX + 2, imgY, imgW - 4, imgH - 4, undefined, "FAST");
     } catch {
       doc.setFontSize(7);
       doc.setTextColor(148, 163, 184);
@@ -289,7 +304,7 @@ export async function generateEvidencePdf(data: EvidencePdfData): Promise<void> 
   y += imgH + 30;
 
   // ── Declaración legal ────────────────────────────────────────────────────────
-  doc.setFillColor(254, 252, 232); // light yellow
+  doc.setFillColor(254, 252, 232);
   doc.roundedRect(margin, y, contentW, 28, 3, 3, "F");
   doc.setDrawColor(253, 224, 71);
   doc.setLineWidth(0.3);
@@ -303,7 +318,8 @@ export async function generateEvidencePdf(data: EvidencePdfData): Promise<void> 
   doc.setFont("helvetica", "normal");
   doc.setFontSize(7.5);
   doc.setTextColor(92, 60, 15);
-  const legalText = `Este documento certifica que el cliente ${data.payerName} realizó el pago de ${formatCurrency(data.amount, data.currency || "MXN")} el ${formatDate(data.createdAt)}. La identidad fue verificada mediante selfie, firma digital y documento de identidad oficial. Este expediente puede ser utilizado como evidencia ante contracargos o disputas.`;
+  const productStr = data.description ? ` por concepto de "${data.description}"` : "";
+  const legalText = `Este documento certifica que el cliente ${data.payerName} realizó el pago de ${formatCurrency(data.amount, data.currency || "MXN")}${productStr} el ${formatDate(data.createdAt)}. La identidad fue verificada mediante selfie, firma digital y documento de identidad oficial. Este expediente puede ser utilizado como evidencia ante contracargos o disputas.`;
   const legalLines = doc.splitTextToSize(legalText, contentW - 12);
   doc.text(legalLines, margin + 6, y + 14);
 

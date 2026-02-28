@@ -49,6 +49,29 @@ async function startServer() {
   // OAuth callback under /api/oauth/callback
   registerOAuthRoutes(app);
 
+  // Image proxy: permite al frontend cargar imágenes de S3 sin bloqueo CORS
+  // Solo permite URLs de dominios de confianza (S3/CDN de Manus)
+  app.get("/api/image-proxy", async (req, res) => {
+    try {
+      const url = req.query.url as string;
+      if (!url) return res.status(400).json({ error: "Missing url" });
+      // Validar que la URL sea de un dominio permitido
+      const allowedDomains = ["s3.amazonaws.com", "manus.space", "manus.computer", "amazonaws.com", "cloudfront.net"];
+      const urlObj = new URL(url);
+      const isAllowed = allowedDomains.some(d => urlObj.hostname.endsWith(d));
+      if (!isAllowed) return res.status(403).json({ error: "Domain not allowed" });
+      const response = await fetch(url);
+      if (!response.ok) return res.status(response.status).json({ error: "Failed to fetch image" });
+      const contentType = response.headers.get("content-type") || "image/jpeg";
+      const buffer = await response.arrayBuffer();
+      res.set("Content-Type", contentType);
+      res.set("Cache-Control", "private, max-age=3600");
+      res.send(Buffer.from(buffer));
+    } catch (err) {
+      res.status(500).json({ error: "Proxy error" });
+    }
+  });
+
   // tRPC API
   app.use(
     "/api/trpc",
