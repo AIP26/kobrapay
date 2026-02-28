@@ -49,6 +49,10 @@ import {
   getCommissionSummaryByAgent,
   markCommissionsAsPaid,
   linkAgentToClient,
+  upsertClientRecord,
+  getClientRecords,
+  getClientRecordById,
+  getTransactionsByPayerEmail,
 } from "./db";
 import { COOKIE_NAME } from "@shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
@@ -674,6 +678,27 @@ export const appRouter = router({
             console.error("[Customers] Error al registrar cliente:", err);
           }
 
+          // Registrar/actualizar expediente del cliente
+          try {
+            if (paymentIntent.metadata.payerEmail) {
+              const txsFull = await getTransactionsByUser(link.userId);
+              const txFull = txsFull.find((t) => t.stripePaymentIntentId === input.paymentIntentId);
+              await upsertClientRecord(link.userId, {
+                payerEmail: paymentIntent.metadata.payerEmail,
+                payerName: paymentIntent.metadata.payerName || undefined,
+                payerPhone: paymentIntent.metadata.payerPhone || undefined,
+                selfieUrl: txFull?.selfieUrl || undefined,
+                signatureUrl: txFull?.signatureUrl || undefined,
+                idDocumentUrl: txFull?.idDocumentUrl || undefined,
+                faceMatchScore: txFull?.faceMatchScore ? parseFloat(String(txFull.faceMatchScore)) : undefined,
+                selfieVerified: txFull?.selfieVerified ?? false,
+                amount: parseFloat(String(link.amount)),
+              });
+            }
+          } catch (err) {
+            console.error("[ClientRecords] Error al registrar expediente:", err);
+          }
+
           // Enviar recibo profesional por email
           try {
             if (paymentIntent.metadata.payerEmail) {
@@ -1216,6 +1241,37 @@ export const appRouter = router({
         if (!ctx.isSuperAdmin) throw new TRPCError({ code: "FORBIDDEN" });
         await linkAgentToClient(input.agentId, input.clientUserId);
         return { success: true };
+      }),
+  }),
+
+  // ─── Expedientes de Clientes ─────────────────────────────────────────────────
+  clientRecords: router({
+    list: protectedProcedure
+      .input(z.object({ search: z.string().optional() }).optional())
+      .query(async ({ ctx, input }) => {
+        return getClientRecords(ctx.user.id, input?.search);
+      }),
+
+    detail: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .query(async ({ ctx, input }) => {
+        const record = await getClientRecordById(ctx.user.id, input.id);
+        if (!record) throw new TRPCError({ code: "NOT_FOUND", message: "Expediente no encontrado" });
+        const txHistory = await getTransactionsByPayerEmail(ctx.user.id, record.payerEmail);
+        return { record, transactions: txHistory };
+      }),
+
+    searchByTx: protectedProcedure
+      .input(z.object({ operationNumber: z.string().min(1) }))
+      .query(async ({ ctx, input }) => {
+        // Buscar transacción por número de operación y devolver el expediente del pagador
+        const allTx = await getTransactionsByUserFiltered(ctx.user.id, { search: input.operationNumber });
+        const tx = allTx[0];
+        if (!tx || !tx.payerEmail) throw new TRPCError({ code: "NOT_FOUND", message: "Transacción no encontrada" });
+        const records = await getClientRecords(ctx.user.id, tx.payerEmail);
+        const record = records[0];
+        if (!record) throw new TRPCError({ code: "NOT_FOUND", message: "Expediente no encontrado para esta transacción" });
+        return record;
       }),
   }),
 });

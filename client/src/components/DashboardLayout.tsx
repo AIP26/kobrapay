@@ -25,6 +25,7 @@ import {
   UserCog,
   Handshake,
   UserPlus,
+  FolderOpen,
 } from "lucide-react";
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
@@ -43,6 +44,7 @@ const navItems = [
   { href: "/dashboard/recurring", icon: RefreshCw, label: "Cobros Recurrentes", section: "main" },
   { href: "/dashboard/chargebacks", icon: AlertTriangle, label: "Aclaraciones", section: "main" },
   { href: "/dashboard/payers", icon: Users, label: "Mis Pagadores", section: "main" },
+  { href: "/dashboard/expedientes", icon: FolderOpen, label: "Expedientes", section: "main" },
   { href: "/dashboard/staff", icon: UserCheck, label: "Colaboradores", section: "main" },
   { href: "/dashboard/invoices", icon: FileText, label: "Mis Facturas", section: "main" },
   { href: "/dashboard/widget", icon: Code2, label: "Widget de Pago", section: "main" },

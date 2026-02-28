@@ -365,3 +365,27 @@ export const agentReferrals = mysqlTable("agent_referrals", {
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 export type AgentReferral = typeof agentReferrals.$inferSelect;
+
+// ─── Expedientes de Clientes ──────────────────────────────────────────────────
+// Un expediente se crea/actualiza automáticamente cada vez que un cliente paga.
+// Agrupa toda la evidencia (selfie, firma, ID) y el historial de transacciones.
+export const clientRecords = mysqlTable("client_records", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),          // vendedor dueño del expediente
+  payerEmail: varchar("payerEmail", { length: 320 }).notNull(),
+  payerName: varchar("payerName", { length: 255 }),
+  payerPhone: varchar("payerPhone", { length: 32 }),
+  // Evidencia más reciente
+  latestSelfieUrl: text("latestSelfieUrl"),
+  latestSignatureUrl: text("latestSignatureUrl"),
+  latestIdDocumentUrl: text("latestIdDocumentUrl"),
+  latestFaceMatchScore: decimal("latestFaceMatchScore", { precision: 5, scale: 2 }),
+  selfieVerified: boolean("selfieVerified").default(false).notNull(),
+  // Estadísticas
+  totalTransactions: int("totalTransactions").default(0).notNull(),
+  totalAmountPaid: decimal("totalAmountPaid", { precision: 14, scale: 2 }).default("0").notNull(),
+  firstSeenAt: timestamp("firstSeenAt").defaultNow().notNull(),
+  lastSeenAt: timestamp("lastSeenAt").defaultNow().onUpdateNow().notNull(),
+});
+export type ClientRecord = typeof clientRecords.$inferSelect;
+export type InsertClientRecord = typeof clientRecords.$inferInsert;

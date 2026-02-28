@@ -28,6 +28,8 @@ import {
   salesAgents,
   agentCommissions,
   agentReferrals,
+  clientRecords,
+  ClientRecord,
 } from "../drizzle/schema";
 import { ENV } from "./_core/env";
 
@@ -693,4 +695,121 @@ export async function getAgentByClientUserId(clientUserId: number) {
   const result = await db.select({ agentId: agentReferrals.agentId }).from(agentReferrals).where(eq(agentReferrals.clientUserId, clientUserId)).limit(1);
   if (!result[0]) return undefined;
   return getSalesAgentById(result[0].agentId);
+}
+
+// ─── Expedientes de Clientes ──────────────────────────────────────────────────
+export async function upsertClientRecord(
+  userId: number,
+  tx: {
+    payerEmail: string;
+    payerName?: string;
+    payerPhone?: string;
+    selfieUrl?: string;
+    signatureUrl?: string;
+    idDocumentUrl?: string;
+    faceMatchScore?: number;
+    selfieVerified?: boolean;
+    amount: number;
+  }
+) {
+  const db = await getDb();
+  if (!db) return;
+  const email = tx.payerEmail.toLowerCase().trim();
+
+  const existing = await db
+    .select()
+    .from(clientRecords)
+    .where(and(eq(clientRecords.userId, userId), eq(clientRecords.payerEmail, email)))
+    .limit(1);
+
+  if (existing.length === 0) {
+    // Crear nuevo expediente
+    await db.insert(clientRecords).values({
+      userId,
+      payerEmail: email,
+      payerName: tx.payerName || null,
+      payerPhone: tx.payerPhone || null,
+      latestSelfieUrl: tx.selfieUrl || null,
+      latestSignatureUrl: tx.signatureUrl || null,
+      latestIdDocumentUrl: tx.idDocumentUrl || null,
+      latestFaceMatchScore: tx.faceMatchScore ? String(tx.faceMatchScore) : null,
+      selfieVerified: tx.selfieVerified ?? false,
+      totalTransactions: 1,
+      totalAmountPaid: String(tx.amount),
+    });
+  } else {
+    // Actualizar expediente existente
+    const rec = existing[0];
+    const newTotal = (rec.totalTransactions || 0) + 1;
+    const newAmount = (parseFloat(String(rec.totalAmountPaid || 0)) + tx.amount).toFixed(2);
+    await db
+      .update(clientRecords)
+      .set({
+        payerName: tx.payerName || rec.payerName,
+        payerPhone: tx.payerPhone || rec.payerPhone,
+        latestSelfieUrl: tx.selfieUrl || rec.latestSelfieUrl,
+        latestSignatureUrl: tx.signatureUrl || rec.latestSignatureUrl,
+        latestIdDocumentUrl: tx.idDocumentUrl || rec.latestIdDocumentUrl,
+        latestFaceMatchScore: tx.faceMatchScore ? String(tx.faceMatchScore) : rec.latestFaceMatchScore,
+        selfieVerified: tx.selfieVerified ?? rec.selfieVerified,
+        totalTransactions: newTotal,
+        totalAmountPaid: newAmount,
+        lastSeenAt: new Date(),
+      })
+      .where(eq(clientRecords.id, rec.id));
+  }
+}
+
+export async function getClientRecords(userId: number, search?: string): Promise<ClientRecord[]> {
+  const db = await getDb();
+  if (!db) return [];
+  if (search && search.trim()) {
+    const term = `%${search.trim()}%`;
+    return db
+      .select()
+      .from(clientRecords)
+      .where(
+        and(
+          eq(clientRecords.userId, userId),
+          or(
+            like(clientRecords.payerName, term),
+            like(clientRecords.payerEmail, term),
+            like(clientRecords.payerPhone, term)
+          )
+        )
+      )
+      .orderBy(desc(clientRecords.lastSeenAt));
+  }
+  return db
+    .select()
+    .from(clientRecords)
+    .where(eq(clientRecords.userId, userId))
+    .orderBy(desc(clientRecords.lastSeenAt));
+}
+
+export async function getClientRecordById(userId: number, id: number): Promise<ClientRecord | undefined> {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db
+    .select()
+    .from(clientRecords)
+    .where(and(eq(clientRecords.userId, userId), eq(clientRecords.id, id)))
+    .limit(1);
+  return result[0];
+}
+
+export async function getTransactionsByPayerEmail(userId: number, payerEmail: string) {
+  const db = await getDb();
+  if (!db) return [];
+  return db
+    .select()
+    .from(transactions)
+    .where(
+      and(
+        eq(transactions.userId, userId),
+        eq(transactions.payerEmail, payerEmail.toLowerCase().trim()),
+        eq(transactions.status, "succeeded")
+      )
+    )
+    .orderBy(desc(transactions.createdAt));
 }
