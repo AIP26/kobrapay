@@ -749,8 +749,11 @@ export async function upsertClientRecord(
   } else {
     // Actualizar expediente existente
     const rec = existing[0];
-    const newTotal = (rec.totalTransactions || 0) + 1;
-    const newAmount = (parseFloat(String(rec.totalAmountPaid || 0)) + tx.amount).toFixed(2);
+    // Solo sumar al contador si es un pago real (amount > 0)
+    const newTotal = tx.amount > 0 ? (rec.totalTransactions || 0) + 1 : (rec.totalTransactions || 0);
+    const newAmount = tx.amount > 0
+      ? (parseFloat(String(rec.totalAmountPaid || 0)) + tx.amount).toFixed(2)
+      : rec.totalAmountPaid;
     await db
       .update(clientRecords)
       .set({
@@ -762,7 +765,7 @@ export async function upsertClientRecord(
         latestFaceMatchScore: tx.faceMatchScore ? String(tx.faceMatchScore) : rec.latestFaceMatchScore,
         selfieVerified: tx.selfieVerified ?? rec.selfieVerified,
         totalTransactions: newTotal,
-        totalAmountPaid: newAmount,
+        totalAmountPaid: String(newAmount),
         lastSeenAt: new Date(),
       })
       .where(eq(clientRecords.id, rec.id));

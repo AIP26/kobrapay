@@ -25,6 +25,7 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import { useState, useMemo } from "react";
+import { generateEvidencePdf } from "@/lib/generateEvidencePdf";
 import { toast } from "sonner";
 
 function formatCurrency(amount: number | string, currency = "MXN") {
@@ -199,6 +200,38 @@ function TransactionDetailModal({
   const failureDetails = tx.status === "failed" ? getFailureDetails(tx.errorMessage) : null;
   const operationNumber = generateOperationNumber(tx);
   const description = tx.metadata ? (() => { try { return JSON.parse(tx.metadata).description || ""; } catch { return ""; } })() : "";
+  const [isGeneratingEvidencePdf, setIsGeneratingEvidencePdf] = useState(false);
+
+  const handleDownloadEvidencePdf = async () => {
+    if (!tx.selfieUrl && !tx.signatureUrl && !tx.idDocumentUrl) {
+      toast.error("Esta transacción no tiene evidencia de identidad");
+      return;
+    }
+    setIsGeneratingEvidencePdf(true);
+    try {
+      await generateEvidencePdf({
+        payerName: tx.payerName || "Cliente",
+        payerEmail: tx.payerEmail || "",
+        payerPhone: tx.payerPhone,
+        operationNumber,
+        amount: tx.amount,
+        currency: tx.currency,
+        createdAt: tx.createdAt,
+        description,
+        cardBrand: tx.cardBrand,
+        cardLast4: tx.cardLast4,
+        selfieUrl: tx.selfieUrl,
+        signatureUrl: tx.signatureUrl,
+        idDocumentUrl: tx.idDocumentUrl,
+        faceMatchScore: tx.faceMatchScore,
+        selfieVerified: tx.selfieVerified,
+      });
+    } catch {
+      toast.error("Error al generar el PDF de evidencia");
+    } finally {
+      setIsGeneratingEvidencePdf(false);
+    }
+  };
 
   const handleDownloadReceipt = () => {
     if (tx.status !== "succeeded") {
@@ -520,19 +553,31 @@ function TransactionDetailModal({
           )}
 
           {/* Botones de acción */}
-          <div className="flex gap-3 pt-2">
-            <Button variant="outline" onClick={onClose} className="flex-1">
-              Cerrar
-            </Button>
-            {tx.status === "succeeded" && (
+          <div className="flex flex-col gap-2 pt-2">
+            {tx.status === "succeeded" && (tx.selfieUrl || tx.signatureUrl || tx.idDocumentUrl) && (
               <Button
-                onClick={handleDownloadReceipt}
-                className="flex-1 bg-green-600 hover:bg-green-700 text-white"
+                onClick={handleDownloadEvidencePdf}
+                disabled={isGeneratingEvidencePdf}
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white"
               >
-                <Download className="w-4 h-4 mr-2" />
-                Descargar comprobante
+                <ShieldCheck className="w-4 h-4 mr-2" />
+                {isGeneratingEvidencePdf ? "Generando PDF..." : "Descargar evidencia (PDF)"}
               </Button>
             )}
+            <div className="flex gap-3">
+              <Button variant="outline" onClick={onClose} className="flex-1">
+                Cerrar
+              </Button>
+              {tx.status === "succeeded" && (
+                <Button
+                  onClick={handleDownloadReceipt}
+                  className="flex-1 bg-green-600 hover:bg-green-700 text-white"
+                >
+                  <Download className="w-4 h-4 mr-2" />
+                  Comprobante
+                </Button>
+              )}
+            </div>
           </div>
         </div>
       </DialogContent>

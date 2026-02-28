@@ -1,4 +1,5 @@
-import { useState } from "react";
+
+import React, { useState } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { trpc } from "@/lib/trpc";
 import { Card, CardContent } from "@/components/ui/card";
@@ -25,7 +26,9 @@ import {
   FolderOpen,
   Hash,
   RefreshCw,
+  Download,
 } from "lucide-react";
+import { generateEvidencePdf } from "@/lib/generateEvidencePdf";
 
 function formatCurrency(amount: number | string, currency = "MXN") {
   return new Intl.NumberFormat("es-MX", { style: "currency", currency }).format(Number(amount));
@@ -136,6 +139,38 @@ function ExpedienteModal({
 }) {
   const { data, isLoading } = trpc.clientRecords.detail.useQuery({ id: recordId });
   const utils = trpc.useUtils();
+  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
+
+  const handleDownloadPdf = async () => {
+    if (!data) return;
+    setIsGeneratingPdf(true);
+    try {
+      // Usar la transacción más reciente con evidencia para el PDF
+      const latestTx = data.transactions[0];
+      await generateEvidencePdf({
+        payerName: data.record.payerName || "Cliente",
+        payerEmail: data.record.payerEmail,
+        payerPhone: data.record.payerPhone,
+        operationNumber: latestTx?.operationNumber,
+        amount: latestTx?.amount || data.record.totalAmountPaid,
+        currency: latestTx?.currency || "MXN",
+        createdAt: latestTx?.createdAt || data.record.firstSeenAt,
+        description: (latestTx as unknown as { description?: string })?.description,
+        cardBrand: latestTx?.cardBrand,
+        cardLast4: latestTx?.cardLast4,
+        shippingAddress: (latestTx as unknown as { shippingAddress?: string })?.shippingAddress,
+        selfieUrl: data.record.latestSelfieUrl,
+        signatureUrl: data.record.latestSignatureUrl,
+        idDocumentUrl: data.record.latestIdDocumentUrl,
+        faceMatchScore: data.record.latestFaceMatchScore,
+        selfieVerified: data.record.selfieVerified,
+      });
+    } catch (err) {
+      toast.error("Error al generar el PDF");
+    } finally {
+      setIsGeneratingPdf(false);
+    }
+  };
 
   // Sincronizar expediente: tomar datos de la última transacción
   const syncMutation = trpc.clientRecords.syncFromTransactions.useMutation({
@@ -173,16 +208,28 @@ function ExpedienteModal({
                 <h3 className="font-semibold text-foreground text-sm flex items-center gap-2">
                   <User className="w-4 h-4 text-primary" /> Datos del Cliente
                 </h3>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="text-xs gap-1 h-7"
-                  onClick={() => syncMutation.mutate({ id: recordId })}
-                  disabled={syncMutation.isPending}
-                >
-                  <RefreshCw className={`w-3 h-3 ${syncMutation.isPending ? "animate-spin" : ""}`} />
-                  Actualizar evidencia
-                </Button>
+                <div className="flex gap-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="text-xs gap-1 h-7"
+                    onClick={() => syncMutation.mutate({ id: recordId })}
+                    disabled={syncMutation.isPending}
+                  >
+                    <RefreshCw className={`w-3 h-3 ${syncMutation.isPending ? "animate-spin" : ""}`} />
+                    Actualizar
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="default"
+                    className="text-xs gap-1 h-7 bg-green-600 hover:bg-green-700"
+                    onClick={handleDownloadPdf}
+                    disabled={isGeneratingPdf}
+                  >
+                    <Download className={`w-3 h-3 ${isGeneratingPdf ? "animate-bounce" : ""}`} />
+                    {isGeneratingPdf ? "Generando..." : "Descargar PDF"}
+                  </Button>
+                </div>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
                 <div className="flex items-center gap-2">
