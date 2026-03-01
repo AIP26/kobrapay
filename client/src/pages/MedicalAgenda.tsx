@@ -799,6 +799,17 @@ export default function MedicalAgenda() {
     onSuccess: (r) => toast.success(`Se enviaron ${r.sent} emails de cumpleaños`),
     onError: (e) => toast.error(`Error: ${e.message}`),
   });
+  const sendReminder = trpc.medical.sendAppointmentReminder.useMutation({
+    onSuccess: (r) => {
+      toast.success('Recordatorio enviado por email al paciente');
+      if (r.whatsappLink) window.open(r.whatsappLink, '_blank');
+    },
+    onError: (e) => toast.error(`Error: ${e.message}`),
+  });
+  const sendPostAlert = trpc.medical.sendPostAppointmentAlert.useMutation({
+    onSuccess: () => toast.success('Alerta enviada. Revisa las notificaciones para marcar la cita.'),
+    onError: (e) => toast.error(`Error: ${e.message}`),
+  });
 
   const filteredPatients = patients.filter((p) =>
     `${p.firstName} ${p.lastName} ${p.email} ${p.phone}`.toLowerCase().includes(search.toLowerCase())
@@ -1015,6 +1026,14 @@ export default function MedicalAgenda() {
                             <span className={`text-xs px-2 py-1 rounded border ${st.color}`}>{st.label}</span>
                             {appt.status === "scheduled" && (
                               <>
+                                <Button size="sm" variant="outline" className="text-xs border-blue-600/50 text-blue-400 hover:bg-blue-900/30"
+                                  onClick={() => sendReminder.mutate({ appointmentId: appt.id })}>
+                                  📧 Recordar
+                                </Button>
+                                <Button size="sm" variant="outline" className="text-xs border-yellow-600/50 text-yellow-400 hover:bg-yellow-900/30"
+                                  onClick={() => sendPostAlert.mutate({ appointmentId: appt.id })}>
+                                  ⏰ Alerta
+                                </Button>
                                 <Button size="sm" variant="outline" className="text-xs border-gray-600 text-gray-200 hover:bg-gray-700"
                                   onClick={() => setEditingAppt(appt)}>
                                   ✏ Reagendar
@@ -1075,10 +1094,22 @@ export default function MedicalAgenda() {
                           <div className="text-xs text-gray-400">{appt.durationMinutes} min</div>
                           <div className="flex gap-2 flex-wrap">
                             <Button
+                              size="sm" variant="outline" className="text-xs border-blue-600/50 text-blue-400 hover:bg-blue-900/30"
+                              onClick={() => sendReminder.mutate({ appointmentId: appt.id })}
+                            >
+                              📧 Recordar
+                            </Button>
+                            <Button
                               size="sm" variant="outline" className="text-xs border-gray-600 text-gray-200 hover:bg-gray-700"
                               onClick={() => setEditingAppt(appt)}
                             >
                               ✏ Reagendar
+                            </Button>
+                            <Button
+                              size="sm" variant="outline" className="text-xs border-green-600/50 text-green-400 hover:bg-green-900/30"
+                              onClick={() => updateAppt.mutate({ id: appt.id, status: "completed" })}
+                            >
+                              ✓ Completar
                             </Button>
                             <Button
                               size="sm" variant="outline" className="text-xs border-red-600/50 text-red-400 hover:bg-red-900/30"

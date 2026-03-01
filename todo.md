@@ -510,3 +510,13 @@
 - [x] Sistema de emails de cumpleaños para empleados (de KobraPay y de la empresa)
 - [x] Banner de cumpleaños del día en la Agenda Médica con botones de envío
 - [x] Campo birthDate en tabla employee_records (migración aplicada)
+
+## Fase 23 - Mejoras Agenda Médica (continuación)
+- [ ] Campo birthDate visible en formulario de Expedientes RH
+- [ ] Recordatorio al paciente 24h antes de su cita (email + enlace WhatsApp)
+- [ ] Recordatorio post-cita al admin para marcar como completada o cancelada
+
+## Fase 24 - Correcciones urgentes
+- [x] Corregir acceso restringido en página de Registros para super-admin (DPERUYEROS)
+- [x] Agregar procedimientos sendAppointmentReminder y sendPostAppointmentAlert en el router
+- [x] Actualizar MedicalAgenda con botones de recordatorio 24h y alerta post-cita

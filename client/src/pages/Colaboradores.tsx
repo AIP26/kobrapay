@@ -141,6 +141,7 @@ function EmployeeFormModal({
     rfc: employee?.rfc ?? "",
     address: employee?.address ?? "",
     startDate: employee?.startDate ? new Date(employee.startDate).toISOString().split("T")[0] : "",
+    birthDate: (employee as any)?.birthDate ?? "",
     notes: employee?.notes ?? "",
     employeeNumber: "",
   });
@@ -248,6 +249,11 @@ function EmployeeFormModal({
           <div>
             <Label>Fecha de Ingreso</Label>
             <Input type="date" value={form.startDate} onChange={e => set("startDate", e.target.value)} />
+          </div>
+          <div>
+            <Label>Fecha de Nacimiento 🎂</Label>
+            <Input type="date" value={(form as any).birthDate ?? ""} onChange={e => set("birthDate", e.target.value)} />
+            <p className="text-xs text-muted-foreground mt-1">Para felicitación automática en su cumpleaños.</p>
           </div>
           <div className="md:col-span-2">
             <Label>Domicilio</Label>

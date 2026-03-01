@@ -3057,6 +3057,57 @@ export const appRouter = router({
         }
         return { sent };
       }),
+
+    // ─── Recordatorio 24h antes al paciente ───────────────────────────────────
+    sendAppointmentReminder: protectedProcedure
+      .input(z.object({ appointmentId: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        const { getMedicalAppointmentById, getMedicalPatientById } = await import('./db');
+        const { sendAppointmentEmail } = await import('./_core/email');
+        const appt = await getMedicalAppointmentById(input.appointmentId, ctx.user.id);
+        if (!appt) throw new TRPCError({ code: 'NOT_FOUND', message: 'Cita no encontrada' });
+        if (appt.status === 'cancelled') throw new TRPCError({ code: 'BAD_REQUEST', message: 'La cita est\u00e1 cancelada' });
+        const patient = await getMedicalPatientById(appt.patientId, ctx.user.id);
+        if (!patient?.email) throw new TRPCError({ code: 'BAD_REQUEST', message: 'El paciente no tiene correo registrado' });
+        const vendorSett = await getVendorSettings(ctx.user.id);
+        const businessName = vendorSett?.businessName || ctx.user.name || 'Consultorio';
+        const apptDate = new Date(appt.appointmentDate);
+        const timeStr = apptDate.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit', hour12: true, timeZone: 'America/Mexico_City' });
+        const patientName = [patient.firstName, patient.lastName].filter(Boolean).join(' ');
+        const sent = await sendAppointmentEmail({
+          patientEmail: patient.email,
+          patientName,
+          doctorName: ctx.user.name || 'Su m\u00e9dico',
+          businessName,
+          appointmentDate: appt.appointmentDate.toISOString(),
+          appointmentTime: timeStr,
+          reason: appt.title,
+          notes: appt.notes || undefined,
+          action: 'updated',
+        });
+        const dateFormatted = apptDate.toLocaleDateString('es-MX', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+        const waMsg = encodeURIComponent(`Hola ${patientName}, te recordamos tu cita en ${businessName} el ${dateFormatted} a las ${timeStr}. Por favor confirma tu asistencia.`);
+        const waLink = patient.phone ? `https://wa.me/${patient.phone.replace(/\D/g, '')}?text=${waMsg}` : null;
+        return { sent, whatsappLink: waLink, patientPhone: patient.phone };
+      }),
+
+    // ─── Alerta post-cita al admin ────────────────────────────────────────────
+    sendPostAppointmentAlert: protectedProcedure
+      .input(z.object({ appointmentId: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        const { getMedicalAppointmentById, getMedicalPatientById } = await import('./db');
+        const appt = await getMedicalAppointmentById(input.appointmentId, ctx.user.id);
+        if (!appt) throw new TRPCError({ code: 'NOT_FOUND', message: 'Cita no encontrada' });
+        const patient = await getMedicalPatientById(appt.patientId, ctx.user.id);
+        const patientName = patient ? [patient.firstName, patient.lastName].filter(Boolean).join(' ') : 'Paciente';
+        const apptDate = new Date(appt.appointmentDate);
+        const timeStr = apptDate.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit', hour12: true });
+        await notifyOwner({
+          title: `\u23f0 Cita terminada: ${patientName}`,
+          content: `La cita de ${patientName} (${appt.title}) programada a las ${timeStr} ya debi\u00f3 concluir. Marca la cita como Completada o Cancelada en la Agenda M\u00e9dica.`,
+        });
+        return { sent: true };
+      }),
   }),
 });
 export type AppRouter = typeof appRouter;

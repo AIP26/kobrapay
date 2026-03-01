@@ -1317,6 +1317,14 @@ export async function getMedicalAppointmentsByOwner(ownerId: number): Promise<Me
     .orderBy(desc(medicalAppointments.appointmentDate));
 }
 
+export async function getMedicalAppointmentById(id: number, ownerId: number): Promise<MedicalAppointment | null> {
+  const db = await getDb();
+  if (!db) return null;
+  const rows = await db.select().from(medicalAppointments)
+    .where(and(eq(medicalAppointments.id, id), eq(medicalAppointments.ownerId, ownerId)))
+    .limit(1);
+  return rows[0] ?? null;
+}
 export async function getMedicalAppointmentsByPatient(patientId: number, ownerId: number): Promise<MedicalAppointment[]> {
   const db = await getDb();
   if (!db) return [];

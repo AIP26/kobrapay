@@ -101,7 +101,7 @@ type Registration = {
 type Permissions = Record<string, boolean>;
 
 export default function Registrations() {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState<"all" | "pending" | "active" | "blocked">("pending");
   const [selectedReg, setSelectedReg] = useState<Registration | null>(null);
@@ -138,7 +138,7 @@ export default function Registrations() {
     onError: (e) => toast.error(e.message),
   });
 
-  const isSuperAdmin = (user as Record<string, unknown>)?.isSuperAdmin;
+  const isSuperAdmin = (user as Record<string, unknown>)?.isSuperAdmin as boolean | undefined;
 
   const filtered = useMemo(() => {
     return (registrations as Registration[]).filter((r) => {
@@ -188,7 +188,21 @@ export default function Registrations() {
     });
   };
 
-  if (!isSuperAdmin) {
+  // Mostrar cargando mientras se verifica la sesión
+  if (authLoading) {
+    return (
+      <DashboardLayout title="Solicitudes de Registro">
+        <div className="flex items-center justify-center py-32">
+          <div className="text-center">
+            <div className="w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+            <p className="text-gray-500 text-sm">Verificando acceso...</p>
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
+  // Solo bloquear si el usuario ya cargó y definitivamente NO es super-admin
+  if (!authLoading && isSuperAdmin === false) {
     return (
       <DashboardLayout title="Solicitudes de Registro">
         <div className="flex items-center justify-center py-32">
