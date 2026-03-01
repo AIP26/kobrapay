@@ -2996,6 +2996,67 @@ export const appRouter = router({
         const { url } = await storagePut(key, buffer, input.fileType);
         return { url, key };
       }),
+    // ─── Cumpleaños de hoy ────────────────────────────────────────────────────
+    todayBirthdays: protectedProcedure
+      .query(async ({ ctx }) => {
+        const today = new Date();
+        const mm = String(today.getMonth() + 1).padStart(2, '0');
+        const dd = String(today.getDate()).padStart(2, '0');
+        const { getMedicalPatientsByOwner, getEmployeeRecordsByOwner: getEmpByOwner } = await import('./db');
+        const [patients, employees] = await Promise.all([
+          getMedicalPatientsByOwner(ctx.user.id),
+          getEmpByOwner(ctx.user.id),
+        ]);
+        const patientBdays = patients
+          .filter((p: any) => {
+            if (!p.birthDate) return false;
+            const parts = (p.birthDate as string).split('-');
+            return parts.length >= 3 && parts[1] === mm && parts[2] === dd;
+          })
+          .map((p: any) => ({ id: p.id, name: [p.firstName, p.lastName].filter(Boolean).join(' '), email: p.email, type: 'patient' as const }));
+        const employeeBdays = employees
+          .filter((e: any) => {
+            if (!e.birthDate) return false;
+            const parts = (e.birthDate as string).split('-');
+            return parts.length >= 3 && parts[1] === mm && parts[2] === dd;
+          })
+          .map((e: any) => ({ id: e.id, name: e.fullName, email: e.email, type: 'employee' as const }));
+        return { patients: patientBdays, employees: employeeBdays };
+      }),
+    sendBirthdayEmails: protectedProcedure
+      .input(z.object({ type: z.enum(['patients', 'employees']) }))
+      .mutation(async ({ ctx, input }) => {
+        const { sendBirthdayEmail } = await import('./_core/email');
+        const vendorSett = await getVendorSettings(ctx.user.id);
+        const businessName = vendorSett?.businessName || ctx.user.name || 'KobraPay';
+        const today = new Date();
+        const mm = String(today.getMonth() + 1).padStart(2, '0');
+        const dd = String(today.getDate()).padStart(2, '0');
+        let sent = 0;
+        if (input.type === 'patients') {
+          const { getMedicalPatientsByOwner } = await import('./db');
+          const patients = await getMedicalPatientsByOwner(ctx.user.id);
+          for (const p of patients) {
+            if (!p.email || !p.birthDate) continue;
+            const bParts = (p.birthDate as string).split('-');
+            if (bParts.length < 3 || bParts[1] !== mm || bParts[2] !== dd) continue;
+            const name = [p.firstName, p.lastName].filter(Boolean).join(' ');
+            await sendBirthdayEmail({ recipientEmail: p.email, recipientName: name, businessName, senderName: businessName, type: 'patient' });
+            sent++;
+          }
+        } else {
+          const { getEmployeeRecordsByOwner: getEmpByOwner } = await import('./db');
+          const employees = await getEmpByOwner(ctx.user.id);
+          for (const e of employees) {
+            if (!e.email || !e.birthDate) continue;
+            const bParts = (e.birthDate as string).split('-');
+            if (bParts.length < 3 || bParts[1] !== mm || bParts[2] !== dd) continue;
+            await sendBirthdayEmail({ recipientEmail: e.email, recipientName: e.fullName, businessName, senderName: 'KobraPay', type: 'employee' });
+            sent++;
+          }
+        }
+        return { sent };
+      }),
   }),
 });
 export type AppRouter = typeof appRouter;

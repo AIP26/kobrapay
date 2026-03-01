@@ -533,6 +533,7 @@ export const employeeRecords = mysqlTable("employee_records", {
   curp: varchar("curp", { length: 20 }),
   rfc: varchar("rfc", { length: 15 }),
   address: text("address"),
+  birthDate: varchar("birthDate", { length: 16 }),  // YYYY-MM-DD
   startDate: timestamp("startDate"),
   status: varchar("status", { length: 32 }).default("active").notNull(),
   photoUrl: text("photoUrl"),

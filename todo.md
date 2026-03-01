@@ -500,3 +500,13 @@
 
 ## Pendiente para el final (no implementar aún)
 - [ ] Manual de procedimientos completo con imágenes por área (superadmin, admin, empleado)
+
+## Fase 22 - Mejoras Agenda Médica (sesión actual)
+- [x] Corregir colores del panel de paciente (texto visible sobre fondo oscuro)
+- [x] Agregar vista de calendario interactivo (tab Calendario con mini-calendario)
+- [x] Botón Reagendar/Modificar cita en agenda, calendario y panel de paciente
+- [x] Botón Cancelar cita con cambio de estado (no envía recordatorios)
+- [x] Sistema de emails de cumpleaños para pacientes (del consultorio)
+- [x] Sistema de emails de cumpleaños para empleados (de KobraPay y de la empresa)
+- [x] Banner de cumpleaños del día en la Agenda Médica con botones de envío
+- [x] Campo birthDate en tabla employee_records (migración aplicada)

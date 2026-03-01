@@ -599,3 +599,41 @@ export async function sendAppointmentEmail(data: {
     return false;
   }
 }
+
+
+// ─── Birthday Email ───────────────────────────────────────────────────────────
+export async function sendBirthdayEmail(data: {
+  recipientEmail: string;
+  recipientName: string;
+  businessName: string;
+  senderName: string;
+  type: "patient" | "employee";
+}): Promise<boolean> {
+  const resend = getResend();
+  if (!resend) {
+    console.warn("[Email] RESEND_API_KEY no configurada.");
+    return false;
+  }
+  const firstName = data.recipientName.split(" ")[0];
+  const isEmployee = data.type === "employee";
+  const subjectLine = isEmployee
+    ? "Feliz Cumpleanios " + firstName + " - " + data.senderName
+    : "Feliz Cumpleanios " + firstName + " - " + data.businessName;
+  const bodyMsg = isEmployee
+    ? "En este dia especial, todo el equipo de " + data.businessName + " y " + data.senderName + " te desean un maravilloso cumpleanios. Tu dedicacion hace la diferencia cada dia."
+    : "El equipo de " + data.businessName + " te desea un feliz cumpleanios lleno de salud y bienestar.";
+  const html = "<!DOCTYPE html><html lang=\"es\"><head><meta charset=\"UTF-8\"></head><body style=\"margin:0;padding:0;background:#f4f4f5;font-family:Arial,sans-serif\"><table width=\"100%\" style=\"background:#f4f4f5;padding:40px 0\"><tr><td align=\"center\"><table width=\"580\" style=\"background:#fff;border-radius:12px;overflow:hidden\"><tr><td style=\"background:linear-gradient(135deg,#FF6B00,#ff9a3c);padding:36px 40px;text-align:center\"><div style=\"font-size:48px\">&#127874;</div><h1 style=\"margin:0;color:#fff;font-size:26px;font-weight:800\">Feliz Cumpleanios!</h1><p style=\"margin:6px 0 0;color:rgba(255,255,255,0.9)\">" + data.senderName + "</p></td></tr><tr><td style=\"padding:36px 40px\"><p style=\"color:#374151;font-size:16px\">Hola <strong>" + data.recipientName + "</strong>,</p><p style=\"color:#374151;font-size:15px;line-height:1.7\">" + bodyMsg + "</p><div style=\"background:#fff7ed;border-radius:12px;border:2px solid #FF6B00;padding:20px;text-align:center\"><p style=\"margin:0;color:#FF6B00;font-size:24px;font-weight:800\">Que lo disfrutes mucho!</p></div><p style=\"color:#6b7280;font-size:14px;margin-top:20px\">Con carino,<br><strong>" + data.senderName + "</strong></p></td></tr><tr><td style=\"background:#f9fafb;padding:16px 40px;text-align:center\"><p style=\"margin:0;color:#9ca3af;font-size:12px\">Enviado por <strong style=\"color:#FF6B00\">KobraPay</strong></p></td></tr></table></td></tr></table></body></html>";
+  try {
+    const { error } = await resend.emails.send({
+      from: data.senderName + " via KobraPay <" + ENV.fromEmail + ">",
+      to: data.recipientEmail,
+      subject: subjectLine,
+      html,
+    });
+    if (error) { console.error("[Email] Error cumpleanios:", error); return false; }
+    return true;
+  } catch (err) {
+    console.error("[Email] Excepcion cumpleanios:", err);
+    return false;
+  }
+}
