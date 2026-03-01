@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
@@ -9,7 +9,7 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { FileText, Plus, Send, Eye, Copy, CheckCircle, Clock, Archive, Edit, Download, Search, X, ExternalLink } from "lucide-react";
+import { FileText, Plus, Send, Eye, Copy, CheckCircle, Archive, Edit, Download, Search, X, ExternalLink, MessageCircle, Mail } from "lucide-react";
 import jsPDF from "jspdf";
 
 type ContractStatus = "draft" | "sent" | "signed" | "archived";
@@ -55,6 +55,15 @@ type ContractData = {
   curpDocUrl?: string | null;
   createdAt?: Date | string | null;
 };
+
+function formatDuration(months: number): string {
+  if (months === 0) return "Sin plazo fijo";
+  if (months === 1) return "1 mes";
+  if (months < 12) return `${months} meses`;
+  if (months === 12) return "1 año (12 meses)";
+  if (months === 24) return "2 años (24 meses)";
+  return `${months} meses`;
+}
 
 async function generateContractPDF(contract: ContractData) {
   const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
@@ -138,7 +147,7 @@ async function generateContractPDF(contract: ContractData) {
   const clauses = [
     { title: "PRIMERA. OBJETO", text: "KobraPay prestará al Cliente servicios de procesamiento de pagos en línea mediante enlaces de cobro, punto de venta digital, y herramientas de gestión financiera." },
     { title: "SEGUNDA. COMISIÓN", text: `El Cliente acepta una comisión del ${contract.commissionRate}% sobre cada transacción procesada a través de la plataforma. Esta comisión incluye el procesamiento del pago, la gestión de disputas y el soporte técnico.` },
-    ...(Number(contract.contractDurationMonths) > 0 ? [{ title: "TERCERA. VIGENCIA", text: `El presente contrato tendrá una duración de ${contract.contractDurationMonths} meses a partir de la fecha de firma. La terminación anticipada generará una penalización equivalente a 2 meses de comisiones promedio.` }] : []),
+    ...(Number(contract.contractDurationMonths) > 0 ? [{ title: "TERCERA. VIGENCIA", text: `El presente contrato tendrá una duración de ${formatDuration(contract.contractDurationMonths)} a partir de la fecha de firma. La terminación anticipada generará una penalización equivalente a 2 meses de comisiones promedio.` }] : []),
     ...(contract.includeExclusivityClause ? [{ title: "CLÁUSULA DE EXCLUSIVIDAD", text: "Durante la vigencia del contrato, el Cliente se compromete a utilizar únicamente KobraPay como plataforma de procesamiento de pagos digitales para su negocio, absteniéndose de contratar servicios similares con terceros." }] : []),
     { title: "PROTECCIÓN DE DATOS", text: "KobraPay se compromete a proteger los datos personales del Cliente conforme a la Ley Federal de Protección de Datos Personales en Posesión de los Particulares (LFPDPPP) y su Reglamento." },
     { title: "CONFIDENCIALIDAD", text: "Ambas partes se obligan a mantener la confidencialidad de la información intercambiada durante la prestación de los servicios." },
@@ -196,7 +205,6 @@ async function generateContractPDF(contract: ContractData) {
       }
     }
   } else {
-    // Blank signature lines
     const halfW = contentW / 2 - 10;
     doc.line(margin, y + 15, margin + halfW, y + 15);
     addText("KobraPay", margin + halfW / 2 - 10, y + 20, { size: 8, color: [100, 100, 100] });
@@ -221,6 +229,176 @@ async function generateContractPDF(contract: ContractData) {
   doc.save(fileName);
 }
 
+// ─── Contract Preview Modal ───────────────────────────────────────────────────
+function ContractPreviewModal({ contract, onClose }: { contract: ContractData; onClose: () => void }) {
+  const dateStr = contract.createdAt
+    ? new Date(contract.createdAt).toLocaleDateString("es-MX", { day: "numeric", month: "long", year: "numeric" })
+    : new Date().toLocaleDateString("es-MX", { day: "numeric", month: "long", year: "numeric" });
+
+  return (
+    <Dialog open onOpenChange={() => onClose()}>
+      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <FileText className="w-5 h-5 text-cyan-700" />
+            Vista previa del contrato
+          </DialogTitle>
+        </DialogHeader>
+        <div className="bg-white border border-gray-200 rounded-lg p-8 text-sm font-serif" style={{ fontFamily: "Georgia, serif" }}>
+          {/* Header */}
+          <div className="bg-cyan-700 text-white p-4 rounded-t-lg -mx-8 -mt-8 mb-6 text-center">
+            <h1 className="text-xl font-bold tracking-wide">CONTRATO DE SERVICIOS</h1>
+            <p className="text-cyan-200 text-xs mt-1">KobraPay — Plataforma de Procesamiento de Pagos Digitales</p>
+          </div>
+          <div className="flex justify-between items-center mb-6 bg-cyan-50 rounded p-3 text-xs">
+            <span className="font-bold text-cyan-800">Contrato No. KP-{String(contract.id).padStart(5, "0")}</span>
+            <span className="text-gray-600">Fecha: {dateStr}</span>
+          </div>
+
+          {/* Parties */}
+          <h2 className="text-cyan-700 font-bold text-sm uppercase border-b border-cyan-200 pb-1 mb-3">Comparecientes</h2>
+          <p className="mb-2"><strong>EL PRESTADOR DE SERVICIOS:</strong> KobraPay, plataforma de procesamiento de pagos digitales, con domicilio en Ciudad de México.</p>
+          <p className="mb-1"><strong>EL CLIENTE:</strong></p>
+          <ul className="ml-4 mb-4 space-y-0.5 text-gray-700">
+            <li>Nombre: {contract.clientName}</li>
+            {contract.businessName && <li>Negocio: {contract.businessName}</li>}
+            {contract.clientRfc && <li>RFC: {contract.clientRfc}</li>}
+            {contract.clientCurp && <li>CURP: {contract.clientCurp}</li>}
+            {contract.clientIneNumber && <li>INE/Pasaporte: {contract.clientIneNumber}</li>}
+            <li>Email: {contract.clientEmail}</li>
+            {contract.clientPhone && <li>Teléfono: {contract.clientPhone}</li>}
+            {contract.clientAddress && <li>Domicilio: {contract.clientAddress}</li>}
+          </ul>
+
+          {/* Clauses */}
+          <h2 className="text-cyan-700 font-bold text-sm uppercase border-b border-cyan-200 pb-1 mb-3">Cláusulas del Contrato</h2>
+          <div className="space-y-3 text-gray-800">
+            <div>
+              <p className="font-bold text-cyan-700 text-xs">PRIMERA. OBJETO</p>
+              <p>KobraPay prestará al Cliente servicios de procesamiento de pagos en línea mediante enlaces de cobro, punto de venta digital, y herramientas de gestión financiera.</p>
+            </div>
+            <div>
+              <p className="font-bold text-cyan-700 text-xs">SEGUNDA. COMISIÓN</p>
+              <p>El Cliente acepta una comisión del <strong>{contract.commissionRate}%</strong> sobre cada transacción procesada a través de la plataforma. Esta comisión incluye el procesamiento del pago, la gestión de disputas y el soporte técnico.</p>
+            </div>
+            {Number(contract.contractDurationMonths) > 0 && (
+              <div>
+                <p className="font-bold text-cyan-700 text-xs">TERCERA. VIGENCIA</p>
+                <p>El presente contrato tendrá una duración de <strong>{formatDuration(contract.contractDurationMonths)}</strong> a partir de la fecha de firma. La terminación anticipada generará una penalización equivalente a 2 meses de comisiones promedio.</p>
+              </div>
+            )}
+            {contract.includeExclusivityClause && (
+              <div>
+                <p className="font-bold text-cyan-700 text-xs">CLÁUSULA DE EXCLUSIVIDAD</p>
+                <p>Durante la vigencia del contrato, el Cliente se compromete a utilizar únicamente KobraPay como plataforma de procesamiento de pagos digitales para su negocio, absteniéndose de contratar servicios similares con terceros.</p>
+              </div>
+            )}
+            <div>
+              <p className="font-bold text-cyan-700 text-xs">PROTECCIÓN DE DATOS</p>
+              <p>KobraPay se compromete a proteger los datos personales del Cliente conforme a la Ley Federal de Protección de Datos Personales en Posesión de los Particulares (LFPDPPP) y su Reglamento.</p>
+            </div>
+            <div>
+              <p className="font-bold text-cyan-700 text-xs">CONFIDENCIALIDAD</p>
+              <p>Ambas partes se obligan a mantener la confidencialidad de la información intercambiada durante la prestación de los servicios.</p>
+            </div>
+            <div>
+              <p className="font-bold text-cyan-700 text-xs">RESPONSABILIDAD</p>
+              <p>KobraPay no será responsable por interrupciones del servicio causadas por terceros (procesadores de pago, proveedores de internet) o por fuerza mayor.</p>
+            </div>
+            <div>
+              <p className="font-bold text-cyan-700 text-xs">JURISDICCIÓN</p>
+              <p>Para la interpretación y cumplimiento del presente contrato, las partes se someten a la jurisdicción de los tribunales competentes de la Ciudad de México.</p>
+            </div>
+            {contract.customTerms && (
+              <div className="bg-amber-50 border border-amber-200 rounded p-3">
+                <p className="font-bold text-amber-700 text-xs">TÉRMINOS ADICIONALES</p>
+                <p className="text-gray-700 whitespace-pre-wrap">{contract.customTerms}</p>
+              </div>
+            )}
+          </div>
+
+          {/* Signatures */}
+          <h2 className="text-cyan-700 font-bold text-sm uppercase border-b border-cyan-200 pb-1 mb-3 mt-6">Firmas</h2>
+          {contract.status === "signed" && contract.signedAt ? (
+            <div className="bg-green-50 border border-green-200 rounded p-3 flex items-center gap-2">
+              <CheckCircle className="w-4 h-4 text-green-600 flex-shrink-0" />
+              <span className="text-green-700 text-xs font-medium">
+                Firmado digitalmente el {new Date(contract.signedAt).toLocaleString("es-MX")}
+                {contract.signedFromIp && ` · IP: ${contract.signedFromIp}`}
+              </span>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 gap-8 mt-6">
+              <div className="text-center">
+                <div className="border-b border-gray-400 mb-1 h-8"></div>
+                <p className="text-xs text-gray-500">KobraPay</p>
+              </div>
+              <div className="text-center">
+                <div className="border-b border-gray-400 mb-1 h-8"></div>
+                <p className="text-xs text-gray-500">{contract.clientName}</p>
+              </div>
+            </div>
+          )}
+          <p className="text-center text-xs text-gray-400 mt-6">KobraPay — kobrapay.mx | Documento generado electrónicamente</p>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// ─── Share Modal ──────────────────────────────────────────────────────────────
+function ShareContractModal({ contract, signUrl, onClose }: { contract: ContractData; signUrl: string; onClose: () => void }) {
+  const whatsappMsg = encodeURIComponent(
+    `Hola ${contract.clientName}, te enviamos el contrato de servicios KobraPay para tu revisión y firma digital.\n\nAccede aquí: ${signUrl}\n\nEste enlace expira en 7 días.`
+  );
+  const whatsappUrl = `https://wa.me/?text=${whatsappMsg}`;
+  const emailSubject = encodeURIComponent(`Contrato de servicios KobraPay — ${contract.clientName}`);
+  const emailBody = encodeURIComponent(
+    `Hola ${contract.clientName},\n\nTe enviamos el contrato de servicios de KobraPay para tu revisión y firma digital.\n\nAccede aquí: ${signUrl}\n\nEste enlace expira en 7 días.\n\nSaludos,\nKobraPay`
+  );
+  const mailtoUrl = `mailto:${contract.clientEmail}?subject=${emailSubject}&body=${emailBody}`;
+
+  return (
+    <Dialog open onOpenChange={() => onClose()}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>Compartir contrato</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4 mt-2">
+          <div>
+            <Label className="text-xs text-gray-500 mb-1 block">Enlace de firma</Label>
+            <div className="flex gap-2">
+              <Input value={signUrl} readOnly className="text-xs font-mono bg-gray-50" />
+              <Button
+                size="sm" variant="outline"
+                onClick={() => { navigator.clipboard.writeText(signUrl); toast.success("Enlace copiado"); }}
+              >
+                <Copy className="w-4 h-4" />
+              </Button>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <a href={whatsappUrl} target="_blank" rel="noopener noreferrer">
+              <Button className="w-full bg-green-600 hover:bg-green-700 text-white gap-2">
+                <MessageCircle className="w-4 h-4" /> WhatsApp
+              </Button>
+            </a>
+            <a href={mailtoUrl}>
+              <Button variant="outline" className="w-full gap-2">
+                <Mail className="w-4 h-4" /> Email
+              </Button>
+            </a>
+          </div>
+          <p className="text-xs text-gray-500 text-center">
+            El cliente podrá revisar, subir su identificación y firmar digitalmente el contrato desde este enlace.
+          </p>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// ─── Main Component ───────────────────────────────────────────────────────────
 export default function Contracts() {
   const [showCreate, setShowCreate] = useState(false);
   const [selectedContract, setSelectedContract] = useState<number | null>(null);
@@ -228,6 +406,8 @@ export default function Contracts() {
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState<ContractStatus | "all">("all");
   const [generatingPdf, setGeneratingPdf] = useState<number | null>(null);
+  const [previewContract, setPreviewContract] = useState<ContractData | null>(null);
+  const [shareContract, setShareContract] = useState<{ contract: ContractData; signUrl: string } | null>(null);
 
   const { data: contracts = [], refetch } = trpc.contracts.list.useQuery();
   const createMutation = trpc.contracts.create.useMutation({
@@ -272,11 +452,13 @@ export default function Contracts() {
     sendMutation.mutate({ id, expiresInDays: 7 });
   };
 
-  const copySignLink = (token: string | null) => {
-    if (!token) return;
-    const url = `${window.location.origin}/sign-contract/${token}`;
-    navigator.clipboard.writeText(url);
-    toast.success("Enlace copiado al portapapeles");
+  const handleShare = (contract: ContractData) => {
+    if (!contract.signToken) {
+      toast.error("Primero envía el contrato al cliente para generar el enlace de firma.");
+      return;
+    }
+    const signUrl = `${window.location.origin}/sign-contract/${contract.signToken}`;
+    setShareContract({ contract, signUrl });
   };
 
   const handleDownloadPDF = async (contract: ContractData) => {
@@ -313,6 +495,18 @@ export default function Contracts() {
   return (
     <DashboardLayout>
     <div className="p-6 max-w-6xl mx-auto">
+      {/* Modals */}
+      {previewContract && (
+        <ContractPreviewModal contract={previewContract} onClose={() => setPreviewContract(null)} />
+      )}
+      {shareContract && (
+        <ShareContractModal
+          contract={shareContract.contract}
+          signUrl={shareContract.signUrl}
+          onClose={() => setShareContract(null)}
+        />
+      )}
+
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
@@ -372,10 +566,12 @@ export default function Contracts() {
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="0">Sin plazo fijo</SelectItem>
+                    <SelectItem value="1">1 mes</SelectItem>
                     <SelectItem value="3">3 meses</SelectItem>
                     <SelectItem value="6">6 meses</SelectItem>
-                    <SelectItem value="12">12 meses</SelectItem>
-                    <SelectItem value="24">24 meses</SelectItem>
+                    <SelectItem value="12">12 meses (1 año)</SelectItem>
+                    <SelectItem value="24">24 meses (2 años)</SelectItem>
+                    <SelectItem value="36">36 meses (3 años)</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -483,7 +679,7 @@ export default function Contracts() {
                     <td className="px-4 py-3 text-sm text-gray-600">{contract.businessName || "—"}</td>
                     <td className="px-4 py-3 text-sm font-semibold text-cyan-700">{contract.commissionRate}%</td>
                     <td className="px-4 py-3 text-sm text-gray-600">
-                      {contract.contractDurationMonths === 0 ? "Sin plazo" : `${contract.contractDurationMonths} meses`}
+                      {formatDuration(contract.contractDurationMonths)}
                     </td>
                     <td className="px-4 py-3">
                       <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${color}`}>
@@ -495,14 +691,25 @@ export default function Contracts() {
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-1 justify-end">
+                        {/* Vista previa */}
+                        <Button
+                          size="sm" variant="ghost"
+                          onClick={() => setPreviewContract(contract as ContractData)}
+                          title="Vista previa del contrato"
+                          className="text-cyan-600 hover:text-cyan-700"
+                        >
+                          <Eye className="w-4 h-4" />
+                        </Button>
+                        {/* Ver detalle */}
                         <Button
                           size="sm" variant="ghost"
                           onClick={() => setSelectedContract(isSelected ? null : contract.id)}
                           title="Ver detalles"
                           className={isSelected ? "text-cyan-700" : ""}
                         >
-                          <Eye className="w-4 h-4" />
+                          <ExternalLink className="w-4 h-4" />
                         </Button>
+                        {/* Descargar PDF */}
                         <Button
                           size="sm" variant="ghost"
                           onClick={() => handleDownloadPDF(contract as ContractData)}
@@ -514,6 +721,7 @@ export default function Contracts() {
                             ? <div className="w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" />
                             : <Download className="w-4 h-4" />}
                         </Button>
+                        {/* Enviar al cliente */}
                         {status === "draft" && (
                           <Button
                             size="sm" variant="ghost"
@@ -527,16 +735,18 @@ export default function Contracts() {
                               : <Send className="w-4 h-4" />}
                           </Button>
                         )}
+                        {/* Compartir (WhatsApp / Email) */}
                         {(status === "sent" || status === "signed") && contract.signToken && (
                           <Button
                             size="sm" variant="ghost"
-                            onClick={() => copySignLink(contract.signToken ?? null)}
-                            className="text-gray-500"
-                            title="Copiar enlace de firma"
+                            onClick={() => handleShare(contract as ContractData)}
+                            className="text-green-600 hover:text-green-700"
+                            title="Compartir enlace (WhatsApp / Email)"
                           >
-                            <Copy className="w-4 h-4" />
+                            <MessageCircle className="w-4 h-4" />
                           </Button>
                         )}
+                        {/* Archivar */}
                         {status !== "archived" && (
                           <Button
                             size="sm" variant="ghost"
@@ -563,12 +773,18 @@ export default function Contracts() {
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
               <FileText className="w-5 h-5 text-cyan-700" />
-              Detalle del Contrato — {selectedContractData.clientName}
+              Detalle — {selectedContractData.clientName}
             </h2>
-            <div className="flex gap-2">
+            <div className="flex gap-2 flex-wrap">
               <Button
-                size="sm"
-                variant="outline"
+                size="sm" variant="outline"
+                onClick={() => setPreviewContract(selectedContractData)}
+                className="gap-2"
+              >
+                <Eye className="w-4 h-4" /> Vista previa
+              </Button>
+              <Button
+                size="sm" variant="outline"
                 onClick={() => handleDownloadPDF(selectedContractData)}
                 disabled={generatingPdf === selectedContractData.id}
                 className="gap-2 text-cyan-700 border-cyan-200 hover:bg-cyan-50"
@@ -576,19 +792,15 @@ export default function Contracts() {
                 {generatingPdf === selectedContractData.id
                   ? <div className="w-4 h-4 border-2 border-cyan-600 border-t-transparent rounded-full animate-spin" />
                   : <Download className="w-4 h-4" />}
-                Descargar PDF
+                PDF
               </Button>
               {selectedContractData.signToken && (
                 <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => {
-                    const url = `${window.location.origin}/sign-contract/${selectedContractData.signToken}`;
-                    window.open(url, "_blank");
-                  }}
-                  className="gap-2"
+                  size="sm" variant="outline"
+                  onClick={() => handleShare(selectedContractData)}
+                  className="gap-2 text-green-700 border-green-200 hover:bg-green-50"
                 >
-                  <ExternalLink className="w-4 h-4" /> Ver enlace
+                  <MessageCircle className="w-4 h-4" /> Compartir
                 </Button>
               )}
             </div>
@@ -602,7 +814,7 @@ export default function Contracts() {
             <div><span className="text-gray-500">INE/Pasaporte:</span> <span className="font-medium">{selectedContractData.clientIneNumber || "—"}</span></div>
             <div><span className="text-gray-500">Domicilio:</span> <span className="font-medium">{selectedContractData.clientAddress || "—"}</span></div>
             <div><span className="text-gray-500">Comisión:</span> <span className="font-medium text-cyan-700">{selectedContractData.commissionRate}%</span></div>
-            <div><span className="text-gray-500">Duración:</span> <span className="font-medium">{selectedContractData.contractDurationMonths === 0 ? "Sin plazo fijo" : `${selectedContractData.contractDurationMonths} meses`}</span></div>
+            <div><span className="text-gray-500">Duración:</span> <span className="font-medium">{formatDuration(selectedContractData.contractDurationMonths)}</span></div>
             <div><span className="text-gray-500">Exclusividad:</span> <span className="font-medium">{selectedContractData.includeExclusivityClause ? "Sí" : "No"}</span></div>
             {selectedContractData.signedAt && (
               <div className="col-span-3 flex items-center gap-2 p-3 bg-green-50 rounded-lg border border-green-200">

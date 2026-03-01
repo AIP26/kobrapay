@@ -156,7 +156,7 @@ export default function SignContract() {
         <div className="bg-gray-50 rounded-xl p-4 text-left text-sm space-y-1">
           <p><span className="text-gray-500">Comisión acordada:</span> <strong className="text-cyan-700">{contract.commissionRate}%</strong></p>
           {Number(contract.contractDurationMonths) > 0 && (
-            <p><span className="text-gray-500">Duración:</span> <strong>{contract.contractDurationMonths} meses</strong></p>
+            <p><span className="text-gray-500">Duración:</span> <strong>{contract.contractDurationMonths === 1 ? '1 mes' : contract.contractDurationMonths === 12 ? '1 año (12 meses)' : contract.contractDurationMonths === 24 ? '2 años (24 meses)' : `${contract.contractDurationMonths} meses`}</strong></p>
           )}
           <p><span className="text-gray-500">Fecha de firma:</span> <strong>{new Date().toLocaleDateString("es-MX")}</strong></p>
         </div>
@@ -208,7 +208,7 @@ export default function SignContract() {
                   <li><strong>Objeto:</strong> KobraPay prestará al Cliente servicios de procesamiento de pagos en línea mediante enlaces de cobro, punto de venta digital, y herramientas de gestión financiera.</li>
                   <li><strong>Comisión:</strong> El Cliente acepta una comisión del <strong className="text-cyan-700">{contract.commissionRate}%</strong> sobre cada transacción procesada a través de la plataforma.</li>
                   {Number(contract.contractDurationMonths) > 0 && (
-                    <li><strong>Vigencia:</strong> El presente contrato tendrá una duración de <strong>{contract.contractDurationMonths} meses</strong> a partir de la fecha de firma. La terminación anticipada generará una penalización equivalente a 2 meses de comisiones promedio.</li>
+                    <li><strong>Vigencia:</strong> El presente contrato tendrá una duración de <strong>{contract.contractDurationMonths === 1 ? '1 mes' : contract.contractDurationMonths === 12 ? '1 año (12 meses)' : contract.contractDurationMonths === 24 ? '2 años (24 meses)' : `${contract.contractDurationMonths} meses`}</strong> a partir de la fecha de firma. La terminación anticipada generará una penalización equivalente a 2 meses de comisiones promedio.</li>
                   )}
                   {contract.includeExclusivityClause && (
                     <li><strong>Exclusividad:</strong> Durante la vigencia del contrato, el Cliente se compromete a utilizar únicamente KobraPay como plataforma de procesamiento de pagos digitales para su negocio, absteniéndose de contratar servicios similares con terceros.</li>

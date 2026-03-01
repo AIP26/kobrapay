@@ -1229,14 +1229,14 @@ export const appRouter = router({
   // ─── Contratos digitales (solo super-admin y asistente) ─────────────────────
   contracts: router({
     list: protectedProcedure.query(async ({ ctx }) => {
-      if (!ctx.isSuperAdmin) throw new TRPCError({ code: "FORBIDDEN" });
+      if (!ctx.isSuperAdmin && ctx.user.role !== 'admin') throw new TRPCError({ code: "FORBIDDEN" });
       return getContractsByAdmin(ctx.user.id);
     }),
 
     get: protectedProcedure
       .input(z.object({ id: z.number() }))
       .query(async ({ ctx, input }) => {
-        if (!ctx.isSuperAdmin) throw new TRPCError({ code: "FORBIDDEN" });
+        if (!ctx.isSuperAdmin && ctx.user.role !== 'admin') throw new TRPCError({ code: "FORBIDDEN" });
         const contract = await getContractById(input.id);
         if (!contract || contract.createdByUserId !== ctx.user.id) throw new TRPCError({ code: "NOT_FOUND" });
         return contract;
@@ -1270,7 +1270,7 @@ export const appRouter = router({
         internalNotes: z.string().optional().or(z.literal("")),
       }))
       .mutation(async ({ ctx, input }) => {
-        if (!ctx.isSuperAdmin) throw new TRPCError({ code: "FORBIDDEN" });
+        if (!ctx.isSuperAdmin && ctx.user.role !== 'admin') throw new TRPCError({ code: "FORBIDDEN" });
         const contract = await createContract({
           createdByUserId: ctx.user.id,
           clientName: input.clientName,
@@ -1310,7 +1310,7 @@ export const appRouter = router({
         status: z.enum(["draft", "sent", "signed", "archived"]).optional(),
       }))
       .mutation(async ({ ctx, input }) => {
-        if (!ctx.isSuperAdmin) throw new TRPCError({ code: "FORBIDDEN" });
+        if (!ctx.isSuperAdmin && ctx.user.role !== 'admin') throw new TRPCError({ code: "FORBIDDEN" });
         const { id, commissionRate, ...rest } = input;
         const data: Record<string, unknown> = { ...rest };
         if (commissionRate !== undefined) data.commissionRate = String(commissionRate);
@@ -1320,7 +1320,7 @@ export const appRouter = router({
     sendToClient: protectedProcedure
       .input(z.object({ id: z.number(), expiresInDays: z.number().int().min(1).max(30).default(7) }))
       .mutation(async ({ ctx, input }) => {
-        if (!ctx.isSuperAdmin) throw new TRPCError({ code: "FORBIDDEN" });
+        if (!ctx.isSuperAdmin && ctx.user.role !== 'admin') throw new TRPCError({ code: "FORBIDDEN" });
         const contract = await getContractById(input.id);
         if (!contract || contract.createdByUserId !== ctx.user.id) throw new TRPCError({ code: "NOT_FOUND" });
         const token = nanoid(32);
