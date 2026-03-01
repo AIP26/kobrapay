@@ -129,9 +129,10 @@ function EmployeeHistoryModal({
   const [editRec, setEditRec] = useState<AttRec | null>(null);
   const [editForm, setEditForm] = useState({ type: "in", timestamp: "", notes: "", absenceType: "rest", comment: "" });
 
+  // Sin filtro de mes por defecto para mostrar todos los registros disponibles
   const historyQuery = trpc.attendance.employeeHistory.useQuery(
     { employeeId: employee?.id ?? 0, year: histYear, month: histMonth },
-    { enabled: !!employee }
+    { enabled: !!employee, staleTime: 0 }
   );
 
   const utils = trpc.useUtils();

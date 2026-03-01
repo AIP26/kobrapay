@@ -255,6 +255,40 @@ function EmployeeFormModal({
             <Label>Notas internas</Label>
             <Textarea value={form.notes} onChange={e => set("notes", e.target.value)} placeholder="Observaciones, referencias, etc." rows={3} />
           </div>
+          {/* Información de nómina */}
+          <div className="md:col-span-2 border-t pt-3">
+            <p className="text-sm font-semibold text-foreground mb-3">💰 Información de Nómina</p>
+          </div>
+          <div>
+            <Label>Salario Diario ($)</Label>
+            <Input type="number" step="0.01" min="0" value={(form as any).dailyRate ?? ""} onChange={e => set("dailyRate", e.target.value)} placeholder="Ej: 350.00" />
+          </div>
+          <div>
+            <Label>Horas de Trabajo al Día</Label>
+            <Input type="number" step="0.5" min="1" max="24" value={(form as any).dailyHours ?? ""} onChange={e => set("dailyHours", e.target.value)} placeholder="Ej: 8" />
+          </div>
+          <div>
+            <Label>Día de Descanso</Label>
+            <select className="w-full border rounded-md px-3 py-2 text-sm bg-background" value={(form as any).restDay ?? ""} onChange={e => set("restDay", e.target.value)}>
+              <option value="">Sin día de descanso fijo</option>
+              <option value="monday">Lunes</option>
+              <option value="tuesday">Martes</option>
+              <option value="wednesday">Miércoles</option>
+              <option value="thursday">Jueves</option>
+              <option value="friday">Viernes</option>
+              <option value="saturday">Sábado</option>
+              <option value="sunday">Domingo</option>
+            </select>
+          </div>
+          <div>
+            <Label>Ciclo de Pago</Label>
+            <select className="w-full border rounded-md px-3 py-2 text-sm bg-background" value={(form as any).paymentCycle ?? ""} onChange={e => set("paymentCycle", e.target.value)}>
+              <option value="">Sin ciclo definido</option>
+              <option value="weekly">Semanal</option>
+              <option value="biweekly">Quincenal</option>
+              <option value="monthly">Mensual</option>
+            </select>
+          </div>
         </div>
         <DialogFooter className="pt-4">
           <Button variant="outline" onClick={onClose} disabled={loading}>Cancelar</Button>

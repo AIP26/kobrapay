@@ -32,6 +32,10 @@ import {
   UserCircle2,
   Clock,
   Calculator,
+  ChevronDown,
+  Building2,
+  Zap,
+  DollarSign,
 } from "lucide-react";
 import { useState } from "react";
 import GlobalSearch from "./GlobalSearch";
@@ -44,33 +48,83 @@ import PendingApproval from "@/pages/PendingApproval";
 const KOBRAPAY_LOGO = "https://files.manuscdn.com/user_upload_by_module/session_file/310519663381362445/BlaEgmymroahADGF.png";
 const KOBRAPAY_ICON = "https://files.manuscdn.com/user_upload_by_module/session_file/310519663381362445/yMTQoaqGYTxuRnnF.png";
 
-const navItems = [
-  { href: "/dashboard", icon: Home, label: "Panel", section: "main" },
-  { href: "/dashboard/sales", icon: BarChart3, label: "Mis Ventas", section: "main" },
-  { href: "/dashboard/links", icon: Link2, label: "Links de Pago", section: "main" },
-  { href: "/dashboard/create", icon: Plus, label: "Nuevo Cobro", section: "main" },
-  { href: "/dashboard/recurring", icon: RefreshCw, label: "Cobros Recurrentes", section: "main" },
-  { href: "/dashboard/chargebacks", icon: AlertTriangle, label: "Aclaraciones", section: "main" },
-  { href: "/dashboard/payers", icon: Users, label: "Mis Pagadores", section: "main" },
-  { href: "/dashboard/expedientes", icon: FolderOpen, label: "Expedientes", section: "main" },
-  { href: "/dashboard/staff", icon: UserCheck, label: "Colaboradores", section: "main" },
-  { href: "/dashboard/hr", icon: Briefcase, label: "Expedientes RH", section: "main" },
-  { href: "/dashboard/checador", icon: Clock, label: "Reloj Checador", section: "main" },
-  { href: "/dashboard/nomina", icon: Calculator, label: "Nómina", section: "main" },
-  { href: "/dashboard/invoices", icon: FileText, label: "Mis Facturas", section: "main" },
-  { href: "/dashboard/widget", icon: Code2, label: "Widget de Pago", section: "main" },
-  { href: "/dashboard/reader", icon: ShoppingCart, label: "Compra tu Lector", section: "main" },
-  { href: "/dashboard/catalog", icon: Package, label: "Catálogo", section: "main" },
-  { href: "/dashboard/pos", icon: MonitorSmartphone, label: "Punto de Venta", section: "main" },
-  { href: "/dashboard/clients", icon: Users, label: "Mis Clientes", section: "admin", adminOnly: true },
-  { href: "/dashboard/security", icon: Shield, label: "Seguridad", section: "admin", adminOnly: true },
-  { href: "/dashboard/registrations", icon: UserCog, label: "Registros", section: "superadmin" },
-  { href: "/dashboard/contracts", icon: Handshake, label: "Contratos", section: "superadmin" },
-  { href: "/dashboard/agents", icon: UserPlus, label: "Vendedores", section: "superadmin" },
-  { href: "/dashboard/commissions", icon: TrendingUp, label: "Comisiones", section: "superadmin" },
-  { href: "/dashboard/report", icon: FileText, label: "Reporte Mensual", section: "main" },
-  { href: "/dashboard/help", icon: HelpCircle, label: "Ayuda", section: "settings" },
-  { href: "/dashboard/settings", icon: Settings, label: "Configuración", section: "settings" },
+// ─── Grupos del sidebar ───────────────────────────────────────────────────────
+const NAV_GROUPS = [
+  {
+    id: "principal",
+    label: "Principal",
+    icon: Home,
+    color: "text-gray-500",
+    items: [
+      { href: "/dashboard", icon: Home, label: "Panel" },
+      { href: "/dashboard/sales", icon: BarChart3, label: "Mis Ventas" },
+      { href: "/dashboard/report", icon: FileText, label: "Reporte Mensual" },
+    ],
+  },
+  {
+    id: "cobros",
+    label: "Cobros y Pagos",
+    icon: DollarSign,
+    color: "text-emerald-500/70",
+    items: [
+      { href: "/dashboard/create", icon: Plus, label: "Nuevo Cobro" },
+      { href: "/dashboard/links", icon: Link2, label: "Links de Pago" },
+      { href: "/dashboard/recurring", icon: RefreshCw, label: "Cobros Recurrentes" },
+      { href: "/dashboard/chargebacks", icon: AlertTriangle, label: "Aclaraciones" },
+      { href: "/dashboard/invoices", icon: FileText, label: "Mis Facturas" },
+      { href: "/dashboard/payers", icon: Users, label: "Mis Pagadores" },
+      { href: "/dashboard/expedientes", icon: FolderOpen, label: "Expedientes" },
+    ],
+  },
+  {
+    id: "empresa",
+    label: "Empresa",
+    icon: Building2,
+    color: "text-blue-500/70",
+    items: [
+      { href: "/dashboard/hr", icon: Briefcase, label: "Expedientes RH" },
+      { href: "/dashboard/staff", icon: UserCheck, label: "Colaboradores" },
+      { href: "/dashboard/checador", icon: Clock, label: "Reloj Checador" },
+      { href: "/dashboard/nomina", icon: Calculator, label: "Nómina" },
+      { href: "/dashboard/contracts", icon: Handshake, label: "Contratos" },
+      { href: "/dashboard/agents", icon: UserPlus, label: "Vendedores" },
+      { href: "/dashboard/commissions", icon: TrendingUp, label: "Comisiones" },
+    ],
+  },
+  {
+    id: "herramientas",
+    label: "Herramientas",
+    icon: Zap,
+    color: "text-purple-500/70",
+    items: [
+      { href: "/dashboard/pos", icon: MonitorSmartphone, label: "Punto de Venta" },
+      { href: "/dashboard/widget", icon: Code2, label: "Widget de Pago" },
+      { href: "/dashboard/catalog", icon: Package, label: "Catálogo" },
+      { href: "/dashboard/reader", icon: ShoppingCart, label: "Compra tu Lector" },
+    ],
+  },
+  {
+    id: "admin",
+    label: "Administración",
+    icon: Shield,
+    color: "text-amber-500/70",
+    adminOnly: true,
+    items: [
+      { href: "/dashboard/clients", icon: Users, label: "Mis Clientes" },
+      { href: "/dashboard/registrations", icon: UserCog, label: "Registros" },
+      { href: "/dashboard/security", icon: Shield, label: "Seguridad" },
+    ],
+  },
+  {
+    id: "sistema",
+    label: "Sistema",
+    icon: Settings,
+    color: "text-gray-500",
+    items: [
+      { href: "/dashboard/help", icon: HelpCircle, label: "Ayuda" },
+      { href: "/dashboard/settings", icon: Settings, label: "Configuración" },
+    ],
+  },
 ];
 
 interface DashboardLayoutProps {
@@ -82,9 +136,20 @@ export default function DashboardLayout({ children, title }: DashboardLayoutProp
   const { user, loading, isAuthenticated } = useAuth();
   const [location] = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  // Grupos colapsados: por defecto "empresa" y "herramientas" están colapsados
+  const [collapsed, setCollapsed] = useState<Record<string, boolean>>({
+    empresa: true,
+    herramientas: true,
+    admin: true,
+  });
+
   const logout = trpc.auth.logout.useMutation({
     onSuccess: () => { window.location.href = "/"; },
   });
+
+  const toggleGroup = (id: string) => {
+    setCollapsed(prev => ({ ...prev, [id]: !prev[id] }));
+  };
 
   if (loading) {
     return (
@@ -97,7 +162,6 @@ export default function DashboardLayout({ children, title }: DashboardLayoutProp
     );
   }
 
-  // Verificar estado de la cuenta (pending o blocked)
   const accountStatus = (user as Record<string, unknown>)?.accountStatus as string | undefined;
   if (isAuthenticated && (accountStatus === "pending" || accountStatus === "blocked")) {
     return (
@@ -128,6 +192,15 @@ export default function DashboardLayout({ children, title }: DashboardLayoutProp
     ? user.name.split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2)
     : "U";
 
+  const isAdmin = user?.role === "admin";
+  const isSuperAdmin = (user as Record<string, unknown>)?.isSuperAdmin === true;
+
+  // Detectar si algún ítem de un grupo está activo para auto-expandir
+  const isGroupActive = (groupId: string) => {
+    const group = NAV_GROUPS.find(g => g.id === groupId);
+    return group?.items.some(i => location === i.href) ?? false;
+  };
+
   const SidebarContent = ({ mobile = false }: { mobile?: boolean }) => (
     <aside
       className={cn("flex flex-col h-full", mobile ? "w-72" : "w-64")}
@@ -152,80 +225,65 @@ export default function DashboardLayout({ children, title }: DashboardLayoutProp
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 px-3 py-4 overflow-y-auto">
-        <div className="space-y-0.5">
-          <p className="px-4 py-1.5 text-xs font-semibold text-gray-500 uppercase tracking-wider">Principal</p>
-          {navItems.filter(i => i.section === "main").map(({ href, icon: Icon, label }) => {
-            const isActive = location === href;
-            return (
-              <Link key={href} href={href} onClick={() => setSidebarOpen(false)}
-                className={cn("flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition-all",
-                  isActive
-                    ? "bg-gradient-to-r from-emerald-500/20 to-cyan-500/20 text-emerald-400 border border-emerald-500/30"
-                    : "text-gray-300 hover:bg-white/8 hover:text-white"
-                )}>
-                <Icon className={cn("w-4 h-4 flex-shrink-0", isActive ? "text-emerald-400" : "")} />
-                {label}
-              </Link>
-            );
-          })}
-        </div>
-        {user?.role === "admin" && (
-          <div className="space-y-0.5 mt-4">
-            <p className="px-4 py-1.5 text-xs font-semibold text-gray-500 uppercase tracking-wider">Administración</p>
-            {navItems.filter(i => i.section === "admin").map(({ href, icon: Icon, label }) => {
-              const isActive = location === href;
-              return (
-                <Link key={href} href={href} onClick={() => setSidebarOpen(false)}
-                  className={cn("flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition-all",
-                    isActive
-                      ? "bg-gradient-to-r from-emerald-500/20 to-cyan-500/20 text-emerald-400 border border-emerald-500/30"
-                      : "text-gray-300 hover:bg-white/8 hover:text-white"
-                  )}>
-                  <Icon className={cn("w-4 h-4 flex-shrink-0", isActive ? "text-emerald-400" : "")} />
-                  {label}
-                </Link>
-              );
-            })}
-          </div>
-        )}
-        {/* Super-admin: Gestión de registros */}
-        {(user as Record<string, unknown>)?.isSuperAdmin === true && (
-          <div className="space-y-0.5 mt-4">
-            <p className="px-4 py-1.5 text-xs font-semibold text-amber-500/70 uppercase tracking-wider">Super Admin</p>
-            {navItems.filter(i => i.section === "superadmin").map(({ href, icon: Icon, label }) => {
-              const isActive = location === href;
-              return (
-                <Link key={href} href={href} onClick={() => setSidebarOpen(false)}
-                  className={cn("flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition-all",
-                    isActive
-                      ? "bg-gradient-to-r from-amber-500/20 to-orange-500/20 text-amber-400 border border-amber-500/30"
-                      : "text-amber-300/70 hover:bg-white/8 hover:text-amber-300"
-                  )}>
-                  <Icon className={cn("w-4 h-4 flex-shrink-0", isActive ? "text-amber-400" : "")} />
-                  {label}
-                </Link>
-              );
-            })}
-          </div>
-        )}
-        <div className="space-y-0.5 mt-4">
-          <p className="px-4 py-1.5 text-xs font-semibold text-gray-500 uppercase tracking-wider">Sistema</p>
-          {navItems.filter(i => i.section === "settings").map(({ href, icon: Icon, label }) => {
-            const isActive = location === href;
-            return (
-              <Link key={href} href={href} onClick={() => setSidebarOpen(false)}
-                className={cn("flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition-all",
-                  isActive
-                    ? "bg-gradient-to-r from-emerald-500/20 to-cyan-500/20 text-emerald-400 border border-emerald-500/30"
-                    : "text-gray-300 hover:bg-white/8 hover:text-white"
-                )}>
-                <Icon className={cn("w-4 h-4 flex-shrink-0", isActive ? "text-emerald-400" : "")} />
-                {label}
-              </Link>
-            );
-          })}
-        </div>
+      <nav className="flex-1 px-3 py-3 overflow-y-auto space-y-1">
+        {NAV_GROUPS.map((group) => {
+          // Ocultar grupo admin si no es admin
+          if (group.adminOnly && !isAdmin && !isSuperAdmin) return null;
+
+          const groupActive = isGroupActive(group.id);
+          // Si el grupo tiene un ítem activo, forzar expandido
+          const isCollapsed = collapsed[group.id] && !groupActive;
+          const GroupIcon = group.icon;
+
+          return (
+            <div key={group.id}>
+              {/* Encabezado del grupo (colapsable) */}
+              <button
+                onClick={() => toggleGroup(group.id)}
+                className={cn(
+                  "w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-semibold uppercase tracking-wider transition-all",
+                  groupActive
+                    ? "text-emerald-400 bg-emerald-500/10"
+                    : "text-gray-500 hover:text-gray-300 hover:bg-white/5"
+                )}
+              >
+                <GroupIcon className={cn("w-3.5 h-3.5 flex-shrink-0", groupActive ? "text-emerald-400" : group.color)} />
+                <span className="flex-1 text-left">{group.label}</span>
+                <ChevronDown
+                  className={cn(
+                    "w-3.5 h-3.5 transition-transform duration-200",
+                    isCollapsed ? "-rotate-90" : "rotate-0"
+                  )}
+                />
+              </button>
+
+              {/* Ítems del grupo */}
+              {!isCollapsed && (
+                <div className="mt-0.5 ml-2 space-y-0.5 border-l border-white/10 pl-2">
+                  {group.items.map(({ href, icon: Icon, label }) => {
+                    const isActive = location === href;
+                    return (
+                      <Link
+                        key={href}
+                        href={href}
+                        onClick={() => setSidebarOpen(false)}
+                        className={cn(
+                          "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all",
+                          isActive
+                            ? "bg-gradient-to-r from-emerald-500/20 to-cyan-500/20 text-emerald-400 border border-emerald-500/30"
+                            : "text-gray-300 hover:bg-white/8 hover:text-white"
+                        )}
+                      >
+                        <Icon className={cn("w-4 h-4 flex-shrink-0", isActive ? "text-emerald-400" : "text-gray-500")} />
+                        {label}
+                      </Link>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          );
+        })}
       </nav>
 
       {/* User Profile */}
@@ -263,7 +321,7 @@ export default function DashboardLayout({ children, title }: DashboardLayoutProp
       {/* Mobile Sidebar Overlay */}
       {sidebarOpen && (
         <div className="fixed inset-0 z-50 lg:hidden">
-          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setSidebarOpen(false)} />
+          <div className="absolute inset-0 bg-black/60" onClick={() => setSidebarOpen(false)} />
           <div className="absolute left-0 top-0 h-full">
             <SidebarContent mobile />
           </div>
@@ -271,33 +329,19 @@ export default function DashboardLayout({ children, title }: DashboardLayoutProp
       )}
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Top Header with Global Search */}
-        <header className="flex items-center gap-3 px-4 py-3 border-b border-white/10" style={{ background: "#1a1f2e" }}>
-          {/* Mobile menu button */}
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+        {/* Top Bar */}
+        <header className="h-14 flex items-center gap-3 px-4 bg-white border-b border-gray-200 flex-shrink-0">
           <button
             onClick={() => setSidebarOpen(true)}
-            className="lg:hidden text-gray-400 hover:text-white transition-colors flex-shrink-0"
+            className="lg:hidden text-gray-500 hover:text-gray-700 transition-colors"
           >
-            <Menu className="w-6 h-6" />
+            <Menu className="w-5 h-5" />
           </button>
-          {/* Mobile logo */}
-          <div className="lg:hidden flex items-center gap-2 flex-shrink-0">
-            <img src={KOBRAPAY_ICON} alt="KobraPay" className="w-7 h-7 object-contain" />
-          </div>
-          {/* Global Search - takes remaining space */}
-          <div className="flex-1 max-w-lg">
+          <div className="flex-1 min-w-0">
             <GlobalSearch />
           </div>
-          {/* Right side: campana de notificaciones + título */}
-          <div className="flex items-center gap-2 flex-shrink-0">
-            <div className="[&_button]:text-gray-300 [&_button:hover]:bg-white/10">
-              <NotificationBell />
-            </div>
-            {title && (
-              <span className="hidden lg:block text-sm text-gray-400 truncate max-w-[200px]">{title}</span>
-            )}
-          </div>
+          <NotificationBell />
         </header>
 
         {/* Page Content */}
