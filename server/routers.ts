@@ -124,11 +124,18 @@ export const appRouter = router({
   security: securityRouter,
 
   auth: router({
-    me: publicProcedure.query((opts) => {
+    me: publicProcedure.query(async (opts) => {
       if (!opts.ctx.user) return null;
+      // Obtener permisos del perfil del usuario (para filtrar sidebar)
+      let permissions: string | null = null;
+      try {
+        const profile = await getUserProfile(opts.ctx.user.id);
+        permissions = profile?.permissions || null;
+      } catch { /* sin perfil */ }
       return {
         ...opts.ctx.user,
         isSuperAdmin: isSuperAdmin(opts.ctx.user.openId),
+        permissions,
       };
     }),
     logout: publicProcedure.mutation(({ ctx }) => {
@@ -177,7 +184,7 @@ export const appRouter = router({
   // ─── Gestión de clientes de la plataforma (multi-tenant) ──────────────────
   clients: router({
     list: protectedProcedure.query(async ({ ctx }) => {
-      if (ctx.user.role !== "admin") throw new TRPCError({ code: "FORBIDDEN" });
+      if (ctx.user.role !== "admin" && !ctx.isSuperAdmin) throw new TRPCError({ code: "FORBIDDEN" });
       return getPlatformClientsByAdmin(ctx.user.id);
     }),
 
@@ -237,7 +244,7 @@ export const appRouter = router({
       }),
 
     getStats: protectedProcedure.query(async ({ ctx }) => {
-      if (ctx.user.role !== "admin") throw new TRPCError({ code: "FORBIDDEN" });
+      if (ctx.user.role !== "admin" && !ctx.isSuperAdmin) throw new TRPCError({ code: "FORBIDDEN" });
       const clients = await getPlatformClientsByAdmin(ctx.user.id);
       const allTxs = await getAllTransactionsForAdmin(ctx.user.id);
       const succeededTxs = allTxs.filter((t) => t.status === "succeeded");
@@ -250,21 +257,25 @@ export const appRouter = router({
       };
     }),
 
-    // Detalle de un cliente con sus transacciones y estadísticas
+    // Detalle de un cliente con sus transacciones, estadísticas y permisos
     getDetail: protectedProcedure
       .input(z.object({ id: z.number() }))
       .query(async ({ ctx, input }) => {
-        if (ctx.user.role !== "admin") throw new TRPCError({ code: "FORBIDDEN" });
+        if (ctx.user.role !== "admin" && !ctx.isSuperAdmin) throw new TRPCError({ code: "FORBIDDEN" });
         const client = await getPlatformClientById(input.id);
-        if (!client || client.adminUserId !== ctx.user.id) throw new TRPCError({ code: "NOT_FOUND" });
+        if (!client) throw new TRPCError({ code: "NOT_FOUND" });
         const txs = client.userId ? await getTransactionsByUser(client.userId) : [];
         const succeededTxs = txs.filter((t) => t.status === "succeeded");
         const totalVolume = succeededTxs.reduce((s, t) => s + parseFloat(String(t.amount || 0)), 0);
         const totalCommission = succeededTxs.reduce((s, t) => s + parseFloat(String(t.commissionAmount || 0)), 0);
         const totalNet = succeededTxs.reduce((s, t) => s + parseFloat(String(t.netAmount || 0)), 0);
         const links = client.userId ? await getPaymentLinksByUser(client.userId) : [];
+        // Obtener permisos actuales del cliente
+        const clientProfile = client.userId ? await getUserProfile(client.userId) : null;
         return {
           client,
+          permissions: clientProfile?.permissions || null,
+          accountType: clientProfile?.accountType || "business",
           stats: {
             totalTransactions: txs.length,
             succeededTransactions: succeededTxs.length,
@@ -289,9 +300,29 @@ export const appRouter = router({
         };
       }),
 
+    // Actualizar permisos de un cliente
+    updatePermissions: protectedProcedure
+      .input(z.object({
+        clientId: z.number(),
+        permissions: z.string(),
+        accountType: z.string().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        if (ctx.user.role !== "admin" && !ctx.isSuperAdmin) throw new TRPCError({ code: "FORBIDDEN" });
+        const client = await getPlatformClientById(input.clientId);
+        if (!client) throw new TRPCError({ code: "NOT_FOUND" });
+        if (client.userId) {
+          await upsertUserProfile(client.userId, {
+            permissions: input.permissions,
+            accountType: input.accountType,
+          });
+        }
+        return { success: true };
+      }),
+
     // Desglose de comisiones por negocio para el admin
     getCommissionBreakdown: protectedProcedure.query(async ({ ctx }) => {
-      if (ctx.user.role !== "admin") throw new TRPCError({ code: "FORBIDDEN" });
+      if (ctx.user.role !== "admin" && !ctx.isSuperAdmin) throw new TRPCError({ code: "FORBIDDEN" });
       const clients = await getPlatformClientsByAdmin(ctx.user.id);
       const breakdown = await Promise.all(
         clients.map(async (client) => {

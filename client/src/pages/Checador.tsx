@@ -124,14 +124,15 @@ function EmployeeHistoryModal({
   onAbsence: (emp: EmpInfo) => void;
 }) {
   const today = new Date();
-  const [histYear, setHistYear] = useState(today.getFullYear());
-  const [histMonth, setHistMonth] = useState(today.getMonth() + 1);
+  // null = sin filtro (todos los registros)
+  const [histYear, setHistYear] = useState<number | null>(null);
+  const [histMonth, setHistMonth] = useState<number | null>(null);
   const [editRec, setEditRec] = useState<AttRec | null>(null);
   const [editForm, setEditForm] = useState({ type: "in", timestamp: "", notes: "", absenceType: "rest", comment: "" });
 
   // Sin filtro de mes por defecto para mostrar todos los registros disponibles
   const historyQuery = trpc.attendance.employeeHistory.useQuery(
-    { employeeId: employee?.id ?? 0, year: histYear, month: histMonth },
+    { employeeId: employee?.id ?? 0, year: histYear ?? undefined, month: histMonth ?? undefined },
     { enabled: !!employee, staleTime: 0 }
   );
 
@@ -220,18 +221,27 @@ function EmployeeHistoryModal({
 
           {/* Selector de mes/año */}
           <div className="flex items-center gap-3 flex-wrap">
-            <Select value={String(histMonth)} onValueChange={v => setHistMonth(Number(v))}>
-              <SelectTrigger className="w-36"><SelectValue /></SelectTrigger>
+            <Select
+              value={histMonth !== null ? String(histMonth) : "all"}
+              onValueChange={v => {
+                if (v === "all") { setHistMonth(null); setHistYear(null); }
+                else { setHistMonth(Number(v)); setHistYear(histYear ?? today.getFullYear()); }
+              }}
+            >
+              <SelectTrigger className="w-40"><SelectValue placeholder="Todos los meses" /></SelectTrigger>
               <SelectContent>
+                <SelectItem value="all">Todos los meses</SelectItem>
                 {MONTH_NAMES.map((m, i) => <SelectItem key={i+1} value={String(i+1)}>{m}</SelectItem>)}
               </SelectContent>
             </Select>
-            <Select value={String(histYear)} onValueChange={v => setHistYear(Number(v))}>
-              <SelectTrigger className="w-28"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                {[2024, 2025, 2026, 2027].map(y => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}
-              </SelectContent>
-            </Select>
+            {histMonth !== null && (
+              <Select value={String(histYear ?? today.getFullYear())} onValueChange={v => setHistYear(Number(v))}>
+                <SelectTrigger className="w-28"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {[2024, 2025, 2026, 2027].map(y => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            )}
             {employee.dailyRate && (
               <span className="text-sm text-muted-foreground ml-auto">
                 Salario diario: <strong className="text-primary">${parseFloat(employee.dailyRate).toFixed(2)}</strong>

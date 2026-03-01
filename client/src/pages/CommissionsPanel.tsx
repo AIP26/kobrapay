@@ -42,11 +42,13 @@ const MONTH_LABELS: Record<string, string> = {
 };
 
 export default function CommissionsPanel() {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const isSuperAdmin = (user as Record<string, unknown>)?.isSuperAdmin === true;
+  const isAdmin = user?.role === "admin";
+  const canAccess = isSuperAdmin || isAdmin;
 
   const { data, isLoading } = trpc.commissions.summary.useQuery(undefined, {
-    enabled: isSuperAdmin,
+    enabled: canAccess,
   });
 
   const chartData = useMemo(() => {
@@ -60,14 +62,25 @@ export default function CommissionsPanel() {
     });
   }, [data]);
 
-  if (!isSuperAdmin) {
+  // Mientras carga la sesión, no mostrar error de acceso
+  if (authLoading) {
+    return (
+      <DashboardLayout title="Comisiones">
+        <div className="flex items-center justify-center h-64">
+          <p className="text-gray-400 text-sm">Cargando...</p>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  if (!canAccess) {
     return (
       <DashboardLayout title="Comisiones">
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
             <DollarSign className="w-12 h-12 text-gray-300 mx-auto mb-3" />
             <p className="text-gray-500 font-medium">Acceso restringido</p>
-            <p className="text-sm text-gray-400">Solo el super-admin puede ver este panel</p>
+            <p className="text-sm text-gray-400">Solo el administrador puede ver este panel</p>
           </div>
         </div>
       </DashboardLayout>

@@ -30,6 +30,25 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
+import { Shield, Save } from "lucide-react";
+
+const ALL_PERMISSIONS = [
+  { key: "canCreateLinks", label: "Crear enlaces de pago", description: "Puede generar y compartir links de cobro" },
+  { key: "canViewSales", label: "Ver historial de ventas", description: "Acceso al historial y reporte de ventas" },
+  { key: "canManageContracts", label: "Gestionar contratos", description: "Crear, firmar y gestionar contratos" },
+  { key: "canManageClients", label: "Gestionar clientes/pagadores", description: "Ver y administrar su base de clientes" },
+  { key: "canViewReports", label: "Ver reportes y estad\u00edsticas", description: "Acceso a reportes mensuales y m\u00e9tricas" },
+  { key: "canManageStaff", label: "Gestionar colaboradores", description: "Invitar y administrar su equipo" },
+  { key: "canAccessSettings", label: "Configuraci\u00f3n de cuenta", description: "Modificar datos del negocio y ajustes" },
+  { key: "canManageHR", label: "Expedientes RH", description: "Gestionar expedientes de empleados" },
+  { key: "canManageNomina", label: "N\u00f3mina", description: "Calcular y gestionar n\u00f3mina del equipo" },
+  { key: "canManageCatalog", label: "Cat\u00e1logo de productos", description: "Crear y gestionar su cat\u00e1logo" },
+  { key: "canManageChargebacks", label: "Aclaraciones/Disputas", description: "Gestionar contracargos y disputas" },
+  { key: "canManageInvoices", label: "Facturas", description: "Crear y gestionar facturas" },
+  { key: "canManageExpedientes", label: "Expedientes de clientes", description: "Gestionar expedientes de sus clientes" },
+  { key: "canManageRecurring", label: "Cobros recurrentes", description: "Configurar suscripciones y cobros autom\u00e1ticos" },
+  { key: "canManagePOS", label: "Punto de venta", description: "Acceso al POS para cobros presenciales" },
+] as const;
 
 function formatCurrency(amount: number | string) {
   return new Intl.NumberFormat("es-MX", { style: "currency", currency: "MXN" }).format(Number(amount));
@@ -232,6 +251,87 @@ function ClientDetailPanel({ clientId, onBack }: { clientId: number; onBack: () 
   const StatusIcon = cfg.icon;
   const initials = client.name.split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2);
 
+  return <ClientDetailContent
+    clientId={clientId}
+    client={client}
+    stats={stats}
+    recentTransactions={recentTransactions}
+    permissions={data.permissions}
+    cfg={cfg}
+    StatusIcon={StatusIcon}
+    initials={initials}
+    onBack={onBack}
+  />;
+}
+
+interface TxRecord {
+  id: number;
+  operationNumber: string | null;
+  payerName: string | null;
+  payerEmail: string | null;
+  amount: number;
+  commissionAmount: number;
+  netAmount: number;
+  commissionRate: number;
+  status: string;
+  createdAt: Date | string | null;
+}
+interface ClientRecord {
+  id: number;
+  name: string;
+  email: string;
+  businessName?: string | null;
+  phone?: string | null;
+  commissionRate?: string | number | null;
+  status: string;
+}
+interface StatsRecord {
+  totalTransactions: number;
+  succeededTransactions: number;
+  totalVolume: number;
+  totalCommission: number;
+  totalNet: number;
+  totalLinks: number;
+  activeLinks: number;
+}
+function ClientDetailContent({
+  clientId, client, stats, recentTransactions, permissions, cfg, StatusIcon, initials, onBack
+}: {
+  clientId: number;
+  client: ClientRecord;
+  stats: StatsRecord;
+  recentTransactions: TxRecord[];
+  permissions: string | null;
+  cfg: { label: string; color: string; icon: React.ElementType };
+  StatusIcon: React.ElementType;
+  initials: string;
+  onBack: () => void;
+}) {
+  const parsePerms = (raw: string | null): Record<string, boolean> => {
+    if (!raw) {
+      // Por defecto todos los permisos activos
+      return Object.fromEntries(ALL_PERMISSIONS.map(p => [p.key, true]));
+    }
+    try { return JSON.parse(raw) as Record<string, boolean>; } catch { return {}; }
+  };
+  const [localPerms, setLocalPerms] = useState<Record<string, boolean>>(() => parsePerms(permissions));
+  const [permsDirty, setPermsDirty] = useState(false);
+  const utils = trpc.useUtils();
+  const updatePerms = trpc.clients.updatePermissions.useMutation({
+    onSuccess: () => {
+      toast.success("Permisos actualizados correctamente");
+      setPermsDirty(false);
+      utils.clients.getDetail.invalidate({ id: clientId });
+    },
+    onError: () => toast.error("Error al guardar permisos"),
+  });
+  const togglePerm = (key: string) => {
+    setLocalPerms(prev => { const next = { ...prev, [key]: !prev[key] }; setPermsDirty(true); return next; });
+  };
+  const savePerms = () => {
+    updatePerms.mutate({ clientId: client.id as number, permissions: JSON.stringify(localPerms) });
+  };
+
   return (
     <div className="space-y-5">
       {/* Back button */}
@@ -334,6 +434,78 @@ function ClientDetailPanel({ clientId, onBack }: { clientId: number; onBack: () 
           </CardContent>
         </Card>
       </div>
+
+      {/* Permisos del cliente */}
+      <Card className="border-gray-200 shadow-sm">
+        <CardHeader className="pb-3 border-b border-gray-100">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-base font-semibold text-gray-800 flex items-center gap-2">
+              <Shield className="w-4 h-4 text-cyan-500" />
+              Accesos y Permisos
+            </CardTitle>
+            {permsDirty && (
+              <Button
+                onClick={savePerms}
+                disabled={updatePerms.isPending}
+                size="sm"
+                className="bg-cyan-500 hover:bg-cyan-400 text-white gap-1.5"
+              >
+                <Save className="w-3.5 h-3.5" />
+                {updatePerms.isPending ? "Guardando..." : "Guardar cambios"}
+              </Button>
+            )}
+          </div>
+          <p className="text-xs text-gray-500 mt-1">Activa o desactiva los m\u00f3dulos que este negocio puede usar en su panel.</p>
+        </CardHeader>
+        <CardContent className="p-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {ALL_PERMISSIONS.map(({ key, label, description }) => {
+              const enabled = localPerms[key] !== false;
+              return (
+                <button
+                  key={key}
+                  onClick={() => togglePerm(key)}
+                  className={`flex items-start gap-3 p-3 rounded-xl border text-left transition-all ${
+                    enabled
+                      ? "border-cyan-200 bg-cyan-50/50 hover:bg-cyan-50"
+                      : "border-gray-200 bg-gray-50/50 hover:bg-gray-50 opacity-60"
+                  }`}
+                >
+                  <div className={`mt-0.5 w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 ${
+                    enabled ? "bg-cyan-500" : "bg-gray-300"
+                  }`}>
+                    {enabled ? (
+                      <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                      </svg>
+                    ) : (
+                      <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    )}
+                  </div>
+                  <div className="min-w-0">
+                    <p className={`text-xs font-semibold ${ enabled ? "text-cyan-800" : "text-gray-500" }`}>{label}</p>
+                    <p className="text-xs text-gray-400 mt-0.5 leading-tight">{description}</p>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+          {permsDirty && (
+            <div className="mt-4 flex justify-end">
+              <Button
+                onClick={savePerms}
+                disabled={updatePerms.isPending}
+                className="bg-cyan-500 hover:bg-cyan-400 text-white gap-1.5"
+              >
+                <Save className="w-4 h-4" />
+                {updatePerms.isPending ? "Guardando..." : "Guardar permisos"}
+              </Button>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Recent transactions */}
       <Card className="border-gray-200 shadow-sm">

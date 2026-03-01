@@ -46,6 +46,26 @@ import PendingApproval from "@/pages/PendingApproval";
 
 const KOBRAPAY_ICON = "https://files.manuscdn.com/user_upload_by_module/session_file/310519663381362445/yMTQoaqGYTxuRnnF.png";
 
+// ─── Mapa de permisos por ítem del sidebar ────────────────────────────────────
+const ITEM_PERMISSION_MAP: Record<string, string> = {
+  "/dashboard/links": "canCreateLinks",
+  "/dashboard/create": "canCreateLinks",
+  "/dashboard/sales": "canViewSales",
+  "/dashboard/report": "canViewReports",
+  "/dashboard/contracts": "canManageContracts",
+  "/dashboard/payers": "canManageClients",
+  "/dashboard/expedientes": "canManageExpedientes",
+  "/dashboard/staff": "canManageStaff",
+  "/dashboard/hr": "canManageHR",
+  "/dashboard/nomina": "canManageNomina",
+  "/dashboard/catalog": "canManageCatalog",
+  "/dashboard/chargebacks": "canManageChargebacks",
+  "/dashboard/invoices": "canManageInvoices",
+  "/dashboard/recurring": "canManageRecurring",
+  "/dashboard/pos": "canManagePOS",
+  "/dashboard/settings": "canAccessSettings",
+};
+
 // ─── Grupos del sidebar ───────────────────────────────────────────────────────
 const NAV_GROUPS = [
   {
@@ -140,6 +160,7 @@ function Sidebar({
   isSuperAdmin,
   initials,
   userName,
+  permissions,
   onClose,
   onLogout,
 }: {
@@ -151,12 +172,20 @@ function Sidebar({
   isSuperAdmin: boolean;
   initials: string;
   userName: string;
+  permissions: Record<string, boolean>;
   onClose: () => void;
   onLogout: () => void;
 }) {
   const isGroupActive = (groupId: string) => {
     const group = NAV_GROUPS.find(g => g.id === groupId);
     return group?.items.some(i => location === i.href) ?? false;
+  };
+
+  const isItemVisible = (href: string) => {
+    if (isSuperAdmin) return true;
+    const permKey = ITEM_PERMISSION_MAP[href];
+    if (!permKey) return true; // sin restricción = siempre visible
+    return permissions[permKey] !== false;
   };
 
   return (
@@ -188,6 +217,10 @@ function Sidebar({
           {NAV_GROUPS.map((group) => {
             if (group.adminOnly && !isAdmin && !isSuperAdmin) return null;
 
+            // Filtrar ítems visibles según permisos
+            const visibleItems = group.items.filter(({ href }) => isItemVisible(href));
+            if (visibleItems.length === 0) return null;
+
             const groupActive = isGroupActive(group.id);
             const isCollapsed = collapsed[group.id] && !groupActive;
             const GroupIcon = group.icon;
@@ -217,13 +250,13 @@ function Sidebar({
                 {/* Ítems del grupo con animación CSS */}
                 <div
                   style={{
-                    maxHeight: isCollapsed ? "0px" : `${group.items.length * 44}px`,
+                    maxHeight: isCollapsed ? "0px" : `${visibleItems.length * 44}px`,
                     overflow: "hidden",
                     transition: "max-height 0.22s ease",
                   }}
                 >
                   <div className="mt-0.5 ml-2 space-y-0.5 border-l border-white/10 pl-2">
-                    {group.items.map(({ href, icon: Icon, label }) => {
+                    {visibleItems.map(({ href, icon: Icon, label }) => {
                       const isActive = location === href;
                       return (
                         <Link
@@ -347,6 +380,17 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   // isSuperAdmin viene del campo que ahora retorna auth.me
   const isSuperAdmin = (user as Record<string, unknown>)?.isSuperAdmin === true;
 
+  // Permisos del usuario: superadmin siempre tiene todo, otros leen de su perfil
+  const rawPerms = (user as Record<string, unknown>)?.permissions as string | null | undefined;
+  const userPermissions = (() => {
+    if (isSuperAdmin) {
+      // Todos los permisos activos para el superadmin
+      return Object.fromEntries(Object.keys(ITEM_PERMISSION_MAP).map(k => [k, true]));
+    }
+    if (!rawPerms) return {} as Record<string, boolean>;
+    try { return JSON.parse(rawPerms) as Record<string, boolean>; } catch { return {} as Record<string, boolean>; }
+  })();
+
   const sidebarProps = {
     location,
     collapsed,
@@ -355,6 +399,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     isSuperAdmin,
     initials,
     userName: user?.name || "Usuario",
+    permissions: userPermissions,
     onClose: closeSidebar,
     onLogout: handleLogout,
   };
