@@ -675,3 +675,66 @@ export const medicalRecords = mysqlTable("medical_records", {
 });
 export type MedicalRecord = typeof medicalRecords.$inferSelect;
 export type InsertMedicalRecord = typeof medicalRecords.$inferInsert;
+
+// *** CAPACITACIONES ***
+// Cursos disponibles en la plataforma (superadmin = globales, admin = internos de empresa)
+export const courses = mysqlTable("courses", {
+  id: int("id").primaryKey().autoincrement(),
+  // null = curso global de KobraPay (solo superadmin), número = curso interno de empresa
+  ownerId: int("ownerId"),
+  title: varchar("title", { length: 255 }).notNull(),
+  description: text("description"),
+  // Categoría: english, office, first_aid, sales, books, health, other
+  category: varchar("category", { length: 64 }).notNull().default("other"),
+  // Nivel: basic, intermediate, advanced, general
+  level: varchar("level", { length: 32 }).default("general"),
+  // URL externa del curso (YouTube, PDF, enlace externo)
+  externalUrl: text("externalUrl"),
+  // Contenido en texto/HTML (guía interna)
+  content: text("content"),
+  // Imagen de portada
+  coverImageUrl: text("coverImageUrl"),
+  // Duración estimada en minutos
+  durationMinutes: int("durationMinutes").default(0),
+  // Orden de visualización
+  sortOrder: int("sortOrder").default(0),
+  isActive: boolean("isActive").default(true).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type Course = typeof courses.$inferSelect;
+export type InsertCourse = typeof courses.$inferInsert;
+
+// Módulos/lecciones de un curso
+export const courseModules = mysqlTable("course_modules", {
+  id: int("id").primaryKey().autoincrement(),
+  courseId: int("courseId").notNull().references(() => courses.id),
+  title: varchar("title", { length: 255 }).notNull(),
+  description: text("description"),
+  content: text("content"),
+  externalUrl: text("externalUrl"),
+  sortOrder: int("sortOrder").default(0).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type CourseModule = typeof courseModules.$inferSelect;
+export type InsertCourseModule = typeof courseModules.$inferInsert;
+
+// Progreso del usuario en cada curso/módulo
+export const courseProgress = mysqlTable("course_progress", {
+  id: int("id").primaryKey().autoincrement(),
+  userId: int("userId").notNull().references(() => users.id),
+  courseId: int("courseId").notNull().references(() => courses.id),
+  moduleId: int("moduleId").references(() => courseModules.id),
+  // Status: in_progress, completed
+  status: varchar("status", { length: 32 }).default("in_progress").notNull(),
+  completedAt: timestamp("completedAt"),
+  // Evidencia subida por el usuario (URL en S3)
+  evidenceUrl: text("evidenceUrl"),
+  evidenceKey: text("evidenceKey"),
+  evidenceName: varchar("evidenceName", { length: 255 }),
+  notes: text("notes"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type CourseProgress = typeof courseProgress.$inferSelect;
+export type InsertCourseProgress = typeof courseProgress.$inferInsert;

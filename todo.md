@@ -512,11 +512,24 @@
 - [x] Campo birthDate en tabla employee_records (migración aplicada)
 
 ## Fase 23 - Mejoras Agenda Médica (continuación)
-- [ ] Campo birthDate visible en formulario de Expedientes RH
-- [ ] Recordatorio al paciente 24h antes de su cita (email + enlace WhatsApp)
-- [ ] Recordatorio post-cita al admin para marcar como completada o cancelada
+- [x] Campo birthDate visible en formulario de Expedientes RH
+- [x] Recordatorio al paciente 24h antes de su cita (email + enlace WhatsApp)
+- [x] Recordatorio post-cita al admin para marcar como completada o cancelada
 
 ## Fase 24 - Correcciones urgentes
 - [x] Corregir acceso restringido en página de Registros para super-admin (DPERUYEROS)
 - [x] Agregar procedimientos sendAppointmentReminder y sendPostAppointmentAlert en el router
 - [x] Actualizar MedicalAgenda con botones de recordatorio 24h y alerta post-cita
+
+## Fase 25 - Auditoría y correcciones
+- [x] Corregir employees.create y employees.update para incluir birthDate en el router
+- [x] Agregar campo title al formulario de contratos (nombre del contrato)
+- [x] Módulo de Capacitaciones: schema, router, páginas y menú
+
+## Fase 26 - Bugs urgentes Agenda Médica
+- [x] Corregir bug: archivos del paciente no se guardan (tab Archivos muestra 0)
+- [x] Corregir texto invisible en botón "+ Nueva cita" y título de página
+- [x] Mejorar botón Recordar: modal con Email + WhatsApp
+- [x] Agregar campanita de alertas de citas del día con opción de desactivar/marcar como visto
+- [x] Implementar recordatorios de cita personalizados con marca del negocio (logo, doctor, teléfonos)
+- [x] Agregar página de Capacitaciones con cursos de KobraPay

@@ -552,6 +552,11 @@ export async function sendAppointmentEmail(data: {
   patientName: string;
   doctorName: string;
   businessName: string;
+  businessPhone?: string;
+  businessEmail?: string;
+  businessAddress?: string;
+  businessLogoUrl?: string;
+  doctorSpecialty?: string;
   appointmentDate: string;
   appointmentTime: string;
   reason: string;
@@ -581,10 +586,26 @@ export async function sendAppointmentEmail(data: {
   const notesRow = data.notes
     ? `<tr style="border-top:1px solid #e5e7eb"><td style="color:#6b7280;font-size:13px;padding:12px">Notas</td><td style="color:#374151;font-size:13px;padding:12px">${data.notes}</td></tr>`
     : "";
-  const reminderBlock = data.action !== "cancelled"
-    ? `<div style="margin-top:24px;padding:16px;background:#fffbeb;border-radius:8px;border-left:4px solid #f59e0b"><p style="margin:0;color:#92400e;font-size:13px"><strong>Recordatorio:</strong> Por favor llega 10 minutos antes de tu cita. Si necesitas cancelar, contacta a ${data.businessName}.</p></div>`
+  const specialtyRow = data.doctorSpecialty
+    ? `<tr style="border-top:1px solid #e5e7eb"><td style="color:#6b7280;font-size:13px;padding:12px">Especialidad</td><td style="color:#374151;font-size:13px;padding:12px">${data.doctorSpecialty}</td></tr>`
     : "";
-  const html = `<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"></head><body style="margin:0;padding:0;background:#f4f4f5;font-family:Arial,sans-serif"><table width="100%" style="background:#f4f4f5;padding:40px 0"><tr><td align="center"><table width="580" style="background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.08)"><tr><td style="background:${label.color};padding:28px 40px"><h1 style="margin:0;color:#fff;font-size:22px;font-weight:800">${label.icon} ${label.title}</h1><p style="margin:6px 0 0;color:rgba(255,255,255,0.85);font-size:14px">${data.businessName} · KobraPay</p></td></tr><tr><td style="padding:32px 40px"><p style="color:#374151;font-size:15px;margin:0 0 12px">Hola <strong>${data.patientName}</strong>,</p><p style="color:#374151;font-size:15px;margin:0 0 20px">${actionMsg}</p><table width="100%" style="background:#f9fafb;border-radius:8px;border:1px solid #e5e7eb"><tr><td style="color:#6b7280;font-size:13px;padding:12px;width:40%">Médico</td><td style="color:#111827;font-weight:700;font-size:14px;padding:12px">${data.doctorName}</td></tr><tr style="border-top:1px solid #e5e7eb"><td style="color:#6b7280;font-size:13px;padding:12px">Fecha</td><td style="color:#111827;font-size:14px;padding:12px;text-transform:capitalize">${dateFormatted}</td></tr><tr style="border-top:1px solid #e5e7eb"><td style="color:#6b7280;font-size:13px;padding:12px">Hora</td><td style="color:${label.color};font-weight:800;font-size:16px;padding:12px">${data.appointmentTime}</td></tr><tr style="border-top:1px solid #e5e7eb"><td style="color:#6b7280;font-size:13px;padding:12px">Motivo</td><td style="color:#111827;font-size:14px;padding:12px">${data.reason}</td></tr>${notesRow}</table>${reminderBlock}</td></tr><tr><td style="background:#f9fafb;padding:16px 40px;text-align:center;border-top:1px solid #f3f4f6"><p style="margin:0;color:#9ca3af;font-size:12px">Notificacion enviada por <strong style="color:#00c853">KobraPay</strong> · kobrapay.mx</p></td></tr></table></td></tr></table></body></html>`;
+  const reminderBlock = data.action !== "cancelled"
+    ? `<div style="margin-top:24px;padding:16px;background:#fffbeb;border-radius:8px;border-left:4px solid #f59e0b"><p style="margin:0;color:#92400e;font-size:13px"><strong>Recordatorio:</strong> Por favor llega 10 minutos antes de tu cita. Si necesitas cancelar, contacta a ${data.businessName}${data.businessPhone ? ` al ${data.businessPhone}` : ''}.</p></div>`
+    : "";
+  // Logo del negocio (si existe)
+  const logoSection = data.businessLogoUrl
+    ? `<img src="${data.businessLogoUrl}" alt="${data.businessName}" style="max-height:60px;max-width:180px;object-fit:contain;margin-bottom:8px" /><br>`
+    : "";
+  // Contacto del negocio en el footer
+  const contactInfo = [
+    data.businessPhone ? `📞 ${data.businessPhone}` : null,
+    data.businessEmail ? `📧 ${data.businessEmail}` : null,
+    data.businessAddress ? `📍 ${data.businessAddress}` : null,
+  ].filter(Boolean).join(" &nbsp;·&nbsp; ");
+  const contactBlock = contactInfo
+    ? `<p style="margin:4px 0 0;color:rgba(255,255,255,0.85);font-size:12px">${contactInfo}</p>`
+    : "";
+  const html = `<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"></head><body style="margin:0;padding:0;background:#f4f4f5;font-family:Arial,sans-serif"><table width="100%" style="background:#f4f4f5;padding:40px 0"><tr><td align="center"><table width="580" style="background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.08)"><tr><td style="background:${label.color};padding:28px 40px;text-align:center">${logoSection}<h1 style="margin:0;color:#fff;font-size:22px;font-weight:800">${label.icon} ${label.title}</h1><p style="margin:6px 0 0;color:rgba(255,255,255,0.9);font-size:15px;font-weight:600">${data.businessName}</p>${contactBlock}</td></tr><tr><td style="padding:32px 40px"><p style="color:#374151;font-size:15px;margin:0 0 12px">Hola <strong>${data.patientName}</strong>,</p><p style="color:#374151;font-size:15px;margin:0 0 20px">${actionMsg}</p><table width="100%" style="background:#f9fafb;border-radius:8px;border:1px solid #e5e7eb"><tr><td style="color:#6b7280;font-size:13px;padding:12px;width:40%">Médico</td><td style="color:#111827;font-weight:700;font-size:14px;padding:12px">${data.doctorName}</td></tr>${specialtyRow}<tr style="border-top:1px solid #e5e7eb"><td style="color:#6b7280;font-size:13px;padding:12px">Fecha</td><td style="color:#111827;font-size:14px;padding:12px;text-transform:capitalize">${dateFormatted}</td></tr><tr style="border-top:1px solid #e5e7eb"><td style="color:#6b7280;font-size:13px;padding:12px">Hora</td><td style="color:${label.color};font-weight:800;font-size:16px;padding:12px">${data.appointmentTime}</td></tr><tr style="border-top:1px solid #e5e7eb"><td style="color:#6b7280;font-size:13px;padding:12px">Motivo</td><td style="color:#111827;font-size:14px;padding:12px">${data.reason}</td></tr>${notesRow}</table>${reminderBlock}</td></tr><tr><td style="background:#f9fafb;padding:16px 40px;text-align:center;border-top:1px solid #f3f4f6"><p style="margin:0;color:#9ca3af;font-size:12px">Notificacion enviada por <strong style="color:#00c853">KobraPay</strong> · kobrapay.mx</p></td></tr></table></td></tr></table></body></html>`;
   try {
     const { error } = await resend.emails.send({
       from: `${data.businessName} via KobraPay <${ENV.fromEmail}>`,

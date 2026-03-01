@@ -1,4 +1,4 @@
-import { and, desc, eq, gte, like, lte, or, sql } from "drizzle-orm";
+import { and, desc, eq, gte, isNull, like, lte, or, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import {
   Customer,
@@ -54,6 +54,15 @@ import {
   subscriptions,
   Subscription,
   InsertSubscription,
+  courses,
+  Course,
+  InsertCourse,
+  courseModules,
+  CourseModule,
+  InsertCourseModule,
+  courseProgress,
+  CourseProgress,
+  InsertCourseProgress,
 } from "../drizzle/schema";
 import { ENV } from "./_core/env";
 
@@ -1366,4 +1375,119 @@ export async function updateMedicalRecord(id: number, ownerId: number, data: Par
   const db = await getDb();
   if (!db) return;
   await db.update(medicalRecords).set(data).where(and(eq(medicalRecords.id, id), eq(medicalRecords.ownerId, ownerId)));
+}
+
+// ─── Capacitaciones / Cursos ──────────────────────────────────────────────────
+
+export async function getCourses(ownerId?: number | null): Promise<Course[]> {
+  const db = await getDb();
+  if (!db) return [];
+  if (ownerId) {
+    return db.select().from(courses)
+      .where(and(eq(courses.isActive, true), or(isNull(courses.ownerId), eq(courses.ownerId, ownerId))))
+      .orderBy(courses.sortOrder, courses.category, courses.title);
+  }
+  return db.select().from(courses)
+    .where(and(eq(courses.isActive, true), isNull(courses.ownerId)))
+    .orderBy(courses.sortOrder, courses.category, courses.title);
+}
+
+export async function getCourseById(id: number): Promise<Course | null> {
+  const db = await getDb();
+  if (!db) return null;
+  const [c] = await db.select().from(courses).where(eq(courses.id, id));
+  return c || null;
+}
+
+export async function createCourse(data: Omit<InsertCourse, "id" | "createdAt" | "updatedAt">): Promise<Course> {
+  const db = await getDb();
+  if (!db) throw new Error("DB not available");
+  const [res] = await db.insert(courses).values(data as InsertCourse);
+  const insertId = (res as { insertId: number }).insertId;
+  const [created] = await db.select().from(courses).where(eq(courses.id, insertId));
+  return created;
+}
+
+export async function updateCourse(id: number, data: Partial<InsertCourse>): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(courses).set(data).where(eq(courses.id, id));
+}
+
+export async function deleteCourse(id: number): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  await db.delete(courses).where(eq(courses.id, id));
+}
+
+export async function getCourseModules(courseId: number): Promise<CourseModule[]> {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(courseModules)
+    .where(eq(courseModules.courseId, courseId))
+    .orderBy(courseModules.sortOrder);
+}
+
+export async function createCourseModule(data: Omit<InsertCourseModule, "id" | "createdAt">): Promise<CourseModule> {
+  const db = await getDb();
+  if (!db) throw new Error("DB not available");
+  const [res] = await db.insert(courseModules).values(data as InsertCourseModule);
+  const insertId = (res as { insertId: number }).insertId;
+  const [created] = await db.select().from(courseModules).where(eq(courseModules.id, insertId));
+  return created;
+}
+
+export async function getCourseProgress(userId: number, courseId?: number): Promise<CourseProgress[]> {
+  const db = await getDb();
+  if (!db) return [];
+  if (courseId) {
+    return db.select().from(courseProgress)
+      .where(and(eq(courseProgress.userId, userId), eq(courseProgress.courseId, courseId)));
+  }
+  return db.select().from(courseProgress).where(eq(courseProgress.userId, userId));
+}
+
+export async function upsertCourseProgress(data: {
+  userId: number;
+  courseId: number;
+  moduleId?: number | null;
+  status: string;
+  evidenceUrl?: string | null;
+  evidenceKey?: string | null;
+  evidenceName?: string | null;
+  notes?: string | null;
+}): Promise<CourseProgress> {
+  const db = await getDb();
+  if (!db) throw new Error("DB not available");
+  const where = data.moduleId
+    ? and(eq(courseProgress.userId, data.userId), eq(courseProgress.courseId, data.courseId), eq(courseProgress.moduleId, data.moduleId))
+    : and(eq(courseProgress.userId, data.userId), eq(courseProgress.courseId, data.courseId), isNull(courseProgress.moduleId));
+  const [existing] = await db.select().from(courseProgress).where(where);
+  if (existing) {
+    await db.update(courseProgress).set({
+      status: data.status,
+      completedAt: data.status === 'completed' ? new Date() : existing.completedAt,
+      evidenceUrl: data.evidenceUrl !== undefined ? data.evidenceUrl : existing.evidenceUrl,
+      evidenceKey: data.evidenceKey !== undefined ? data.evidenceKey : existing.evidenceKey,
+      evidenceName: data.evidenceName !== undefined ? data.evidenceName : existing.evidenceName,
+      notes: data.notes !== undefined ? data.notes : existing.notes,
+    }).where(eq(courseProgress.id, existing.id));
+    const [updated] = await db.select().from(courseProgress).where(eq(courseProgress.id, existing.id));
+    return updated;
+  }
+  const insertData: InsertCourseProgress = {
+    userId: data.userId,
+    courseId: data.courseId,
+    moduleId: data.moduleId || null,
+    status: data.status,
+    completedAt: data.status === 'completed' ? new Date() : null,
+    evidenceUrl: data.evidenceUrl || null,
+    evidenceKey: data.evidenceKey || null,
+    evidenceName: data.evidenceName || null,
+    notes: data.notes || null,
+  };
+  const [res] = await db.insert(courseProgress).values(insertData);
+  const insertId = (res as { insertId: number }).insertId;
+  const [created] = await db.select().from(courseProgress).where(eq(courseProgress.id, insertId));
+  return created;
 }

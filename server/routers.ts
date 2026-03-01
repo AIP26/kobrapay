@@ -2095,6 +2095,7 @@ export const appRouter = router({
         rfc: z.string().optional(),
         address: z.string().optional(),
         startDate: z.string().optional(),
+        birthDate: z.string().optional().or(z.literal("")),
         notes: z.string().optional(),
         photoUrl: z.string().optional(),
         photoKey: z.string().optional(),
@@ -2114,6 +2115,7 @@ export const appRouter = router({
           rfc: input.rfc ?? null,
           address: input.address ?? null,
           startDate: input.startDate ? new Date(input.startDate) : null,
+          birthDate: input.birthDate || null,
           notes: input.notes ?? null,
           photoUrl: input.photoUrl ?? null,
           photoKey: input.photoKey ?? null,
@@ -2135,17 +2137,19 @@ export const appRouter = router({
         rfc: z.string().optional(),
         address: z.string().optional(),
         startDate: z.string().optional(),
+        birthDate: z.string().optional().or(z.literal("")),
         notes: z.string().optional(),
         status: z.enum(["active", "inactive"]).optional(),
         photoUrl: z.string().optional(),
         photoKey: z.string().optional(),
       }))
       .mutation(async ({ ctx, input }) => {
-        const { id, startDate, ...rest } = input;
+        const { id, startDate, birthDate, ...rest } = input;
         await updateEmployeeRecord(id, ctx.user.id, {
           ...rest,
           email: rest.email || null,
           startDate: startDate ? new Date(startDate) : undefined,
+          birthDate: birthDate !== undefined ? (birthDate || null) : undefined,
         });
         return { success: true };
       }),
@@ -3071,14 +3075,28 @@ export const appRouter = router({
         if (!patient?.email) throw new TRPCError({ code: 'BAD_REQUEST', message: 'El paciente no tiene correo registrado' });
         const vendorSett = await getVendorSettings(ctx.user.id);
         const businessName = vendorSett?.businessName || ctx.user.name || 'Consultorio';
+        const businessPhone = (vendorSett as any)?.businessPhone || undefined;
+        const businessEmail = (vendorSett as any)?.businessEmail || undefined;
+        const businessLogoUrl = (vendorSett as any)?.logoUrl || undefined;
+        // Obtener perfil del usuario para especialidad y dirección
+        const profile = await getUserProfile(ctx.user.id);
+        const doctorSpecialty = (profile as any)?.businessType || undefined;
+        const businessAddress = (profile as any)?.ciudad
+          ? `${(profile as any).ciudad}${(profile as any).estado ? ', ' + (profile as any).estado : ''}`
+          : undefined;
         const apptDate = new Date(appt.appointmentDate);
         const timeStr = apptDate.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit', hour12: true, timeZone: 'America/Mexico_City' });
         const patientName = [patient.firstName, patient.lastName].filter(Boolean).join(' ');
         const sent = await sendAppointmentEmail({
           patientEmail: patient.email,
           patientName,
-          doctorName: ctx.user.name || 'Su m\u00e9dico',
+          doctorName: ctx.user.name || 'Su médico',
           businessName,
+          businessPhone,
+          businessEmail,
+          businessLogoUrl,
+          doctorSpecialty,
+          businessAddress,
           appointmentDate: appt.appointmentDate.toISOString(),
           appointmentTime: timeStr,
           reason: appt.title,
@@ -3091,7 +3109,30 @@ export const appRouter = router({
         return { sent, whatsappLink: waLink, patientPhone: patient.phone };
       }),
 
-    // ─── Alerta post-cita al admin ────────────────────────────────────────────
+    // ─── Citas de hoy para campanita ──────────────────────────────────────────────
+    todayAppointmentsAlert: protectedProcedure
+      .query(async ({ ctx }) => {
+        const { getMedicalAppointmentsByOwner: getAppts, getMedicalPatientById: getPatient } = await import('./db');
+        const appts = await getAppts(ctx.user.id);
+        const today = new Date();
+        const todayAppts = appts.filter((a: any) => {
+          const d = new Date(a.appointmentDate);
+          return d.getFullYear() === today.getFullYear() &&
+            d.getMonth() === today.getMonth() &&
+            d.getDate() === today.getDate() &&
+            a.status === 'scheduled';
+        });
+        // Enriquecer con nombre del paciente
+        const enriched = await Promise.all(todayAppts.map(async (a: any) => {
+          const patient = await getPatient(a.patientId, ctx.user.id);
+          return {
+            ...a,
+            patientName: patient ? `${patient.firstName} ${patient.lastName}` : 'Paciente',
+          };
+        }));
+        return { count: enriched.length, appointments: enriched };
+      }),
+    // ─── Alerta post-cita al admin ────────────────────────────────────────────────
     sendPostAppointmentAlert: protectedProcedure
       .input(z.object({ appointmentId: z.number() }))
       .mutation(async ({ ctx, input }) => {
@@ -3107,6 +3148,133 @@ export const appRouter = router({
           content: `La cita de ${patientName} (${appt.title}) programada a las ${timeStr} ya debi\u00f3 concluir. Marca la cita como Completada o Cancelada en la Agenda M\u00e9dica.`,
         });
         return { sent: true };
+      }),
+  }),
+
+  // ─── Capacitaciones ───────────────────────────────────────────────────────────
+  training: router({
+    // Listar cursos (globales de KobraPay + internos del negocio)
+    list: protectedProcedure.query(async ({ ctx }) => {
+      const { getCourses, getCourseProgress } = await import('./db');
+      const allCourses = await getCourses(ctx.user.id);
+      const myProgress = await getCourseProgress(ctx.user.id);
+      return allCourses.map(c => ({
+        ...c,
+        progress: myProgress.filter(p => p.courseId === c.id),
+        isCompleted: myProgress.some(p => p.courseId === c.id && !p.moduleId && p.status === 'completed'),
+      }));
+    }),
+
+    // Detalle de un curso con módulos y progreso
+    getDetail: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .query(async ({ ctx, input }) => {
+        const { getCourseById, getCourseModules, getCourseProgress } = await import('./db');
+        const course = await getCourseById(input.id);
+        if (!course) throw new TRPCError({ code: 'NOT_FOUND' });
+        const modules = await getCourseModules(input.id);
+        const progress = await getCourseProgress(ctx.user.id, input.id);
+        return { course, modules, progress };
+      }),
+
+    // Marcar curso o módulo como completado
+    markComplete: protectedProcedure
+      .input(z.object({
+        courseId: z.number(),
+        moduleId: z.number().optional(),
+        notes: z.string().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const { upsertCourseProgress } = await import('./db');
+        return upsertCourseProgress({
+          userId: ctx.user.id,
+          courseId: input.courseId,
+          moduleId: input.moduleId || null,
+          status: 'completed',
+          notes: input.notes || null,
+        });
+      }),
+
+    // Subir evidencia de un curso
+    uploadEvidence: protectedProcedure
+      .input(z.object({
+        courseId: z.number(),
+        moduleId: z.number().optional(),
+        fileName: z.string(),
+        fileBase64: z.string(),
+        mimeType: z.string().default('application/octet-stream'),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const { storagePut } = await import('./storage');
+        const { upsertCourseProgress } = await import('./db');
+        const buffer = Buffer.from(input.fileBase64, 'base64');
+        const ext = input.fileName.split('.').pop() || 'bin';
+        const key = `evidence/${ctx.user.id}/course-${input.courseId}-${Date.now()}.${ext}`;
+        const { url } = await storagePut(key, buffer, input.mimeType);
+        return upsertCourseProgress({
+          userId: ctx.user.id,
+          courseId: input.courseId,
+          moduleId: input.moduleId || null,
+          status: 'completed',
+          evidenceUrl: url,
+          evidenceKey: key,
+          evidenceName: input.fileName,
+        });
+      }),
+
+    // Crear curso (superadmin = global, admin = interno)
+    create: protectedProcedure
+      .input(z.object({
+        title: z.string().min(1).max(255),
+        description: z.string().optional(),
+        category: z.enum(['english', 'office', 'first_aid', 'sales', 'books', 'health', 'other']).default('other'),
+        level: z.enum(['basic', 'intermediate', 'advanced', 'general']).default('general'),
+        externalUrl: z.string().url().optional().or(z.literal('')),
+        content: z.string().optional(),
+        coverImageUrl: z.string().optional(),
+        durationMinutes: z.number().min(0).default(0),
+        sortOrder: z.number().default(0),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const { createCourse } = await import('./db');
+        // Superadmin crea cursos globales (ownerId = null), admin crea cursos internos
+        const ownerId = isSuperAdmin(ctx.user.openId) ? null : ctx.user.id;
+        return createCourse({
+          ...input,
+          ownerId,
+          externalUrl: input.externalUrl || null,
+          content: input.content || null,
+          coverImageUrl: input.coverImageUrl || null,
+          isActive: true,
+        });
+      }),
+
+    // Eliminar curso (solo quien lo creó o superadmin)
+    delete: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        const { getCourseById, deleteCourse } = await import('./db');
+        const course = await getCourseById(input.id);
+        if (!course) throw new TRPCError({ code: 'NOT_FOUND' });
+        if (course.ownerId !== null && course.ownerId !== ctx.user.id && !isSuperAdmin(ctx.user.openId)) {
+          throw new TRPCError({ code: 'FORBIDDEN' });
+        }
+        await deleteCourse(input.id);
+        return { success: true };
+      }),
+
+    // Obtener CV de capacitaciones de un empleado
+    getEmployeeCV: protectedProcedure
+      .input(z.object({ userId: z.number() }))
+      .query(async ({ ctx, input }) => {
+        const { getCourseProgress, getCourseById } = await import('./db');
+        const progress = await getCourseProgress(input.userId);
+        const completed = progress.filter(p => p.status === 'completed' && !p.moduleId);
+        const enriched = await Promise.all(completed.map(async p => {
+          const course = await getCourseById(p.courseId);
+          return { ...p, course };
+        }));
+        return enriched;
       }),
   }),
 });

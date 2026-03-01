@@ -385,17 +385,28 @@ function PatientDetailPanel({
       toast.success("Expediente guardado");
     },
   });
+  const [pendingFileName, setPendingFileName] = useState("");
+  const saveFileAsRecord = trpc.medical.records.create.useMutation({
+    onSuccess: () => {
+      utils.medical.records.listByPatient.invalidate({ patientId: patient.id });
+      toast.success("Archivo guardado en el expediente");
+    },
+    onError: () => toast.error("Error al guardar el archivo"),
+  });
   const uploadFile = trpc.medical.uploadFile.useMutation({
     onSuccess: (data) => {
-      const current = recordForm.attachments ? JSON.parse(recordForm.attachments) as Attachment[] : [];
       const newAttachment: Attachment = {
         url: data.url,
-        name: `archivo-${Date.now()}`,
+        name: pendingFileName || `archivo-${Date.now()}`,
         category: uploadCategory,
         uploadedAt: new Date().toISOString(),
       };
-      setRecordForm((f) => ({ ...f, attachments: JSON.stringify([...current, newAttachment]) }));
-      toast.success("Archivo subido correctamente");
+      // Guardar automáticamente como expediente clínico
+      saveFileAsRecord.mutate({
+        patientId: patient.id,
+        clinicalNotes: `Archivo adjunto: ${newAttachment.name} (${uploadCategory})`,
+        attachments: JSON.stringify([newAttachment]),
+      });
     },
     onError: () => toast.error("Error al subir archivo"),
   });
@@ -403,6 +414,7 @@ function PatientDetailPanel({
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    setPendingFileName(file.name);
     const reader = new FileReader();
     reader.onload = () => {
       const base64 = (reader.result as string).split(",")[1];
@@ -415,6 +427,8 @@ function PatientDetailPanel({
       });
     };
     reader.readAsDataURL(file);
+    // Reset input para permitir subir el mismo archivo de nuevo
+    e.target.value = "";
   };
 
   const categoryLabel: Record<string, string> = {
@@ -768,7 +782,7 @@ export default function MedicalAgenda() {
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
   const [calendarDate, setCalendarDate] = useState<Date | null>(null);
   const [editingAppt, setEditingAppt] = useState<Appointment | null>(null);
-
+  const [showBellPanel, setShowBellPanel] = useState(false);
   const { data: patients = [], isLoading: loadingPatients } = trpc.medical.patients.list.useQuery();
   const { data: appointments = [], isLoading: loadingAppts } = trpc.medical.appointments.list.useQuery();
   const { data: birthdays } = trpc.medical.todayBirthdays.useQuery();
@@ -799,13 +813,54 @@ export default function MedicalAgenda() {
     onSuccess: (r) => toast.success(`Se enviaron ${r.sent} emails de cumpleaños`),
     onError: (e) => toast.error(`Error: ${e.message}`),
   });
+  // Estado para modal de recordatorio
+  const [reminderAppt, setReminderAppt] = useState<Appointment | null>(null);
+  const [showReminderModal, setShowReminderModal] = useState(false);
+  // Estado para campanita de citas del día
+  const [dismissedAlerts, setDismissedAlerts] = useState<number[]>(() => {
+    try { return JSON.parse(localStorage.getItem('dismissed_appt_alerts') || '[]'); } catch { return []; }
+  });
+  const { data: todayAlertData } = trpc.medical.todayAppointmentsAlert.useQuery();
+  const todayAlertAppts = (todayAlertData?.appointments || []).filter((a: any) => !dismissedAlerts.includes(a.id));
+  const dismissAlert = (id: number) => {
+    const updated = [...dismissedAlerts, id];
+    setDismissedAlerts(updated);
+    localStorage.setItem('dismissed_appt_alerts', JSON.stringify(updated));
+  };
+  const dismissAllAlerts = () => {
+    const ids = (todayAlertData?.appointments || []).map((a: any) => a.id);
+    const updated = [...dismissedAlerts, ...ids];
+    setDismissedAlerts(updated);
+    localStorage.setItem('dismissed_appt_alerts', JSON.stringify(updated));
+  };
   const sendReminder = trpc.medical.sendAppointmentReminder.useMutation({
     onSuccess: (r) => {
       toast.success('Recordatorio enviado por email al paciente');
-      if (r.whatsappLink) window.open(r.whatsappLink, '_blank');
+      if (r.whatsappLink && reminderAppt) {
+        // No abrir WhatsApp automáticamente, el usuario elige
+      }
+      setShowReminderModal(false);
     },
     onError: (e) => toast.error(`Error: ${e.message}`),
   });
+  const handleOpenReminder = (appt: Appointment) => {
+    setReminderAppt(appt);
+    setShowReminderModal(true);
+  };
+  const handleSendReminderEmail = () => {
+    if (!reminderAppt) return;
+    sendReminder.mutate({ appointmentId: reminderAppt.id });
+  };
+  const handleSendReminderWhatsApp = async () => {
+    if (!reminderAppt) return;
+    // Obtener el link de WhatsApp del servidor
+    sendReminder.mutate({ appointmentId: reminderAppt.id }, {
+      onSuccess: (r) => {
+        if (r.whatsappLink) window.open(r.whatsappLink, '_blank');
+        setShowReminderModal(false);
+      },
+    });
+  };
   const sendPostAlert = trpc.medical.sendPostAppointmentAlert.useMutation({
     onSuccess: () => toast.success('Alerta enviada. Revisa las notificaciones para marcar la cita.'),
     onError: (e) => toast.error(`Error: ${e.message}`),
@@ -848,7 +903,22 @@ export default function MedicalAgenda() {
               Gestión de pacientes, citas y expedientes clínicos
             </p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 items-center">
+            {/* Campanita de citas del día */}
+            {todayAlertAppts.length > 0 && (
+              <div className="relative">
+                <button
+                  onClick={() => setShowBellPanel(prev => !prev)}
+                  className="relative p-2 rounded-full bg-[#FF6B00]/20 hover:bg-[#FF6B00]/30 border border-[#FF6B00]/50 transition-colors"
+                  title="Citas de hoy"
+                >
+                  <span className="text-xl">🔔</span>
+                  <span className="absolute -top-1 -right-1 bg-[#FF6B00] text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                    {todayAlertAppts.length}
+                  </span>
+                </button>
+              </div>
+            )}
             <Button variant="outline" className="border-gray-600 text-gray-200 hover:bg-gray-800" onClick={() => setShowApptForm(true)}>
               + Nueva cita
             </Button>
@@ -860,6 +930,91 @@ export default function MedicalAgenda() {
             </Button>
           </div>
         </div>
+
+        {/* Panel de campanita de citas del día */}
+        {showBellPanel && todayAlertAppts.length > 0 && (
+          <div className="mb-6 bg-[#1a2035] border border-[#FF6B00]/40 rounded-xl p-4">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <span className="text-xl">🔔</span>
+                <span className="text-white font-semibold">Citas de hoy ({todayAlertAppts.length})</span>
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={dismissAllAlerts}
+                  className="text-xs text-gray-400 hover:text-white border border-gray-600 rounded px-2 py-1"
+                >
+                  Marcar todas como vistas
+                </button>
+                <button onClick={() => setShowBellPanel(false)} className="text-gray-400 hover:text-white text-lg leading-none">×</button>
+              </div>
+            </div>
+            <div className="space-y-2">
+              {todayAlertAppts.map((a: any) => {
+                const t = new Date(a.appointmentDate).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit', hour12: true });
+                return (
+                  <div key={a.id} className="flex items-center justify-between bg-[#111827] rounded-lg px-3 py-2">
+                    <div>
+                      <span className="text-white text-sm font-medium">{a.title}</span>
+                      <span className="text-gray-400 text-xs ml-2">{a.patientName} — {t}</span>
+                    </div>
+                    <button
+                      onClick={() => dismissAlert(a.id)}
+                      className="text-xs text-green-400 hover:text-green-300 border border-green-700 rounded px-2 py-1"
+                    >
+                      ✓ Visto
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Modal de recordatorio Email + WhatsApp */}
+        <Dialog open={showReminderModal} onOpenChange={setShowReminderModal}>
+          <DialogContent className="bg-[#1a2035] border-gray-700 text-white max-w-sm">
+            <DialogHeader>
+              <DialogTitle className="text-white">📨 Enviar recordatorio de cita</DialogTitle>
+            </DialogHeader>
+            {reminderAppt && (
+              <div className="space-y-4">
+                <div className="bg-[#111827] rounded-lg p-3">
+                  <div className="text-sm text-gray-300"><span className="text-gray-500">Cita:</span> {reminderAppt.title}</div>
+                  <div className="text-sm text-gray-300"><span className="text-gray-500">Fecha:</span> {new Date(reminderAppt.appointmentDate).toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'long' })}</div>
+                  <div className="text-sm text-gray-300"><span className="text-gray-500">Hora:</span> {new Date(reminderAppt.appointmentDate).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit', hour12: true })}</div>
+                </div>
+                <p className="text-gray-400 text-sm">¿Cómo deseas enviar el recordatorio al paciente?</p>
+                <div className="flex flex-col gap-2">
+                  <Button
+                    className="bg-blue-600 hover:bg-blue-700 text-white w-full"
+                    onClick={handleSendReminderEmail}
+                    disabled={sendReminder.isPending}
+                  >
+                    📧 Enviar por Email
+                  </Button>
+                  <Button
+                    className="bg-green-600 hover:bg-green-700 text-white w-full"
+                    onClick={handleSendReminderWhatsApp}
+                    disabled={sendReminder.isPending}
+                  >
+                    📱 Enviar por WhatsApp
+                  </Button>
+                  <Button
+                    className="bg-[#FF6B00] hover:bg-[#e55f00] text-white w-full"
+                    onClick={() => { handleSendReminderEmail(); setTimeout(() => handleSendReminderWhatsApp(), 1500); }}
+                    disabled={sendReminder.isPending}
+                  >
+                    📧📱 Enviar por ambos
+                  </Button>
+                </div>
+              </div>
+            )}
+            <DialogFooter>
+              <Button variant="outline" className="border-gray-600 text-gray-300" onClick={() => setShowReminderModal(false)}>Cancelar</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
         {/* Banner de cumpleaños de hoy */}
         {totalBirthdays > 0 && (
@@ -1027,7 +1182,7 @@ export default function MedicalAgenda() {
                             {appt.status === "scheduled" && (
                               <>
                                 <Button size="sm" variant="outline" className="text-xs border-blue-600/50 text-blue-400 hover:bg-blue-900/30"
-                                  onClick={() => sendReminder.mutate({ appointmentId: appt.id })}>
+                                  onClick={() => handleOpenReminder(appt)}>
                                   📧 Recordar
                                 </Button>
                                 <Button size="sm" variant="outline" className="text-xs border-yellow-600/50 text-yellow-400 hover:bg-yellow-900/30"
@@ -1095,7 +1250,7 @@ export default function MedicalAgenda() {
                           <div className="flex gap-2 flex-wrap">
                             <Button
                               size="sm" variant="outline" className="text-xs border-blue-600/50 text-blue-400 hover:bg-blue-900/30"
-                              onClick={() => sendReminder.mutate({ appointmentId: appt.id })}
+                              onClick={() => handleOpenReminder(appt)}
                             >
                               📧 Recordar
                             </Button>

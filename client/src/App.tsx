@@ -40,6 +40,7 @@ import Colaboradores from "./pages/Colaboradores";
 import Checador from "./pages/Checador";
 import Nomina from "./pages/Nomina";
 import MedicalAgenda from "./pages/MedicalAgenda";
+import Training from "./pages/Training";
 
 function Router() {
   return (
@@ -75,6 +76,7 @@ function Router() {
       <Route path="/dashboard/nomina" component={Nomina} />
       <Route path="/dashboard/commissions" component={CommissionsPanel} />
       <Route path="/dashboard/medical" component={MedicalAgenda} />
+      <Route path="/dashboard/training" component={Training} />
       <Route path="/sign-contract/:token" component={SignContract} />
       <Route path="/complete-profile" component={CompleteProfile} />
       <Route path="/dashboard/profile" component={MyProfile} />

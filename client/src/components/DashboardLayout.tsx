@@ -36,6 +36,7 @@ import {
   Zap,
   DollarSign,
   Stethoscope,
+  GraduationCap,
 } from "lucide-react";
 import { useState, useCallback, useMemo } from "react";
 import GlobalSearch from "./GlobalSearch";
@@ -109,6 +110,7 @@ const NAV_GROUPS = [
       { href: "/dashboard/agents", icon: UserPlus, label: "Vendedores" },
       { href: "/dashboard/commissions", icon: TrendingUp, label: "Comisiones" },
       { href: "/dashboard/medical", icon: Stethoscope, label: "Agenda Médica" },
+      { href: "/dashboard/training", icon: GraduationCap, label: "Capacitaciones" },
     ],
   },
   {
