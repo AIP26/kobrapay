@@ -3473,6 +3473,429 @@ export const appRouter = router({
         return result[0];
       }),
   }),
+
+  // ─── Agenda de Proveedores ──────────────────────────────────────────────────────
+  suppliers: router({
+    // Listar proveedores del usuario actual
+    list: protectedProcedure
+      .input(z.object({
+        search: z.string().optional(),
+        category: z.string().optional(),
+      }).optional())
+      .query(async ({ ctx, input }) => {
+        const db = await import('./db').then(m => m.getDb ? m.getDb() : null);
+        if (!db) return [];
+        const { suppliers } = await import('../drizzle/schema');
+        const { eq, and, or, like, desc } = await import('drizzle-orm');
+        let conditions: any[] = [eq(suppliers.ownerId, ctx.user.id), eq(suppliers.isActive, true)];
+        if (input?.category && input.category !== 'all') {
+          conditions.push(eq(suppliers.category, input.category));
+        }
+        const rows = await db.select().from(suppliers)
+          .where(and(...conditions))
+          .orderBy(desc(suppliers.createdAt));
+        // Filtrar por búsqueda en memoria (más simple y compatible)
+        if (input?.search) {
+          const q = input.search.toLowerCase();
+          return rows.filter(s =>
+            s.name.toLowerCase().includes(q) ||
+            (s.company || '').toLowerCase().includes(q) ||
+            (s.phone || '').toLowerCase().includes(q) ||
+            (s.email || '').toLowerCase().includes(q) ||
+            (s.notes || '').toLowerCase().includes(q)
+          );
+        }
+        return rows;
+      }),
+
+    // Crear proveedor
+    create: protectedProcedure
+      .input(z.object({
+        name: z.string().min(1).max(255),
+        company: z.string().max(255).optional().or(z.literal('')),
+        phone: z.string().max(32).optional().or(z.literal('')),
+        email: z.string().email().optional().or(z.literal('')),
+        category: z.string().default('other'),
+        notes: z.string().optional().or(z.literal('')),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const db = await import('./db').then(m => m.getDb ? m.getDb() : null);
+        if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
+        const { suppliers } = await import('../drizzle/schema');
+        await db.insert(suppliers).values({
+          ownerId: ctx.user.id,
+          name: input.name,
+          company: input.company || null,
+          phone: input.phone || null,
+          email: input.email || null,
+          category: input.category,
+          notes: input.notes || null,
+        });
+        const { eq, desc } = await import('drizzle-orm');
+        const result = await db.select().from(suppliers)
+          .where(eq(suppliers.ownerId, ctx.user.id))
+          .orderBy(desc(suppliers.createdAt))
+          .limit(1);
+        return result[0];
+      }),
+
+    // Actualizar proveedor
+    update: protectedProcedure
+      .input(z.object({
+        id: z.number(),
+        name: z.string().min(1).max(255).optional(),
+        company: z.string().max(255).optional().or(z.literal('')),
+        phone: z.string().max(32).optional().or(z.literal('')),
+        email: z.string().email().optional().or(z.literal('')),
+        category: z.string().optional(),
+        notes: z.string().optional().or(z.literal('')),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const db = await import('./db').then(m => m.getDb ? m.getDb() : null);
+        if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
+        const { suppliers } = await import('../drizzle/schema');
+        const { eq, and } = await import('drizzle-orm');
+        const { id, ...data } = input;
+        const updateData: Record<string, unknown> = { updatedAt: new Date() };
+        if (data.name !== undefined) updateData.name = data.name;
+        if (data.company !== undefined) updateData.company = data.company || null;
+        if (data.phone !== undefined) updateData.phone = data.phone || null;
+        if (data.email !== undefined) updateData.email = data.email || null;
+        if (data.category !== undefined) updateData.category = data.category;
+        if (data.notes !== undefined) updateData.notes = data.notes || null;
+        await db.update(suppliers).set(updateData).where(and(eq(suppliers.id, id), eq(suppliers.ownerId, ctx.user.id)));
+        const result = await db.select().from(suppliers).where(and(eq(suppliers.id, id), eq(suppliers.ownerId, ctx.user.id))).limit(1);
+        return result[0];
+      }),
+
+    // Eliminar proveedor (soft delete)
+    delete: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        const db = await import('./db').then(m => m.getDb ? m.getDb() : null);
+        if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
+        const { suppliers } = await import('../drizzle/schema');
+        const { eq, and } = await import('drizzle-orm');
+        await db.update(suppliers)
+          .set({ isActive: false, updatedAt: new Date() })
+          .where(and(eq(suppliers.id, input.id), eq(suppliers.ownerId, ctx.user.id)));
+        return { success: true };
+      }),
+  }),
+
+  // ─── Prescripciones Médicas ─────────────────────────────────────────────────────
+  prescriptions: router({
+    // Obtener/crear perfil del doctor
+    getDoctorProfile: protectedProcedure.query(async ({ ctx }) => {
+      const db = await import('./db').then(m => m.getDb ? m.getDb() : null);
+      if (!db) return null;
+      const { doctorProfiles } = await import('../drizzle/schema');
+      const { eq } = await import('drizzle-orm');
+      const result = await db.select().from(doctorProfiles).where(eq(doctorProfiles.userId, ctx.user.id)).limit(1);
+      return result[0] || null;
+    }),
+
+    saveDoctorProfile: protectedProcedure
+      .input(z.object({
+        fullName: z.string().optional(),
+        specialty: z.string().optional(),
+        licenseNumber: z.string().optional(),
+        institution: z.string().optional(),
+        officePhone: z.string().optional(),
+        officeAddress: z.string().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const db = await import('./db').then(m => m.getDb ? m.getDb() : null);
+        if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
+        const { doctorProfiles } = await import('../drizzle/schema');
+        const { eq } = await import('drizzle-orm');
+        const existing = await db.select().from(doctorProfiles).where(eq(doctorProfiles.userId, ctx.user.id)).limit(1);
+        if (existing.length > 0) {
+          await db.update(doctorProfiles).set({ ...input, updatedAt: new Date() }).where(eq(doctorProfiles.userId, ctx.user.id));
+        } else {
+          await db.insert(doctorProfiles).values({ userId: ctx.user.id, ...input });
+        }
+        const result = await db.select().from(doctorProfiles).where(eq(doctorProfiles.userId, ctx.user.id)).limit(1);
+        return result[0];
+      }),
+
+    uploadMembrete: protectedProcedure
+      .input(z.object({ fileName: z.string(), fileBase64: z.string(), mimeType: z.string() }))
+      .mutation(async ({ ctx, input }) => {
+        const { storagePut } = await import('./storage');
+        const db = await import('./db').then(m => m.getDb ? m.getDb() : null);
+        if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
+        const { doctorProfiles } = await import('../drizzle/schema');
+        const { eq } = await import('drizzle-orm');
+        const buffer = Buffer.from(input.fileBase64, 'base64');
+        const ext = input.fileName.split('.').pop() || 'png';
+        const key = `doctor-membretes/${ctx.user.id}-${Date.now()}.${ext}`;
+        const { url } = await storagePut(key, buffer, input.mimeType);
+        const existing = await db.select().from(doctorProfiles).where(eq(doctorProfiles.userId, ctx.user.id)).limit(1);
+        if (existing.length > 0) {
+          await db.update(doctorProfiles).set({ membreteUrl: url, membreteKey: key, updatedAt: new Date() }).where(eq(doctorProfiles.userId, ctx.user.id));
+        } else {
+          await db.insert(doctorProfiles).values({ userId: ctx.user.id, membreteUrl: url, membreteKey: key });
+        }
+        return { url, key };
+      }),
+
+    saveSignature: protectedProcedure
+      .input(z.object({ signatureBase64: z.string() }))
+      .mutation(async ({ ctx, input }) => {
+        const { storagePut } = await import('./storage');
+        const db = await import('./db').then(m => m.getDb ? m.getDb() : null);
+        if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
+        const { doctorProfiles } = await import('../drizzle/schema');
+        const { eq } = await import('drizzle-orm');
+        const buffer = Buffer.from(input.signatureBase64.replace(/^data:image\/png;base64,/, ''), 'base64');
+        const key = `doctor-signatures/${ctx.user.id}-${Date.now()}.png`;
+        const { url } = await storagePut(key, buffer, 'image/png');
+        const existing = await db.select().from(doctorProfiles).where(eq(doctorProfiles.userId, ctx.user.id)).limit(1);
+        if (existing.length > 0) {
+          await db.update(doctorProfiles).set({ savedSignatureUrl: url, savedSignatureKey: key, updatedAt: new Date() }).where(eq(doctorProfiles.userId, ctx.user.id));
+        } else {
+          await db.insert(doctorProfiles).values({ userId: ctx.user.id, savedSignatureUrl: url, savedSignatureKey: key });
+        }
+        return { url, key };
+      }),
+
+    list: protectedProcedure
+      .input(z.object({ patientId: z.number().optional() }).optional())
+      .query(async ({ ctx, input }) => {
+        const db = await import('./db').then(m => m.getDb ? m.getDb() : null);
+        if (!db) return [];
+        const { prescriptions } = await import('../drizzle/schema');
+        const { eq, and, desc } = await import('drizzle-orm');
+        let conditions: any[] = [eq(prescriptions.doctorId, ctx.user.id)];
+        if (input?.patientId) conditions.push(eq(prescriptions.patientId, input.patientId));
+        return db.select().from(prescriptions).where(and(...conditions)).orderBy(desc(prescriptions.prescriptionDate));
+      }),
+
+    create: protectedProcedure
+      .input(z.object({
+        patientId: z.number().optional(),
+        patientName: z.string().min(1),
+        patientAge: z.string().optional(),
+        patientGender: z.string().optional(),
+        diagnosis: z.string().optional(),
+        medications: z.string(),
+        instructions: z.string().optional(),
+        signatureBase64: z.string().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const { storagePut } = await import('./storage');
+        const db = await import('./db').then(m => m.getDb ? m.getDb() : null);
+        if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
+        const { prescriptions, doctorProfiles } = await import('../drizzle/schema');
+        const { eq, desc } = await import('drizzle-orm');
+        // Obtener membrete del doctor
+        const profile = await db.select().from(doctorProfiles).where(eq(doctorProfiles.userId, ctx.user.id)).limit(1);
+        const membreteUrl = profile[0]?.membreteUrl || null;
+        const membreteKey = profile[0]?.membreteKey || null;
+        // Guardar firma si viene
+        let signatureUrl: string | null = null;
+        let signatureKey: string | null = null;
+        if (input.signatureBase64) {
+          const buffer = Buffer.from(input.signatureBase64.replace(/^data:image\/png;base64,/, ''), 'base64');
+          const key = `prescription-signatures/${ctx.user.id}-${Date.now()}.png`;
+          const { url } = await storagePut(key, buffer, 'image/png');
+          signatureUrl = url;
+          signatureKey = key;
+        }
+        await db.insert(prescriptions).values({
+          doctorId: ctx.user.id,
+          patientId: input.patientId || null,
+          patientName: input.patientName,
+          patientAge: input.patientAge || null,
+          patientGender: input.patientGender || null,
+          diagnosis: input.diagnosis || null,
+          medications: input.medications,
+          instructions: input.instructions || null,
+          membreteUrl,
+          membreteKey,
+          signatureUrl,
+          signatureKey,
+          status: input.signatureBase64 ? 'signed' : 'draft',
+        });
+        const result = await db.select().from(prescriptions).where(eq(prescriptions.doctorId, ctx.user.id)).orderBy(desc(prescriptions.createdAt)).limit(1);
+        return result[0];
+      }),
+
+    delete: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        const db = await import('./db').then(m => m.getDb ? m.getDb() : null);
+        if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
+        const { prescriptions } = await import('../drizzle/schema');
+        const { eq, and } = await import('drizzle-orm');
+        await db.delete(prescriptions).where(and(eq(prescriptions.id, input.id), eq(prescriptions.doctorId, ctx.user.id)));
+        return { success: true };
+      }),
+  }),
+
+  // ─── Módulo Farmacia ─────────────────────────────────────────────────────
+  pharmacy: router({
+    // Clientes
+    listCustomers: protectedProcedure
+      .input(z.object({ search: z.string().optional() }).optional())
+      .query(async ({ ctx, input }) => {
+        const db = await import('./db').then(m => m.getDb ? m.getDb() : null);
+        if (!db) return [];
+        const { pharmacyCustomers } = await import('../drizzle/schema');
+        const { eq, and, desc } = await import('drizzle-orm');
+        const rows = await db.select().from(pharmacyCustomers)
+          .where(and(eq(pharmacyCustomers.ownerId, ctx.user.id), eq(pharmacyCustomers.isActive, true)))
+          .orderBy(desc(pharmacyCustomers.createdAt));
+        if (input?.search) {
+          const q = input.search.toLowerCase();
+          return rows.filter(c =>
+            c.name.toLowerCase().includes(q) ||
+            (c.phone || '').includes(q) ||
+            (c.email || '').toLowerCase().includes(q)
+          );
+        }
+        return rows;
+      }),
+
+    createCustomer: protectedProcedure
+      .input(z.object({
+        name: z.string().min(1),
+        phone: z.string().optional(),
+        email: z.string().email().optional().or(z.literal('')),
+        birthDate: z.string().optional(),
+        gender: z.string().optional(),
+        address: z.string().optional(),
+        allergies: z.string().optional(),
+        notes: z.string().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const db = await import('./db').then(m => m.getDb ? m.getDb() : null);
+        if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
+        const { pharmacyCustomers } = await import('../drizzle/schema');
+        const { eq, desc } = await import('drizzle-orm');
+        await db.insert(pharmacyCustomers).values({ ownerId: ctx.user.id, ...input, email: input.email || null });
+        const result = await db.select().from(pharmacyCustomers).where(eq(pharmacyCustomers.ownerId, ctx.user.id)).orderBy(desc(pharmacyCustomers.createdAt)).limit(1);
+        return result[0];
+      }),
+
+    updateCustomer: protectedProcedure
+      .input(z.object({
+        id: z.number(),
+        name: z.string().optional(),
+        phone: z.string().optional(),
+        email: z.string().optional(),
+        birthDate: z.string().optional(),
+        gender: z.string().optional(),
+        address: z.string().optional(),
+        allergies: z.string().optional(),
+        notes: z.string().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const db = await import('./db').then(m => m.getDb ? m.getDb() : null);
+        if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
+        const { pharmacyCustomers } = await import('../drizzle/schema');
+        const { eq, and } = await import('drizzle-orm');
+        const { id, ...data } = input;
+        await db.update(pharmacyCustomers).set({ ...data, updatedAt: new Date() }).where(and(eq(pharmacyCustomers.id, id), eq(pharmacyCustomers.ownerId, ctx.user.id)));
+        const result = await db.select().from(pharmacyCustomers).where(and(eq(pharmacyCustomers.id, id), eq(pharmacyCustomers.ownerId, ctx.user.id))).limit(1);
+        return result[0];
+      }),
+
+    deleteCustomer: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        const db = await import('./db').then(m => m.getDb ? m.getDb() : null);
+        if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
+        const { pharmacyCustomers } = await import('../drizzle/schema');
+        const { eq, and } = await import('drizzle-orm');
+        await db.update(pharmacyCustomers).set({ isActive: false, updatedAt: new Date() }).where(and(eq(pharmacyCustomers.id, input.id), eq(pharmacyCustomers.ownerId, ctx.user.id)));
+        return { success: true };
+      }),
+
+    // Prescripciones de un cliente
+    listPrescriptions: protectedProcedure
+      .input(z.object({ customerId: z.number() }))
+      .query(async ({ ctx, input }) => {
+        const db = await import('./db').then(m => m.getDb ? m.getDb() : null);
+        if (!db) return [];
+        const { pharmacyPrescriptions } = await import('../drizzle/schema');
+        const { eq, and, desc } = await import('drizzle-orm');
+        return db.select().from(pharmacyPrescriptions)
+          .where(and(eq(pharmacyPrescriptions.customerId, input.customerId), eq(pharmacyPrescriptions.ownerId, ctx.user.id)))
+          .orderBy(desc(pharmacyPrescriptions.createdAt));
+      }),
+
+    uploadPrescription: protectedProcedure
+      .input(z.object({
+        customerId: z.number(),
+        doctorName: z.string().optional(),
+        prescriptionDate: z.string().optional(),
+        medications: z.string().optional(),
+        notes: z.string().optional(),
+        fileName: z.string(),
+        fileBase64: z.string(),
+        mimeType: z.string(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const { storagePut } = await import('./storage');
+        const db = await import('./db').then(m => m.getDb ? m.getDb() : null);
+        if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
+        const { pharmacyPrescriptions } = await import('../drizzle/schema');
+        const { eq, desc } = await import('drizzle-orm');
+        const buffer = Buffer.from(input.fileBase64, 'base64');
+        const ext = input.fileName.split('.').pop() || 'jpg';
+        const key = `pharmacy-prescriptions/${ctx.user.id}/${input.customerId}-${Date.now()}.${ext}`;
+        const { url } = await storagePut(key, buffer, input.mimeType);
+        await db.insert(pharmacyPrescriptions).values({
+          ownerId: ctx.user.id,
+          customerId: input.customerId,
+          doctorName: input.doctorName || null,
+          prescriptionDate: input.prescriptionDate || null,
+          medications: input.medications || null,
+          notes: input.notes || null,
+          fileUrl: url,
+          fileKey: key,
+          fileName: input.fileName,
+          fileMimeType: input.mimeType,
+          status: 'pending',
+        });
+        const result = await db.select().from(pharmacyPrescriptions)
+          .where(eq(pharmacyPrescriptions.ownerId, ctx.user.id))
+          .orderBy(desc(pharmacyPrescriptions.createdAt)).limit(1);
+        return result[0];
+      }),
+
+    updatePrescriptionStatus: protectedProcedure
+      .input(z.object({
+        id: z.number(),
+        status: z.enum(['pending', 'dispensed', 'partial']),
+        notes: z.string().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const db = await import('./db').then(m => m.getDb ? m.getDb() : null);
+        if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
+        const { pharmacyPrescriptions } = await import('../drizzle/schema');
+        const { eq, and } = await import('drizzle-orm');
+        const updateData: any = { status: input.status, updatedAt: new Date() };
+        if (input.status === 'dispensed') updateData.dispensedAt = new Date();
+        if (input.notes) updateData.notes = input.notes;
+        await db.update(pharmacyPrescriptions).set(updateData)
+          .where(and(eq(pharmacyPrescriptions.id, input.id), eq(pharmacyPrescriptions.ownerId, ctx.user.id)));
+        return { success: true };
+      }),
+
+    deletePrescription: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        const db = await import('./db').then(m => m.getDb ? m.getDb() : null);
+        if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
+        const { pharmacyPrescriptions } = await import('../drizzle/schema');
+        const { eq, and } = await import('drizzle-orm');
+        await db.delete(pharmacyPrescriptions).where(and(eq(pharmacyPrescriptions.id, input.id), eq(pharmacyPrescriptions.ownerId, ctx.user.id)));
+        return { success: true };
+      }),
+  }),
 });
 export type AppRouter = typeof appRouter;
 

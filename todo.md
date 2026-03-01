@@ -556,3 +556,36 @@
 - [ ] Al firmar ambas partes: enviar email con copia del contrato firmado a ambos
 - [ ] Vista de documentos KYC del cliente en Clients.tsx (perfil del cliente para superadmin)
 - [ ] Contrato siempre actualizado con nuevas funcionalidades de la plataforma
+
+## Sesión actual - Bugs y mejoras
+- [ ] Fix YouTube: videos en módulos de cursos no se muestran (embedding desactivado)
+- [ ] Agregar botón de actualizar progreso en Training sin recargar página completa
+- [ ] Magazine: agregar subida de imagen de portada y archivos adjuntos
+- [ ] Magazine: mejorar viewer con diseño de revista real (portada visual)
+- [ ] Cursos: agregar subida de imagen de portada en formulario de creación
+- [ ] Actualizar plantillas de contratos con todas las funcionalidades nuevas
+- [ ] Agregar opción "Ver como Asistente" en dropdown del superadmin
+
+## Agenda de Proveedores (nueva funcionalidad)
+- [ ] Schema DB: tabla suppliers (ownerId, nombre, empresa, teléfono, correo, categoría, notas, activo)
+- [ ] Backend tRPC: CRUD de proveedores (crear, editar, eliminar, listar, buscar)
+- [ ] Página Proveedores.tsx con buscador en tiempo real por nombre/empresa/teléfono
+- [ ] Categorías de proveedores: Alimentos, Tecnología, Limpieza, Salud, Transporte, Otro
+- [x] Agregar al sidebar en grupo "Empresa"
+- [ ] Acceso para superadmin, admin y asistente
+
+## Prescripciones Médicas (nueva funcionalidad)
+- [x] Schema DB: tabla prescriptions (patientId, doctorId, patientName, age, date, medications, diagnosis, instructions, signatureUrl, membreteUrl)
+- [x] Backend tRPC: CRUD prescripciones, subida de membrete del doctor, guardar firma
+- [x] Página Prescriptions.tsx: formulario con membrete, firma digital con canvas, imprimir, enviar WhatsApp/email
+- [x] Subida de imagen de membrete/licencia del doctor en configuración
+- [ ] Integrar prescripciones en perfil del paciente en MedicalAgenda
+- [x] Agregar ruta /dashboard/prescriptions al sidebar (solo para médicos)
+
+## Módulo Farmacia (nueva funcionalidad)
+- [x] Schema DB: tabla pharmacy_customers (nombre, teléfono, correo, fecha nacimiento, notas)
+- [ ] Schema DB: tabla pharmacy_prescriptions (customerId, doctorName, date, fileUrl, medications, notes, status: pending/dispensed)
+- [x] Backend tRPC: CRUD clientes farmacia, subir prescripción escaneada, marcar como surtida
+- [x] Página Farmacia.tsx: lista de clientes con buscador, perfil de cliente con historial de prescripciones
+- [x] Subida de archivos: foto, PDF, imagen escaneada de prescripción
+- [x] Agregar al sidebar en grupo "Empresa"

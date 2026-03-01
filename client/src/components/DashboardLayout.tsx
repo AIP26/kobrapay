@@ -37,6 +37,9 @@ import {
   DollarSign,
   Stethoscope,
   GraduationCap,
+  BookUser,
+  Pill,
+  ClipboardList,
 } from "lucide-react";
 import { useState, useCallback, useMemo } from "react";
 import GlobalSearch from "./GlobalSearch";
@@ -111,6 +114,9 @@ const NAV_GROUPS = [
       { href: "/dashboard/commissions", icon: TrendingUp, label: "Comisiones" },
       { href: "/dashboard/medical", icon: Stethoscope, label: "Agenda Médica" },
       { href: "/dashboard/training", icon: GraduationCap, label: "Capacitaciones" },
+      { href: "/dashboard/proveedores", icon: BookUser, label: "Proveedores" },
+      { href: "/dashboard/prescriptions", icon: ClipboardList, label: "Prescripciones" },
+      { href: "/dashboard/farmacia", icon: Pill, label: "Farmacia" },
     ],
   },
   {

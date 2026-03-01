@@ -768,3 +768,135 @@ export const magazines = mysqlTable("magazines", {
 });
 export type Magazine = typeof magazines.$inferSelect;
 export type InsertMagazine = typeof magazines.$inferInsert;
+
+// ─── Agenda de Proveedores ────────────────────────────────────────────────────
+export const suppliers = mysqlTable("suppliers", {
+  id: int("id").primaryKey().autoincrement(),
+  // null = proveedor global del superadmin, número = proveedor de un negocio específico
+  ownerId: int("ownerId").notNull().references(() => users.id),
+  // Datos del proveedor
+  name: varchar("name", { length: 255 }).notNull(),
+  company: varchar("company", { length: 255 }),
+  phone: varchar("phone", { length: 32 }),
+  email: varchar("email", { length: 320 }),
+  // Categoría del proveedor
+  category: varchar("category", { length: 64 }).default("other").notNull(),
+  // Notas adicionales (dirección, horarios, condiciones, etc.)
+  notes: text("notes"),
+  // Estado activo/inactivo
+  isActive: boolean("isActive").default(true).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type Supplier = typeof suppliers.$inferSelect;
+export type InsertSupplier = typeof suppliers.$inferInsert;
+
+// ─── Prescripciones Médicas ───────────────────────────────────────────────────
+export const prescriptions = mysqlTable("prescriptions", {
+  id: int("id").primaryKey().autoincrement(),
+  // Doctor que emite la prescripción
+  doctorId: int("doctorId").notNull().references(() => users.id),
+  // Paciente (puede ser de la agenda médica o externo)
+  patientId: int("patientId"),
+  // Datos del paciente en la receta (puede diferir del registro)
+  patientName: varchar("patientName", { length: 255 }).notNull(),
+  patientAge: varchar("patientAge", { length: 20 }),
+  patientGender: varchar("patientGender", { length: 20 }),
+  // Fecha de la prescripción
+  prescriptionDate: timestamp("prescriptionDate").defaultNow().notNull(),
+  // Diagnóstico
+  diagnosis: text("diagnosis"),
+  // Medicamentos: JSON array [{name, dose, frequency, duration, instructions}]
+  medications: text("medications").notNull(),
+  // Indicaciones adicionales
+  instructions: text("instructions"),
+  // Imagen del membrete/encabezado del doctor (URL en S3)
+  membreteUrl: text("membreteUrl"),
+  membreteKey: text("membreteKey"),
+  // Firma digital del doctor (base64 PNG guardada en S3)
+  signatureUrl: text("signatureUrl"),
+  signatureKey: text("signatureKey"),
+  // Estado: draft, signed, sent
+  status: varchar("status", { length: 32 }).default("draft").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type Prescription = typeof prescriptions.$inferSelect;
+export type InsertPrescription = typeof prescriptions.$inferInsert;
+
+// Configuración del doctor (membrete, datos profesionales)
+export const doctorProfiles = mysqlTable("doctor_profiles", {
+  id: int("id").primaryKey().autoincrement(),
+  userId: int("userId").notNull().references(() => users.id),
+  // Nombre completo del doctor
+  fullName: varchar("fullName", { length: 255 }),
+  // Especialidad
+  specialty: varchar("specialty", { length: 255 }),
+  // Cédula profesional
+  licenseNumber: varchar("licenseNumber", { length: 100 }),
+  // Institución / Clínica
+  institution: varchar("institution", { length: 255 }),
+  // Teléfono de consultorio
+  officePhone: varchar("officePhone", { length: 32 }),
+  // Dirección del consultorio
+  officeAddress: text("officeAddress"),
+  // Imagen del membrete (URL en S3)
+  membreteUrl: text("membreteUrl"),
+  membreteKey: text("membreteKey"),
+  // Firma guardada (URL en S3)
+  savedSignatureUrl: text("savedSignatureUrl"),
+  savedSignatureKey: text("savedSignatureKey"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type DoctorProfile = typeof doctorProfiles.$inferSelect;
+export type InsertDoctorProfile = typeof doctorProfiles.$inferInsert;
+
+// ─── Módulo Farmacia ──────────────────────────────────────────────────────────
+// Clientes de la farmacia (registro propio, no ligado a users)
+export const pharmacyCustomers = mysqlTable("pharmacy_customers", {
+  id: int("id").primaryKey().autoincrement(),
+  // Farmacia dueña del registro
+  ownerId: int("ownerId").notNull().references(() => users.id),
+  name: varchar("name", { length: 255 }).notNull(),
+  phone: varchar("phone", { length: 32 }),
+  email: varchar("email", { length: 320 }),
+  birthDate: varchar("birthDate", { length: 20 }),
+  gender: varchar("gender", { length: 20 }),
+  address: text("address"),
+  allergies: text("allergies"),
+  notes: text("notes"),
+  isActive: boolean("isActive").default(true).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type PharmacyCustomer = typeof pharmacyCustomers.$inferSelect;
+export type InsertPharmacyCustomer = typeof pharmacyCustomers.$inferInsert;
+
+// Prescripciones escaneadas / registradas en la farmacia
+export const pharmacyPrescriptions = mysqlTable("pharmacy_prescriptions", {
+  id: int("id").primaryKey().autoincrement(),
+  // Farmacia dueña
+  ownerId: int("ownerId").notNull().references(() => users.id),
+  // Cliente de la farmacia
+  customerId: int("customerId").notNull().references(() => pharmacyCustomers.id),
+  // Datos de la prescripción
+  doctorName: varchar("doctorName", { length: 255 }),
+  prescriptionDate: varchar("prescriptionDate", { length: 20 }),
+  // Archivo escaneado (foto, PDF) - URL en S3
+  fileUrl: text("fileUrl"),
+  fileKey: text("fileKey"),
+  fileName: varchar("fileName", { length: 255 }),
+  fileMimeType: varchar("fileMimeType", { length: 100 }),
+  // Medicamentos registrados (texto libre o JSON)
+  medications: text("medications"),
+  // Notas del farmacéutico
+  notes: text("notes"),
+  // Estado: pending (por surtir), dispensed (surtida), partial (surtida parcialmente)
+  status: varchar("status", { length: 32 }).default("pending").notNull(),
+  dispensedAt: timestamp("dispensedAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type PharmacyPrescription = typeof pharmacyPrescriptions.$inferSelect;
+export type InsertPharmacyPrescription = typeof pharmacyPrescriptions.$inferInsert;

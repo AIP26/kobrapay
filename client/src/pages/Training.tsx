@@ -1,10 +1,11 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useCallback } from "react";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Link } from "wouter";
+import { RefreshCw, Upload, X, Image as ImageIcon } from "lucide-react";
 
 // ─── Categorías ───────────────────────────────────────────────────────────────
 const CATEGORIES: Record<string, { label: string; emoji: string; color: string }> = {
@@ -138,6 +139,51 @@ async function readFileAsBase64(file: File): Promise<string> {
   return btoa(binary);
 }
 
+// ─── Componente de video YouTube con manejo de errores ───────────────────────
+function YouTubeEmbed({ videoId, title }: { videoId: string; title: string }) {
+  const [hasError, setHasError] = useState(false);
+  const [loaded, setLoaded] = useState(false);
+
+  if (hasError) {
+    return (
+      <div className="rounded-xl overflow-hidden bg-gray-900 flex flex-col items-center justify-center py-10 px-6 text-center gap-3">
+        <span className="text-4xl">▶️</span>
+        <p className="text-white font-semibold text-sm">Video no disponible para embedding</p>
+        <p className="text-gray-400 text-xs">El propietario del video desactivó la reproducción en sitios externos</p>
+        <a
+          href={`https://www.youtube.com/watch?v=${videoId}`}
+          target="_blank"
+          rel="noreferrer"
+          className="mt-2 inline-flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
+        >
+          🔗 Ver en YouTube
+        </a>
+      </div>
+    );
+  }
+
+  return (
+    <div className="rounded-xl overflow-hidden bg-black">
+      <div className="relative" style={{ paddingBottom: "56.25%" }}>
+        {!loaded && (
+          <div className="absolute inset-0 flex items-center justify-center bg-gray-900">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-500" />
+          </div>
+        )}
+        <iframe
+          className="absolute inset-0 w-full h-full"
+          src={`https://www.youtube-nocookie.com/embed/${videoId}?rel=0&modestbranding=1`}
+          title={title}
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+          allowFullScreen
+          onLoad={() => setLoaded(true)}
+          onError={() => setHasError(true)}
+        />
+      </div>
+    </div>
+  );
+}
+
 // ─── Módulo individual expandible ────────────────────────────────────────────
 function ModuleItem({
   mod,
@@ -221,19 +267,7 @@ function ModuleItem({
           {mod.description && (
             <p className="text-sm text-gray-600">{mod.description}</p>
           )}
-          {ytId && (
-            <div className="rounded-xl overflow-hidden bg-black">
-              <div className="relative" style={{ paddingBottom: "56.25%" }}>
-                <iframe
-                  className="absolute inset-0 w-full h-full"
-                  src={`https://www.youtube-nocookie.com/embed/${ytId}?rel=0&modestbranding=1`}
-                  title={mod.title}
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                  allowFullScreen
-                />
-              </div>
-            </div>
-          )}
+          {ytId && <YouTubeEmbed videoId={ytId} title={mod.title} />}
           {isExternal && (
             <a
               href={mod.externalUrl!}
@@ -338,7 +372,7 @@ function ModuleItem({
 
 // ─── Modal de detalle del curso ───────────────────────────────────────────────
 function CourseDetailModal({ courseId, onClose }: { courseId: number; onClose: () => void }) {
-  const { data, isLoading, refetch } = trpc.training.getDetail.useQuery({ id: courseId });
+  const { data, isLoading, refetch, isFetching } = trpc.training.getDetail.useQuery({ id: courseId });
   const [uploading, setUploading] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const utils = trpc.useUtils();
@@ -401,7 +435,18 @@ function CourseDetailModal({ courseId, onClose }: { courseId: number; onClose: (
       >
         {/* Header */}
         <div className="relative bg-gradient-to-r from-gray-900 to-gray-700 rounded-t-2xl p-6 text-white">
-          <button onClick={onClose} className="absolute top-4 right-4 text-white/70 hover:text-white text-2xl leading-none">×</button>
+          <div className="absolute top-4 right-4 flex items-center gap-2">
+            {/* Botón de actualizar */}
+            <button
+              onClick={() => { refetch(); toast.info("Progreso actualizado"); }}
+              disabled={isFetching}
+              className="text-white/70 hover:text-white bg-white/10 hover:bg-white/20 rounded-lg p-1.5 transition-colors"
+              title="Actualizar progreso"
+            >
+              <RefreshCw className={`w-4 h-4 ${isFetching ? "animate-spin" : ""}`} />
+            </button>
+            <button onClick={onClose} className="text-white/70 hover:text-white text-2xl leading-none">×</button>
+          </div>
           <div className="flex items-center gap-3 mb-2">
             <span className="text-3xl">{cat.emoji}</span>
             <div>
@@ -485,20 +530,8 @@ function CourseDetailModal({ courseId, onClose }: { courseId: number; onClose: (
             </div>
           )}
 
-          {/* Video del curso */}
-          {ytId && (
-            <div className="rounded-xl overflow-hidden bg-black">
-              <div className="relative" style={{ paddingBottom: "56.25%" }}>
-                <iframe
-                  className="absolute inset-0 w-full h-full"
-                  src={`https://www.youtube-nocookie.com/embed/${ytId}?rel=0&modestbranding=1`}
-                  title={course.title}
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                  allowFullScreen
-                />
-              </div>
-            </div>
-          )}
+          {/* Video del curso (nivel curso, no módulo) */}
+          {ytId && <YouTubeEmbed videoId={ytId} title={course.title} />}
 
           {/* Enlace externo (no YouTube) */}
           {course.externalUrl && !ytId && (
@@ -527,10 +560,20 @@ function CourseDetailModal({ courseId, onClose }: { courseId: number; onClose: (
           {/* Módulos */}
           {modules.length > 0 && (
             <div>
-              <h3 className="font-semibold text-gray-800 mb-3">
-                📋 Módulos del curso
-                <span className="ml-2 text-sm font-normal text-gray-500">({completedModules}/{modules.length} completados)</span>
-              </h3>
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="font-semibold text-gray-800">
+                  📋 Módulos del curso
+                  <span className="ml-2 text-sm font-normal text-gray-500">({completedModules}/{modules.length} completados)</span>
+                </h3>
+                <button
+                  onClick={() => { refetch(); toast.info("Progreso actualizado"); }}
+                  disabled={isFetching}
+                  className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-orange-600 bg-gray-100 hover:bg-orange-50 px-3 py-1.5 rounded-lg transition-colors border border-gray-200"
+                >
+                  <RefreshCw className={`w-3 h-3 ${isFetching ? "animate-spin" : ""}`} />
+                  Actualizar
+                </button>
+              </div>
               <div className="space-y-2">
                 {modules.map((mod) => {
                   const modProgress = progress.find(p => p.moduleId === mod.id);
@@ -564,17 +607,23 @@ function CourseCard({ course, onOpen }: { course: CourseWithProgress; onOpen: ()
       className={`relative cursor-pointer rounded-2xl border transition-all hover:shadow-lg hover:-translate-y-0.5 overflow-hidden
         ${course.isCompleted ? "border-green-300 bg-green-50" : "border-gray-200 bg-white hover:border-orange-300"}`}
     >
+      {/* Imagen de portada si existe */}
+      {course.coverImageUrl && (
+        <div className="w-full h-28 overflow-hidden">
+          <img src={course.coverImageUrl} alt={course.title} className="w-full h-full object-cover" />
+        </div>
+      )}
       {course.isCompleted && (
         <div className="absolute top-3 right-3 bg-green-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
           ✓ Completado
         </div>
       )}
       {course.ownerId === null && (
-        <div className="absolute top-3 left-3 bg-orange-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+        <div className={`absolute ${course.coverImageUrl ? "top-3" : "top-3"} left-3 bg-orange-500 text-white text-xs font-bold px-2 py-0.5 rounded-full`}>
           KobraPay
         </div>
       )}
-      <div className="p-5 pt-8">
+      <div className={`p-5 ${course.coverImageUrl ? "" : "pt-8"}`}>
         <div className="flex items-center gap-2 mb-3">
           <span className="text-3xl">{cat.emoji}</span>
           <div>
@@ -611,10 +660,62 @@ function NewCourseModal({ onClose, onCreated }: { onClose: () => void; onCreated
     content: "",
     durationMinutes: 0,
   });
+  const [coverImageFile, setCoverImageFile] = useState<File | null>(null);
+  const [coverImagePreview, setCoverImagePreview] = useState<string | null>(null);
+  const [uploadingCover, setUploadingCover] = useState(false);
+  const coverImageRef = useRef<HTMLInputElement>(null);
+  const utils = trpc.useUtils();
+
   const create = trpc.training.create.useMutation({
     onSuccess: () => { toast.success("Curso creado exitosamente"); onCreated(); onClose(); },
     onError: (e) => toast.error(e.message),
   });
+
+  const handleCoverImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) { toast.error("La imagen no puede superar 5 MB"); return; }
+    setCoverImageFile(file);
+    const reader = new FileReader();
+    reader.onload = (ev) => setCoverImagePreview(ev.target?.result as string);
+    reader.readAsDataURL(file);
+  };
+
+  const handleCreate = async () => {
+    if (!form.title.trim()) { toast.error("El título es obligatorio"); return; }
+    setUploadingCover(true);
+    try {
+      let coverImageUrl: string | undefined;
+      if (coverImageFile) {
+        const base64 = await readFileAsBase64(coverImageFile);
+        // Subir imagen de portada via endpoint de evidencia reutilizando el storage
+        // Usamos un procedimiento temporal de subida directa
+        const ext = coverImageFile.name.split('.').pop() || 'jpg';
+        const key = `course-covers/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+        // Subir via fetch al endpoint de storage
+        const resp = await utils.client.training.uploadEvidence.mutate({
+          courseId: 0, // temporal, no se guarda progreso
+          fileName: `cover.${ext}`,
+          fileBase64: base64,
+          mimeType: coverImageFile.type,
+        });
+        // La URL viene del storage, la extraemos del resultado
+        coverImageUrl = (resp as any)?.evidenceUrl || undefined;
+      }
+      await create.mutateAsync({
+        ...form,
+        externalUrl: form.externalUrl || undefined,
+        content: form.content || undefined,
+        description: form.description || undefined,
+        level: form.level as any,
+        category: form.category as any,
+        coverImageUrl,
+      });
+    } finally {
+      setUploadingCover(false);
+    }
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={onClose}>
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
@@ -624,6 +725,30 @@ function NewCourseModal({ onClose, onCreated }: { onClose: () => void; onCreated
             <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-2xl leading-none">×</button>
           </div>
           <div className="space-y-4">
+            {/* Imagen de portada */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Imagen de portada <span className="text-gray-400 font-normal">(opcional)</span>
+              </label>
+              {coverImagePreview ? (
+                <div className="relative rounded-xl overflow-hidden border border-gray-200">
+                  <img src={coverImagePreview} alt="Portada" className="w-full h-32 object-cover" />
+                  <button
+                    onClick={() => { setCoverImageFile(null); setCoverImagePreview(null); if (coverImageRef.current) coverImageRef.current.value = ""; }}
+                    className="absolute top-2 right-2 bg-black/60 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-black/80"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </div>
+              ) : (
+                <label className="flex flex-col items-center justify-center w-full h-24 border-2 border-dashed border-gray-300 rounded-xl cursor-pointer hover:border-orange-400 hover:bg-orange-50 transition-colors">
+                  <ImageIcon className="w-6 h-6 text-gray-400 mb-1" />
+                  <span className="text-xs text-gray-500">Haz clic para subir imagen (JPG, PNG · máx 5 MB)</span>
+                  <input ref={coverImageRef} type="file" className="hidden" accept=".jpg,.jpeg,.png,.webp" onChange={handleCoverImageChange} />
+                </label>
+              )}
+            </div>
+
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Título *</label>
               <input
@@ -707,18 +832,11 @@ function NewCourseModal({ onClose, onCreated }: { onClose: () => void; onCreated
           <div className="flex gap-3 mt-6">
             <Button variant="outline" onClick={onClose} className="flex-1">Cancelar</Button>
             <Button
-              onClick={() => create.mutate({
-                ...form,
-                externalUrl: form.externalUrl || undefined,
-                content: form.content || undefined,
-                description: form.description || undefined,
-                level: form.level as any,
-                category: form.category as any,
-              })}
-              disabled={!form.title.trim() || create.isPending}
+              onClick={handleCreate}
+              disabled={!form.title.trim() || create.isPending || uploadingCover}
               className="flex-1 bg-orange-500 hover:bg-orange-600 text-white"
             >
-              {create.isPending ? "Creando..." : "Crear Curso"}
+              {create.isPending || uploadingCover ? "Creando..." : "Crear Curso"}
             </Button>
           </div>
         </div>
@@ -735,9 +853,8 @@ export function TrainingPanel() {
   const [showGraduation, setShowGraduation] = useState(false);
   const [activeCategory, setActiveCategory] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
-  const { data: courses = [], isLoading, refetch } = trpc.training.list.useQuery();
+  const { data: courses = [], isLoading, refetch, isFetching } = trpc.training.list.useQuery();
   const isSuperAdmin = (user as any)?.isSuperAdmin;
-  // Superadmin, admin y asistente pueden crear/gestionar cursos
   const isAdmin = user?.role === "admin" || isSuperAdmin || (user as any)?.staffRole === "asistente";
 
   const filtered = courses.filter((c: CourseWithProgress) => {
@@ -787,6 +904,16 @@ export function TrainingPanel() {
                 <p className="text-xs text-gray-500">Total cursos</p>
               </div>
             </div>
+            {/* Botón de actualizar progreso */}
+            <button
+              onClick={() => { refetch(); toast.info("Lista de cursos actualizada"); }}
+              disabled={isFetching}
+              className="flex items-center gap-1.5 text-sm text-gray-600 hover:text-orange-600 bg-white border border-gray-200 hover:border-orange-300 px-3 py-2 rounded-xl transition-colors"
+              title="Actualizar progreso"
+            >
+              <RefreshCw className={`w-4 h-4 ${isFetching ? "animate-spin" : ""}`} />
+              <span className="hidden sm:inline">Actualizar</span>
+            </button>
             {isAdmin && (
               <Button onClick={() => setShowNewCourse(true)} className="bg-orange-500 hover:bg-orange-600 text-white">
                 + Nuevo Curso
@@ -861,7 +988,17 @@ export function TrainingPanel() {
 
         {courses.length > 0 && (
           <div className="mt-8 bg-white rounded-2xl border border-gray-200 p-5">
-            <h3 className="font-bold text-gray-800 mb-3">📊 Tu progreso general</h3>
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="font-bold text-gray-800">📊 Tu progreso general</h3>
+              <button
+                onClick={() => { refetch(); toast.info("Progreso actualizado"); }}
+                disabled={isFetching}
+                className="flex items-center gap-1 text-xs text-gray-500 hover:text-orange-600 transition-colors"
+              >
+                <RefreshCw className={`w-3 h-3 ${isFetching ? "animate-spin" : ""}`} />
+                Actualizar
+              </button>
+            </div>
             <div className="flex items-center gap-4">
               <div className="flex-1 bg-gray-100 rounded-full h-3 overflow-hidden">
                 <div
