@@ -1254,3 +1254,108 @@ export async function createAbsenceRecord(data: {
   const [created] = await db.select().from(attendanceRecords).where(eq(attendanceRecords.id, insertId));
   return created;
 }
+
+// ─── AGENDA MÉDICA ────────────────────────────────────────────────────────────
+import {
+  medicalPatients, medicalAppointments, medicalRecords,
+  MedicalPatient, InsertMedicalPatient,
+  MedicalAppointment, InsertMedicalAppointment,
+  MedicalRecord, InsertMedicalRecord,
+} from "../drizzle/schema";
+
+export async function createMedicalPatient(data: Omit<InsertMedicalPatient, "id" | "createdAt" | "updatedAt">): Promise<MedicalPatient> {
+  const db = await getDb();
+  if (!db) throw new Error("DB not available");
+  const [res] = await db.insert(medicalPatients).values(data as InsertMedicalPatient);
+  const insertId = (res as { insertId: number }).insertId;
+  const [created] = await db.select().from(medicalPatients).where(eq(medicalPatients.id, insertId));
+  return created;
+}
+
+export async function getMedicalPatientsByOwner(ownerId: number): Promise<MedicalPatient[]> {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(medicalPatients)
+    .where(and(eq(medicalPatients.ownerId, ownerId), eq(medicalPatients.isActive, true)))
+    .orderBy(desc(medicalPatients.createdAt));
+}
+
+export async function getMedicalPatientById(id: number, ownerId: number): Promise<MedicalPatient | null> {
+  const db = await getDb();
+  if (!db) return null;
+  const [patient] = await db.select().from(medicalPatients)
+    .where(and(eq(medicalPatients.id, id), eq(medicalPatients.ownerId, ownerId)));
+  return patient || null;
+}
+
+export async function updateMedicalPatient(id: number, ownerId: number, data: Partial<InsertMedicalPatient>): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(medicalPatients).set(data).where(and(eq(medicalPatients.id, id), eq(medicalPatients.ownerId, ownerId)));
+}
+
+export async function deleteMedicalPatient(id: number, ownerId: number): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(medicalPatients).set({ isActive: false }).where(and(eq(medicalPatients.id, id), eq(medicalPatients.ownerId, ownerId)));
+}
+
+export async function createMedicalAppointment(data: Omit<InsertMedicalAppointment, "id" | "createdAt" | "updatedAt">): Promise<MedicalAppointment> {
+  const db = await getDb();
+  if (!db) throw new Error("DB not available");
+  const [res] = await db.insert(medicalAppointments).values(data as InsertMedicalAppointment);
+  const insertId = (res as { insertId: number }).insertId;
+  const [created] = await db.select().from(medicalAppointments).where(eq(medicalAppointments.id, insertId));
+  return created;
+}
+
+export async function getMedicalAppointmentsByOwner(ownerId: number): Promise<MedicalAppointment[]> {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(medicalAppointments)
+    .where(eq(medicalAppointments.ownerId, ownerId))
+    .orderBy(desc(medicalAppointments.appointmentDate));
+}
+
+export async function getMedicalAppointmentsByPatient(patientId: number, ownerId: number): Promise<MedicalAppointment[]> {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(medicalAppointments)
+    .where(and(eq(medicalAppointments.patientId, patientId), eq(medicalAppointments.ownerId, ownerId)))
+    .orderBy(desc(medicalAppointments.appointmentDate));
+}
+
+export async function updateMedicalAppointment(id: number, ownerId: number, data: Partial<InsertMedicalAppointment>): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(medicalAppointments).set(data).where(and(eq(medicalAppointments.id, id), eq(medicalAppointments.ownerId, ownerId)));
+}
+
+export async function deleteMedicalAppointment(id: number, ownerId: number): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  await db.delete(medicalAppointments).where(and(eq(medicalAppointments.id, id), eq(medicalAppointments.ownerId, ownerId)));
+}
+
+export async function createMedicalRecord(data: Omit<InsertMedicalRecord, "id" | "createdAt" | "updatedAt">): Promise<MedicalRecord> {
+  const db = await getDb();
+  if (!db) throw new Error("DB not available");
+  const [res] = await db.insert(medicalRecords).values(data as InsertMedicalRecord);
+  const insertId = (res as { insertId: number }).insertId;
+  const [created] = await db.select().from(medicalRecords).where(eq(medicalRecords.id, insertId));
+  return created;
+}
+
+export async function getMedicalRecordsByPatient(patientId: number, ownerId: number): Promise<MedicalRecord[]> {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(medicalRecords)
+    .where(and(eq(medicalRecords.patientId, patientId), eq(medicalRecords.ownerId, ownerId)))
+    .orderBy(desc(medicalRecords.recordDate));
+}
+
+export async function updateMedicalRecord(id: number, ownerId: number, data: Partial<InsertMedicalRecord>): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(medicalRecords).set(data).where(and(eq(medicalRecords.id, id), eq(medicalRecords.ownerId, ownerId)));
+}

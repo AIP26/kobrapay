@@ -613,3 +613,60 @@ export const attendanceRecords = mysqlTable("attendance_records", {
 });
 export type AttendanceRecord = typeof attendanceRecords.$inferSelect;
 export type InsertAttendanceRecord = typeof attendanceRecords.$inferInsert;
+
+// *** AGENDA MÉDICA — PACIENTES ***
+export const medicalPatients = mysqlTable("medical_patients", {
+  id: int("id").primaryKey().autoincrement(),
+  ownerId: int("ownerId").notNull().references(() => users.id),
+  firstName: varchar("firstName", { length: 128 }).notNull(),
+  lastName: varchar("lastName", { length: 128 }).notNull(),
+  email: varchar("email", { length: 255 }),
+  phone: varchar("phone", { length: 32 }),
+  birthDate: varchar("birthDate", { length: 16 }),
+  gender: varchar("gender", { length: 16 }),
+  address: text("address"),
+  photoUrl: varchar("photoUrl", { length: 512 }),
+  bloodType: varchar("bloodType", { length: 8 }),
+  allergies: text("allergies"),
+  medicalNotes: text("medicalNotes"),
+  isActive: boolean("isActive").default(true).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type MedicalPatient = typeof medicalPatients.$inferSelect;
+export type InsertMedicalPatient = typeof medicalPatients.$inferInsert;
+
+// *** AGENDA MÉDICA — CITAS ***
+export const medicalAppointments = mysqlTable("medical_appointments", {
+  id: int("id").primaryKey().autoincrement(),
+  ownerId: int("ownerId").notNull().references(() => users.id),
+  patientId: int("patientId").notNull().references(() => medicalPatients.id),
+  title: varchar("title", { length: 255 }).notNull(),
+  appointmentDate: timestamp("appointmentDate").notNull(),
+  durationMinutes: int("durationMinutes").default(30).notNull(),
+  status: varchar("status", { length: 32 }).default("scheduled").notNull(),
+  notes: text("notes"),
+  reminderSent: boolean("reminderSent").default(false).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type MedicalAppointment = typeof medicalAppointments.$inferSelect;
+export type InsertMedicalAppointment = typeof medicalAppointments.$inferInsert;
+
+// *** AGENDA MÉDICA — EXPEDIENTE CLÍNICO ***
+export const medicalRecords = mysqlTable("medical_records", {
+  id: int("id").primaryKey().autoincrement(),
+  ownerId: int("ownerId").notNull().references(() => users.id),
+  patientId: int("patientId").notNull().references(() => medicalPatients.id),
+  appointmentId: int("appointmentId").references(() => medicalAppointments.id),
+  recordDate: timestamp("recordDate").defaultNow().notNull(),
+  diagnosis: text("diagnosis"),
+  treatment: text("treatment"),
+  prescription: text("prescription"),
+  clinicalNotes: text("clinicalNotes"),
+  attachments: text("attachments"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type MedicalRecord = typeof medicalRecords.$inferSelect;
+export type InsertMedicalRecord = typeof medicalRecords.$inferInsert;

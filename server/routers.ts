@@ -2748,6 +2748,204 @@ export const appRouter = router({
         return { url: session.url ?? "" };
       }),
   }),
+
+  // ─── AGENDA MÉDICA ────────────────────────────────────────────────────────────
+  medical: router({
+    patients: router({
+      list: protectedProcedure.query(async ({ ctx }) => {
+        const { getMedicalPatientsByOwner } = await import('./db');
+        return getMedicalPatientsByOwner(ctx.user.id);
+      }),
+      getById: protectedProcedure
+        .input(z.object({ id: z.number() }))
+        .query(async ({ ctx, input }) => {
+          const { getMedicalPatientById } = await import('./db');
+          return getMedicalPatientById(input.id, ctx.user.id);
+        }),
+      create: protectedProcedure
+        .input(z.object({
+          firstName: z.string().min(1).max(128),
+          lastName: z.string().min(1).max(128),
+          email: z.string().email().optional().or(z.literal('')),
+          phone: z.string().max(32).optional().or(z.literal('')),
+          birthDate: z.string().optional().or(z.literal('')),
+          gender: z.string().optional().or(z.literal('')),
+          address: z.string().optional().or(z.literal('')),
+          photoUrl: z.string().optional().or(z.literal('')),
+          bloodType: z.string().optional().or(z.literal('')),
+          allergies: z.string().optional().or(z.literal('')),
+          medicalNotes: z.string().optional().or(z.literal('')),
+        }))
+        .mutation(async ({ ctx, input }) => {
+          const { createMedicalPatient } = await import('./db');
+          return createMedicalPatient({
+            ownerId: ctx.user.id,
+            firstName: input.firstName,
+            lastName: input.lastName,
+            email: input.email || null,
+            phone: input.phone || null,
+            birthDate: input.birthDate || null,
+            gender: input.gender || null,
+            address: input.address || null,
+            photoUrl: input.photoUrl || null,
+            bloodType: input.bloodType || null,
+            allergies: input.allergies || null,
+            medicalNotes: input.medicalNotes || null,
+          });
+        }),
+      update: protectedProcedure
+        .input(z.object({
+          id: z.number(),
+          firstName: z.string().min(1).max(128).optional(),
+          lastName: z.string().min(1).max(128).optional(),
+          email: z.string().email().optional().or(z.literal('')),
+          phone: z.string().max(32).optional().or(z.literal('')),
+          birthDate: z.string().optional().or(z.literal('')),
+          gender: z.string().optional().or(z.literal('')),
+          address: z.string().optional().or(z.literal('')),
+          photoUrl: z.string().optional().or(z.literal('')),
+          bloodType: z.string().optional().or(z.literal('')),
+          allergies: z.string().optional().or(z.literal('')),
+          medicalNotes: z.string().optional().or(z.literal('')),
+        }))
+        .mutation(async ({ ctx, input }) => {
+          const { updateMedicalPatient } = await import('./db');
+          const { id, ...data } = input;
+          await updateMedicalPatient(id, ctx.user.id, data);
+          return { success: true };
+        }),
+      delete: protectedProcedure
+        .input(z.object({ id: z.number() }))
+        .mutation(async ({ ctx, input }) => {
+          const { deleteMedicalPatient } = await import('./db');
+          await deleteMedicalPatient(input.id, ctx.user.id);
+          return { success: true };
+        }),
+    }),
+
+    appointments: router({
+      list: protectedProcedure.query(async ({ ctx }) => {
+        const { getMedicalAppointmentsByOwner } = await import('./db');
+        return getMedicalAppointmentsByOwner(ctx.user.id);
+      }),
+      listByPatient: protectedProcedure
+        .input(z.object({ patientId: z.number() }))
+        .query(async ({ ctx, input }) => {
+          const { getMedicalAppointmentsByPatient } = await import('./db');
+          return getMedicalAppointmentsByPatient(input.patientId, ctx.user.id);
+        }),
+      create: protectedProcedure
+        .input(z.object({
+          patientId: z.number(),
+          title: z.string().min(1).max(255),
+          appointmentDate: z.string(),
+          durationMinutes: z.number().default(30),
+          notes: z.string().optional().or(z.literal('')),
+        }))
+        .mutation(async ({ ctx, input }) => {
+          const { createMedicalAppointment } = await import('./db');
+          return createMedicalAppointment({
+            ownerId: ctx.user.id,
+            patientId: input.patientId,
+            title: input.title,
+            appointmentDate: new Date(input.appointmentDate),
+            durationMinutes: input.durationMinutes,
+            notes: input.notes || null,
+            status: 'scheduled',
+            reminderSent: false,
+          });
+        }),
+      update: protectedProcedure
+        .input(z.object({
+          id: z.number(),
+          title: z.string().min(1).max(255).optional(),
+          appointmentDate: z.string().optional(),
+          durationMinutes: z.number().optional(),
+          status: z.string().optional(),
+          notes: z.string().optional().or(z.literal('')),
+        }))
+        .mutation(async ({ ctx, input }) => {
+          const { updateMedicalAppointment } = await import('./db');
+          const { id, appointmentDate, ...rest } = input;
+          await updateMedicalAppointment(id, ctx.user.id, {
+            ...rest,
+            ...(appointmentDate ? { appointmentDate: new Date(appointmentDate) } : {}),
+          });
+          return { success: true };
+        }),
+      delete: protectedProcedure
+        .input(z.object({ id: z.number() }))
+        .mutation(async ({ ctx, input }) => {
+          const { deleteMedicalAppointment } = await import('./db');
+          await deleteMedicalAppointment(input.id, ctx.user.id);
+          return { success: true };
+        }),
+    }),
+
+    records: router({
+      listByPatient: protectedProcedure
+        .input(z.object({ patientId: z.number() }))
+        .query(async ({ ctx, input }) => {
+          const { getMedicalRecordsByPatient } = await import('./db');
+          return getMedicalRecordsByPatient(input.patientId, ctx.user.id);
+        }),
+      create: protectedProcedure
+        .input(z.object({
+          patientId: z.number(),
+          appointmentId: z.number().optional(),
+          diagnosis: z.string().optional().or(z.literal('')),
+          treatment: z.string().optional().or(z.literal('')),
+          prescription: z.string().optional().or(z.literal('')),
+          clinicalNotes: z.string().optional().or(z.literal('')),
+          attachments: z.string().optional().or(z.literal('')),
+        }))
+        .mutation(async ({ ctx, input }) => {
+          const { createMedicalRecord } = await import('./db');
+          return createMedicalRecord({
+            ownerId: ctx.user.id,
+            patientId: input.patientId,
+            appointmentId: input.appointmentId || null,
+            diagnosis: input.diagnosis || null,
+            treatment: input.treatment || null,
+            prescription: input.prescription || null,
+            clinicalNotes: input.clinicalNotes || null,
+            attachments: input.attachments || null,
+            recordDate: new Date(),
+          });
+        }),
+      update: protectedProcedure
+        .input(z.object({
+          id: z.number(),
+          diagnosis: z.string().optional().or(z.literal('')),
+          treatment: z.string().optional().or(z.literal('')),
+          prescription: z.string().optional().or(z.literal('')),
+          clinicalNotes: z.string().optional().or(z.literal('')),
+          attachments: z.string().optional().or(z.literal('')),
+        }))
+        .mutation(async ({ ctx, input }) => {
+          const { updateMedicalRecord } = await import('./db');
+          const { id, ...data } = input;
+          await updateMedicalRecord(id, ctx.user.id, data);
+          return { success: true };
+        }),
+    }),
+
+    uploadFile: protectedProcedure
+      .input(z.object({
+        fileName: z.string(),
+        fileType: z.string(),
+        fileBase64: z.string(),
+        patientId: z.number(),
+        fileCategory: z.string().default('general'),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const buffer = Buffer.from(input.fileBase64, 'base64');
+        const ext = input.fileName.split('.').pop() || 'bin';
+        const key = `medical/${ctx.user.id}/patient-${input.patientId}/${Date.now()}-${input.fileCategory}.${ext}`;
+        const { url } = await storagePut(key, buffer, input.fileType);
+        return { url, key };
+      }),
+  }),
 });
 export type AppRouter = typeof appRouter;
 
