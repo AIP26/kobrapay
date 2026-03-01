@@ -257,8 +257,14 @@ export default function DashboardLayout({ children, title }: DashboardLayoutProp
                 />
               </button>
 
-              {/* Ítems del grupo */}
-              {!isCollapsed && (
+              {/* Ítems del grupo - max-height para evitar desplazamiento del layout */}
+              <div
+                style={{
+                  maxHeight: isCollapsed ? "0px" : `${group.items.length * 44}px`,
+                  overflow: "hidden",
+                  transition: "max-height 0.22s ease",
+                }}
+              >
                 <div className="mt-0.5 ml-2 space-y-0.5 border-l border-white/10 pl-2">
                   {group.items.map(({ href, icon: Icon, label }) => {
                     const isActive = location === href;
@@ -280,7 +286,7 @@ export default function DashboardLayout({ children, title }: DashboardLayoutProp
                     );
                   })}
                 </div>
-              )}
+              </div>
             </div>
           );
         })}

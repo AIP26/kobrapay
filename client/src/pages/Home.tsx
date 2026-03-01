@@ -208,11 +208,11 @@ export default function Home() {
       {/* Hero split-screen */}
       <section className="min-h-[calc(100vh-64px)] grid lg:grid-cols-2">
         {/* Izquierda: texto de bienvenida */}
-        <div className="flex flex-col justify-center px-8 lg:px-14 py-12 relative overflow-hidden">
+        <div className="flex flex-col justify-center items-center px-8 lg:px-14 py-12 relative overflow-hidden">
           <div className="absolute inset-0 pointer-events-none">
-            <div className="absolute top-1/2 left-1/4 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] bg-emerald-500/6 rounded-full blur-3xl" />
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] bg-emerald-500/6 rounded-full blur-3xl" />
           </div>
-          <div className="relative max-w-md">
+          <div className="relative max-w-md w-full">
             <div className="inline-flex items-center gap-2 bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 rounded-full px-3 py-1 text-xs font-medium mb-6">
               <Zap className="w-3 h-3" />
               La plataforma de cobros para negocios mexicanos

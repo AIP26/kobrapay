@@ -274,8 +274,16 @@ function EmployeeHistoryModal({
                 const absRec = recs.find(r => r.type === "absence");
                 let hoursWorked = "";
                 if (inRec && outRec) {
-                  const mins = Math.round((new Date(outRec.timestamp).getTime() - new Date(inRec.timestamp).getTime()) / 60000);
-                  if (mins > 0) hoursWorked = `${Math.floor(mins / 60)}h ${mins % 60}m`;
+                  const totalMs = new Date(outRec.timestamp).getTime() - new Date(inRec.timestamp).getTime();
+                  const totalSecs = Math.round(totalMs / 1000);
+                  const mins = Math.round(totalMs / 60000);
+                  if (totalSecs < 60) {
+                    hoursWorked = `${totalSecs}s`;
+                  } else if (mins < 60) {
+                    hoursWorked = `${mins}m`;
+                  } else {
+                    hoursWorked = `${Math.floor(mins / 60)}h ${mins % 60}m`;
+                  }
                 }
                 return (
                   <div key={day} className="p-3 rounded-lg border bg-card">

@@ -243,6 +243,78 @@ export const appRouter = router({
         totalCommissionEarned: totalCommission,
       };
     }),
+
+    // Detalle de un cliente con sus transacciones y estadísticas
+    getDetail: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .query(async ({ ctx, input }) => {
+        if (ctx.user.role !== "admin") throw new TRPCError({ code: "FORBIDDEN" });
+        const client = await getPlatformClientById(input.id);
+        if (!client || client.adminUserId !== ctx.user.id) throw new TRPCError({ code: "NOT_FOUND" });
+        const txs = client.userId ? await getTransactionsByUser(client.userId) : [];
+        const succeededTxs = txs.filter((t) => t.status === "succeeded");
+        const totalVolume = succeededTxs.reduce((s, t) => s + parseFloat(String(t.amount || 0)), 0);
+        const totalCommission = succeededTxs.reduce((s, t) => s + parseFloat(String(t.commissionAmount || 0)), 0);
+        const totalNet = succeededTxs.reduce((s, t) => s + parseFloat(String(t.netAmount || 0)), 0);
+        const links = client.userId ? await getPaymentLinksByUser(client.userId) : [];
+        return {
+          client,
+          stats: {
+            totalTransactions: txs.length,
+            succeededTransactions: succeededTxs.length,
+            totalVolume,
+            totalCommission,
+            totalNet,
+            totalLinks: links.length,
+            activeLinks: links.filter((l) => l.status === "pending").length,
+          },
+          recentTransactions: txs.slice(0, 20).map((t) => ({
+            id: t.id,
+            operationNumber: t.operationNumber,
+            payerName: t.payerName,
+            payerEmail: t.payerEmail,
+            amount: parseFloat(String(t.amount || 0)),
+            commissionAmount: parseFloat(String(t.commissionAmount || 0)),
+            netAmount: parseFloat(String(t.netAmount || 0)),
+            commissionRate: parseFloat(String(t.commissionRate || 0)),
+            status: t.status,
+            createdAt: t.createdAt,
+          })),
+        };
+      }),
+
+    // Desglose de comisiones por negocio para el admin
+    getCommissionBreakdown: protectedProcedure.query(async ({ ctx }) => {
+      if (ctx.user.role !== "admin") throw new TRPCError({ code: "FORBIDDEN" });
+      const clients = await getPlatformClientsByAdmin(ctx.user.id);
+      const breakdown = await Promise.all(
+        clients.map(async (client) => {
+          const txs = client.userId ? await getTransactionsByUser(client.userId) : [];
+          const succeededTxs = txs.filter((t) => t.status === "succeeded");
+          const totalVolume = succeededTxs.reduce((s, t) => s + parseFloat(String(t.amount || 0)), 0);
+          const totalCommission = succeededTxs.reduce((s, t) => s + parseFloat(String(t.commissionAmount || 0)), 0);
+          const commissionRate = parseFloat(String(client.commissionRate ?? 7));
+          return {
+            clientId: client.id,
+            clientName: client.name,
+            businessName: client.businessName || null,
+            email: client.email,
+            status: client.status,
+            commissionRate,
+            totalVolume,
+            totalCommission,
+            transactionCount: succeededTxs.length,
+          };
+        })
+      );
+      const grandTotalVolume = breakdown.reduce((s, b) => s + b.totalVolume, 0);
+      const grandTotalCommission = breakdown.reduce((s, b) => s + b.totalCommission, 0);
+      return {
+        breakdown: breakdown.sort((a, b) => b.totalCommission - a.totalCommission),
+        grandTotalVolume,
+        grandTotalCommission,
+      };
+    }),
   }),
 
   // ─── Enlaces de pago ──────────────────────────────────────────────────────
