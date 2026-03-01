@@ -303,44 +303,123 @@ export default function Settings() {
           </CardContent>
         </Card>
 
-        {/* Stripe */}
+        {/* Pasarelas de Pago */}
         <Card className="border-gray-200 shadow-sm">
           <CardHeader className="pb-3 border-b border-gray-100">
             <CardTitle className="text-base font-semibold text-gray-800 flex items-center gap-2">
               <CreditCard className="w-4 h-4 text-cyan-500" />
-              Procesador de Pagos (Stripe)
+              Pasarelas de Pago
             </CardTitle>
           </CardHeader>
-          <CardContent className="p-5 space-y-4">
-            <div className="p-3 bg-amber-50 rounded-xl border border-amber-200">
-              <p className="text-sm text-amber-800 font-medium mb-1">Modo de prueba activo</p>
-              <p className="text-sm text-amber-700">
-                Para recibir pagos reales, reclama y activa tu cuenta de Stripe.
-              </p>
-            </div>
-            <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-              <div>
-                <p className="text-sm font-medium text-gray-800">Tarjeta de prueba</p>
-                <p className="text-xs text-gray-400 font-mono">
-                  4242 4242 4242 4242 - CVV: 123 - Fecha: cualquier futura
-                </p>
+          <CardContent className="p-5 space-y-5">
+
+            {/* Stripe - activo */}
+            <div className="border border-[#635BFF]/30 rounded-xl overflow-hidden">
+              <div className="flex items-center justify-between p-4 bg-[#635BFF]/5">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-lg bg-[#635BFF] flex items-center justify-center">
+                    <span className="text-white font-bold text-sm">S</span>
+                  </div>
+                  <div>
+                    <p className="font-semibold text-gray-800">Stripe</p>
+                    <p className="text-xs text-gray-500">Internacional · Tarjetas, OXXO, transferencias</p>
+                  </div>
+                </div>
+                <Badge className="bg-amber-100 text-amber-800 border-amber-200">Modo prueba</Badge>
               </div>
-              <Badge variant="secondary">Test</Badge>
+              <div className="p-4 space-y-3">
+                <div className="p-3 bg-amber-50 rounded-lg border border-amber-200">
+                  <p className="text-xs text-amber-800">
+                    Para recibir pagos reales, reclama y activa tu cuenta de Stripe en{" "}
+                    <a href="https://dashboard.stripe.com/claim_sandbox/YWNjdF8xVDVGUFlEOVZYVkhmM2RRLDE3NzI3NjgzMzMv100xH29XGHx" target="_blank" rel="noopener noreferrer" className="font-semibold underline">este enlace</a>.
+                  </p>
+                </div>
+                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                  <div>
+                    <p className="text-xs font-medium text-gray-700">Tarjeta de prueba</p>
+                    <p className="text-xs text-gray-400 font-mono">4242 4242 4242 4242 · CVV: 123 · Fecha: cualquier futura</p>
+                  </div>
+                  <Badge variant="secondary">Test</Badge>
+                </div>
+                <Button variant="outline" size="sm" className="w-full" asChild>
+                  <a href="https://dashboard.stripe.com" target="_blank" rel="noopener noreferrer">
+                    <ExternalLink className="w-3 h-3 mr-2" />Ir al Dashboard de Stripe
+                  </a>
+                </Button>
+              </div>
             </div>
-            <Button variant="outline" className="w-full" asChild>
-              <a
-                href="https://dashboard.stripe.com"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                <ExternalLink className="w-4 h-4 mr-2" />
-                Ir al Dashboard de Stripe
-              </a>
-            </Button>
+
+            {/* Conekta */}
+            <div className="border border-gray-200 rounded-xl overflow-hidden opacity-80">
+              <div className="flex items-center justify-between p-4 bg-gray-50">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-lg bg-[#00A651] flex items-center justify-center">
+                    <span className="text-white font-bold text-sm">C</span>
+                  </div>
+                  <div>
+                    <p className="font-semibold text-gray-800">Conekta</p>
+                    <p className="text-xs text-gray-500">México · OXXO, SPEI, tarjetas nacionales</p>
+                  </div>
+                </div>
+                <Badge variant="outline" className="text-gray-500">Próximamente</Badge>
+              </div>
+              <div className="p-4 space-y-2">
+                <p className="text-xs text-gray-500">Pasarela mexicana ideal para cobros con OXXO y SPEI. Requiere cuenta en Conekta.</p>
+                <Button size="sm" className="w-full bg-[#00A651] hover:bg-[#008a44] text-white" disabled>
+                  Conectar Conekta — Próximamente
+                </Button>
+              </div>
+            </div>
+
+            {/* OpenPay */}
+            <div className="border border-gray-200 rounded-xl overflow-hidden opacity-80">
+              <div className="flex items-center justify-between p-4 bg-gray-50">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-lg bg-[#0066CC] flex items-center justify-center">
+                    <span className="text-white font-bold text-sm">O</span>
+                  </div>
+                  <div>
+                    <p className="font-semibold text-gray-800">OpenPay (BBVA)</p>
+                    <p className="text-xs text-gray-500">México · Tarjetas, OXXO, transferencias bancarias</p>
+                  </div>
+                </div>
+                <Badge variant="outline" className="text-gray-500">Próximamente</Badge>
+              </div>
+              <div className="p-4 space-y-2">
+                <p className="text-xs text-gray-500">Plataforma de pagos de BBVA México. Acepta tarjetas nacionales e internacionales y pagos en efectivo.</p>
+                <Button size="sm" className="w-full bg-[#0066CC] hover:bg-[#0052a3] text-white" disabled>
+                  Conectar OpenPay — Próximamente
+                </Button>
+              </div>
+            </div>
+
+            {/* PayPal */}
+            <div className="border border-gray-200 rounded-xl overflow-hidden opacity-80">
+              <div className="flex items-center justify-between p-4 bg-gray-50">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-lg bg-[#003087] flex items-center justify-center">
+                    <span className="text-white font-bold text-sm">P</span>
+                  </div>
+                  <div>
+                    <p className="font-semibold text-gray-800">PayPal</p>
+                    <p className="text-xs text-gray-500">Internacional · Wallet PayPal, tarjetas, transferencias</p>
+                  </div>
+                </div>
+                <Badge variant="outline" className="text-gray-500">Próximamente</Badge>
+              </div>
+              <div className="p-4 space-y-2">
+                <p className="text-xs text-gray-500">Acepta pagos de clientes con cuenta PayPal o tarjeta en más de 200 países.</p>
+                <Button size="sm" className="w-full bg-[#003087] hover:bg-[#002070] text-white" disabled>
+                  Conectar PayPal — Próximamente
+                </Button>
+              </div>
+            </div>
+
+            <p className="text-xs text-center text-gray-400">¿Necesitas otra pasarela? Contáctanos en soporte@kobrapay.mx</p>
           </CardContent>
         </Card>
 
-        <div className="flex justify-end pb-4">
+        <div className="flex justify-end pb-8">
           <Button
             type="submit"
             disabled={updateSettings.isPending || !isDirty}

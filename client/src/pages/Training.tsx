@@ -3,6 +3,8 @@ import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import DashboardLayout from "@/components/DashboardLayout";
+import { Link } from "wouter";
 
 // ─── Categorías ───────────────────────────────────────────────────────────────
 const CATEGORIES: Record<string, { label: string; emoji: string; color: string }> = {
@@ -224,9 +226,9 @@ function ModuleItem({
               <div className="relative" style={{ paddingBottom: "56.25%" }}>
                 <iframe
                   className="absolute inset-0 w-full h-full"
-                  src={`https://www.youtube.com/embed/${ytId}?rel=0&modestbranding=1`}
+                  src={`https://www.youtube-nocookie.com/embed/${ytId}?rel=0&modestbranding=1`}
                   title={mod.title}
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                   allowFullScreen
                 />
               </div>
@@ -489,9 +491,9 @@ function CourseDetailModal({ courseId, onClose }: { courseId: number; onClose: (
               <div className="relative" style={{ paddingBottom: "56.25%" }}>
                 <iframe
                   className="absolute inset-0 w-full h-full"
-                  src={`https://www.youtube.com/embed/${ytId}?rel=0&modestbranding=1`}
+                  src={`https://www.youtube-nocookie.com/embed/${ytId}?rel=0&modestbranding=1`}
                   title={course.title}
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                   allowFullScreen
                 />
               </div>
@@ -725,16 +727,18 @@ function NewCourseModal({ onClose, onCreated }: { onClose: () => void; onCreated
   );
 }
 
-// ─── Página principal ─────────────────────────────────────────────────────────
-export default function Training() {
+// ─── Página principal ────────────────────────────────────────────────────────────────────
+export function TrainingPanel() {
   const { user } = useAuth();
   const [selectedCourseId, setSelectedCourseId] = useState<number | null>(null);
   const [showNewCourse, setShowNewCourse] = useState(false);
+  const [showGraduation, setShowGraduation] = useState(false);
   const [activeCategory, setActiveCategory] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
   const { data: courses = [], isLoading, refetch } = trpc.training.list.useQuery();
   const isSuperAdmin = (user as any)?.isSuperAdmin;
-  const isAdmin = user?.role === "admin" || isSuperAdmin;
+  // Superadmin, admin y asistente pueden crear/gestionar cursos
+  const isAdmin = user?.role === "admin" || isSuperAdmin || (user as any)?.staffRole === "asistente";
 
   const filtered = courses.filter((c: CourseWithProgress) => {
     const matchCat = activeCategory === "all" || c.category === activeCategory;
@@ -744,13 +748,33 @@ export default function Training() {
   const completedCount = courses.filter((c: CourseWithProgress) => c.isCompleted).length;
   const kobrapayCount = courses.filter((c: CourseWithProgress) => c.ownerId === null).length;
 
+  // Detectar cuando se completan todos los cursos
+  const prevCompletedRef = useRef(0);
+  const completedCountCurrent = courses.filter((c: CourseWithProgress) => c.isCompleted).length;
+  if (courses.length > 0 && completedCountCurrent === courses.length && prevCompletedRef.current < courses.length && completedCountCurrent > 0) {
+    prevCompletedRef.current = completedCountCurrent;
+    if (!showGraduation) setTimeout(() => setShowGraduation(true), 300);
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="bg-white border-b border-gray-200 px-6 py-5">
+      {/* Header con logo y botón regresar */}
+      <div className="bg-white border-b border-gray-200 px-6 py-4">
         <div className="max-w-6xl mx-auto flex items-center justify-between flex-wrap gap-4">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">🎓 Capacitaciones</h1>
-            <p className="text-gray-500 text-sm mt-0.5">Cursos para tu crecimiento profesional y personal</p>
+          <div className="flex items-center gap-4">
+            <Link href="/dashboard">
+              <a className="flex items-center gap-2 hover:opacity-80 transition-opacity" title="Ir al Panel Principal">
+                <div className="w-9 h-9 bg-gradient-to-br from-orange-500 to-orange-700 rounded-xl flex items-center justify-center shadow">
+                  <span className="text-white font-black text-sm">K</span>
+                </div>
+                <span className="hidden sm:block font-bold text-gray-800 text-sm">KobraPay</span>
+              </a>
+            </Link>
+            <div className="w-px h-8 bg-gray-200" />
+            <div>
+              <h1 className="text-xl font-bold text-gray-900">🎓 Capacitaciones</h1>
+              <p className="text-gray-500 text-xs mt-0.5">Cursos para tu crecimiento profesional y personal</p>
+            </div>
           </div>
           <div className="flex items-center gap-3">
             <div className="flex gap-4 text-center">
@@ -862,6 +886,42 @@ export default function Training() {
       {showNewCourse && (
         <NewCourseModal onClose={() => setShowNewCourse(false)} onCreated={refetch} />
       )}
+
+      {/* Modal de Graduación */}
+      {showGraduation && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 p-4">
+          <div className="bg-white rounded-3xl shadow-2xl max-w-md w-full p-8 text-center">
+            <div className="text-7xl mb-4">🎓</div>
+            <h2 className="text-2xl font-black text-gray-900 mb-2">¡Felicidades!</h2>
+            <p className="text-lg font-semibold text-orange-600 mb-1">Has completado todos los cursos</p>
+            <p className="text-gray-500 text-sm mb-6">
+              ¡Eres un profesional KobraPay! Todos tus logros aparecen en tu perfil profesional.
+            </p>
+            <div className="flex justify-center gap-2 mb-6 text-4xl">
+              🏆 ⭐ 🎉 ⭐ 🏆
+            </div>
+            <div className="bg-orange-50 rounded-2xl p-4 mb-6">
+              <p className="text-orange-800 font-semibold text-sm">📊 {courses.length} cursos completados</p>
+              <p className="text-orange-600 text-xs mt-1">Todos aparecen en tu Perfil Profesional</p>
+            </div>
+            <button
+              onClick={() => setShowGraduation(false)}
+              className="w-full bg-gradient-to-r from-orange-500 to-orange-600 text-white font-bold py-3 rounded-xl hover:from-orange-600 hover:to-orange-700 transition-all"
+            >
+              ¡Gracias! Ver mi perfil profesional
+            </button>
+          </div>
+        </div>
+      )}
     </div>
+  );
+}
+
+// ─── Página con DashboardLayout ────────────────────────────────────────────────
+export default function Training() {
+  return (
+    <DashboardLayout>
+      <TrainingPanel />
+    </DashboardLayout>
   );
 }

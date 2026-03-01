@@ -37,6 +37,7 @@ import PendingApproval from "./pages/PendingApproval";
 import MyProfile from "./pages/MyProfile";
 import Legal from "./pages/Legal";
 import Colaboradores from "./pages/Colaboradores";
+import HR from "./pages/HR";
 import Checador from "./pages/Checador";
 import Nomina from "./pages/Nomina";
 import MedicalAgenda from "./pages/MedicalAgenda";
@@ -71,7 +72,7 @@ function Router() {
       <Route path="/dashboard/contracts" component={Contracts} />
       <Route path="/dashboard/agents" component={SalesAgents} />
       <Route path="/dashboard/expedientes" component={Expedientes} />
-      <Route path="/dashboard/hr" component={Colaboradores} />
+      <Route path="/dashboard/hr" component={HR} />
       <Route path="/dashboard/checador" component={Checador} />
       <Route path="/dashboard/nomina" component={Nomina} />
       <Route path="/dashboard/commissions" component={CommissionsPanel} />

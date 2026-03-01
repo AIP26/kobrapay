@@ -314,7 +314,28 @@ function PersonalSection({
           </div>
         </div>
         <div className="flex justify-end pt-2">
-          <Button onClick={() => onSave(form)} disabled={saving}>
+          <Button
+            onClick={() => {
+              if (!form.fullName || form.fullName.trim().length < 2) {
+                toast.error("El nombre completo debe tener al menos 2 caracteres");
+                return;
+              }
+              if (!form.birthDate) {
+                toast.error("La fecha de nacimiento es requerida");
+                return;
+              }
+              if (!form.curp || form.curp.trim().length !== 18) {
+                toast.error("La CURP debe tener exactamente 18 caracteres");
+                return;
+              }
+              if (!form.phone || form.phone.replace(/\D/g, '').length < 10) {
+                toast.error("El teléfono debe tener al menos 10 dígitos");
+                return;
+              }
+              onSave(form);
+            }}
+            disabled={saving}
+          >
             {saving ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Guardando...</> : <><Save className="h-4 w-4 mr-2" />Guardar datos personales</>}
           </Button>
         </div>

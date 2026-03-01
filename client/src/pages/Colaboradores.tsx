@@ -732,7 +732,7 @@ function EmployeeDetail({
 }
 
 // ─── Página Principal ─────────────────────────────────────────────────────────
-export default function Colaboradores() {
+function ColaboradoresInner() {
   const utils = trpc.useUtils();
   const { data: employees = [], isLoading } = trpc.employees.list.useQuery();
   const [search, setSearch] = useState("");
@@ -748,10 +748,9 @@ export default function Colaboradores() {
     onError: (e) => toast.error("Error al eliminar: " + e.message),
   });
 
-  if (selectedId !== null) {
+   if (selectedId !== null) {
     return <EmployeeDetail employeeId={selectedId} onBack={() => setSelectedId(null)} />;
   }
-
   const filtered = employees.filter(e =>
     e.fullName.toLowerCase().includes(search.toLowerCase()) ||
     (e.position ?? "").toLowerCase().includes(search.toLowerCase()) ||
@@ -761,7 +760,7 @@ export default function Colaboradores() {
   const active = employees.filter(e => e.status === "active").length;
 
   return (
-    <DashboardLayout>
+    <>
       <div className="max-w-5xl mx-auto space-y-6">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -893,8 +892,7 @@ export default function Colaboradores() {
             ))}
           </div>
         )}
-      </div>
-
+       </div>
       {showCreate && (
         <EmployeeFormModal
           open={showCreate}
@@ -903,6 +901,18 @@ export default function Colaboradores() {
           onSuccess={() => {}}
         />
       )}
+    </>
+  );
+}
+
+export function ColaboradoresPanel() {
+  return <ColaboradoresInner />;
+}
+
+export default function Colaboradores() {
+  return (
+    <DashboardLayout>
+      <ColaboradoresInner />
     </DashboardLayout>
   );
 }

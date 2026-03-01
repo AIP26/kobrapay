@@ -1,11 +1,13 @@
-import { useRef, useState, useEffect } from "react";
+import { useRef, useState } from "react";
 import { useRoute } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { CheckCircle, Upload, X, FileText, Shield, AlertTriangle } from "lucide-react";
+import { CheckCircle, Upload, X, FileText, Shield, AlertTriangle, Trash2, Eye } from "lucide-react";
 
-type DocType = "ine" | "passport" | "addressProof" | "rfc" | "curp";
+type DocType = "ine" | "passport" | "addressProof" | "rfc" | "curp" | "situacionFiscal";
 
 const DOC_LABELS: Record<DocType, string> = {
   ine: "INE / Credencial de Elector",
@@ -13,6 +15,16 @@ const DOC_LABELS: Record<DocType, string> = {
   addressProof: "Comprobante de Domicilio",
   rfc: "Constancia de RFC",
   curp: "CURP",
+  situacionFiscal: "Situación Fiscal / Razón Social",
+};
+
+const DOC_REQUIRED: Record<DocType, boolean> = {
+  ine: true,
+  passport: false,
+  addressProof: true,
+  rfc: false,
+  curp: false,
+  situacionFiscal: false,
 };
 
 export default function SignContract() {
@@ -21,79 +33,76 @@ export default function SignContract() {
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isDrawing, setIsDrawing] = useState(false);
+  const [lastPos, setLastPos] = useState({ x: 0, y: 0 });
   const [hasSigned, setHasSigned] = useState(false);
   const [signatureConfirmed, setSignatureConfirmed] = useState(false);
   const [uploadedDocs, setUploadedDocs] = useState<Partial<Record<DocType, string>>>({});
+  const [uploadingDoc, setUploadingDoc] = useState<DocType | null>(null);
   const [step, setStep] = useState<"review" | "sign" | "docs" | "done">("review");
+
+  // Datos adicionales del cliente
+  const [razonSocial, setRazonSocial] = useState("");
+  const [representanteLegal, setRepresentanteLegal] = useState("");
+  const [rfcEmpresa, setRfcEmpresa] = useState("");
 
   const { data: contract, isLoading, error } = trpc.contracts.getByToken.useQuery({ token }, { enabled: !!token });
 
   const signMutation = trpc.contracts.signContract.useMutation({
-    onSuccess: () => {
-      setStep("docs");
-    },
+    onSuccess: () => setStep("docs"),
     onError: (e) => toast.error(e.message),
   });
 
   const uploadDocMutation = trpc.contracts.uploadDocument.useMutation({
     onSuccess: (data, vars) => {
       setUploadedDocs(prev => ({ ...prev, [vars.docType]: data.url }));
+      setUploadingDoc(null);
       toast.success(`${DOC_LABELS[vars.docType as DocType]} subido correctamente`);
     },
-    onError: (e) => toast.error(e.message),
+    onError: (e) => { setUploadingDoc(null); toast.error(e.message); },
   });
 
   // Canvas drawing
-  const getPos = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
-    const canvas = canvasRef.current!;
+  const getPos = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>, canvas: HTMLCanvasElement) => {
     const rect = canvas.getBoundingClientRect();
     const scaleX = canvas.width / rect.width;
     const scaleY = canvas.height / rect.height;
     if ("touches" in e) {
-      return {
-        x: (e.touches[0].clientX - rect.left) * scaleX,
-        y: (e.touches[0].clientY - rect.top) * scaleY,
-      };
+      return { x: (e.touches[0].clientX - rect.left) * scaleX, y: (e.touches[0].clientY - rect.top) * scaleY };
     }
-    return {
-      x: (e.clientX - rect.left) * scaleX,
-      y: (e.clientY - rect.top) * scaleY,
-    };
+    return { x: (e.clientX - rect.left) * scaleX, y: (e.clientY - rect.top) * scaleY };
   };
 
   const startDraw = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
     e.preventDefault();
-    const ctx = canvasRef.current?.getContext("2d");
-    if (!ctx) return;
-    const pos = getPos(e);
-    ctx.beginPath();
-    ctx.moveTo(pos.x, pos.y);
+    const canvas = canvasRef.current; if (!canvas) return;
+    const pos = getPos(e, canvas);
     setIsDrawing(true);
+    setLastPos(pos);
     setHasSigned(true);
   };
 
   const draw = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
     e.preventDefault();
     if (!isDrawing) return;
-    const ctx = canvasRef.current?.getContext("2d");
-    if (!ctx) return;
-    const pos = getPos(e);
+    const canvas = canvasRef.current; if (!canvas) return;
+    const ctx = canvas.getContext("2d")!;
+    const pos = getPos(e, canvas);
+    ctx.beginPath();
+    ctx.moveTo(lastPos.x, lastPos.y);
     ctx.lineTo(pos.x, pos.y);
     ctx.strokeStyle = "#1e293b";
     ctx.lineWidth = 2.5;
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
     ctx.stroke();
+    setLastPos(pos);
   };
 
   const stopDraw = () => setIsDrawing(false);
 
   const clearSignature = () => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    const canvas = canvasRef.current; if (!canvas) return;
+    canvas.getContext("2d")!.clearRect(0, 0, canvas.width, canvas.height);
     setHasSigned(false);
     setSignatureConfirmed(false);
   };
@@ -107,24 +116,44 @@ export default function SignContract() {
     const canvas = canvasRef.current;
     if (!canvas || !signatureConfirmed) return;
     const signatureData = canvas.toDataURL("image/png");
-    signMutation.mutate({
-      token,
-      signatureData,
-      signerName: contract?.clientName || "",
-    });
+    signMutation.mutate({ token, signatureData, signerName: contract?.clientName || "" });
   };
 
-  const handleDocUpload = (docType: DocType, file: File) => {
+  const handleDocUpload = async (docType: DocType, file: File) => {
     if (file.size > 10 * 1024 * 1024) { toast.error("El archivo no puede superar 10 MB"); return; }
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const fileData = e.target?.result as string;
-      uploadDocMutation.mutate({ token, docType, fileData, mimeType: file.type });
-    };
-    reader.readAsDataURL(file);
+    setUploadingDoc(docType);
+    try {
+      const arrayBuffer = await file.arrayBuffer();
+      const uint8 = new Uint8Array(arrayBuffer);
+      let binary = '';
+      for (let i = 0; i < uint8.length; i++) binary += String.fromCharCode(uint8[i]);
+      const base64 = btoa(binary);
+      const fileData = `data:${file.type};base64,${base64}`;
+      uploadDocMutation.mutate({
+        token,
+        docType: docType === "situacionFiscal" ? "rfc" : docType, // mapear situacionFiscal a rfc en el backend
+        fileData,
+        mimeType: file.type,
+      });
+    } catch {
+      setUploadingDoc(null);
+      toast.error("Error al procesar el archivo");
+    }
   };
 
-  const finishDocs = () => setStep("done");
+  const removeDoc = (docType: DocType) => {
+    setUploadedDocs(prev => {
+      const next = { ...prev };
+      delete next[docType];
+      return next;
+    });
+    toast.success("Documento eliminado. Puedes subir uno nuevo.");
+  };
+
+  const finishDocs = () => {
+    // Guardar datos de razón social si se ingresaron
+    setStep("done");
+  };
 
   if (!token) return <div className="min-h-screen flex items-center justify-center text-gray-500">Enlace inválido</div>;
   if (isLoading) return (
@@ -156,7 +185,7 @@ export default function SignContract() {
         <div className="bg-gray-50 rounded-xl p-4 text-left text-sm space-y-1">
           <p><span className="text-gray-500">Comisión acordada:</span> <strong className="text-cyan-700">{contract.commissionRate}%</strong></p>
           {Number(contract.contractDurationMonths) > 0 && (
-            <p><span className="text-gray-500">Duración:</span> <strong>{contract.contractDurationMonths === 1 ? '1 mes' : contract.contractDurationMonths === 12 ? '1 año (12 meses)' : contract.contractDurationMonths === 24 ? '2 años (24 meses)' : `${contract.contractDurationMonths} meses`}</strong></p>
+            <p><span className="text-gray-500">Duración:</span> <strong>{contract.contractDurationMonths === 12 ? '1 año (12 meses)' : contract.contractDurationMonths === 24 ? '2 años (24 meses)' : `${contract.contractDurationMonths} meses`}</strong></p>
           )}
           <p><span className="text-gray-500">Fecha de firma:</span> <strong>{new Date().toLocaleDateString("es-MX")}</strong></p>
         </div>
@@ -208,15 +237,15 @@ export default function SignContract() {
                   <li><strong>Objeto:</strong> KobraPay prestará al Cliente servicios de procesamiento de pagos en línea mediante enlaces de cobro, punto de venta digital, y herramientas de gestión financiera.</li>
                   <li><strong>Comisión:</strong> El Cliente acepta una comisión del <strong className="text-cyan-700">{contract.commissionRate}%</strong> sobre cada transacción procesada a través de la plataforma.</li>
                   {Number(contract.contractDurationMonths) > 0 && (
-                    <li><strong>Vigencia:</strong> El presente contrato tendrá una duración de <strong>{contract.contractDurationMonths === 1 ? '1 mes' : contract.contractDurationMonths === 12 ? '1 año (12 meses)' : contract.contractDurationMonths === 24 ? '2 años (24 meses)' : `${contract.contractDurationMonths} meses`}</strong> a partir de la fecha de firma. La terminación anticipada generará una penalización equivalente a 2 meses de comisiones promedio.</li>
+                    <li><strong>Vigencia:</strong> El presente contrato tendrá una duración de <strong>{contract.contractDurationMonths === 12 ? '1 año (12 meses)' : contract.contractDurationMonths === 24 ? '2 años (24 meses)' : `${contract.contractDurationMonths} meses`}</strong> a partir de la fecha de firma. La terminación anticipada generará una penalización equivalente a 2 meses de comisiones promedio.</li>
                   )}
                   {contract.includeExclusivityClause && (
                     <li><strong>Exclusividad:</strong> Durante la vigencia del contrato, el Cliente se compromete a utilizar únicamente KobraPay como plataforma de procesamiento de pagos digitales para su negocio, absteniéndose de contratar servicios similares con terceros.</li>
                   )}
-                  <li><strong>Protección de datos:</strong> KobraPay se compromete a proteger los datos personales del Cliente conforme a la Ley Federal de Protección de Datos Personales en Posesión de los Particulares (LFPDPPP) y su Reglamento.</li>
+                  <li><strong>Protección de datos:</strong> KobraPay se compromete a proteger los datos personales del Cliente conforme a la LFPDPPP y su Reglamento.</li>
                   <li><strong>Confidencialidad:</strong> Ambas partes se obligan a mantener la confidencialidad de la información intercambiada durante la prestación de los servicios.</li>
-                  <li><strong>Responsabilidad:</strong> KobraPay no será responsable por interrupciones del servicio causadas por terceros (procesadores de pago, proveedores de internet) o por fuerza mayor.</li>
-                  <li><strong>Jurisdicción:</strong> Para la interpretación y cumplimiento del presente contrato, las partes se someten a la jurisdicción de los tribunales competentes de la Ciudad de México.</li>
+                  <li><strong>Responsabilidad:</strong> KobraPay no será responsable por interrupciones del servicio causadas por terceros o por fuerza mayor.</li>
+                  <li><strong>Jurisdicción:</strong> Las partes se someten a la jurisdicción de los tribunales competentes de la Ciudad de México.</li>
                 </ol>
               </div>
 
@@ -227,7 +256,7 @@ export default function SignContract() {
                 </div>
               )}
 
-              <div className="bg-red-50 rounded-xl p-4 border border-red-200">
+              <div className="bg-red-50 rounded-xl p-3 border border-red-200">
                 <p className="text-red-700 text-xs font-medium flex items-center gap-1">
                   <AlertTriangle className="w-3 h-3" />
                   Al firmar este contrato, el Cliente declara haber leído, entendido y aceptado todos los términos y condiciones aquí establecidos.
@@ -295,46 +324,125 @@ export default function SignContract() {
 
         {/* Step: Documents */}
         {step === "docs" && (
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
-            <h2 className="text-lg font-bold text-gray-900 mb-1">Cargar Documentos</h2>
-            <p className="text-sm text-gray-500 mb-4">Sube tus documentos de identificación para completar tu expediente</p>
-
-            <div className="space-y-3">
-              {(["ine", "passport", "addressProof", "rfc", "curp"] as DocType[]).map(docType => (
-                <div key={docType} className={`flex items-center justify-between p-3 rounded-xl border ${uploadedDocs[docType] ? "bg-green-50 border-green-200" : "bg-gray-50 border-gray-200"}`}>
-                  <div className="flex items-center gap-3">
-                    {uploadedDocs[docType] ? (
-                      <CheckCircle className="w-5 h-5 text-green-600" />
-                    ) : (
-                      <Upload className="w-5 h-5 text-gray-400" />
-                    )}
-                    <div>
-                      <p className="text-sm font-medium text-gray-900">{DOC_LABELS[docType]}</p>
-                      <p className="text-xs text-gray-500">JPG, PNG o PDF — máx. 10 MB</p>
-                    </div>
-                  </div>
-                  {uploadedDocs[docType] ? (
-                    <span className="text-xs text-green-600 font-medium">Subido ✓</span>
-                  ) : (
-                    <label className="cursor-pointer">
-                      <input
-                        type="file"
-                        accept="image/*,.pdf"
-                        className="hidden"
-                        onChange={e => { if (e.target.files?.[0]) handleDocUpload(docType, e.target.files[0]); }}
-                      />
-                      <span className="text-xs bg-cyan-700 text-white px-3 py-1.5 rounded-lg hover:bg-cyan-800">
-                        Subir
-                      </span>
-                    </label>
-                  )}
-                </div>
-              ))}
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 space-y-6">
+            <div>
+              <h2 className="text-lg font-bold text-gray-900 mb-1">Documentos e Información Fiscal</h2>
+              <p className="text-sm text-gray-500">Completa tu expediente para validar tu identidad y razón social</p>
             </div>
 
-            <p className="text-xs text-gray-400 mt-4 text-center">Los documentos son opcionales pero recomendados para completar tu expediente.</p>
+            {/* Datos de empresa (opcional) */}
+            <div className="bg-cyan-50 border border-cyan-200 rounded-xl p-4 space-y-3">
+              <p className="text-sm font-semibold text-cyan-800">Datos de tu empresa (opcional pero recomendado)</p>
+              <div>
+                <Label className="text-xs text-gray-600">Razón Social</Label>
+                <Input
+                  value={razonSocial}
+                  onChange={e => setRazonSocial(e.target.value)}
+                  placeholder="Ej: Ferretería El Clavo S.A. de C.V."
+                  className="mt-1"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label className="text-xs text-gray-600">RFC de la empresa</Label>
+                  <Input
+                    value={rfcEmpresa}
+                    onChange={e => setRfcEmpresa(e.target.value)}
+                    placeholder="XAXX010101000"
+                    className="mt-1"
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs text-gray-600">Representante Legal</Label>
+                  <Input
+                    value={representanteLegal}
+                    onChange={e => setRepresentanteLegal(e.target.value)}
+                    placeholder="Nombre completo"
+                    className="mt-1"
+                  />
+                </div>
+              </div>
+            </div>
 
-            <Button onClick={finishDocs} className="w-full mt-4 bg-green-600 hover:bg-green-700 text-white gap-2">
+            {/* Documentos */}
+            <div>
+              <p className="text-sm font-semibold text-gray-700 mb-3">
+                Documentos de identificación
+                <span className="ml-2 text-xs text-gray-400 font-normal">JPG, PNG o PDF — máx. 10 MB</span>
+              </p>
+              <div className="space-y-2">
+                {(["ine", "passport", "addressProof", "situacionFiscal", "rfc", "curp"] as DocType[]).map(docType => {
+                  const isUploaded = !!uploadedDocs[docType];
+                  const isUploading = uploadingDoc === docType;
+                  const isRequired = DOC_REQUIRED[docType];
+                  return (
+                    <div key={docType} className={`flex items-center justify-between p-3 rounded-xl border transition-all ${isUploaded ? "bg-green-50 border-green-200" : "bg-gray-50 border-gray-200"}`}>
+                      <div className="flex items-center gap-3 flex-1 min-w-0">
+                        {isUploaded ? (
+                          <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0" />
+                        ) : (
+                          <Upload className="w-5 h-5 text-gray-400 flex-shrink-0" />
+                        )}
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium text-gray-900 truncate">
+                            {DOC_LABELS[docType]}
+                            {isRequired && <span className="ml-1 text-red-500 text-xs">*</span>}
+                          </p>
+                          {isUploaded && (
+                            <p className="text-xs text-green-600">Subido correctamente ✓</p>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        {isUploaded ? (
+                          <>
+                            <a href={uploadedDocs[docType]} target="_blank" rel="noopener noreferrer">
+                              <Button size="sm" variant="ghost" className="text-cyan-600 hover:text-cyan-700 h-7 w-7 p-0" title="Ver documento">
+                                <Eye className="w-3.5 h-3.5" />
+                              </Button>
+                            </a>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => removeDoc(docType)}
+                              className="text-red-500 hover:text-red-700 h-7 w-7 p-0"
+                              title="Eliminar y subir otro"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </Button>
+                          </>
+                        ) : (
+                          <label className="cursor-pointer">
+                            <input
+                              type="file"
+                              accept="image/*,.pdf"
+                              className="hidden"
+                              disabled={isUploading}
+                              onChange={e => { if (e.target.files?.[0]) handleDocUpload(docType, e.target.files[0]); }}
+                            />
+                            {isUploading ? (
+                              <span className="text-xs bg-gray-200 text-gray-500 px-3 py-1.5 rounded-lg flex items-center gap-1">
+                                <div className="w-3 h-3 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" />
+                                Subiendo...
+                              </span>
+                            ) : (
+                              <span className="text-xs bg-cyan-700 text-white px-3 py-1.5 rounded-lg hover:bg-cyan-800 transition-colors">
+                                Subir
+                              </span>
+                            )}
+                          </label>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              <p className="text-xs text-gray-400 mt-3">
+                Los campos marcados con <span className="text-red-500">*</span> son recomendados para completar tu expediente. Todos los documentos son opcionales.
+              </p>
+            </div>
+
+            <Button onClick={finishDocs} className="w-full bg-green-600 hover:bg-green-700 text-white gap-2">
               <CheckCircle className="w-4 h-4" /> Finalizar y Completar
             </Button>
           </div>

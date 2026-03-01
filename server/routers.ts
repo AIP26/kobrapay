@@ -1252,7 +1252,13 @@ export const appRouter = router({
         }
         return contract;
       }),
-
+    getByClientEmail: protectedProcedure
+      .input(z.object({ clientEmail: z.string().email() }))
+      .query(async ({ ctx, input }) => {
+        if (!ctx.isSuperAdmin && ctx.user.role !== 'admin') throw new TRPCError({ code: "FORBIDDEN" });
+        const allContracts = await getContractsByAdmin(ctx.user.id);
+        return allContracts.filter(c => c.clientEmail.toLowerCase() === input.clientEmail.toLowerCase());
+      }),
     create: protectedProcedure
       .input(z.object({
         clientName: z.string().min(1).max(255),
@@ -1404,9 +1410,50 @@ export const appRouter = router({
         await updateContract(contract.id, { [fieldMap[input.docType]]: url });
         return { success: true, url };
       }),
+    adminSign: protectedProcedure
+      .input(z.object({
+        contractId: z.number(),
+        signatureData: z.string(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        if (!ctx.isSuperAdmin && ctx.user.role !== 'admin') throw new TRPCError({ code: "FORBIDDEN" });
+        const contract = await getContractById(input.contractId);
+        if (!contract) throw new TRPCError({ code: "NOT_FOUND" });
+        const base64Data = input.signatureData.replace(/^data:image\/\w+;base64,/, '');
+        const buffer = Buffer.from(base64Data, 'base64');
+        const fileKey = `contracts/admin-signatures/${contract.id}-admin-${Date.now()}.png`;
+        const { url: adminSignatureUrl } = await storagePut(fileKey, buffer, 'image/png');
+        await updateContract(contract.id, {
+          adminSignatureUrl,
+          adminSignedAt: new Date(),
+          adminSignedByName: ctx.user.name || ctx.user.email,
+        });
+        try {
+          const { Resend } = await import('resend');
+          const resend = new Resend(process.env.RESEND_API_KEY || '');
+          await resend.emails.send({
+            from: 'KobraPay Contratos <noreply@kobrapay.mx>',
+            to: contract.clientEmail,
+            subject: `Contrato firmado por KobraPay — ${contract.clientName}`,
+            html: `<div style="font-family:sans-serif;max-width:560px;margin:0 auto;padding:24px">
+              <h2 style="color:#0e7490">Contrato Firmado por KobraPay</h2>
+              <p>Hola <strong>${contract.clientName}</strong>,</p>
+              <p>KobraPay ha firmado tu contrato de servicios.</p>
+              <ul style="background:#f0f9ff;padding:16px;border-radius:8px;border:1px solid #bae6fd">
+                <li>Contrato No. KP-${String(contract.id).padStart(5, '0')}</li>
+                <li>Comisión: ${contract.commissionRate}%</li>
+                <li>Firmado el: ${new Date().toLocaleDateString('es-MX', { day: 'numeric', month: 'long', year: 'numeric' })}</li>
+              </ul>
+              <p style="color:#6b7280;font-size:13px">Contacto: soporte@kobrapay.mx</p>
+            </div>`,
+          });
+        } catch (e) {
+          console.warn('[Contracts] Error enviando email de firma admin:', e);
+        }
+        return { success: true, adminSignatureUrl };
+      }),
   }),
-
-  // ─── Vendedores/Afiliados (solo super-admin) ──────────────────────────────────
+  // ─── Vendedores/Afiliados (solo super-admin)) ──────────────────────────────────
   salesAgents: router({
     list: protectedProcedure.query(async ({ ctx }) => {
       if (!ctx.isSuperAdmin) throw new TRPCError({ code: "FORBIDDEN" });
@@ -3305,6 +3352,125 @@ export const appRouter = router({
           return { ...p, course };
         }));
         return enriched;
+      }),
+  }),
+  // ─── Revista Interna de la Empresa ──────────────────────────────────────────────────
+  magazine: router({
+    list: protectedProcedure.query(async ({ ctx }) => {
+      const db = await import('./db').then(m => m.getDb ? m.getDb() : null);
+      if (!db) return [];
+      const { magazines } = await import('../drizzle/schema');
+      const { eq, desc } = await import('drizzle-orm');
+      return db.select().from(magazines).where(eq(magazines.ownerId, ctx.user.id)).orderBy(desc(magazines.createdAt));
+    }),
+    get: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .query(async ({ ctx, input }) => {
+        const db = await import('./db').then(m => m.getDb ? m.getDb() : null);
+        if (!db) throw new TRPCError({ code: 'NOT_FOUND' });
+        const { magazines } = await import('../drizzle/schema');
+        const { eq, and } = await import('drizzle-orm');
+        const result = await db.select().from(magazines).where(and(eq(magazines.id, input.id), eq(magazines.ownerId, ctx.user.id))).limit(1);
+        if (!result[0]) throw new TRPCError({ code: 'NOT_FOUND' });
+        return result[0];
+      }),
+    create: protectedProcedure
+      .input(z.object({
+        title: z.string().min(1).max(255),
+        subtitle: z.string().max(500).optional().or(z.literal('')),
+        edition: z.string().max(100).optional().or(z.literal('')),
+        aiPrompt: z.string().optional().or(z.literal('')),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const db = await import('./db').then(m => m.getDb ? m.getDb() : null);
+        if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
+        const { magazines } = await import('../drizzle/schema');
+        // Generar contenido con IA si se proporciona un prompt
+        let content = null;
+        if (input.aiPrompt) {
+          try {
+            const { invokeLLM } = await import('./_core/llm');
+            const response = await invokeLLM({
+              messages: [
+                { role: 'system', content: 'Eres un editor de revistas corporativas profesional. Genera contenido en formato JSON con la siguiente estructura: [{"type": "article", "title": "...", "body": "..."}]. Genera entre 3 y 5 secciones relevantes para una revista interna de empresa. El contenido debe ser en español, profesional y motivador.' },
+                { role: 'user', content: `Crea el contenido para una revista interna con el siguiente tema/contexto: ${input.aiPrompt}. Título de la revista: ${input.title}` },
+              ],
+            });
+            const rawContent = response?.choices?.[0]?.message?.content || '';
+            const raw = typeof rawContent === 'string' ? rawContent : JSON.stringify(rawContent);
+            // Intentar parsear JSON del response
+            const jsonMatch = raw.match(/\[[\s\S]*\]/);
+            if (jsonMatch) content = jsonMatch[0];
+          } catch (e) {
+            console.error('[Magazine] Error generating AI content:', e);
+          }
+        }
+        await db.insert(magazines).values({
+          ownerId: ctx.user.id,
+          title: input.title,
+          subtitle: input.subtitle || null,
+          edition: input.edition || null,
+          aiPrompt: input.aiPrompt || null,
+          content,
+        });
+        const { eq: eqM, desc: descM } = await import('drizzle-orm');
+        const result = await db.select().from(magazines).where(eqM(magazines.ownerId, ctx.user.id)).orderBy(descM(magazines.createdAt)).limit(1);
+        return result[0];
+      }),
+    update: protectedProcedure
+      .input(z.object({
+        id: z.number(),
+        title: z.string().min(1).max(255).optional(),
+        subtitle: z.string().max(500).optional().or(z.literal('')),
+        edition: z.string().max(100).optional().or(z.literal('')),
+        content: z.string().optional(),
+        isPublished: z.boolean().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const db = await import('./db').then(m => m.getDb ? m.getDb() : null);
+        if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
+        const { magazines } = await import('../drizzle/schema');
+        const { eq, and } = await import('drizzle-orm');
+        const { id, ...data } = input;
+        const updateData: Record<string, unknown> = { ...data, updatedAt: new Date() };
+        if (data.isPublished) updateData.publishedAt = new Date();
+        await db.update(magazines).set(updateData).where(and(eq(magazines.id, id), eq(magazines.ownerId, ctx.user.id)));
+        const result = await db.select().from(magazines).where(and(eq(magazines.id, id), eq(magazines.ownerId, ctx.user.id))).limit(1);
+        return result[0];
+      }),
+    delete: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        const db = await import('./db').then(m => m.getDb ? m.getDb() : null);
+        if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
+        const { magazines } = await import('../drizzle/schema');
+        const { eq, and } = await import('drizzle-orm');
+        await db.delete(magazines).where(and(eq(magazines.id, input.id), eq(magazines.ownerId, ctx.user.id)));
+        return { success: true };
+      }),
+    generateContent: protectedProcedure
+      .input(z.object({ id: z.number(), prompt: z.string().min(1) }))
+      .mutation(async ({ ctx, input }) => {
+        const db = await import('./db').then(m => m.getDb ? m.getDb() : null);
+        if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
+        const { magazines } = await import('../drizzle/schema');
+        const { eq, and } = await import('drizzle-orm');
+        const existing = await db.select().from(magazines).where(and(eq(magazines.id, input.id), eq(magazines.ownerId, ctx.user.id))).limit(1);
+        if (!existing[0]) throw new TRPCError({ code: 'NOT_FOUND' });
+        const { invokeLLM } = await import('./_core/llm');
+        const response = await invokeLLM({
+          messages: [
+            { role: 'system', content: 'Eres un editor de revistas corporativas profesional. Genera contenido en formato JSON con la siguiente estructura exacta: [{"type": "article", "title": "Título de la sección", "body": "Contenido completo de la sección en varios párrafos"}]. Genera entre 3 y 5 secciones. El contenido debe ser en español, profesional, motivador y relevante para empleados de una empresa.' },
+            { role: 'user', content: `Crea el contenido para la revista interna "${existing[0].title}". Contexto/tema: ${input.prompt}` },
+          ],
+        });
+        const rawContent2 = response?.choices?.[0]?.message?.content || '';
+        const raw2 = typeof rawContent2 === 'string' ? rawContent2 : JSON.stringify(rawContent2);
+        const jsonMatch2 = raw2.match(/\[[\s\S]*\]/);
+        const content = jsonMatch2 ? jsonMatch2[0] : JSON.stringify([{ type: 'article', title: 'Bienvenida', body: raw2 }]);
+        await db.update(magazines).set({ content, updatedAt: new Date() }).where(and(eq(magazines.id, input.id), eq(magazines.ownerId, ctx.user.id)));
+        const result = await db.select().from(magazines).where(and(eq(magazines.id, input.id), eq(magazines.ownerId, ctx.user.id))).limit(1);
+        return result[0];
       }),
   }),
 });

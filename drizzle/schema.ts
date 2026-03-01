@@ -314,6 +314,16 @@ export const contracts = mysqlTable("contracts", {
   addressProofUrl: text("addressProofUrl"),
   rfcDocUrl: text("rfcDocUrl"),
   curpDocUrl: text("curpDocUrl"),
+  situacionFiscalUrl: text("situacionFiscalUrl"),
+  situacionFiscalKey: text("situacionFiscalKey"),
+  // Datos adicionales KYC del cliente
+  razonSocial: varchar("razonSocial", { length: 255 }),
+  representanteLegal: varchar("representanteLegal", { length: 255 }),
+  rfcEmpresa: varchar("rfcEmpresa", { length: 20 }),
+  // Firma digital del ADMIN/KobraPay
+  adminSignatureUrl: text("adminSignatureUrl"),
+  adminSignedAt: timestamp("adminSignedAt"),
+  adminSignedByName: varchar("adminSignedByName", { length: 255 }),
   // Notas internas (solo el admin las ve)
   internalNotes: text("internalNotes"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
@@ -738,3 +748,23 @@ export const courseProgress = mysqlTable("course_progress", {
 });
 export type CourseProgress = typeof courseProgress.$inferSelect;
 export type InsertCourseProgress = typeof courseProgress.$inferInsert;
+
+// ─── Revista Interna de la Empresa ────────────────────────────────────────────
+export const magazines = mysqlTable("magazines", {
+  id: int("id").primaryKey().autoincrement(),
+  ownerId: int("ownerId").notNull().references(() => users.id),
+  title: varchar("title", { length: 255 }).notNull(),
+  subtitle: varchar("subtitle", { length: 500 }),
+  edition: varchar("edition", { length: 100 }),
+  coverImageUrl: text("coverImageUrl"),
+  coverImageKey: text("coverImageKey"),
+  // Contenido JSON con secciones: [{type, title, body, imageUrl}]
+  content: text("content"),
+  aiPrompt: text("aiPrompt"),
+  isPublished: boolean("isPublished").default(false).notNull(),
+  publishedAt: timestamp("publishedAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type Magazine = typeof magazines.$inferSelect;
+export type InsertMagazine = typeof magazines.$inferInsert;

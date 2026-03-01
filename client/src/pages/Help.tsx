@@ -161,6 +161,54 @@ const SECTIONS_ASISTENTE: Section[] = [
   },
 ];
 
+const SECTIONS_CAPACITACIONES: Section[] = [
+  {
+    id: "capacitaciones",
+    icon: BookOpen,
+    title: "Academia KobraPay — Capacitaciones",
+    color: "emerald",
+    intro: "Accede a cursos internos con guías, videos y material completo sin salir de la plataforma.",
+    steps: [
+      { title: "Ve a 'Expedientes RH'", desc: "En el menú lateral, haz clic en 'Expedientes RH' y selecciona la pestaña 'Capacitaciones'." },
+      { title: "Explora los cursos", desc: "Filtra por categoría (Inglés, Microsoft Office, Ventas, Salud, etc.) o busca por nombre." },
+      { title: "Abre un curso", desc: "Haz clic en 'Ver curso' para abrir el detalle con módulos, videos y guías." },
+      { title: "Completa los módulos", desc: "Expande cada módulo para ver el video de YouTube, la guía interna y marcar como completado." },
+      { title: "Marca el curso como completado", desc: "Cuando termines todos los módulos, haz clic en '✓ Marcar como completado'. Aparecerá en tu Perfil Profesional." },
+      { title: "Sube tu evidencia", desc: "Opcionalmente, sube un archivo (certificado, foto, PDF) como evidencia de que completaste el curso." },
+    ],
+    faqs: [
+      { q: "¿Dónde aparecen mis cursos completados?", a: "En tu perfil, en la pestaña 'Perfil Profesional'. Muestra el curso, fecha de completado y enlace a la evidencia." },
+      { q: "¿Puedo borrar una evidencia subida por error?", a: "Sí. Abre el curso, ve a la sección de evidencia y haz clic en el ícono de borrar (🗑)." },
+      { q: "¿Quién puede crear nuevos cursos?", a: "El Superadministrador, los Administradores y el Asistente pueden crear nuevos cursos con el botón '+ Nuevo Curso'." },
+      { q: "¿Los videos se ven dentro de la plataforma?", a: "Sí. Los videos de YouTube se reproducen directamente en el modal del módulo, sin salir de KobraPay." },
+    ],
+  },
+];
+
+const SECTIONS_CONTRATOS: Section[] = [
+  {
+    id: "contratos-firma",
+    icon: Handshake,
+    title: "Contratos Digitales con Firma",
+    color: "cyan",
+    intro: "Crea contratos, fírmalos digitalmente y solicita documentos KYC al cliente.",
+    steps: [
+      { title: "Crea un contrato", desc: "Ve a 'Contratos' y haz clic en '+ Nuevo Contrato'. Llena los datos del cliente y los términos." },
+      { title: "Firma como KobraPay", desc: "Haz clic en el ícono de firma (✍) en la tabla. Se abrirá un canvas para dibujar tu firma digital." },
+      { title: "Envía al cliente para firma", desc: "Haz clic en el ícono de compartir (✈). El cliente recibirá un email con el enlace para firmar." },
+      { title: "El cliente firma y sube documentos", desc: "El cliente dibuja su firma, ingresa su razón social, RFC, nombre del representante legal y sube: INE, situación fiscal y comprobante de domicilio." },
+      { title: "Ambas partes reciben copia", desc: "Al completarse las dos firmas, se envía automáticamente un email con el contrato firmado a KobraPay y al cliente." },
+      { title: "Revisa el expediente KYC", desc: "En el perfil del cliente (Mis Clientes → Ver detalle), encontrarás todos los documentos subidos organizados." },
+    ],
+    faqs: [
+      { q: "¿Es válida la firma electrónica?", a: "Sí. La firma digital con evidencia fotográfica tiene validez legal en México bajo la NOM-151." },
+      { q: "¿Qué documentos puede subir el cliente?", a: "INE/Pasaporte, Situación Fiscal (SAT), Comprobante de Domicilio, y Acta Constitutiva." },
+      { q: "¿Puedo ver los documentos del cliente?", a: "Sí. Como Superadmin, en el perfil de cada cliente verás la sección 'Expediente KYC' con todos sus documentos." },
+      { q: "¿El contrato se actualiza automáticamente?", a: "El contenido del contrato se actualiza cuando editas la plantilla. Los contratos ya firmados conservan su versión original." },
+    ],
+  },
+];
+
 const SECTIONS_SUPERADMIN: Section[] = [
   {
     id: "registros",
@@ -203,8 +251,45 @@ const SECTIONS_SUPERADMIN: Section[] = [
       { title: "Ve a 'Mis Clientes'", desc: "En la sección Administración del menú, haz clic en 'Mis Clientes'." },
       { title: "Crea o edita clientes", desc: "Agrega nuevos negocios clientes o edita sus datos y comisiones." },
       { title: "Configura comisión", desc: "Establece el porcentaje de comisión individual para cada negocio cliente." },
+      { title: "Revisa el expediente KYC", desc: "Haz clic en 'Ver detalle' de un cliente para ver sus documentos: INE, situación fiscal, comprobante de domicilio y contratos firmados." },
     ],
-    faqs: [],
+    faqs: [
+      { q: "¿Cómo veo los documentos de un cliente?", a: "En Mis Clientes, haz clic en el nombre del cliente y ve a la sección 'Expediente KYC' en el panel de detalle." },
+    ],
+  },
+  {
+    id: "rh-revista",
+    icon: AlertTriangle,
+    title: "RH: Capacitaciones y Mi Revista",
+    color: "amber",
+    intro: "Gestiona el desarrollo profesional del equipo y la revista interna de la empresa.",
+    steps: [
+      { title: "Ve a 'Expedientes RH'", desc: "En el menú lateral, haz clic en 'Expedientes RH'." },
+      { title: "Pestaña Capacitaciones", desc: "Crea y gestiona cursos para tu equipo. Puedes subir guías, videos de YouTube y material interno." },
+      { title: "Pestaña Mi Revista", desc: "Si tu empresa tiene una revista informativa, puedes verla aquí. Si no tienes una, usa el generador con IA para crear la primera edición." },
+      { title: "Genera tu revista con IA", desc: "Describe el tema, sección o noticias que quieres incluir y la IA generará el contenido de la revista automáticamente." },
+    ],
+    faqs: [
+      { q: "¿Quién puede crear cursos?", a: "El Superadministrador, los Administradores y el Asistente." },
+      { q: "¿La revista es pública?", a: "No, la revista es interna. Solo los usuarios de tu empresa pueden verla." },
+    ],
+  },
+  {
+    id: "pasarelas",
+    icon: CreditCard,
+    title: "Pasarelas de Pago",
+    color: "amber",
+    intro: "Configura y conecta las pasarelas de pago disponibles en la plataforma.",
+    steps: [
+      { title: "Ve a 'Configuración'", desc: "En el menú lateral, haz clic en 'Configuración' (sección Sistema)." },
+      { title: "Sección Pasarelas de Pago", desc: "Verás las pasarelas disponibles: Stripe (activo en modo prueba), Conekta, OpenPay y PayPal (próximamente)." },
+      { title: "Activa Stripe en modo real", desc: "Haz clic en 'este enlace' para reclamar tu sandbox de Stripe y activar pagos reales." },
+      { title: "Conecta otras pasarelas", desc: "Cuando estén disponibles, ingresa las API Keys de Conekta, OpenPay o PayPal para activarlas." },
+    ],
+    faqs: [
+      { q: "¿Qué tarjeta usar para pruebas?", a: "Usa 4242 4242 4242 4242 con cualquier CVV de 3 dígitos y fecha futura." },
+      { q: "¿Cuándo estarán disponibles Conekta y OpenPay?", a: "Están en desarrollo. Contáctanos en soporte@kobrapay.mx para ser notificado cuando estén listos." },
+    ],
   },
 ];
 
@@ -311,21 +396,23 @@ export default function Help() {
   let roleColor = "emerald";
 
   if (isSuperAdmin) {
-    sections = [...SECTIONS_SUPERADMIN, ...SECTIONS_NEGOCIO];
+    sections = [...SECTIONS_SUPERADMIN, ...SECTIONS_NEGOCIO, ...SECTIONS_CONTRATOS, ...SECTIONS_CAPACITACIONES];
     roleLabel = "Super Admin";
     roleColor = "amber";
   } else if (isAdmin) {
-    sections = SECTIONS_NEGOCIO;
+    sections = [...SECTIONS_NEGOCIO, ...SECTIONS_CONTRATOS, ...SECTIONS_CAPACITACIONES];
     roleLabel = "Administrador";
     roleColor = "emerald";
   } else if (isAsistente) {
-    sections = SECTIONS_ASISTENTE;
+    sections = [...SECTIONS_ASISTENTE, ...SECTIONS_CAPACITACIONES];
     roleLabel = "Asistente";
     roleColor = "cyan";
   } else if (staffRole === "operador") {
-    sections = SECTIONS_COLABORADOR;
+    sections = [...SECTIONS_COLABORADOR, ...SECTIONS_CAPACITACIONES];
     roleLabel = "Operador";
     roleColor = "cyan";
+  } else {
+    sections = [...SECTIONS_NEGOCIO, ...SECTIONS_CAPACITACIONES];
   }
 
   return (

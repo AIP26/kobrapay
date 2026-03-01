@@ -507,6 +507,8 @@ function ClientDetailContent({
         </CardContent>
       </Card>
 
+      {/* Expediente KYC */}
+      <ClientKYCSection clientEmail={client.email} />
       {/* Recent transactions */}
       <Card className="border-gray-200 shadow-sm">
         <CardHeader className="pb-3 border-b border-gray-100">
@@ -550,8 +552,111 @@ function ClientDetailContent({
     </div>
   );
 }
+// ─── Expediente KYC del cliente ─────────────────────────────────────────────────────
+function ClientKYCSection({ clientEmail }: { clientEmail: string }) {
+  const { data: contracts = [], isLoading } = trpc.contracts.getByClientEmail.useQuery({ clientEmail });
 
-// ─── Panel de desglose de comisiones ─────────────────────────────────────────
+  const docLabels: Record<string, string> = {
+    ineUrl: 'INE / Credencial',
+    passportUrl: 'Pasaporte',
+    addressProofUrl: 'Comprobante de Domicilio',
+    rfcDocUrl: 'Constancia de RFC / Situación Fiscal',
+    curpDocUrl: 'CURP',
+    signatureUrl: 'Firma Digital (Cliente)',
+    adminSignatureUrl: 'Firma Digital (KobraPay)',
+  };
+
+  if (isLoading) return null;
+  if (contracts.length === 0) return null;
+
+  // Tomar el contrato más reciente
+  const contract = contracts[0];
+  const docs = [
+    { key: 'ineUrl', url: contract.ineUrl },
+    { key: 'passportUrl', url: contract.passportUrl },
+    { key: 'addressProofUrl', url: contract.addressProofUrl },
+    { key: 'rfcDocUrl', url: contract.rfcDocUrl },
+    { key: 'curpDocUrl', url: contract.curpDocUrl },
+    { key: 'signatureUrl', url: contract.signatureUrl },
+    { key: 'adminSignatureUrl', url: contract.adminSignatureUrl },
+  ].filter(d => d.url);
+
+  const hasKycData = docs.length > 0 || contract.razonSocial || contract.representanteLegal;
+
+  return (
+    <Card className="border-gray-200 shadow-sm">
+      <CardHeader className="pb-3 border-b border-gray-100">
+        <CardTitle className="text-base font-semibold text-gray-800 flex items-center gap-2">
+          <Shield className="w-4 h-4 text-cyan-500" />
+          Expediente KYC y Documentos
+          {contract.signedAt && (
+            <span className="ml-auto text-xs font-normal text-green-600 bg-green-50 px-2 py-0.5 rounded-full">
+              Contrato firmado ✓
+            </span>
+          )}
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="p-4">
+        {!hasKycData ? (
+          <div className="text-center py-6">
+            <Shield className="w-8 h-8 text-gray-300 mx-auto mb-2" />
+            <p className="text-sm text-gray-400">El cliente aún no ha subido documentos</p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {/* Datos de empresa */}
+            {(contract.razonSocial || contract.representanteLegal || contract.rfcEmpresa) && (
+              <div className="bg-cyan-50 rounded-xl p-3 border border-cyan-100">
+                <p className="text-xs font-semibold text-cyan-700 mb-2">Datos de empresa</p>
+                <div className="grid grid-cols-2 gap-2 text-sm">
+                  {contract.razonSocial && (
+                    <div><span className="text-gray-500 text-xs">Razón Social:</span><br/><strong className="text-gray-800">{contract.razonSocial}</strong></div>
+                  )}
+                  {contract.representanteLegal && (
+                    <div><span className="text-gray-500 text-xs">Representante Legal:</span><br/><strong className="text-gray-800">{contract.representanteLegal}</strong></div>
+                  )}
+                  {contract.rfcEmpresa && (
+                    <div><span className="text-gray-500 text-xs">RFC Empresa:</span><br/><strong className="text-gray-800">{contract.rfcEmpresa}</strong></div>
+                  )}
+                </div>
+              </div>
+            )}
+            {/* Documentos */}
+            {docs.length > 0 && (
+              <div>
+                <p className="text-xs font-semibold text-gray-600 mb-2">Documentos subidos</p>
+                <div className="grid grid-cols-2 gap-2">
+                  {docs.map(({ key, url }) => (
+                    <a
+                      key={key}
+                      href={url!}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-2 p-2.5 bg-gray-50 rounded-lg border border-gray-200 hover:bg-cyan-50 hover:border-cyan-200 transition-colors"
+                    >
+                      <CheckCircle2 className="w-4 h-4 text-green-500 flex-shrink-0" />
+                      <span className="text-xs text-gray-700 truncate">{docLabels[key] || key}</span>
+                    </a>
+                  ))}
+                </div>
+              </div>
+            )}
+            {/* Firmas */}
+            <div className="grid grid-cols-2 gap-3">
+              <div className={`p-2.5 rounded-lg border text-xs text-center ${contract.signedAt ? 'bg-green-50 border-green-200 text-green-700' : 'bg-gray-50 border-gray-200 text-gray-400'}`}>
+                {contract.signedAt ? `✓ Cliente firmó el ${formatDate(contract.signedAt)}` : 'Pendiente firma del cliente'}
+              </div>
+              <div className={`p-2.5 rounded-lg border text-xs text-center ${contract.adminSignedAt ? 'bg-green-50 border-green-200 text-green-700' : 'bg-amber-50 border-amber-200 text-amber-700'}`}>
+                {contract.adminSignedAt ? `✓ KobraPay firmó el ${formatDate(contract.adminSignedAt)}` : 'Pendiente firma KobraPay'}
+              </div>
+            </div>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+// ─── Panel de desglose de comisiones ─────────────────────────────────────────────────────
 function CommissionBreakdownPanel({ onSelectClient }: { onSelectClient: (id: number) => void }) {
   const { data, isLoading } = trpc.clients.getCommissionBreakdown.useQuery();
 

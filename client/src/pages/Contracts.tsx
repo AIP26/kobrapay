@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
@@ -9,7 +9,7 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { FileText, Plus, Send, Eye, Copy, CheckCircle, Archive, Edit, Download, Search, X, ExternalLink, MessageCircle, Mail } from "lucide-react";
+import { FileText, Plus, Send, Eye, Copy, CheckCircle, Archive, Edit, Download, Search, X, ExternalLink, MessageCircle, Mail, PenLine } from "lucide-react";
 import jsPDF from "jspdf";
 
 type ContractStatus = "draft" | "sent" | "signed" | "archived";
@@ -53,6 +53,13 @@ type ContractData = {
   addressProofUrl?: string | null;
   rfcDocUrl?: string | null;
   curpDocUrl?: string | null;
+  situacionFiscalUrl?: string | null;
+  razonSocial?: string | null;
+  representanteLegal?: string | null;
+  rfcEmpresa?: string | null;
+  adminSignatureUrl?: string | null;
+  adminSignedAt?: Date | string | null;
+  adminSignedByName?: string | null;
   createdAt?: Date | string | null;
 };
 
@@ -319,27 +326,164 @@ function ContractPreviewModal({ contract, onClose }: { contract: ContractData; o
 
           {/* Signatures */}
           <h2 className="text-cyan-700 font-bold text-sm uppercase border-b border-cyan-200 pb-1 mb-3 mt-6">Firmas</h2>
-          {contract.status === "signed" && contract.signedAt ? (
-            <div className="bg-green-50 border border-green-200 rounded p-3 flex items-center gap-2">
+          <div className="grid grid-cols-2 gap-8 mt-4">
+            {/* Firma KobraPay */}
+            <div className="text-center">
+              {contract.adminSignatureUrl ? (
+                <img src={contract.adminSignatureUrl} alt="Firma KobraPay" className="max-h-16 mx-auto mb-1 border border-gray-200 rounded bg-white" />
+              ) : (
+                <div className="border-b border-gray-400 mb-1 h-12"></div>
+              )}
+              <p className="text-xs text-gray-500 font-semibold">KobraPay</p>
+              {contract.adminSignedAt && <p className="text-xs text-green-600">{new Date(contract.adminSignedAt).toLocaleDateString("es-MX")}</p>}
+            </div>
+            {/* Firma Cliente */}
+            <div className="text-center">
+              {contract.signatureUrl ? (
+                <img src={contract.signatureUrl} alt="Firma cliente" className="max-h-16 mx-auto mb-1 border border-gray-200 rounded bg-white" />
+              ) : (
+                <div className="border-b border-gray-400 mb-1 h-12"></div>
+              )}
+              <p className="text-xs text-gray-500 font-semibold">{contract.clientName}</p>
+              {contract.signedAt && <p className="text-xs text-green-600">{new Date(contract.signedAt).toLocaleDateString("es-MX")}</p>}
+            </div>
+          </div>
+          {contract.status === "signed" && contract.signedAt && (
+            <div className="bg-green-50 border border-green-200 rounded p-2 flex items-center gap-2 mt-3">
               <CheckCircle className="w-4 h-4 text-green-600 flex-shrink-0" />
               <span className="text-green-700 text-xs font-medium">
-                Firmado digitalmente el {new Date(contract.signedAt).toLocaleString("es-MX")}
+                Firmado por el cliente el {new Date(contract.signedAt).toLocaleString("es-MX")}
                 {contract.signedFromIp && ` · IP: ${contract.signedFromIp}`}
               </span>
             </div>
-          ) : (
-            <div className="grid grid-cols-2 gap-8 mt-6">
-              <div className="text-center">
-                <div className="border-b border-gray-400 mb-1 h-8"></div>
-                <p className="text-xs text-gray-500">KobraPay</p>
-              </div>
-              <div className="text-center">
-                <div className="border-b border-gray-400 mb-1 h-8"></div>
-                <p className="text-xs text-gray-500">{contract.clientName}</p>
-              </div>
-            </div>
           )}
           <p className="text-center text-xs text-gray-400 mt-6">KobraPay — kobrapay.mx | Documento generado electrónicamente</p>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// ─── Admin Sign Modal ───────────────────────────────────────────────────────────
+function AdminSignModal({ contract, onClose, onSigned }: { contract: ContractData; onClose: () => void; onSigned: () => void }) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [isDrawing, setIsDrawing] = useState(false);
+  const [hasSigned, setHasSigned] = useState(false);
+  const [lastPos, setLastPos] = useState({ x: 0, y: 0 });
+
+  const adminSignMutation = trpc.contracts.adminSign.useMutation({
+    onSuccess: () => {
+      toast.success("Contrato firmado por KobraPay. Se enviará copia a ambas partes.");
+      onSigned();
+      onClose();
+    },
+    onError: (e) => toast.error(e.message),
+  });
+
+  const getPos = (e: React.MouseEvent | React.TouchEvent, canvas: HTMLCanvasElement) => {
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    if ('touches' in e) {
+      return { x: (e.touches[0].clientX - rect.left) * scaleX, y: (e.touches[0].clientY - rect.top) * scaleY };
+    }
+    return { x: (e.clientX - rect.left) * scaleX, y: (e.clientY - rect.top) * scaleY };
+  };
+
+  const startDraw = (e: React.MouseEvent | React.TouchEvent) => {
+    const canvas = canvasRef.current; if (!canvas) return;
+    e.preventDefault();
+    const pos = getPos(e, canvas);
+    setIsDrawing(true);
+    setLastPos(pos);
+  };
+
+  const draw = (e: React.MouseEvent | React.TouchEvent) => {
+    if (!isDrawing) return;
+    const canvas = canvasRef.current; if (!canvas) return;
+    e.preventDefault();
+    const ctx = canvas.getContext('2d')!;
+    const pos = getPos(e, canvas);
+    ctx.beginPath();
+    ctx.moveTo(lastPos.x, lastPos.y);
+    ctx.lineTo(pos.x, pos.y);
+    ctx.strokeStyle = '#1e3a5f';
+    ctx.lineWidth = 2.5;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.stroke();
+    setLastPos(pos);
+    setHasSigned(true);
+  };
+
+  const stopDraw = () => setIsDrawing(false);
+
+  const clearSignature = () => {
+    const canvas = canvasRef.current; if (!canvas) return;
+    const ctx = canvas.getContext('2d')!;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    setHasSigned(false);
+  };
+
+  const handleSign = () => {
+    const canvas = canvasRef.current; if (!canvas || !hasSigned) return;
+    const signatureData = canvas.toDataURL('image/png');
+    adminSignMutation.mutate({ contractId: contract.id, signatureData });
+  };
+
+  return (
+    <Dialog open onOpenChange={() => onClose()}>
+      <DialogContent className="max-w-lg">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <PenLine className="w-5 h-5 text-cyan-700" />
+            Firmar como KobraPay
+          </DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4 mt-2">
+          <div className="bg-cyan-50 border border-cyan-200 rounded-lg p-3">
+            <p className="text-sm font-medium text-cyan-800">Contrato con: <strong>{contract.clientName}</strong></p>
+            <p className="text-xs text-cyan-600">{contract.clientEmail} · Comisión: {contract.commissionRate}%</p>
+          </div>
+          <div>
+            <p className="text-sm font-medium text-gray-700 mb-2">Firma digital (KobraPay)</p>
+            <div className="border-2 border-dashed border-gray-300 rounded-xl overflow-hidden bg-gray-50">
+              <canvas
+                ref={canvasRef}
+                width={560}
+                height={180}
+                className="w-full touch-none cursor-crosshair"
+                onMouseDown={startDraw}
+                onMouseMove={draw}
+                onMouseUp={stopDraw}
+                onMouseLeave={stopDraw}
+                onTouchStart={startDraw}
+                onTouchMove={draw}
+                onTouchEnd={stopDraw}
+              />
+            </div>
+            <div className="flex gap-2 mt-2">
+              <Button variant="outline" size="sm" onClick={clearSignature} className="gap-1">
+                <X className="w-3 h-3" /> Limpiar
+              </Button>
+            </div>
+          </div>
+          <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
+            <p className="text-xs text-amber-700">
+              ⚠️ Al firmar, KobraPay acepta los términos del contrato. Se enviará una copia por email al cliente y quedará registrada la firma digital con fecha y hora.
+            </p>
+          </div>
+          <div className="flex gap-3">
+            <Button variant="outline" onClick={onClose} className="flex-1">Cancelar</Button>
+            <Button
+              onClick={handleSign}
+              disabled={!hasSigned || adminSignMutation.isPending}
+              className="flex-1 bg-cyan-700 hover:bg-cyan-800 text-white gap-2"
+            >
+              <CheckCircle className="w-4 h-4" />
+              {adminSignMutation.isPending ? "Firmando..." : "Confirmar Firma KobraPay"}
+            </Button>
+          </div>
         </div>
       </DialogContent>
     </Dialog>
@@ -408,6 +552,7 @@ export default function Contracts() {
   const [generatingPdf, setGeneratingPdf] = useState<number | null>(null);
   const [previewContract, setPreviewContract] = useState<ContractData | null>(null);
   const [shareContract, setShareContract] = useState<{ contract: ContractData; signUrl: string } | null>(null);
+  const [adminSignContract, setAdminSignContract] = useState<ContractData | null>(null);
 
   const { data: contracts = [], refetch } = trpc.contracts.list.useQuery();
   const createMutation = trpc.contracts.create.useMutation({
@@ -504,6 +649,13 @@ export default function Contracts() {
           contract={shareContract.contract}
           signUrl={shareContract.signUrl}
           onClose={() => setShareContract(null)}
+        />
+      )}
+      {adminSignContract && (
+        <AdminSignModal
+          contract={adminSignContract}
+          onClose={() => setAdminSignContract(null)}
+          onSigned={refetch}
         />
       )}
 
@@ -733,6 +885,17 @@ export default function Contracts() {
                             {sendingId === contract.id
                               ? <div className="w-4 h-4 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
                               : <Send className="w-4 h-4" />}
+                          </Button>
+                        )}
+                        {/* Firmar como KobraPay */}
+                        {!((contract as ContractData).adminSignatureUrl) && (
+                          <Button
+                            size="sm" variant="ghost"
+                            onClick={() => setAdminSignContract(contract as ContractData)}
+                            className="text-cyan-600 hover:text-cyan-700"
+                            title="Firmar como KobraPay"
+                          >
+                            <PenLine className="w-4 h-4" />
                           </Button>
                         )}
                         {/* Compartir (WhatsApp / Email) */}

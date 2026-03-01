@@ -199,15 +199,19 @@ function Sidebar({
     >
       {/* Logo */}
       <div className="flex items-center gap-3 px-4 py-4 border-b border-white/10 flex-shrink-0">
-        <img
-          src={KOBRAPAY_ICON}
-          alt="KobraPay"
-          className="w-9 h-9 object-contain flex-shrink-0"
-        />
-        <div className="flex-1 min-w-0">
-          <p className="font-bold text-sm leading-tight text-white">KobraPay</p>
-          <p className="text-xs text-gray-400">Cobra fácil, cobra global</p>
-        </div>
+        <Link href="/dashboard" onClick={onClose}>
+          <a className="flex items-center gap-3 flex-1 min-w-0 hover:opacity-80 transition-opacity" title="Ir al Panel Principal">
+            <img
+              src={KOBRAPAY_ICON}
+              alt="KobraPay"
+              className="w-9 h-9 object-contain flex-shrink-0"
+            />
+            <div className="flex-1 min-w-0">
+              <p className="font-bold text-sm leading-tight text-white">KobraPay</p>
+              <p className="text-xs text-gray-400">Cobra fácil, cobra global</p>
+            </div>
+          </a>
+        </Link>
         {mobile && (
           <button onClick={onClose} className="ml-auto text-gray-400 hover:text-white transition-colors">
             <X className="w-5 h-5" />

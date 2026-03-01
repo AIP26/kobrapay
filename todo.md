@@ -546,3 +546,13 @@
 - [x] Cursos con contenido interno (sin depender de URLs externas) - módulos con texto, guías, tips
 - [x] Perfil profesional: sección de cursos completados en MyProfile con fecha y evidencia
 - [x] Al marcar completado, aparece automáticamente en el perfil del usuario
+
+## Fase 28 - Contratos Digitales Completos (Mar 2026)
+- [ ] Campos en schema: adminSignatureUrl, adminSignedAt, adminSignedByName en contracts
+- [ ] Campos KYC en contracts: razonSocial, representanteLegal, rfcEmpresa, situacionFiscalUrl, comprobanteDomicilioUrl, ineUrl (ya existe), passportUrl (ya existe)
+- [ ] Migrar BD con nuevos campos
+- [ ] SignContract.tsx: canvas de firma con react-signature-canvas, subida de INE/situación fiscal/domicilio
+- [ ] Contracts.tsx: botón "Firmar como KobraPay" con canvas de firma del superadmin
+- [ ] Al firmar ambas partes: enviar email con copia del contrato firmado a ambos
+- [ ] Vista de documentos KYC del cliente en Clients.tsx (perfil del cliente para superadmin)
+- [ ] Contrato siempre actualizado con nuevas funcionalidades de la plataforma
