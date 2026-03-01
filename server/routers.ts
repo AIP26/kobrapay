@@ -3263,11 +3263,41 @@ export const appRouter = router({
         return { success: true };
       }),
 
-    // Obtener CV de capacitaciones de un empleado
+    // Borrar evidencia de un curso/módulo
+    deleteEvidence: protectedProcedure
+      .input(z.object({
+        courseId: z.number(),
+        moduleId: z.number().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const { deleteEvidenceFromProgress } = await import('./db');
+        await deleteEvidenceFromProgress({
+          userId: ctx.user.id,
+          courseId: input.courseId,
+          moduleId: input.moduleId || null,
+        });
+        return { success: true };
+      }),
+    // Obtener CV de capacitaciones del usuario actual
+    getMyCV: protectedProcedure
+      .query(async ({ ctx }) => {
+        const { getCourseProgress, getCourseById } = await import('./db');
+        const progress = await getCourseProgress(ctx.user.id);
+        const completed = progress.filter(p => p.status === 'completed' && !p.moduleId);
+        const enriched = await Promise.all(completed.map(async p => {
+          const course = await getCourseById(p.courseId);
+          return { ...p, course };
+        }));
+        return enriched;
+      }),
+    // Obtener CV de capacitaciones de un empleado (admin puede ver de cualquiera)
     getEmployeeCV: protectedProcedure
       .input(z.object({ userId: z.number() }))
       .query(async ({ ctx, input }) => {
         const { getCourseProgress, getCourseById } = await import('./db');
+        if (ctx.user.id !== input.userId && ctx.user.role !== 'admin' && !isSuperAdmin(ctx.user.openId)) {
+          throw new TRPCError({ code: 'FORBIDDEN' });
+        }
         const progress = await getCourseProgress(input.userId);
         const completed = progress.filter(p => p.status === 'completed' && !p.moduleId);
         const enriched = await Promise.all(completed.map(async p => {

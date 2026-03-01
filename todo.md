@@ -533,3 +533,16 @@
 - [x] Agregar campanita de alertas de citas del día con opción de desactivar/marcar como visto
 - [x] Implementar recordatorios de cita personalizados con marca del negocio (logo, doctor, teléfonos)
 - [x] Agregar página de Capacitaciones con cursos de KobraPay
+
+## Fase 27 - Contenido de Cursos de Capacitaciones
+- [ ] Agregar módulos y lecciones a los 15 cursos de KobraPay en la BD
+- [ ] Vista detallada de curso con módulos, lecciones y progreso por módulo
+- [ ] PDFs y videos enlazados en cada lección
+- [ ] Vista de progreso del empleado (CV de capacitaciones)
+
+## Capacitaciones - Mejoras (Mar 2026)
+- [x] Arreglar bug de "Subiendo..." atascado en evidencia de cursos
+- [x] Agregar opción de borrar evidencia si se equivocaron de archivo
+- [x] Cursos con contenido interno (sin depender de URLs externas) - módulos con texto, guías, tips
+- [x] Perfil profesional: sección de cursos completados en MyProfile con fecha y evidencia
+- [x] Al marcar completado, aparece automáticamente en el perfil del usuario

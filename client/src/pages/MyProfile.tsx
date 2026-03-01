@@ -14,13 +14,14 @@ import {
 } from "lucide-react";
 
 // ─── Tipos ────────────────────────────────────────────────────────────────────
-type Section = "personal" | "negocio" | "bancario" | "documentos";
+type Section = "personal" | "negocio" | "bancario" | "documentos" | "capacitaciones";
 
 const SECTIONS: { id: Section; label: string; icon: React.ElementType; desc: string }[] = [
   { id: "personal", label: "Datos Personales", icon: User, desc: "Nombre, CURP, RFC, fecha de nacimiento" },
   { id: "negocio", label: "Mi Negocio", icon: Building2, desc: "Razón social, dirección fiscal, giro" },
   { id: "bancario", label: "Datos Bancarios", icon: CreditCard, desc: "CLABE, banco, titular de cuenta" },
   { id: "documentos", label: "Documentos", icon: FileText, desc: "INE, comprobante de domicilio, acta" },
+  { id: "capacitaciones", label: "Perfil Profesional", icon: CheckCircle2, desc: "Cursos completados y evidencias" },
 ];
 
 const ESTADOS_MX = [
@@ -198,7 +199,7 @@ export default function MyProfile() {
       </div>
 
       {/* Navegación de secciones */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
         {SECTIONS.map(({ id, label, icon: Icon, desc }) => (
           <button
             key={id}
@@ -239,6 +240,10 @@ export default function MyProfile() {
           uploading={uploadDocMutation.isPending}
           uploadingDocType={uploadDocMutation.variables?.docType}
         />
+      )}
+      {/* Sección Perfil Profesional */}
+      {activeSection === "capacitaciones" && (
+        <CapacitacionesSection />
       )}
     </div>
     </DashboardLayout>
@@ -580,6 +585,130 @@ function DocumentosSection({
             );
           })}
         </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+// ─── Categorías de cursos ─────────────────────────────────────────────────────
+const COURSE_CATEGORIES: Record<string, { label: string; emoji: string; color: string }> = {
+  english:   { label: "Inglés",           emoji: "🇺🇸", color: "bg-blue-100 text-blue-800" },
+  office:    { label: "Microsoft Office",  emoji: "💼", color: "bg-indigo-100 text-indigo-800" },
+  first_aid: { label: "Primeros Auxilios", emoji: "🚑", color: "bg-red-100 text-red-800" },
+  sales:     { label: "Ventas",            emoji: "📈", color: "bg-green-100 text-green-800" },
+  books:     { label: "Libros",            emoji: "📚", color: "bg-yellow-100 text-yellow-800" },
+  health:    { label: "Salud & Bienestar", emoji: "🌿", color: "bg-emerald-100 text-emerald-800" },
+  other:     { label: "Otros",             emoji: "🎓", color: "bg-gray-100 text-gray-800" },
+};
+
+// ─── Sección: Perfil Profesional (Cursos Completados) ─────────────────────────
+function CapacitacionesSection() {
+  const { data: cv, isLoading } = trpc.training.getMyCV.useQuery();
+
+  if (isLoading) {
+    return (
+      <Card>
+        <CardContent className="flex items-center justify-center py-12">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </CardContent>
+      </Card>
+    );
+  }
+
+  const completed = cv || [];
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <CheckCircle2 className="h-5 w-5 text-green-600" />
+          Perfil Profesional — Capacitaciones
+        </CardTitle>
+        <CardDescription>
+          Historial de cursos completados. Cada curso completado queda registrado aquí con fecha y evidencia.
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        {completed.length === 0 ? (
+          <div className="text-center py-12 text-muted-foreground">
+            <div className="text-5xl mb-3">🎓</div>
+            <p className="font-medium text-base">Aún no has completado ningún curso</p>
+            <p className="text-sm mt-1">
+              Ve a <span className="font-semibold text-primary">Capacitaciones</span> y marca tus primeros cursos como completados para que aparezcan aquí.
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {/* Resumen */}
+            <div className="flex items-center gap-4 bg-green-50 border border-green-200 rounded-xl p-4">
+              <div className="text-4xl">🏆</div>
+              <div>
+                <p className="font-bold text-green-800 text-lg">{completed.length} curso{completed.length !== 1 ? "s" : ""} completado{completed.length !== 1 ? "s" : ""}</p>
+                <p className="text-green-600 text-sm">Excelente progreso en tu desarrollo profesional</p>
+              </div>
+            </div>
+
+            {/* Lista de cursos */}
+            <div className="grid gap-3">
+              {completed.map((item: any) => {
+                const course = item.course;
+                if (!course) return null;
+                const cat = COURSE_CATEGORIES[course.category] || COURSE_CATEGORIES.other;
+                return (
+                  <div key={item.id} className="border border-gray-200 rounded-xl p-4 bg-white hover:border-green-300 transition-colors">
+                    <div className="flex items-start gap-3">
+                      <span className="text-2xl shrink-0">{cat.emoji}</span>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <h3 className="font-semibold text-gray-900">{course.title}</h3>
+                          <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${cat.color}`}>{cat.label}</span>
+                          {course.ownerId === null && (
+                            <span className="text-xs bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full font-medium">KobraPay</span>
+                          )}
+                          <span className="ml-auto text-xs text-green-600 font-medium flex items-center gap-1">
+                            <CheckCircle2 className="h-3 w-3" />
+                            Completado
+                          </span>
+                        </div>
+                        {course.description && (
+                          <p className="text-gray-500 text-sm mt-1 line-clamp-2">{course.description}</p>
+                        )}
+                        <div className="flex items-center gap-4 mt-2 flex-wrap">
+                          {item.completedAt && (
+                            <span className="text-xs text-gray-400">
+                              📅 {new Date(item.completedAt).toLocaleDateString("es-MX", {
+                                day: "numeric", month: "long", year: "numeric"
+                              })}
+                            </span>
+                          )}
+                          {course.durationMinutes && (
+                            <span className="text-xs text-gray-400">⏱ {course.durationMinutes} min</span>
+                          )}
+                          {item.evidenceUrl && (
+                            <a
+                              href={item.evidenceUrl}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="inline-flex items-center gap-1 text-xs text-primary hover:underline font-medium"
+                            >
+                              <ExternalLink className="h-3 w-3" />
+                              {item.evidenceName || "Ver evidencia"}
+                            </a>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Nota al pie */}
+            <p className="text-xs text-muted-foreground text-center pt-2">
+              Este historial es parte de tu perfil profesional dentro de KobraPay.
+            </p>
+          </div>
+        )}
       </CardContent>
     </Card>
   );

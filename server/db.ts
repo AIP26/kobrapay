@@ -1491,3 +1491,20 @@ export async function upsertCourseProgress(data: {
   const [created] = await db.select().from(courseProgress).where(eq(courseProgress.id, insertId));
   return created;
 }
+
+export async function deleteEvidenceFromProgress(data: {
+  userId: number;
+  courseId: number;
+  moduleId?: number | null;
+}): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("DB not available");
+  const where = data.moduleId
+    ? and(eq(courseProgress.userId, data.userId), eq(courseProgress.courseId, data.courseId), eq(courseProgress.moduleId, data.moduleId))
+    : and(eq(courseProgress.userId, data.userId), eq(courseProgress.courseId, data.courseId), isNull(courseProgress.moduleId));
+  await db.update(courseProgress).set({
+    evidenceUrl: null,
+    evidenceKey: null,
+    evidenceName: null,
+  }).where(where);
+}
