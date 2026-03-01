@@ -208,58 +208,51 @@ export default function Home() {
       {/* Hero split-screen */}
       <section className="min-h-[calc(100vh-64px)] grid lg:grid-cols-2">
         {/* Izquierda: texto de bienvenida */}
-        <div className="flex flex-col justify-center px-8 lg:px-16 py-16 relative overflow-hidden">
+        <div className="flex flex-col justify-center px-8 lg:px-14 py-12 relative overflow-hidden">
           <div className="absolute inset-0 pointer-events-none">
-            <div className="absolute top-1/2 left-1/4 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-emerald-500/8 rounded-full blur-3xl" />
+            <div className="absolute top-1/2 left-1/4 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] bg-emerald-500/6 rounded-full blur-3xl" />
           </div>
-          <div className="relative max-w-lg">
-            <div className="inline-flex items-center gap-2 bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 rounded-full px-4 py-1.5 text-sm font-medium mb-8">
-              <Zap className="w-3.5 h-3.5" />
+          <div className="relative max-w-md">
+            <div className="inline-flex items-center gap-2 bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 rounded-full px-3 py-1 text-xs font-medium mb-6">
+              <Zap className="w-3 h-3" />
               La plataforma de cobros para negocios mexicanos
             </div>
-            <h1 className="text-5xl lg:text-6xl font-extrabold text-white mb-6 leading-tight">
-              HOLA,<br />
-              <span className="bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent">bienvenido</span>
+            <h1 className="text-3xl lg:text-4xl font-extrabold text-white mb-4 leading-tight">
+              Cobra más rápido,<br />
+              <span className="bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent">sin complicaciones</span>
             </h1>
-            <p className="text-lg text-gray-300 mb-3 font-medium">
-              Bienvenido a tu <strong className="text-white">panel de cobros profesional.</strong>
-            </p>
-            <p className="text-gray-400 mb-10 leading-relaxed">
+            <p className="text-sm text-gray-400 mb-7 leading-relaxed">
               Genera enlaces de cobro personalizados, compártelos por WhatsApp o email, y recibe pagos con tarjeta de forma segura. Sin hardware, sin contratos.
             </p>
-            <div className="flex flex-col sm:flex-row gap-3">
-              <Button size="lg" asChild className="bg-emerald-500 hover:bg-emerald-400 text-white text-base px-8 h-12">
-                <a href={getLoginUrl("/dashboard")}>Comenzar gratis <ArrowRight className="w-4 h-4 ml-2" /></a>
+            <div className="flex flex-col sm:flex-row gap-2.5">
+              <Button size="sm" asChild className="bg-emerald-500 hover:bg-emerald-400 text-white px-6 h-10">
+                <a href={getLoginUrl("/dashboard")}>Comenzar gratis <ArrowRight className="w-3.5 h-3.5 ml-1.5" /></a>
               </Button>
               {isAuthenticated && (
-                <Button size="lg" variant="outline" asChild className="text-base px-8 h-12 border-white/20 text-white hover:bg-white/10">
+                <Button size="sm" variant="outline" asChild className="px-6 h-10 border-white/20 text-white hover:bg-white/10">
                   <Link href="/dashboard">Ver mi panel</Link>
                 </Button>
               )}
             </div>
-            <div className="mt-10 flex items-center gap-3 flex-wrap">
+            <div className="mt-8 flex items-center gap-2.5 flex-wrap">
               <span className="text-xs text-gray-500">Aceptamos:</span>
               {["VISA", "MC", "AMEX"].map((brand) => (
-                <span key={brand} className="bg-white/10 text-white text-xs font-bold px-3 py-1 rounded border border-white/10">{brand}</span>
+                <span key={brand} className="bg-white/10 text-white text-xs font-bold px-2.5 py-0.5 rounded border border-white/10">{brand}</span>
               ))}
-              <span className="text-xs text-gray-500 ml-1">· Powered by Stripe</span>
+              <span className="text-xs text-gray-500">· Powered by Stripe</span>
             </div>
           </div>
         </div>
 
         {/* Derecha: card con tabs Acceso / Registrar */}
-        <div className="flex flex-col justify-center items-center px-8 lg:px-16 py-16 bg-[#0a0f1a] border-l border-white/5">
-          <div className="w-full max-w-md">
-            <div className="text-center mb-8">
-              <img src={KOBRAPAY_ICON} alt="KobraPay" className="w-14 h-14 object-contain mx-auto mb-3" />
-              <img src={KOBRAPAY_LOGO} alt="KobraPay" className="h-8 object-contain mx-auto opacity-80" />
-            </div>
+        <div className="flex flex-col justify-center items-center px-8 lg:px-12 py-12 bg-[#0a0f1a] border-l border-white/5">
+          <div className="w-full max-w-sm">
             <div className="bg-[#141c2e] border border-white/10 rounded-2xl overflow-hidden shadow-2xl">
               {/* Tabs funcionales */}
               <div className="grid grid-cols-2 border-b border-white/10">
                 <button
                   onClick={() => setActiveTab("acceso")}
-                  className={`py-4 text-center border-r border-white/10 transition-all text-sm font-semibold ${
+                  className={`py-3 text-center border-r border-white/10 transition-all text-xs font-semibold ${
                     activeTab === "acceso"
                       ? "bg-emerald-500 text-white"
                       : "bg-[#141c2e] text-gray-400 hover:text-white hover:bg-white/5"
@@ -269,7 +262,7 @@ export default function Home() {
                 </button>
                 <button
                   onClick={() => setActiveTab("registrar")}
-                  className={`py-4 text-center transition-all text-sm font-semibold ${
+                  className={`py-3 text-center transition-all text-xs font-semibold ${
                     activeTab === "registrar"
                       ? "bg-emerald-500 text-white"
                       : "bg-[#141c2e] text-gray-400 hover:text-white hover:bg-white/5"
@@ -281,31 +274,31 @@ export default function Home() {
 
               {/* Tab: Acceso */}
               {activeTab === "acceso" && (
-                <div className="p-8">
-                  <p className="text-gray-400 text-sm text-center mb-6">
-                    Ingresa a tu panel de cobros con tu cuenta existente.
+                <div className="p-5">
+                  <p className="text-gray-400 text-xs text-center mb-4">
+                    Ingresa a tu panel con tu cuenta existente.
                   </p>
                   <a
                     href={getLoginUrl("/dashboard")}
-                    className="w-full flex items-center justify-center gap-3 bg-emerald-500 hover:bg-emerald-400 text-white font-semibold py-3.5 px-6 rounded-xl transition-colors mb-4 text-sm"
+                    className="w-full flex items-center justify-center gap-2 bg-emerald-500 hover:bg-emerald-400 text-white font-semibold py-2.5 px-5 rounded-lg transition-colors mb-3 text-sm"
                   >
-                    <Shield className="w-4 h-4" />
+                    <Shield className="w-3.5 h-3.5" />
                     Iniciar sesión
                   </a>
-                  <div className="flex items-center gap-3 my-5">
+                  <div className="flex items-center gap-2 my-3">
                     <div className="flex-1 h-px bg-white/10" />
-                    <span className="text-xs text-gray-500">Acceso seguro con OAuth</span>
+                    <span className="text-xs text-gray-600">Acceso seguro con OAuth</span>
                     <div className="flex-1 h-px bg-white/10" />
                   </div>
-                  <div className="space-y-3">
+                  <div className="space-y-2">
                     {["Acceso inmediato a tu panel", "Historial de cobros completo", "Seguridad con cifrado SSL"].map((benefit) => (
-                      <div key={benefit} className="flex items-center gap-2 text-sm text-gray-400">
-                        <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+                      <div key={benefit} className="flex items-center gap-2 text-xs text-gray-400">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 flex-shrink-0" />
                         {benefit}
                       </div>
                     ))}
                   </div>
-                  <p className="text-center text-xs text-gray-500 mt-6">
+                  <p className="text-center text-xs text-gray-500 mt-4">
                     ¿No tienes cuenta?{" "}
                     <button onClick={() => setActiveTab("registrar")} className="text-emerald-400 hover:underline">Regístrate aquí</button>
                   </p>
@@ -314,38 +307,38 @@ export default function Home() {
 
               {/* Tab: Registrar */}
               {activeTab === "registrar" && (
-                <div className="p-8">
-                  <p className="text-gray-400 text-sm text-center mb-6">
+                <div className="p-5">
+                  <p className="text-gray-400 text-xs text-center mb-4">
                     Crea tu cuenta y empieza a cobrar en minutos.
                   </p>
                   <a
                     href={getLoginUrl("/complete-profile")}
-                    className="w-full flex items-center justify-center gap-3 bg-emerald-500 hover:bg-emerald-400 text-white font-semibold py-3.5 px-6 rounded-xl transition-colors mb-4 text-sm"
+                    className="w-full flex items-center justify-center gap-2 bg-emerald-500 hover:bg-emerald-400 text-white font-semibold py-2.5 px-5 rounded-lg transition-colors mb-3 text-sm"
                   >
-                    <ArrowRight className="w-4 h-4" />
+                    <ArrowRight className="w-3.5 h-3.5" />
                     Crear cuenta gratis
                   </a>
-                  <div className="flex items-center gap-3 my-5">
+                  <div className="flex items-center gap-2 my-3">
                     <div className="flex-1 h-px bg-white/10" />
-                    <span className="text-xs text-gray-500">Sin costos fijos</span>
+                    <span className="text-xs text-gray-600">Sin costos fijos</span>
                     <div className="flex-1 h-px bg-white/10" />
                   </div>
-                  <div className="space-y-3">
+                  <div className="space-y-2">
                     {["Nombre completo y CURP", "Datos de tu negocio", "Aprobación en menos de 24h"].map((step) => (
-                      <div key={step} className="flex items-center gap-2 text-sm text-gray-400">
-                        <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+                      <div key={step} className="flex items-center gap-2 text-xs text-gray-400">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 flex-shrink-0" />
                         {step}
                       </div>
                     ))}
                   </div>
-                  <p className="text-center text-xs text-gray-500 mt-6">
+                  <p className="text-center text-xs text-gray-500 mt-4">
                     ¿Ya tienes cuenta?{" "}
                     <button onClick={() => setActiveTab("acceso")} className="text-emerald-400 hover:underline">Inicia sesión</button>
                   </p>
                 </div>
               )}
             </div>
-            <p className="text-center text-xs text-gray-500 mt-6">
+            <p className="text-center text-xs text-gray-500 mt-4">
               ¿Tienes dudas?{" "}
               <a href="mailto:soporte@kobrapay.mx" className="text-emerald-400 hover:underline">soporte@kobrapay.mx</a>
             </p>
