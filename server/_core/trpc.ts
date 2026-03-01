@@ -12,8 +12,12 @@ export const router = t.router;
 export const publicProcedure = t.procedure;
 
 // ─── Helper: check if user is the platform owner (superadmin) ─────────────────
-export function isSuperAdmin(userOpenId: string): boolean {
-  return userOpenId === ENV.ownerOpenId;
+// Reconoce al superadmin por OWNER_OPEN_ID O por role='admin' en la BD
+export function isSuperAdmin(userOpenId: string, userRole?: string): boolean {
+  if (ENV.ownerOpenId && userOpenId === ENV.ownerOpenId) return true;
+  // Si OWNER_OPEN_ID no está configurado o no coincide, el rol 'admin' también es superadmin
+  if (userRole === 'admin') return true;
+  return false;
 }
 
 // ─── Require any authenticated user ──────────────────────────────────────────
@@ -28,7 +32,7 @@ const requireUser = t.middleware(async opts => {
     ctx: {
       ...ctx,
       user: ctx.user,
-      isSuperAdmin: isSuperAdmin(ctx.user.openId),
+      isSuperAdmin: isSuperAdmin(ctx.user.openId, ctx.user.role),
     },
   });
 });
@@ -44,7 +48,7 @@ export const adminProcedure = t.procedure.use(
       throw new TRPCError({ code: "UNAUTHORIZED", message: UNAUTHED_ERR_MSG });
     }
 
-    const superAdmin = isSuperAdmin(ctx.user.openId);
+    const superAdmin = isSuperAdmin(ctx.user.openId, ctx.user.role);
     if (!superAdmin && ctx.user.role !== 'admin') {
       throw new TRPCError({ code: "FORBIDDEN", message: NOT_ADMIN_ERR_MSG });
     }
@@ -53,13 +57,13 @@ export const adminProcedure = t.procedure.use(
       ctx: {
         ...ctx,
         user: ctx.user,
-        isSuperAdmin: superAdmin,
-      },
-    });
+           isSuperAdmin: superAdmin,
+    },
+  });
   }),
 );
 
-// ─── Require superadmin only (platform owner) ────────────────────────────────
+// ─── Require superadmin onlyy (platform owner) ────────────────────────────────
 export const superAdminProcedure = t.procedure.use(
   t.middleware(async opts => {
     const { ctx, next } = opts;
@@ -68,7 +72,7 @@ export const superAdminProcedure = t.procedure.use(
       throw new TRPCError({ code: "UNAUTHORIZED", message: UNAUTHED_ERR_MSG });
     }
 
-    if (!isSuperAdmin(ctx.user.openId)) {
+    if (!isSuperAdmin(ctx.user.openId, ctx.user.role)) {
       throw new TRPCError({
         code: "FORBIDDEN",
         message: "Acceso denegado. Esta sección es exclusiva del administrador de la plataforma. (10003)",

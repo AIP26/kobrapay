@@ -608,3 +608,27 @@
 - [ ] Prescriptions.tsx: botón editar en cada receta guardada
 - [ ] Prescriptions.tsx: campo para subir sello en perfil del doctor
 - [ ] Sidebar: grupo colapsable "Clínico" con Agenda Médica, Prescripciones, Farmacia, Proveedores, Control de Módulos
+
+## Flujo de aprobación dos niveles (asistente + superadmin)
+- [ ] Agregar rol 'assistant' en tabla users (enum admin|user|assistant)
+- [ ] Agregar campo reviewed_by, reviewed_at, review_status en module_requests
+- [ ] Backend: asistente puede pre-aprobar/rechazar solicitudes de módulos
+- [ ] Backend: superadmin da visto bueno final en solicitudes pre-aprobadas
+- [ ] Backend: asistente puede dar accesos generales sin aprobación del superadmin
+- [ ] Panel de asistente para revisar solicitudes y gestionar accesos
+- [ ] Panel de superadmin actualizado con bandeja de solicitudes pre-aprobadas
+- [ ] Notificación al aprobar acceso (al negocio)
+- [ ] Historial de recetas por paciente en Agenda Médica
+- [ ] Exportar receta como PDF descargable
+
+## Flujo de aprobación dos niveles (asistente + superadmin)
+- [ ] Agregar rol 'assistant' en tabla users y schema
+- [ ] Agregar campos reviewed_by, reviewed_at, review_status en module_requests
+- [ ] Backend: asistente puede pre-aprobar/rechazar solicitudes de módulos
+- [ ] Backend: superadmin da visto bueno final en solicitudes pre-aprobadas
+- [ ] Backend: asistente puede dar accesos generales sin aprobación del superadmin
+- [ ] Panel de asistente para revisar solicitudes y gestionar accesos
+- [ ] Panel de superadmin actualizado con bandeja de solicitudes pre-aprobadas
+- [ ] Notificación al aprobar acceso (al negocio)
+- [ ] Historial de recetas por paciente en Agenda Médica
+- [ ] Exportar receta como PDF descargable
