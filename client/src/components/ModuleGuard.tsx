@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
+import { useAuth } from "@/_core/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -30,12 +31,19 @@ interface ModuleGuardProps {
 
 /**
  * Envuelve una página y verifica si el usuario tiene acceso al módulo.
+ * El superadmin siempre pasa sin restricciones.
  * Si no tiene acceso, muestra una pantalla de solicitud.
- * Si ya solicitó acceso, muestra estado de espera.
- * El superadmin siempre pasa.
  */
 export function ModuleGuard({ module, children }: ModuleGuardProps) {
-  const { data: access, isLoading } = trpc.moduleAccess.check.useQuery({ module });
+  const { user, loading: authLoading } = useAuth();
+  const isSuperAdmin = (user as Record<string, unknown>)?.isSuperAdmin === true;
+
+  // Si es superadmin, mostrar directamente el contenido sin verificar módulo
+  const { data: access, isLoading: accessLoading } = trpc.moduleAccess.check.useQuery(
+    { module },
+    { enabled: !authLoading && !isSuperAdmin && !!user }
+  );
+
   const requestMutation = trpc.moduleAccess.requestAccess.useMutation({
     onSuccess: (data: any) => {
       if (data.alreadyGranted) {
@@ -53,7 +61,22 @@ export function ModuleGuard({ module, children }: ModuleGuardProps) {
   const [message, setMessage] = useState("");
   const [submitted, setSubmitted] = useState(false);
 
-  if (isLoading) {
+  // Cargando autenticación
+  if (authLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+      </div>
+    );
+  }
+
+  // Superadmin → acceso total sin restricciones
+  if (isSuperAdmin) {
+    return <>{children}</>;
+  }
+
+  // Cargando verificación de acceso
+  if (accessLoading) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
@@ -122,7 +145,7 @@ export function ModuleGuard({ module, children }: ModuleGuardProps) {
                   <SelectItem value="clinica">Clínica médica</SelectItem>
                   <SelectItem value="consultorio">Consultorio médico</SelectItem>
                   <SelectItem value="hospital">Hospital</SelectItem>
-                  <SelectItem value="dentista">Consultorio dental</SelectItem>
+                  <SelectItem value="dentista">Consultorio dental / Dentista</SelectItem>
                   <SelectItem value="estetica">Medicina estética</SelectItem>
                   <SelectItem value="spa">Spa / Centro de bienestar</SelectItem>
                   <SelectItem value="nutricion">Nutrición / Dietista</SelectItem>
