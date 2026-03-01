@@ -3325,6 +3325,23 @@ export const appRouter = router({
         });
         return { success: true };
       }),
+    // Subir imagen de portada de un curso (sin crear progreso)
+    uploadCourseCover: protectedProcedure
+      .input(z.object({
+        fileName: z.string(),
+        fileBase64: z.string(),
+        mimeType: z.string().default('image/jpeg'),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const { storagePut } = await import('./storage');
+        const base64Data = input.fileBase64.replace(/^data:[^;]+;base64,/, '');
+        const buffer = Buffer.from(base64Data, 'base64');
+        const ext = input.fileName.split('.').pop() || 'jpg';
+        const key = `course-covers/${ctx.user.id}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+        const { url } = await storagePut(key, buffer, input.mimeType);
+        return { url, key };
+      }),
+
     // Obtener CV de capacitaciones del usuario actual
     getMyCV: protectedProcedure
       .query(async ({ ctx }) => {
@@ -4181,6 +4198,167 @@ export const appRouter = router({
           .where(and(eq(moduleAccess.userId, input.collaboratorUserId), eq(moduleAccess.module, input.module)));
         return { success: true };
       }),
+
+    // [ASSISTANT] Pre-aprobar solicitud (pasa a bandeja del superadmin)
+    assistantPreApprove: protectedProcedure
+      .input(z.object({ requestId: z.number(), notes: z.string().optional() }))
+      .mutation(async ({ ctx, input }) => {
+        const isAssistant = ctx.user.role === 'assistant' || ctx.isSuperAdmin;
+        if (!isAssistant) throw new TRPCError({ code: 'FORBIDDEN', message: 'Solo el asistente puede pre-aprobar solicitudes' });
+        const db = await import('./db').then(m => m.getDb ? m.getDb() : null);
+        if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
+        const { moduleRequests } = await import('../drizzle/schema');
+        const { eq } = await import('drizzle-orm');
+        await db.update(moduleRequests).set({
+          status: 'assistant_approved' as any,
+          reviewedBy: ctx.user.id,
+          reviewedAt: new Date(),
+          reviewNotes: input.notes ? `[Asistente]: ${input.notes}` : '[Pre-aprobado por asistente]',
+        }).where(eq(moduleRequests.id, input.requestId));
+        return { success: true };
+      }),
+
+    // [ASSISTANT] Rechazar solicitud definitivamente
+    assistantReject: protectedProcedure
+      .input(z.object({ requestId: z.number(), notes: z.string().optional() }))
+      .mutation(async ({ ctx, input }) => {
+        const isAssistant = ctx.user.role === 'assistant' || ctx.isSuperAdmin;
+        if (!isAssistant) throw new TRPCError({ code: 'FORBIDDEN' });
+        const db = await import('./db').then(m => m.getDb ? m.getDb() : null);
+        if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
+        const { moduleRequests } = await import('../drizzle/schema');
+        const { eq } = await import('drizzle-orm');
+        await db.update(moduleRequests).set({
+          status: 'rejected',
+          reviewedBy: ctx.user.id,
+          reviewedAt: new Date(),
+          reviewNotes: input.notes ? `[Asistente rechazó]: ${input.notes}` : '[Rechazado por asistente]',
+        }).where(eq(moduleRequests.id, input.requestId));
+        return { success: true };
+      }),
+
+    // [SUPERADMIN] Aprobar definitivamente solicitud pre-aprobada por asistente (con notificación)
+    superAdminFinalApprove: protectedProcedure
+      .input(z.object({ requestId: z.number(), notes: z.string().optional() }))
+      .mutation(async ({ ctx, input }) => {
+        if (!ctx.isSuperAdmin) throw new TRPCError({ code: 'FORBIDDEN' });
+        const db = await import('./db').then(m => m.getDb ? m.getDb() : null);
+        if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
+        const { moduleAccess, moduleRequests, users } = await import('../drizzle/schema');
+        const { eq, and } = await import('drizzle-orm');
+        const req = await db.select().from(moduleRequests).where(eq(moduleRequests.id, input.requestId)).limit(1);
+        if (!req[0]) throw new TRPCError({ code: 'NOT_FOUND' });
+        // Otorgar acceso
+        const existing = await db.select().from(moduleAccess)
+          .where(and(eq(moduleAccess.userId, req[0].userId), eq(moduleAccess.module, req[0].module))).limit(1);
+        if (existing.length > 0) {
+          await db.update(moduleAccess).set({ isActive: true, grantedBy: ctx.user.id, grantedAt: new Date(), notes: input.notes || null, revokedAt: null })
+            .where(and(eq(moduleAccess.userId, req[0].userId), eq(moduleAccess.module, req[0].module)));
+        } else {
+          await db.insert(moduleAccess).values({ userId: req[0].userId, module: req[0].module, isActive: true, grantedBy: ctx.user.id, notes: input.notes || null });
+        }
+        // Marcar solicitud como aprobada
+        await db.update(moduleRequests).set({
+          status: 'approved',
+          reviewedBy: ctx.user.id,
+          reviewedAt: new Date(),
+          reviewNotes: input.notes ? `[SuperAdmin]: ${input.notes}` : '[Aprobado por SuperAdmin]',
+        }).where(eq(moduleRequests.id, input.requestId));
+        // Notificar al usuario que su acceso fue aprobado
+        try {
+          const userRow = await db.select({ name: users.name, email: users.email }).from(users).where(eq(users.id, req[0].userId)).limit(1);
+          const moduleLabels: Record<string, string> = {
+            prescriptions: 'Prescripciones Médicas',
+            pharmacy: 'Farmacia',
+          };
+          const moduleLabel = moduleLabels[req[0].module] || req[0].module;
+          const { notifyOwner } = await import('./_core/notification');
+          await notifyOwner({
+            title: `✅ Acceso aprobado: ${moduleLabel}`,
+            content: `El acceso al módulo ${moduleLabel} ha sido aprobado para ${userRow[0]?.name || 'el usuario'} (${userRow[0]?.email || ''}).`,
+          });
+        } catch (_) { /* notificación no crítica */ }
+        return { success: true };
+      }),
+
+    // [ASSISTANT/SUPERADMIN] Listar solicitudes pendientes para el asistente
+    listPendingForAssistant: protectedProcedure.query(async ({ ctx }) => {
+      const isAssistant = ctx.user.role === 'assistant' || ctx.isSuperAdmin;
+      if (!isAssistant) throw new TRPCError({ code: 'FORBIDDEN' });
+      const db = await import('./db').then(m => m.getDb ? m.getDb() : null);
+      if (!db) return [];
+      const { moduleRequests, users } = await import('../drizzle/schema');
+      const { eq, desc, or } = await import('drizzle-orm');
+      return db.select({
+        id: moduleRequests.id,
+        userId: moduleRequests.userId,
+        module: moduleRequests.module,
+        businessType: moduleRequests.businessType,
+        message: moduleRequests.message,
+        status: moduleRequests.status,
+        requestedAt: moduleRequests.requestedAt,
+        reviewedAt: moduleRequests.reviewedAt,
+        reviewNotes: moduleRequests.reviewNotes,
+        userName: users.name,
+        userEmail: users.email,
+      }).from(moduleRequests)
+        .leftJoin(users, eq(moduleRequests.userId, users.id))
+        .orderBy(desc(moduleRequests.requestedAt));
+    }),
+
+    // [SUPERADMIN] Listar solicitudes pre-aprobadas por asistente (bandeja final)
+    listPreApproved: protectedProcedure.query(async ({ ctx }) => {
+      if (!ctx.isSuperAdmin) throw new TRPCError({ code: 'FORBIDDEN' });
+      const db = await import('./db').then(m => m.getDb ? m.getDb() : null);
+      if (!db) return [];
+      const { moduleRequests, users } = await import('../drizzle/schema');
+      const { eq, desc } = await import('drizzle-orm');
+      return db.select({
+        id: moduleRequests.id,
+        userId: moduleRequests.userId,
+        module: moduleRequests.module,
+        businessType: moduleRequests.businessType,
+        message: moduleRequests.message,
+        status: moduleRequests.status,
+        requestedAt: moduleRequests.requestedAt,
+        reviewedAt: moduleRequests.reviewedAt,
+        reviewNotes: moduleRequests.reviewNotes,
+        userName: users.name,
+        userEmail: users.email,
+      }).from(moduleRequests)
+        .leftJoin(users, eq(moduleRequests.userId, users.id))
+        .where(eq(moduleRequests.status, 'assistant_approved' as any))
+        .orderBy(desc(moduleRequests.requestedAt));
+    }),
+
+    // [ASSISTANT/SUPERADMIN] Cambiar rol de usuario a assistant
+    setAssistantRole: protectedProcedure
+      .input(z.object({ userId: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        if (!ctx.isSuperAdmin) throw new TRPCError({ code: 'FORBIDDEN' });
+        const db = await import('./db').then(m => m.getDb ? m.getDb() : null);
+        if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
+        const { users } = await import('../drizzle/schema');
+        const { eq } = await import('drizzle-orm');
+        await db.update(users).set({ role: 'assistant' as any }).where(eq(users.id, input.userId));
+        return { success: true };
+      }),
+
+    // [SUPERADMIN] Listar todos los usuarios para gestión de roles
+    listAllUsers: protectedProcedure.query(async ({ ctx }) => {
+      if (!ctx.isSuperAdmin) throw new TRPCError({ code: 'FORBIDDEN' });
+      const db = await import('./db').then(m => m.getDb ? m.getDb() : null);
+      if (!db) return [];
+      const { users } = await import('../drizzle/schema');
+      const { desc } = await import('drizzle-orm');
+      return db.select({
+        id: users.id,
+        name: users.name,
+        email: users.email,
+        role: users.role,
+        createdAt: users.createdAt,
+      }).from(users).orderBy(desc(users.createdAt));
+    }),
   }),
 });
 export type AppRouter = typeof appRouter;

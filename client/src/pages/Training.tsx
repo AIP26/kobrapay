@@ -688,19 +688,13 @@ function NewCourseModal({ onClose, onCreated }: { onClose: () => void; onCreated
       let coverImageUrl: string | undefined;
       if (coverImageFile) {
         const base64 = await readFileAsBase64(coverImageFile);
-        // Subir imagen de portada via endpoint de evidencia reutilizando el storage
-        // Usamos un procedimiento temporal de subida directa
         const ext = coverImageFile.name.split('.').pop() || 'jpg';
-        const key = `course-covers/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
-        // Subir via fetch al endpoint de storage
-        const resp = await utils.client.training.uploadEvidence.mutate({
-          courseId: 0, // temporal, no se guarda progreso
+        const resp = await utils.client.training.uploadCourseCover.mutate({
           fileName: `cover.${ext}`,
           fileBase64: base64,
           mimeType: coverImageFile.type,
         });
-        // La URL viene del storage, la extraemos del resultado
-        coverImageUrl = (resp as any)?.evidenceUrl || undefined;
+        coverImageUrl = resp?.url || undefined;
       }
       await create.mutateAsync({
         ...form,

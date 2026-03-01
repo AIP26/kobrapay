@@ -19,7 +19,7 @@ export const users = mysqlTable("users", {
   email: varchar("email", { length: 320 }),
   loginMethod: varchar("loginMethod", { length: 64 }),
   // superadmin = dueño de la plataforma (tú), admin = cliente de la plataforma, user = empleado del cliente
-  role: mysqlEnum("role", ["user", "admin", "superadmin"]).default("user").notNull(),
+  role: mysqlEnum("role", ["user", "admin", "superadmin", "assistant"]).default("user").notNull(),
   // Rol específico para colaboradores (staff): asistente = contratos+pagos, operador = solo pagos
   staffRole: mysqlEnum("staffRole", ["asistente", "operador"]).default("operador"),
   // Estado de la cuenta: pending = esperando aprobación, active = aprobado, blocked = rechazado/bloqueado

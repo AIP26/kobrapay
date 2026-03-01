@@ -449,9 +449,10 @@ function ModuleAccessAdminInner() {
 }
 
 export default function ModuleAccessAdmin() {
-  const { user, loading } = useAuth();
+  const { loading } = useAuth();
+  const { data: me, isLoading: loadingMe } = trpc.auth.me.useQuery();
 
-  if (loading) {
+  if (loading || loadingMe) {
     return (
       <DashboardLayout>
         <div className="flex items-center justify-center h-64">
@@ -461,9 +462,10 @@ export default function ModuleAccessAdmin() {
     );
   }
 
-  // Solo superadmin puede ver esta página
-  const isSuperAdmin = (user as any)?.isSuperAdmin;
-  if (!isSuperAdmin) {
+  // Solo superadmin o asistente pueden ver esta página
+  const isSuperAdmin = (me as any)?.isSuperAdmin || me?.role === 'admin';
+  const isAssistant = me?.role === 'assistant';
+  if (!isSuperAdmin && !isAssistant) {
     return (
       <DashboardLayout>
         <div className="flex flex-col items-center justify-center h-64 gap-4">
