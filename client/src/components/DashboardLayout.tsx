@@ -4,7 +4,6 @@ import { cn } from "@/lib/utils";
 import { trpc } from "@/lib/trpc";
 import {
   BarChart3,
-  CreditCard,
   Home,
   Link2,
   LogOut,
@@ -37,7 +36,7 @@ import {
   Zap,
   DollarSign,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useCallback, useMemo } from "react";
 import GlobalSearch from "./GlobalSearch";
 import { NotificationBell } from "./NotificationBell";
 import { Link, useLocation } from "wouter";
@@ -45,7 +44,6 @@ import { Button } from "./ui/button";
 import { Avatar, AvatarFallback } from "./ui/avatar";
 import PendingApproval from "@/pages/PendingApproval";
 
-const KOBRAPAY_LOGO = "https://files.manuscdn.com/user_upload_by_module/session_file/310519663381362445/BlaEgmymroahADGF.png";
 const KOBRAPAY_ICON = "https://files.manuscdn.com/user_upload_by_module/session_file/310519663381362445/yMTQoaqGYTxuRnnF.png";
 
 // ─── Grupos del sidebar ───────────────────────────────────────────────────────
@@ -132,11 +130,158 @@ interface DashboardLayoutProps {
   title?: string;
 }
 
-export default function DashboardLayout({ children, title }: DashboardLayoutProps) {
+// ─── Sidebar standalone (fuera del DashboardLayout para evitar re-renders) ────
+function Sidebar({
+  mobile,
+  location,
+  collapsed,
+  toggleGroup,
+  isAdmin,
+  isSuperAdmin,
+  initials,
+  userName,
+  onClose,
+  onLogout,
+}: {
+  mobile?: boolean;
+  location: string;
+  collapsed: Record<string, boolean>;
+  toggleGroup: (id: string) => void;
+  isAdmin: boolean;
+  isSuperAdmin: boolean;
+  initials: string;
+  userName: string;
+  onClose: () => void;
+  onLogout: () => void;
+}) {
+  const isGroupActive = (groupId: string) => {
+    const group = NAV_GROUPS.find(g => g.id === groupId);
+    return group?.items.some(i => location === i.href) ?? false;
+  };
+
+  return (
+    <aside
+      className={cn("flex flex-col", mobile ? "w-72 h-full" : "w-64 h-screen")}
+      style={{ background: "#1a1f2e" }}
+    >
+      {/* Logo */}
+      <div className="flex items-center gap-3 px-4 py-4 border-b border-white/10 flex-shrink-0">
+        <img
+          src={KOBRAPAY_ICON}
+          alt="KobraPay"
+          className="w-9 h-9 object-contain flex-shrink-0"
+        />
+        <div className="flex-1 min-w-0">
+          <p className="font-bold text-sm leading-tight text-white">KobraPay</p>
+          <p className="text-xs text-gray-400">Cobra fácil, cobra global</p>
+        </div>
+        {mobile && (
+          <button onClick={onClose} className="ml-auto text-gray-400 hover:text-white transition-colors">
+            <X className="w-5 h-5" />
+          </button>
+        )}
+      </div>
+
+      {/* Navigation — scroll interno, nunca empuja el perfil */}
+      <nav className="flex-1 px-3 py-3 overflow-y-auto min-h-0">
+        <div className="space-y-1">
+          {NAV_GROUPS.map((group) => {
+            if (group.adminOnly && !isAdmin && !isSuperAdmin) return null;
+
+            const groupActive = isGroupActive(group.id);
+            const isCollapsed = collapsed[group.id] && !groupActive;
+            const GroupIcon = group.icon;
+
+            return (
+              <div key={group.id}>
+                {/* Encabezado del grupo */}
+                <button
+                  onClick={() => toggleGroup(group.id)}
+                  className={cn(
+                    "w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-semibold uppercase tracking-wider transition-all",
+                    groupActive
+                      ? "text-emerald-400 bg-emerald-500/10"
+                      : "text-gray-500 hover:text-gray-300 hover:bg-white/5"
+                  )}
+                >
+                  <GroupIcon className={cn("w-3.5 h-3.5 flex-shrink-0", groupActive ? "text-emerald-400" : group.color)} />
+                  <span className="flex-1 text-left">{group.label}</span>
+                  <ChevronDown
+                    className={cn(
+                      "w-3.5 h-3.5 transition-transform duration-200",
+                      isCollapsed ? "-rotate-90" : "rotate-0"
+                    )}
+                  />
+                </button>
+
+                {/* Ítems del grupo con animación CSS */}
+                <div
+                  style={{
+                    maxHeight: isCollapsed ? "0px" : `${group.items.length * 44}px`,
+                    overflow: "hidden",
+                    transition: "max-height 0.22s ease",
+                  }}
+                >
+                  <div className="mt-0.5 ml-2 space-y-0.5 border-l border-white/10 pl-2">
+                    {group.items.map(({ href, icon: Icon, label }) => {
+                      const isActive = location === href;
+                      return (
+                        <Link
+                          key={href}
+                          href={href}
+                          onClick={onClose}
+                          className={cn(
+                            "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all",
+                            isActive
+                              ? "bg-gradient-to-r from-emerald-500/20 to-cyan-500/20 text-emerald-400 border border-emerald-500/30"
+                              : "text-gray-300 hover:bg-white/8 hover:text-white"
+                          )}
+                        >
+                          <Icon className={cn("w-4 h-4 flex-shrink-0", isActive ? "text-emerald-400" : "text-gray-500")} />
+                          {label}
+                        </Link>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </nav>
+
+      {/* User Profile — siempre visible al fondo */}
+      <div className="px-3 py-4 border-t border-white/10 space-y-1 flex-shrink-0">
+        <Link href="/dashboard/profile" onClick={onClose}>
+          <div className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-white/5 transition-colors cursor-pointer group">
+            <Avatar className="w-8 h-8 flex-shrink-0">
+              <AvatarFallback className="bg-emerald-500/30 text-emerald-300 text-xs font-bold">{initials}</AvatarFallback>
+            </Avatar>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-white truncate">{userName}</p>
+              <p className="text-xs text-emerald-400/70 group-hover:text-emerald-400 truncate transition-colors">Ver mi perfil</p>
+            </div>
+            <UserCircle2 className="w-4 h-4 text-gray-500 group-hover:text-emerald-400 transition-colors flex-shrink-0" />
+          </div>
+        </Link>
+        <button
+          onClick={onLogout}
+          className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-red-500/10 text-gray-400 hover:text-red-400 transition-colors text-sm"
+        >
+          <LogOut className="w-4 h-4" />
+          <span>Cerrar sesión</span>
+        </button>
+      </div>
+    </aside>
+  );
+}
+
+export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const { user, loading, isAuthenticated } = useAuth();
   const [location] = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  // Grupos colapsados: por defecto "empresa" y "herramientas" están colapsados
+
+  // Grupos colapsados por defecto
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({
     empresa: true,
     herramientas: true,
@@ -147,9 +292,19 @@ export default function DashboardLayout({ children, title }: DashboardLayoutProp
     onSuccess: () => { window.location.href = "/"; },
   });
 
-  const toggleGroup = (id: string) => {
+  const toggleGroup = useCallback((id: string) => {
     setCollapsed(prev => ({ ...prev, [id]: !prev[id] }));
-  };
+  }, []);
+
+  const closeSidebar = useCallback(() => setSidebarOpen(false), []);
+  const handleLogout = useCallback(() => logout.mutate(), [logout]);
+
+  const initials = useMemo(() =>
+    user?.name
+      ? user.name.split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2)
+      : "U",
+    [user?.name]
+  );
 
   if (loading) {
     return (
@@ -188,148 +343,35 @@ export default function DashboardLayout({ children, title }: DashboardLayoutProp
     );
   }
 
-  const initials = user?.name
-    ? user.name.split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2)
-    : "U";
-
   const isAdmin = user?.role === "admin";
+  // isSuperAdmin viene del campo que ahora retorna auth.me
   const isSuperAdmin = (user as Record<string, unknown>)?.isSuperAdmin === true;
 
-  // Detectar si algún ítem de un grupo está activo para auto-expandir
-  const isGroupActive = (groupId: string) => {
-    const group = NAV_GROUPS.find(g => g.id === groupId);
-    return group?.items.some(i => location === i.href) ?? false;
+  const sidebarProps = {
+    location,
+    collapsed,
+    toggleGroup,
+    isAdmin,
+    isSuperAdmin,
+    initials,
+    userName: user?.name || "Usuario",
+    onClose: closeSidebar,
+    onLogout: handleLogout,
   };
-
-  const SidebarContent = ({ mobile = false }: { mobile?: boolean }) => (
-    <aside
-      className={cn("flex flex-col h-full", mobile ? "w-72" : "w-64")}
-      style={{ background: "#1a1f2e" }}
-    >
-      {/* Logo */}
-      <div className="flex items-center gap-3 px-4 py-4 border-b border-white/10">
-        <img
-          src={KOBRAPAY_ICON}
-          alt="KobraPay"
-          className="w-9 h-9 object-contain flex-shrink-0"
-        />
-        <div className="flex-1 min-w-0">
-          <p className="font-bold text-sm leading-tight text-white">KobraPay</p>
-          <p className="text-xs text-gray-400">Cobra fácil, cobra global</p>
-        </div>
-        {mobile && (
-          <button onClick={() => setSidebarOpen(false)} className="ml-auto text-gray-400 hover:text-white transition-colors">
-            <X className="w-5 h-5" />
-          </button>
-        )}
-      </div>
-
-      {/* Navigation */}
-      <nav className="flex-1 px-3 py-3 overflow-y-auto space-y-1">
-        {NAV_GROUPS.map((group) => {
-          // Ocultar grupo admin si no es admin
-          if (group.adminOnly && !isAdmin && !isSuperAdmin) return null;
-
-          const groupActive = isGroupActive(group.id);
-          // Si el grupo tiene un ítem activo, forzar expandido
-          const isCollapsed = collapsed[group.id] && !groupActive;
-          const GroupIcon = group.icon;
-
-          return (
-            <div key={group.id}>
-              {/* Encabezado del grupo (colapsable) */}
-              <button
-                onClick={() => toggleGroup(group.id)}
-                className={cn(
-                  "w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-semibold uppercase tracking-wider transition-all",
-                  groupActive
-                    ? "text-emerald-400 bg-emerald-500/10"
-                    : "text-gray-500 hover:text-gray-300 hover:bg-white/5"
-                )}
-              >
-                <GroupIcon className={cn("w-3.5 h-3.5 flex-shrink-0", groupActive ? "text-emerald-400" : group.color)} />
-                <span className="flex-1 text-left">{group.label}</span>
-                <ChevronDown
-                  className={cn(
-                    "w-3.5 h-3.5 transition-transform duration-200",
-                    isCollapsed ? "-rotate-90" : "rotate-0"
-                  )}
-                />
-              </button>
-
-              {/* Ítems del grupo - max-height para evitar desplazamiento del layout */}
-              <div
-                style={{
-                  maxHeight: isCollapsed ? "0px" : `${group.items.length * 44}px`,
-                  overflow: "hidden",
-                  transition: "max-height 0.22s ease",
-                }}
-              >
-                <div className="mt-0.5 ml-2 space-y-0.5 border-l border-white/10 pl-2">
-                  {group.items.map(({ href, icon: Icon, label }) => {
-                    const isActive = location === href;
-                    return (
-                      <Link
-                        key={href}
-                        href={href}
-                        onClick={() => setSidebarOpen(false)}
-                        className={cn(
-                          "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all",
-                          isActive
-                            ? "bg-gradient-to-r from-emerald-500/20 to-cyan-500/20 text-emerald-400 border border-emerald-500/30"
-                            : "text-gray-300 hover:bg-white/8 hover:text-white"
-                        )}
-                      >
-                        <Icon className={cn("w-4 h-4 flex-shrink-0", isActive ? "text-emerald-400" : "text-gray-500")} />
-                        {label}
-                      </Link>
-                    );
-                  })}
-                </div>
-              </div>
-            </div>
-          );
-        })}
-      </nav>
-
-      {/* User Profile */}
-      <div className="px-3 py-4 border-t border-white/10 space-y-1">
-        <Link href="/dashboard/profile" onClick={() => setSidebarOpen(false)}>
-          <div className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-white/5 transition-colors cursor-pointer group">
-            <Avatar className="w-8 h-8 flex-shrink-0">
-              <AvatarFallback className="bg-emerald-500/30 text-emerald-300 text-xs font-bold">{initials}</AvatarFallback>
-            </Avatar>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-white truncate">{user?.name || "Usuario"}</p>
-              <p className="text-xs text-emerald-400/70 group-hover:text-emerald-400 truncate transition-colors">Ver mi perfil</p>
-            </div>
-            <UserCircle2 className="w-4 h-4 text-gray-500 group-hover:text-emerald-400 transition-colors flex-shrink-0" />
-          </div>
-        </Link>
-        <button
-          onClick={() => logout.mutate()}
-          className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-red-500/10 text-gray-400 hover:text-red-400 transition-colors text-sm"
-        >
-          <LogOut className="w-4 h-4" />
-          <span>Cerrar sesión</span>
-        </button>
-      </div>
-    </aside>
-  );
 
   return (
     <div className="flex h-screen bg-gray-50 overflow-hidden">
-      {/* Desktop Sidebar */}
-      <div className="hidden lg:flex flex-shrink-0">
-        <SidebarContent />
+      {/* Desktop Sidebar — altura fija h-screen */}
+      <div className="hidden lg:block flex-shrink-0">
+        <Sidebar {...sidebarProps} />
       </div>
 
       {/* Mobile Sidebar Overlay */}
       {sidebarOpen && (
         <div className="fixed inset-0 z-50 lg:hidden">
-          <div className="absolute inset-0 bg-black/60" onClick={() => setSidebarOpen(false)} />
+          <div className="absolute inset-0 bg-black/60" onClick={closeSidebar} />
           <div className="absolute left-0 top-0 h-full">
-            <SidebarContent mobile />
+            <Sidebar {...sidebarProps} mobile />
           </div>
         </div>
       )}

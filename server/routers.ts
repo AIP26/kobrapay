@@ -95,7 +95,7 @@ import {
 import { COOKIE_NAME } from "@shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
-import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
+import { isSuperAdmin, protectedProcedure, publicProcedure, router } from "./_core/trpc";
 import { securityRouter } from "./routers/security";
 import { notifyOwner } from "./_core/notification";
 import { sendOtpEmail, sendPaymentReceipt, sendWelcomeEmail, sendInvoiceEmail } from "./_core/email";
@@ -124,7 +124,13 @@ export const appRouter = router({
   security: securityRouter,
 
   auth: router({
-    me: publicProcedure.query((opts) => opts.ctx.user),
+    me: publicProcedure.query((opts) => {
+      if (!opts.ctx.user) return null;
+      return {
+        ...opts.ctx.user,
+        isSuperAdmin: isSuperAdmin(opts.ctx.user.openId),
+      };
+    }),
     logout: publicProcedure.mutation(({ ctx }) => {
       const cookieOptions = getSessionCookieOptions(ctx.req);
       ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
