@@ -310,14 +310,18 @@ function DoctorProfileModal({ open, onClose }: { open: boolean; onClose: () => v
 }
 
 // ─── Modal Nueva Receta ───────────────────────────────────────────────────────
-function NewPrescriptionModal({ open, onClose, onCreated }: { open: boolean; onClose: () => void; onCreated: () => void }) {
+function NewPrescriptionModal({ open, onClose, onCreated, preselectedPatientId }: { open: boolean; onClose: () => void; onCreated: () => void; preselectedPatientId?: number }) {
   const utils = trpc.useUtils();
   const { data: profile } = trpc.prescriptions.getDoctorProfile.useQuery();
+  const { data: patients = [] } = trpc.medical.patients.list.useQuery();
   const createMutation = trpc.prescriptions.create.useMutation({
     onSuccess: () => { toast.success("Receta creada"); utils.prescriptions.list.invalidate(); onCreated(); onClose(); },
     onError: (e) => toast.error("Error: " + e.message),
   });
 
+  const [selectedPatientId, setSelectedPatientId] = useState<number | null>(preselectedPatientId ?? null);
+  const [patientSearch, setPatientSearch] = useState("");
+  const [showPatientDropdown, setShowPatientDropdown] = useState(false);
   const [form, setForm] = useState({
     patientName: "", patientAge: "", patientGender: "", diagnosis: "", instructions: "",
   });
@@ -326,6 +330,38 @@ function NewPrescriptionModal({ open, onClose, onCreated }: { open: boolean; onC
   ]);
   const [signatureBase64, setSignatureBase64] = useState<string | null>(null);
   const [useProfileSignature, setUseProfileSignature] = useState(true);
+
+  // Pre-llenar si hay paciente preseleccionado
+  useEffect(() => {
+    if (preselectedPatientId && patients.length > 0) {
+      const p = patients.find(pt => pt.id === preselectedPatientId);
+      if (p) {
+        setSelectedPatientId(p.id);
+        setPatientSearch(`${p.firstName} ${p.lastName}`);
+        const age = p.birthDate ? `${new Date().getFullYear() - new Date(p.birthDate).getFullYear()} años` : "";
+        setForm(f => ({ ...f, patientName: `${p.firstName} ${p.lastName}`, patientAge: age, patientGender: p.gender || "" }));
+      }
+    }
+  }, [preselectedPatientId, patients]);
+
+  const filteredPatients = patientSearch.length >= 2
+    ? patients.filter(p => `${p.firstName} ${p.lastName}`.toLowerCase().includes(patientSearch.toLowerCase()))
+    : [];
+
+  const selectPatient = (p: typeof patients[0]) => {
+    setSelectedPatientId(p.id);
+    const fullName = `${p.firstName} ${p.lastName}`;
+    setPatientSearch(fullName);
+    setShowPatientDropdown(false);
+    const age = p.birthDate ? `${new Date().getFullYear() - new Date(p.birthDate).getFullYear()} años` : "";
+    setForm(f => ({ ...f, patientName: fullName, patientAge: age, patientGender: p.gender || f.patientGender }));
+  };
+
+  const clearPatient = () => {
+    setSelectedPatientId(null);
+    setPatientSearch("");
+    setForm(f => ({ ...f, patientName: "", patientAge: "", patientGender: "" }));
+  };
 
   const addMed = () => setMedications(m => [...m, { name: "", dose: "", frequency: "", duration: "", instructions: "" }]);
   const removeMed = (i: number) => setMedications(m => m.filter((_, idx) => idx !== i));
@@ -339,6 +375,7 @@ function NewPrescriptionModal({ open, onClose, onCreated }: { open: boolean; onC
     const sig = useProfileSignature && profile?.savedSignatureUrl ? undefined : (signatureBase64 || undefined);
     createMutation.mutate({
       ...form,
+      patientId: selectedPatientId || undefined,
       medications: JSON.stringify(validMeds),
       signatureBase64: sig,
     });
@@ -356,6 +393,45 @@ function NewPrescriptionModal({ open, onClose, onCreated }: { open: boolean; onC
           {/* Datos del paciente */}
           <div className="space-y-3">
             <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">Datos del Paciente</h3>
+            {/* Búsqueda de paciente en Agenda Médica */}
+            {patients.length > 0 && (
+              <div className="space-y-1">
+                <Label className="text-xs text-muted-foreground">Buscar en Agenda Médica (opcional)</Label>
+                <div className="relative">
+                  <div className="flex gap-2">
+                    <Input
+                      value={patientSearch}
+                      onChange={e => { setPatientSearch(e.target.value); setShowPatientDropdown(true); if (!e.target.value) clearPatient(); }}
+                      onFocus={() => setShowPatientDropdown(true)}
+                      placeholder="Escribir nombre del paciente..."
+                      className="h-8 text-sm"
+                    />
+                    {selectedPatientId && (
+                      <Button type="button" variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={clearPatient}>
+                        <X className="w-3.5 h-3.5" />
+                      </Button>
+                    )}
+                  </div>
+                  {showPatientDropdown && filteredPatients.length > 0 && (
+                    <div className="absolute z-50 top-full mt-1 w-full bg-background border rounded-md shadow-md max-h-48 overflow-y-auto">
+                      {filteredPatients.map(p => (
+                        <button
+                          key={p.id}
+                          type="button"
+                          className="w-full text-left px-3 py-2 text-sm hover:bg-muted flex items-center gap-2"
+                          onClick={() => { selectPatient(p); setShowPatientDropdown(false); }}
+                        >
+                          <User className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                          <span>{p.firstName} {p.lastName}</span>
+                          {p.birthDate && <span className="text-xs text-muted-foreground ml-auto">{new Date().getFullYear() - new Date(p.birthDate).getFullYear()} años</span>}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                {selectedPatientId && <p className="text-xs text-green-600">✓ Vinculado a paciente de la agenda</p>}
+              </div>
+            )}
             <div className="grid grid-cols-3 gap-3">
               <div className="col-span-2 space-y-1">
                 <Label>Nombre completo *</Label>

@@ -654,3 +654,12 @@
 - [x] Panel de asistente con flujo de dos niveles
 - [x] Training: botón refresh y subida de imagen de portada
 - [x] uploadCourseCover en backend
+
+## Sesión 2026-03-01 - Correcciones y mejoras
+
+- [x] Corregir notificaciones duplicadas: job de recordatorio ahora usa hasRecentNotification para evitar duplicados en < 3 horas
+- [x] Limpiar notificaciones duplicadas existentes en la BD (pending_reminder)
+- [x] Corregir auth.me para pasar el role al verificar isSuperAdmin (bug: solo pasaba openId)
+- [x] Agregar notificación al usuario cuando el superadmin aprueba su solicitud de módulo
+- [x] Agregar más tipos de iconos al NotificationBell (module_approved, module_rejected, appointment_reminder, birthday, new_payment)
+- [x] Vincular prescripciones con pacientes de la Agenda Médica: búsqueda en tiempo real al crear receta

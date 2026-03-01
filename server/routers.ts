@@ -134,7 +134,7 @@ export const appRouter = router({
       } catch { /* sin perfil */ }
       return {
         ...opts.ctx.user,
-        isSuperAdmin: isSuperAdmin(opts.ctx.user.openId),
+        isSuperAdmin: isSuperAdmin(opts.ctx.user.openId, opts.ctx.user.role),
         permissions,
       };
     }),
@@ -4155,6 +4155,26 @@ export const appRouter = router({
         // Actualizar solicitud
         await db.update(moduleRequests).set({ status: 'approved', reviewedBy: ctx.user.id, reviewedAt: new Date(), reviewNotes: input.notes || null })
           .where(eq(moduleRequests.id, input.requestId));
+        // Notificar al usuario que su acceso fue aprobado
+        try {
+          const moduleNames: Record<string, string> = {
+            prescriptions: 'Prescripciones Médicas',
+            pharmacy: 'Farmacia',
+            medical_agenda: 'Agenda Médica',
+          };
+          const moduleName = moduleNames[req[0].module] || req[0].module;
+          await createNotification({
+            userId: req[0].userId,
+            type: 'module_approved',
+            title: `✅ Acceso aprobado: ${moduleName}`,
+            message: `Tu solicitud de acceso al módulo de ${moduleName} fue aprobada. Ya puedes usar esta funcionalidad desde el menú Sector Salud.`,
+            isRead: false,
+            actionUrl: '/dashboard',
+            metadata: JSON.stringify({ module: req[0].module, approvedBy: ctx.user.id }),
+          });
+        } catch (notifErr) {
+          console.warn('[moduleAccess] Error al crear notificación de aprobación:', notifErr);
+        }
         return { success: true };
       }),
 

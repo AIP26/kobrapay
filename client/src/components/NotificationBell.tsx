@@ -30,11 +30,16 @@ function timeAgo(date: Date): string {
 
 function notificationIcon(type: string): string {
   switch (type) {
-    case "new_registration": return "🔆";
+    case "new_registration": return "🆕";
     case "pending_reminder": return "⏰";
     case "chargeback": return "⚠️";
     case "payment": return "💳";
     case "contract_signed": return "✍️";
+    case "module_approved": return "✅";
+    case "module_rejected": return "❌";
+    case "appointment_reminder": return "📅";
+    case "birthday": return "🎂";
+    case "new_payment": return "💰";
     default: return "🔔";
   }
 }

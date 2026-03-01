@@ -998,6 +998,54 @@ export async function markAllNotificationsRead(userId: number): Promise<void> {
   await db.update(notifications).set({ isRead: true }).where(eq(notifications.userId, userId));
 }
 
+// Verificar si ya existe una notificación no leída del mismo tipo en las últimas N horas
+export async function hasRecentNotification(userId: number, type: string, withinHours = 2): Promise<boolean> {
+  const db = await getDb();
+  if (!db) return false;
+  const cutoff = new Date(Date.now() - withinHours * 60 * 60 * 1000);
+  const result = await db.select({ count: sql<number>`COUNT(*)` })
+    .from(notifications)
+    .where(and(
+      eq(notifications.userId, userId),
+      eq(notifications.type, type),
+      eq(notifications.isRead, false),
+      gte(notifications.createdAt, cutoff)
+    ));
+  return Number(result[0]?.count ?? 0) > 0;
+}
+
+// Eliminar notificaciones leídas con más de N días de antigüedad
+export async function cleanOldNotifications(userId: number, olderThanDays = 30): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  const cutoff = new Date(Date.now() - olderThanDays * 24 * 60 * 60 * 1000);
+  await db.delete(notifications).where(and(
+    eq(notifications.userId, userId),
+    eq(notifications.isRead, true),
+    lte(notifications.createdAt, cutoff)
+  ));
+}
+
+// Eliminar notificaciones duplicadas no leídas del mismo tipo (mantiene solo la más reciente)
+export async function deduplicateNotifications(userId: number, type: string): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  const existing = await db.select({ id: notifications.id })
+    .from(notifications)
+    .where(and(
+      eq(notifications.userId, userId),
+      eq(notifications.type, type),
+      eq(notifications.isRead, false)
+    ))
+    .orderBy(desc(notifications.createdAt));
+  if (existing.length > 1) {
+    const idsToMark = existing.slice(1).map(n => n.id);
+    for (const id of idsToMark) {
+      await db.update(notifications).set({ isRead: true }).where(eq(notifications.id, id));
+    }
+  }
+}
+
 export async function getPendingRegistrationsOlderThan(hours: number) {
   const db = await getDb();
   if (!db) return [];

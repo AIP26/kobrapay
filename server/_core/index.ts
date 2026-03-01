@@ -9,7 +9,7 @@ import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
 import { registerStripeWebhook } from "../stripeWebhook";
 import { registerSecurityMiddleware } from "../security";
-import { getPendingRegistrationsOlderThan, createNotification, getUserByOpenId } from "../db";
+import { getPendingRegistrationsOlderThan, createNotification, getUserByOpenId, hasRecentNotification, deduplicateNotifications } from "../db";
 import { ENV } from "./env";
 import { notifyOwner } from "./notification";
 
@@ -102,28 +102,32 @@ async function startServer() {
     console.log(`Server running on http://localhost:${port}/`);
   });
 
-  // ⏰ Job: recordatorio cada hora para registros pendientes > 24hrs
+  // ⏰ Job: recordatorio cada hora para registros pendientes > 24hrs (sin duplicados)
   setInterval(async () => {
     try {
       const pending = await getPendingRegistrationsOlderThan(24);
       if (pending.length === 0) return;
       const ownerUser = await getUserByOpenId(ENV.ownerOpenId);
       if (ownerUser) {
-        await createNotification({
-          userId: ownerUser.id,
-          type: "pending_reminder",
-          title: `⏰ ${pending.length} registro(s) pendiente(s) sin revisar`,
-          message: `Tienes ${pending.length} solicitud(es) de registro con más de 24 horas sin revisar. Entra al panel de Registros para aprobar o rechazar.`,
-          isRead: false,
-          actionUrl: "/dashboard/registrations",
-          metadata: JSON.stringify({ pendingCount: pending.length, checkedAt: new Date().toISOString() }),
-        });
+        // Solo crear si no hay una notificación del mismo tipo en las últimas 3 horas
+        const alreadyNotified = await hasRecentNotification(ownerUser.id, "pending_reminder", 3);
+        if (!alreadyNotified) {
+          await createNotification({
+            userId: ownerUser.id,
+            type: "pending_reminder",
+            title: `⏰ ${pending.length} registro(s) pendiente(s) sin revisar`,
+            message: `Tienes ${pending.length} solicitud(es) de registro con más de 24 horas sin revisar. Entra al panel de Registros para aprobar o rechazar.`,
+            isRead: false,
+            actionUrl: "/dashboard/registrations",
+            metadata: JSON.stringify({ pendingCount: pending.length, checkedAt: new Date().toISOString() }),
+          });
+          console.log(`[PendingReminder] Notificación creada: ${pending.length} registros pendientes > 24hrs`);
+        } else {
+          console.log(`[PendingReminder] Omitida (ya existe notificación reciente no leída)`);
+        }
+        // Limpiar duplicados por si acaso
+        await deduplicateNotifications(ownerUser.id, "pending_reminder");
       }
-      await notifyOwner({
-        title: `⏰ Recordatorio: ${pending.length} registro(s) pendiente(s)`,
-        content: `Llevas más de 24 horas sin revisar ${pending.length} solicitud(es) de registro en KobraPay. Entra al panel para aprobar o rechazar.`,
-      });
-      console.log(`[PendingReminder] Notificación: ${pending.length} registros pendientes > 24hrs`);
     } catch (err) {
       console.warn("[PendingReminder] Error en job de recordatorio:", err);
     }
