@@ -88,6 +88,9 @@ import {
   updateSubscription,
   updateEmployeePayrollData,
   getAttendanceForPayroll,
+  updateAttendanceRecord,
+  deleteAttendanceRecord,
+  createAbsenceRecord,
 } from "./db";
 import { COOKIE_NAME } from "@shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
@@ -2238,9 +2241,61 @@ export const appRouter = router({
 
         return { year: input.year, month: input.month, employees: report };
       }),
+    // Registrar ausencia
+    registerAbsence: protectedProcedure
+      .input(z.object({
+        employeeId: z.number(),
+        date: z.string(),
+        absenceType: z.enum(["rest", "sick_leave", "paid_leave", "unpaid_leave"]),
+        comment: z.string().max(500).optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const emp = await getEmployeeRecordById(input.employeeId, ctx.user.id);
+        if (!emp) throw new TRPCError({ code: "NOT_FOUND", message: "Colaborador no encontrado" });
+        const date = new Date(input.date + "T12:00:00");
+        return createAbsenceRecord({ employeeId: input.employeeId, ownerId: ctx.user.id, date, absenceType: input.absenceType, comment: input.comment || null });
+      }),
+    // Editar registro (solo admin)
+    editRecord: protectedProcedure
+      .input(z.object({
+        id: z.number(),
+        type: z.enum(["in", "out", "absence"]).optional(),
+        timestamp: z.string().optional(),
+        notes: z.string().max(500).optional().nullable(),
+        absenceType: z.enum(["rest", "sick_leave", "paid_leave", "unpaid_leave"]).optional().nullable(),
+        comment: z.string().max(500).optional().nullable(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        if (ctx.user.role !== "admin" && ctx.user.role !== "superadmin") throw new TRPCError({ code: "FORBIDDEN" });
+        const { id, ...data } = input;
+        await updateAttendanceRecord(id, ctx.user.id, ctx.user.id, { ...data, timestamp: data.timestamp ? new Date(data.timestamp) : undefined });
+        return { success: true };
+      }),
+    // Eliminar registro (solo admin)
+    deleteRecord: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        if (ctx.user.role !== "admin" && ctx.user.role !== "superadmin") throw new TRPCError({ code: "FORBIDDEN" });
+        await deleteAttendanceRecord(input.id, ctx.user.id);
+        return { success: true };
+      }),
+    // Historial detallado de un colaborador
+    employeeHistory: protectedProcedure
+      .input(z.object({ employeeId: z.number(), year: z.number().optional(), month: z.number().optional() }))
+      .query(async ({ ctx, input }) => {
+        const emp = await getEmployeeRecordById(input.employeeId, ctx.user.id);
+        if (!emp) throw new TRPCError({ code: "NOT_FOUND" });
+        const records = await getAttendanceByEmployee(input.employeeId, ctx.user.id, 500);
+        let filtered = records;
+        if (input.year && input.month) {
+          const start = new Date(input.year, input.month - 1, 1);
+          const end = new Date(input.year, input.month, 0, 23, 59, 59);
+          filtered = records.filter(r => new Date(r.timestamp) >= start && new Date(r.timestamp) <= end);
+        }
+        return { employee: emp, records: filtered };
+      }),
   }),
-
-  // ─── Cobros Recurrentes (Stripe Billing) ─────────────────────────────────────
+  // ─── Cobros Recurrentes (Stripe Billing)) ─────────────────────────────────────
   subscriptions: router({
     list: protectedProcedure.query(async ({ ctx }) => {
       return getSubscriptionsByOwner(ctx.user.id);
@@ -2394,9 +2449,9 @@ export const appRouter = router({
           let checkInTime: Date | null = null;
           const days = new Set<string>();
           for (const rec of records) {
-            if (rec.type === "check_in") {
+            if (rec.type === "in") {
               checkInTime = new Date(rec.timestamp);
-            } else if (rec.type === "check_out" && checkInTime) {
+            } else if (rec.type === "out" && checkInTime) {
               const outTime = new Date(rec.timestamp);
               totalMinutes += Math.max(0, (outTime.getTime() - checkInTime.getTime()) / 60000);
               days.add(checkInTime.toISOString().slice(0, 10));
@@ -2495,6 +2550,57 @@ export const appRouter = router({
         })).sort((a, b) => b.date.localeCompare(a.date));
 
         return { days };
+      }),
+  }),
+
+  // ─── Compra de Lectores (Stripe Checkout) ───────────────────────────────────────────
+  readers: router({
+    createCheckout: protectedProcedure
+      .input(z.object({
+        readerId: z.enum(["kobrapay-nano", "kobrapay-pro"]),
+        quantity: z.number().int().min(1).max(10).default(1),
+        shippingName: z.string().min(1),
+        shippingPhone: z.string().min(1),
+        shippingAddress: z.string().min(1),
+        shippingCity: z.string().min(1),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const READER_PRODUCTS = {
+          "kobrapay-nano": { name: "KobraPay Nano - Lector Bluetooth", price: 129900, description: "Lector Bluetooth compacto. Acepta chip, banda magnética y NFC." },
+          "kobrapay-pro": { name: "KobraPay Pro - Terminal con pantalla táctil", price: 349900, description: "Terminal con pantalla táctil 5\", WiFi + 4G, impresora de tickets." },
+        };
+        const product = READER_PRODUCTS[input.readerId];
+        const origin = ctx.req.headers.origin || "https://kobrapay.mx";
+        const session = await stripe.checkout.sessions.create({
+          line_items: [{
+            price_data: {
+              currency: "mxn",
+              product_data: {
+                name: product.name,
+                description: product.description,
+                images: [],
+              },
+              unit_amount: product.price,
+            },
+            quantity: input.quantity,
+          }],
+          mode: "payment",
+          customer_email: ctx.user.email ?? undefined,
+          client_reference_id: ctx.user.id.toString(),
+          metadata: {
+            user_id: ctx.user.id.toString(),
+            reader_id: input.readerId,
+            quantity: input.quantity.toString(),
+            shipping_name: input.shippingName,
+            shipping_phone: input.shippingPhone,
+            shipping_address: input.shippingAddress,
+            shipping_city: input.shippingCity,
+          },
+          success_url: `${origin}/dashboard/reader?success=1`,
+          cancel_url: `${origin}/dashboard/reader?cancelled=1`,
+          allow_promotion_codes: true,
+        });
+        return { url: session.url ?? "" };
       }),
   }),
 });

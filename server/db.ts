@@ -1208,3 +1208,46 @@ export async function getAttendanceForPayroll(
     )
     .orderBy(attendanceRecords.employeeId, attendanceRecords.timestamp);
 }
+
+// ─── Attendance: Edición, Eliminación y Ausencias (Admin) ────────────────────
+export async function updateAttendanceRecord(
+  id: number,
+  ownerId: number,
+  editedByUserId: number,
+  data: { type?: string; timestamp?: Date; notes?: string | null; absenceType?: string | null; comment?: string | null }
+): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(attendanceRecords)
+    .set({ ...data, editedByUserId, editedAt: new Date() })
+    .where(and(eq(attendanceRecords.id, id), eq(attendanceRecords.ownerId, ownerId)));
+}
+
+export async function deleteAttendanceRecord(id: number, ownerId: number): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  await db.delete(attendanceRecords)
+    .where(and(eq(attendanceRecords.id, id), eq(attendanceRecords.ownerId, ownerId)));
+}
+
+export async function createAbsenceRecord(data: {
+  employeeId: number;
+  ownerId: number;
+  date: Date;
+  absenceType: string;
+  comment?: string | null;
+}): Promise<AttendanceRecord> {
+  const db = await getDb();
+  if (!db) throw new Error("DB not available");
+  const [rec] = await db.insert(attendanceRecords).values({
+    employeeId: data.employeeId,
+    ownerId: data.ownerId,
+    type: "absence",
+    timestamp: data.date,
+    absenceType: data.absenceType,
+    comment: data.comment || null,
+  });
+  const insertId = (rec as { insertId: number }).insertId;
+  const [created] = await db.select().from(attendanceRecords).where(eq(attendanceRecords.id, insertId));
+  return created;
+}

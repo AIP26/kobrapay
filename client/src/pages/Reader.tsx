@@ -1,6 +1,6 @@
 import DashboardLayout from "@/components/DashboardLayout";
+import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -10,18 +10,19 @@ import {
   CreditCard,
   Shield,
   CheckCircle2,
-  Smartphone,
   Zap,
   Package,
-  MapPin,
-  Phone,
+  ExternalLink,
+  PartyPopper,
+  XCircle,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { toast } from "sonner";
+import { useLocation } from "wouter";
 
 const READERS = [
   {
-    id: "bbpos-chipper",
+    id: "kobrapay-nano" as const,
     name: "KobraPay Nano",
     subtitle: "Lector Bluetooth compacto",
     price: 1299,
@@ -37,7 +38,7 @@ const READERS = [
     badgeColor: "bg-emerald-500",
   },
   {
-    id: "wispos-e",
+    id: "kobrapay-pro" as const,
     name: "KobraPay Pro",
     subtitle: "Terminal con pantalla táctil",
     price: 3499,
@@ -56,26 +57,72 @@ const READERS = [
 ];
 
 export default function Reader() {
-  const [selected, setSelected] = useState<string | null>(null);
+  const [location] = useLocation();
+  const [selected, setSelected] = useState<"kobrapay-nano" | "kobrapay-pro" | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ name: "", phone: "", address: "", city: "", quantity: "1" });
 
+  const checkoutMutation = trpc.readers.createCheckout.useMutation({
+    onSuccess: (data) => {
+      if (data.url) {
+        toast.info("Redirigiendo a Stripe para completar el pago...");
+        window.open(data.url, "_blank");
+      } else {
+        toast.error("No se pudo generar el enlace de pago. Intenta de nuevo.");
+      }
+    },
+    onError: (e) => toast.error(e.message),
+  });
+
   const selectedReader = READERS.find(r => r.id === selected);
+
+  // Detectar retorno de Stripe
+  const params = new URLSearchParams(window.location.search);
+  const isSuccess = params.get("success") === "1";
+  const isCancelled = params.get("cancelled") === "1";
 
   const handleOrder = () => {
     if (!form.name || !form.phone || !form.address || !form.city) {
       toast.error("Por favor completa todos los campos");
       return;
     }
-    toast.success(`¡Solicitud enviada! Te contactaremos en 24 hrs para confirmar tu pedido de ${selectedReader?.name}.`);
-    setShowForm(false);
-    setForm({ name: "", phone: "", address: "", city: "", quantity: "1" });
-    setSelected(null);
+    if (!selected) return;
+    checkoutMutation.mutate({
+      readerId: selected,
+      quantity: parseInt(form.quantity || "1"),
+      shippingName: form.name,
+      shippingPhone: form.phone,
+      shippingAddress: form.address,
+      shippingCity: form.city,
+    });
   };
 
   return (
     <DashboardLayout title="Compra tu Lector">
       <div className="p-6 space-y-8">
+
+        {/* Banner de éxito */}
+        {isSuccess && (
+          <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-6 flex items-center gap-4">
+            <PartyPopper className="w-10 h-10 text-emerald-500 flex-shrink-0" />
+            <div>
+              <h3 className="font-bold text-emerald-800 text-lg">¡Pedido confirmado!</h3>
+              <p className="text-emerald-700 text-sm mt-1">Tu pago fue procesado exitosamente. Recibirás un email de confirmación y tu lector llegará en 3-5 días hábiles.</p>
+            </div>
+          </div>
+        )}
+
+        {/* Banner de cancelación */}
+        {isCancelled && (
+          <div className="bg-amber-50 border border-amber-200 rounded-2xl p-5 flex items-center gap-4">
+            <XCircle className="w-8 h-8 text-amber-500 flex-shrink-0" />
+            <div>
+              <h3 className="font-semibold text-amber-800">Pedido cancelado</h3>
+              <p className="text-amber-700 text-sm mt-0.5">No se realizó ningún cargo. Puedes intentar de nuevo cuando quieras.</p>
+            </div>
+          </div>
+        )}
+
         {/* Header */}
         <div className="text-center max-w-2xl mx-auto">
           <div className="w-16 h-16 bg-gradient-to-br from-emerald-400 to-cyan-400 rounded-2xl flex items-center justify-center mx-auto mb-4">
@@ -145,7 +192,7 @@ export default function Reader() {
                     onClick={(e) => { e.stopPropagation(); setShowForm(true); }}
                   >
                     <ShoppingCart className="w-4 h-4 mr-2" />
-                    Solicitar este lector
+                    Comprar este lector
                   </Button>
                 )}
               </div>
@@ -158,9 +205,9 @@ export default function Reader() {
           <h2 className="text-lg font-bold text-gray-900 mb-4 text-center">¿Cómo funciona?</h2>
           <div className="grid md:grid-cols-3 gap-4">
             {[
-              { step: "1", title: "Solicita tu lector", desc: "Llena el formulario y te contactamos en 24 hrs para confirmar el pedido.", icon: ShoppingCart },
-              { step: "2", title: "Recíbelo en casa", desc: "Envío a todo México en 3-5 días hábiles. Activación inmediata al conectar.", icon: Package },
-              { step: "3", title: "Empieza a cobrar", desc: "Conecta el lector a tu teléfono o WiFi y acepta tarjetas en segundos.", icon: Zap },
+              { step: "1", title: "Elige tu lector", desc: "Selecciona el modelo que mejor se adapte a tu negocio y llena el formulario de envío.", icon: ShoppingCart },
+              { step: "2", title: "Paga con Stripe", desc: "Completa el pago de forma segura con Stripe. Aceptamos todas las tarjetas.", icon: CreditCard },
+              { step: "3", title: "Empieza a cobrar", desc: "Recíbelo en 3-5 días hábiles. Conecta y acepta tarjetas en segundos.", icon: Zap },
             ].map(({ step, title, desc, icon: Icon }) => (
               <div key={step} className="bg-gray-50 rounded-xl p-5 text-center">
                 <div className="w-10 h-10 bg-emerald-500 text-white rounded-full flex items-center justify-center font-bold text-lg mx-auto mb-3">{step}</div>
@@ -177,7 +224,7 @@ export default function Reader() {
             <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl" onClick={e => e.stopPropagation()}>
               <div className="p-6 border-b border-gray-100 flex items-center justify-between">
                 <div>
-                  <h3 className="font-bold text-gray-900">Solicitar {selectedReader.name}</h3>
+                  <h3 className="font-bold text-gray-900">Comprar {selectedReader.name}</h3>
                   <p className="text-sm text-gray-500">${selectedReader.price.toLocaleString("es-MX")} MXN + IVA</p>
                 </div>
                 <button onClick={() => setShowForm(false)} className="text-gray-400 hover:text-gray-600 text-xl">×</button>
@@ -205,13 +252,18 @@ export default function Reader() {
                     <Input type="number" min="1" max="10" value={form.quantity} onChange={e => setForm(f => ({ ...f, quantity: e.target.value }))} />
                   </div>
                 </div>
-                <p className="text-xs text-gray-400 bg-gray-50 rounded-lg p-3">
-                  Un asesor de KobraPay te contactará en las próximas 24 horas para confirmar el pedido y coordinar el pago.
-                </p>
+                <div className="bg-emerald-50 border border-emerald-100 rounded-lg p-3 flex gap-2">
+                  <ExternalLink className="w-4 h-4 text-emerald-600 flex-shrink-0 mt-0.5" />
+                  <p className="text-xs text-emerald-700">Al hacer clic en "Ir a pagar", serás redirigido a Stripe para completar el pago de forma segura. Tu pedido se confirma al finalizar el pago.</p>
+                </div>
                 <div className="flex gap-3">
                   <Button variant="outline" className="flex-1" onClick={() => setShowForm(false)}>Cancelar</Button>
-                  <Button className="flex-1 bg-emerald-500 hover:bg-emerald-400 text-white" onClick={handleOrder}>
-                    Enviar solicitud
+                  <Button
+                    className="flex-1 bg-emerald-500 hover:bg-emerald-400 text-white"
+                    onClick={handleOrder}
+                    disabled={checkoutMutation.isPending}
+                  >
+                    {checkoutMutation.isPending ? "Generando..." : "Ir a pagar →"}
                   </Button>
                 </div>
               </div>

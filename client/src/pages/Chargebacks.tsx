@@ -1,5 +1,6 @@
 import DashboardLayout from "@/components/DashboardLayout";
 import { trpc } from "@/lib/trpc";
+import { useAuth } from "@/_core/hooks/useAuth";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,6 +11,13 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -23,6 +31,8 @@ import {
   DollarSign,
   FileText,
   Info,
+  Eye,
+  MessageSquare,
 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -41,15 +51,37 @@ function fmt(n: number) {
   return new Intl.NumberFormat("es-MX", { style: "currency", currency: "MXN" }).format(n);
 }
 
+type Chargeback = {
+  id: number;
+  amount: number;
+  currency?: string;
+  status: string;
+  reason?: string | null;
+  reasonEs?: string | null;
+  notes?: string | null;
+  createdAt: Date | string;
+  resolvedAt?: Date | string | null;
+};
+
 export default function Chargebacks() {
+  const { user } = useAuth();
+  const isAdmin = user?.role === "admin" || user?.role === "superadmin";
+
   const { data: chargebacks = [], isLoading, refetch } = trpc.chargebacks.list.useQuery();
   const createMutation = trpc.chargebacks.create.useMutation({
     onSuccess: () => { toast.success("Aclaración registrada"); refetch(); setShowCreate(false); resetForm(); },
     onError: (e) => toast.error(e.message),
   });
+  const updateStatusMutation = trpc.chargebacks.updateStatus.useMutation({
+    onSuccess: () => { toast.success("Estado actualizado"); refetch(); setDetailCb(null); },
+    onError: (e) => toast.error(e.message),
+  });
 
   const [showCreate, setShowCreate] = useState(false);
   const [form, setForm] = useState({ amount: "", reason: "", reasonEs: "", notes: "" });
+  const [detailCb, setDetailCb] = useState<Chargeback | null>(null);
+  const [newStatus, setNewStatus] = useState<CBStatus>("open");
+  const [adminNotes, setAdminNotes] = useState("");
 
   function resetForm() {
     setForm({ amount: "", reason: "", reasonEs: "", notes: "" });
@@ -63,6 +95,21 @@ export default function Chargebacks() {
       reason: form.reason || undefined,
       reasonEs: form.reasonEs || undefined,
       notes: form.notes || undefined,
+    });
+  }
+
+  function openDetail(cb: Chargeback) {
+    setDetailCb(cb);
+    setNewStatus((cb.status as CBStatus) || "open");
+    setAdminNotes(cb.notes || "");
+  }
+
+  function handleUpdateStatus() {
+    if (!detailCb) return;
+    updateStatusMutation.mutate({
+      id: detailCb.id,
+      status: newStatus,
+      notes: adminNotes || undefined,
     });
   }
 
@@ -91,7 +138,7 @@ export default function Chargebacks() {
             <p className="text-sm font-medium text-blue-800">¿Qué es una aclaración?</p>
             <p className="text-sm text-blue-600 mt-0.5">
               Cuando un cliente disputa un cargo con su banco, se genera un contracargo. Tienes <strong>7 días hábiles</strong> para
-              enviar evidencia y disputar el caso.
+              enviar evidencia y disputar el caso. Haz clic en <strong>Ver detalle</strong> para agregar información o actualizar el estado.
             </p>
           </div>
         </div>
@@ -148,7 +195,7 @@ export default function Chargebacks() {
                       <th className="text-left py-2 px-3 font-medium">Monto</th>
                       <th className="text-left py-2 px-3 font-medium">Motivo</th>
                       <th className="text-left py-2 px-3 font-medium">Estado</th>
-                      <th className="text-left py-2 px-3 font-medium">Notas</th>
+                      <th className="text-left py-2 px-3 font-medium">Acciones</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -172,8 +219,15 @@ export default function Chargebacks() {
                               {cfg.icon} {cfg.label}
                             </Badge>
                           </td>
-                          <td className="py-3 px-3 text-gray-500 text-xs max-w-[200px] truncate">
-                            {cb.notes || "Sin notas"}
+                          <td className="py-3 px-3">
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="text-xs text-blue-600 hover:bg-blue-50"
+                              onClick={() => openDetail(cb as Chargeback)}
+                            >
+                              <Eye className="w-3.5 h-3.5 mr-1" /> Ver detalle
+                            </Button>
                           </td>
                         </tr>
                       );
@@ -244,6 +298,100 @@ export default function Chargebacks() {
             >
               {createMutation.isPending ? "Guardando..." : "Registrar"}
             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal: Detalle de Aclaración */}
+      <Dialog open={!!detailCb} onOpenChange={(v) => { if (!v) setDetailCb(null); }}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <MessageSquare className="w-5 h-5 text-orange-500" />
+              Aclaración #{detailCb?.id}
+            </DialogTitle>
+          </DialogHeader>
+          {detailCb && (
+            <div className="space-y-4 py-2">
+              {/* Info de la aclaración */}
+              <div className="bg-gray-50 rounded-xl p-4 space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-500">Monto en disputa</span>
+                  <span className="font-bold text-gray-900">{fmt(detailCb.amount)}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-500">Fecha de apertura</span>
+                  <span className="text-gray-700">{new Date(detailCb.createdAt).toLocaleDateString("es-MX", { year: "numeric", month: "long", day: "numeric" })}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-500">Motivo</span>
+                  <span className="text-gray-700">{detailCb.reasonEs || detailCb.reason || "Sin motivo"}</span>
+                </div>
+                {detailCb.resolvedAt && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-500">Fecha de resolución</span>
+                    <span className="text-gray-700">{new Date(detailCb.resolvedAt).toLocaleDateString("es-MX")}</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Notas actuales */}
+              {detailCb.notes && (
+                <div>
+                  <Label className="text-xs text-gray-500 uppercase">Notas registradas</Label>
+                  <p className="text-sm text-gray-700 mt-1 bg-blue-50 rounded-lg p-3">{detailCb.notes}</p>
+                </div>
+              )}
+
+              {/* Admin: cambiar estado y agregar notas */}
+              {isAdmin ? (
+                <>
+                  <div>
+                    <Label>Actualizar estado</Label>
+                    <Select value={newStatus} onValueChange={(v) => setNewStatus(v as CBStatus)}>
+                      <SelectTrigger className="mt-1">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="open">Abierta</SelectItem>
+                        <SelectItem value="under_review">En revisión</SelectItem>
+                        <SelectItem value="won">Ganada</SelectItem>
+                        <SelectItem value="lost">Perdida</SelectItem>
+                        <SelectItem value="closed">Cerrada</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label>Notas de resolución</Label>
+                    <Textarea
+                      placeholder="Agrega notas sobre la resolución de esta aclaración..."
+                      value={adminNotes}
+                      onChange={e => setAdminNotes(e.target.value)}
+                      rows={3}
+                      className="mt-1"
+                    />
+                  </div>
+                </>
+              ) : (
+                <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
+                  <p className="text-xs text-amber-700">
+                    <strong>Estado actual:</strong> {STATUS_CONFIG[(detailCb.status as CBStatus) || "open"]?.label}. El equipo de KobraPay revisará tu caso y actualizará el estado en un plazo de 2-3 días hábiles.
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDetailCb(null)}>Cerrar</Button>
+            {isAdmin && (
+              <Button
+                onClick={handleUpdateStatus}
+                disabled={updateStatusMutation.isPending}
+                className="bg-orange-600 hover:bg-orange-700 text-white"
+              >
+                {updateStatusMutation.isPending ? "Guardando..." : "Actualizar estado"}
+              </Button>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>

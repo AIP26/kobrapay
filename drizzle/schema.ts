@@ -593,12 +593,18 @@ export const attendanceRecords = mysqlTable("attendance_records", {
   id: int("id").primaryKey().autoincrement(),
   employeeId: int("employeeId").notNull().references(() => employeeRecords.id),
   ownerId: int("ownerId").notNull().references(() => users.id),
-  type: varchar("type", { length: 16 }).notNull(), // "in" = entrada, "out" = salida
+  type: varchar("type", { length: 16 }).notNull(), // "in" = entrada, "out" = salida, "absence" = ausencia
   timestamp: timestamp("timestamp").defaultNow().notNull(),
   ipAddress: varchar("ipAddress", { length: 64 }),
   latitude: varchar("latitude", { length: 32 }),
   longitude: varchar("longitude", { length: 32 }),
   notes: text("notes"),
+  // Ausencias: cuando type = "absence", absenceType clasifica el motivo
+  absenceType: varchar("absenceType", { length: 32 }), // "rest" | "sick_leave" | "paid_leave" | "unpaid_leave"
+  comment: text("comment"), // Comentario de por qué faltó o detalle de la ausencia
+  // Para ediciones del admin: guardar quién editó y cuándo
+  editedByUserId: int("editedByUserId"),
+  editedAt: timestamp("editedAt"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 export type AttendanceRecord = typeof attendanceRecords.$inferSelect;

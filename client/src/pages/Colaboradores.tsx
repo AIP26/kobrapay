@@ -539,6 +539,34 @@ function EmployeeDetail({
                     <p className="text-sm text-foreground bg-muted/30 rounded p-2">{emp.notes}</p>
                   </div>
                 )}
+                {(emp as any).hourlyRate && parseFloat((emp as any).hourlyRate) > 0 && (
+                  <div>
+                    <p className="text-xs text-muted-foreground">Salario por Hora</p>
+                    <p className="font-semibold text-primary text-lg">
+                      ${parseFloat((emp as any).hourlyRate).toFixed(2)}<span className="text-xs text-muted-foreground font-normal ml-1">/hr</span>
+                    </p>
+                  </div>
+                )}
+                {(emp as any).paymentCycle && (
+                  <div>
+                    <p className="text-xs text-muted-foreground">Ciclo de Pago</p>
+                    <p className="font-medium text-foreground">
+                      {(emp as any).paymentCycle === 'weekly' ? '🗓 Semanal' : (emp as any).paymentCycle === 'biweekly' ? '🗓 Quincenal' : '🗓 Mensual'}
+                    </p>
+                  </div>
+                )}
+                {(emp as any).bankName && (
+                  <div>
+                    <p className="text-xs text-muted-foreground">Banco</p>
+                    <p className="font-medium text-foreground">{(emp as any).bankName}</p>
+                  </div>
+                )}
+                {(emp as any).clabe && (
+                  <div>
+                    <p className="text-xs text-muted-foreground">CLABE Interbancaria</p>
+                    <p className="font-mono text-sm text-foreground">{(emp as any).clabe}</p>
+                  </div>
+                )}
               </div>
 
               {/* Acciones */}

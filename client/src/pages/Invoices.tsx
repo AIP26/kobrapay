@@ -19,6 +19,7 @@ import {
   Send,
   Search,
   Building2,
+  Eye,
 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -66,6 +67,80 @@ export default function Invoices() {
 
   const [showForm, setShowForm] = useState(false);
   const [search, setSearch] = useState("");
+  const [previewInv, setPreviewInv] = useState<typeof invoices[0] | null>(null);
+
+  function downloadInvoicePDF(inv: typeof invoices[0]) {
+    const html = `<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Factura ${inv.folio}</title>
+<style>
+  body { font-family: Arial, sans-serif; margin: 40px; color: #1a1a1a; }
+  .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 32px; border-bottom: 3px solid #10b981; padding-bottom: 20px; }
+  .logo { font-size: 28px; font-weight: 900; color: #10b981; }
+  .folio { text-align: right; }
+  .folio h2 { font-size: 22px; color: #1a1a1a; margin: 0; }
+  .folio p { color: #6b7280; font-size: 13px; margin: 4px 0; }
+  .parties { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 28px; }
+  .party { background: #f9fafb; border-radius: 8px; padding: 16px; }
+  .party h3 { font-size: 11px; text-transform: uppercase; color: #6b7280; letter-spacing: 0.05em; margin: 0 0 8px; }
+  .party p { margin: 3px 0; font-size: 14px; }
+  .party .rfc { font-family: monospace; font-size: 13px; color: #374151; }
+  table { width: 100%; border-collapse: collapse; margin-bottom: 24px; }
+  thead tr { background: #10b981; color: white; }
+  thead th { padding: 10px 14px; text-align: left; font-size: 13px; }
+  tbody tr { border-bottom: 1px solid #e5e7eb; }
+  tbody td { padding: 10px 14px; font-size: 14px; }
+  .totals { margin-left: auto; width: 280px; }
+  .total-row { display: flex; justify-content: space-between; padding: 6px 0; font-size: 14px; }
+  .total-row.grand { border-top: 2px solid #10b981; padding-top: 10px; font-weight: 900; font-size: 18px; color: #10b981; }
+  .footer { margin-top: 40px; text-align: center; font-size: 12px; color: #9ca3af; border-top: 1px solid #e5e7eb; padding-top: 16px; }
+  .badge { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; background: #d1fae5; color: #065f46; }
+  @media print { body { margin: 20px; } }
+</style>
+</head>
+<body>
+<div class="header">
+  <div class="logo">KobraPay</div>
+  <div class="folio">
+    <h2>FACTURA</h2>
+    <p><strong>${inv.folio}</strong></p>
+    <p>Fecha: ${new Date(inv.createdAt).toLocaleDateString('es-MX', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
+    <p><span class="badge">${inv.status === 'paid' ? 'PAGADA' : inv.status === 'sent' ? 'ENVIADA' : inv.status === 'cancelled' ? 'CANCELADA' : 'BORRADOR'}</span></p>
+  </div>
+</div>
+<div class="parties">
+  <div class="party">
+    <h3>Emisor</h3>
+    <p><strong>${inv.emisorNombre}</strong></p>
+    <p class="rfc">${inv.emisorRfc}</p>
+  </div>
+  <div class="party">
+    <h3>Receptor</h3>
+    <p><strong>${inv.receptorNombre}</strong></p>
+    <p class="rfc">${inv.receptorRfc}</p>
+    ${inv.receptorEmail ? `<p style="color:#6b7280;font-size:13px">${inv.receptorEmail}</p>` : ''}
+  </div>
+</div>
+<table>
+  <thead><tr><th>Descripción</th><th>Cant.</th><th>Precio Unit.</th><th>Importe</th></tr></thead>
+  <tbody>
+    ${(JSON.parse(typeof inv.conceptos === 'string' ? inv.conceptos : JSON.stringify(inv.conceptos)) as Array<{descripcion:string;cantidad:number;valorUnitario:number;importe:number}>).map((c: {descripcion:string;cantidad:number;valorUnitario:number;importe:number}) => `<tr><td>${c.descripcion}</td><td>${c.cantidad}</td><td>$${(c.valorUnitario/100).toLocaleString('es-MX',{minimumFractionDigits:2})}</td><td>$${(c.importe/100).toLocaleString('es-MX',{minimumFractionDigits:2})}</td></tr>`).join('')}
+  </tbody>
+</table>
+<div class="totals">
+  <div class="total-row"><span>Subtotal</span><span>$${((inv.subtotal||0)/100).toLocaleString('es-MX',{minimumFractionDigits:2})}</span></div>
+  <div class="total-row"><span>IVA (16%)</span><span>$${((inv.iva||0)/100).toLocaleString('es-MX',{minimumFractionDigits:2})}</span></div>
+  <div class="total-row grand"><span>TOTAL</span><span>$${((inv.total||0)/100).toLocaleString('es-MX',{minimumFractionDigits:2})} MXN</span></div>
+</div>
+<div class="footer">Documento generado por KobraPay &bull; kobrapay.mx &bull; Este documento no es un CFDI fiscal</div>
+</body></html>`;
+    const blob = new Blob([html], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+    const w = window.open(url, '_blank');
+    if (w) { w.onload = () => { w.print(); }; }
+  }
   const [form, setForm] = useState({
     emisorRfc: "",
     emisorNombre: "",
@@ -243,6 +318,15 @@ export default function Invoices() {
                                 disabled={sendEmailMutation.isPending || !inv.receptorEmail}
                               >
                                 <Send className="w-3.5 h-3.5" />
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="text-xs text-gray-500 hover:text-emerald-600 hover:bg-emerald-50"
+                                title="Descargar factura PDF"
+                                onClick={() => downloadInvoicePDF(inv)}
+                              >
+                                <Download className="w-3.5 h-3.5" />
                               </Button>
                               {inv.status !== "cancelled" && (
                                 <Button

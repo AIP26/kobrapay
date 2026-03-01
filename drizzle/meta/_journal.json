@@ -169,6 +169,13 @@
       "when": 1772318947642,
       "tag": "0023_real_mad_thinker",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "5",
+      "when": 1772322749710,
+      "tag": "0024_chief_the_hand",
+      "breakpoints": true
     }
   ]
 }
