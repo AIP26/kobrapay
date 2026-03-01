@@ -2459,8 +2459,30 @@ export const appRouter = router({
             }
           }
           const totalHours = totalMinutes / 60;
-          const hourlyRate = parseFloat(emp.hourlyRate ?? "0");
-          const grossPay = totalHours * hourlyRate;
+          const dailyRate = parseFloat(emp.dailyRate ?? "0");
+          const dailyHoursNum = parseFloat(emp.dailyHours ?? "8");
+          const overtimeEnabled = emp.overtimeEnabled ?? false;
+          const overtimeRateNum = parseFloat(emp.overtimeRate ?? "0");
+          // Calcular horas regulares y extras por dia
+          let regularHours = 0;
+          let overtimeHours = 0;
+          const hourlyEquiv = dailyHoursNum > 0 ? dailyRate / dailyHoursNum : 0;
+          for (const day of Array.from(days)) {
+            const dayRecs = records.filter(r => new Date(r.timestamp).toISOString().slice(0, 10) === day);
+            let dayMinutes = 0;
+            let dayIn: Date | null = null;
+            for (const r of dayRecs) {
+              if (r.type === "in") dayIn = new Date(r.timestamp);
+              else if (r.type === "out" && dayIn) {
+                dayMinutes += Math.max(0, (new Date(r.timestamp).getTime() - dayIn.getTime()) / 60000);
+                dayIn = null;
+              }
+            }
+            const dayHours = dayMinutes / 60;
+            regularHours += Math.min(dayHours, dailyHoursNum);
+            if (overtimeEnabled) overtimeHours += Math.max(0, dayHours - dailyHoursNum);
+          }
+          const grossPay = (regularHours * hourlyEquiv) + (overtimeHours * (overtimeRateNum || hourlyEquiv * 1.5));
           const imss = grossPay * 0.0175;
           const isr = grossPay > 10000 ? grossPay * 0.10 : grossPay > 5000 ? grossPay * 0.064 : 0;
           const netPay = grossPay - imss - isr;
@@ -2470,8 +2492,13 @@ export const appRouter = router({
             fullName: emp.fullName,
             position: emp.position ?? "",
             department: emp.department ?? "",
-            hourlyRate,
+            dailyRate,
+            dailyHours: dailyHoursNum,
+            overtimeEnabled,
+            overtimeRate: overtimeRateNum,
             totalHours: Math.round(totalHours * 100) / 100,
+            regularHours: Math.round(regularHours * 100) / 100,
+            overtimeHours: Math.round(overtimeHours * 100) / 100,
             daysWorked: days.size,
             grossPay: Math.round(grossPay * 100) / 100,
             imss: Math.round(imss * 100) / 100,
@@ -2481,6 +2508,7 @@ export const appRouter = router({
             bankName: emp.bankName ?? "",
             clabe: emp.clabe ?? "",
             bankAccountHolder: emp.bankAccountHolder ?? "",
+            restDay: emp.restDay ?? "sunday",
             status: emp.status,
           };
         });
@@ -2492,7 +2520,11 @@ export const appRouter = router({
     updatePayrollData: protectedProcedure
       .input(z.object({
         employeeId: z.number(),
-        hourlyRate: z.string().optional(),
+        dailyRate: z.string().optional(),
+        dailyHours: z.string().optional(),
+        restDay: z.string().optional(),
+        overtimeEnabled: z.boolean().optional(),
+        overtimeRate: z.string().optional(),
         paymentCycle: z.enum(["weekly", "biweekly", "monthly"]).optional(),
         bankName: z.string().optional(),
         clabe: z.string().max(18).optional(),
@@ -2500,7 +2532,11 @@ export const appRouter = router({
       }))
       .mutation(async ({ ctx, input }) => {
         await updateEmployeePayrollData(input.employeeId, ctx.user.id, {
-          hourlyRate: input.hourlyRate,
+          dailyRate: input.dailyRate,
+          dailyHours: input.dailyHours,
+          restDay: input.restDay,
+          overtimeEnabled: input.overtimeEnabled,
+          overtimeRate: input.overtimeRate,
           paymentCycle: input.paymentCycle,
           bankName: input.bankName,
           clabe: input.clabe,

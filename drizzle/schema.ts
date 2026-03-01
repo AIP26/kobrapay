@@ -535,7 +535,11 @@ export const employeeRecords = mysqlTable("employee_records", {
   photoKey: varchar("photoKey", { length: 512 }),
   notes: text("notes"),
   // Nómina
-  hourlyRate: decimal("hourlyRate", { precision: 10, scale: 2 }), // Salario por hora en MXN
+  dailyRate: decimal("dailyRate", { precision: 10, scale: 2 }), // Salario diario en MXN
+  dailyHours: decimal("dailyHours", { precision: 5, scale: 2 }).default("8.00"), // Horas de trabajo por día
+  restDay: varchar("restDay", { length: 16 }).default("sunday"), // Día de descanso: monday-sunday
+  overtimeEnabled: boolean("overtimeEnabled").default(false), // ¿Se pagan horas extras?
+  overtimeRate: decimal("overtimeRate", { precision: 10, scale: 2 }), // Tarifa por hora extra en MXN
   paymentCycle: varchar("paymentCycle", { length: 16 }).default("biweekly"), // "weekly" | "biweekly" | "monthly"
   bankName: varchar("bankName", { length: 128 }),
   clabe: varchar("clabe", { length: 18 }),

@@ -1036,8 +1036,11 @@ export async function updateEmployeeRecord(id: number, ownerId: number, data: Pa
 export async function deleteEmployeeRecord(id: number, ownerId: number): Promise<void> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  // Eliminar documentos primero
+  // Borrar registros de asistencia primero (FK constraint)
+  await db.delete(attendanceRecords).where(and(eq(attendanceRecords.employeeId, id), eq(attendanceRecords.ownerId, ownerId)));
+  // Borrar documentos del empleado
   await db.delete(employeeDocuments).where(and(eq(employeeDocuments.employeeId, id), eq(employeeDocuments.ownerId, ownerId)));
+  // Finalmente borrar el empleado
   await db.delete(employeeRecords).where(and(eq(employeeRecords.id, id), eq(employeeRecords.ownerId, ownerId)));
 }
 
@@ -1182,7 +1185,7 @@ export async function getSubscriptionByCustomerId(stripeCustomerId: string): Pro
 export async function updateEmployeePayrollData(
   id: number,
   ownerId: number,
-  data: { hourlyRate?: string; paymentCycle?: string; bankName?: string; clabe?: string; bankAccountHolder?: string }
+  data: { dailyRate?: string; dailyHours?: string; restDay?: string; overtimeEnabled?: boolean; overtimeRate?: string; paymentCycle?: string; bankName?: string; clabe?: string; bankAccountHolder?: string }
 ): Promise<void> {
   const db = await getDb();
   if (!db) return;

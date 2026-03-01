@@ -108,7 +108,7 @@ type EmpInfo = {
   employeeNumber?: string | null;
   position?: string | null;
   photoUrl?: string | null;
-  hourlyRate?: string | null;
+  dailyRate?: string | null;
 };
 
 // ─── Modal historial detallado de un colaborador ─────────────────────────────
@@ -231,9 +231,9 @@ function EmployeeHistoryModal({
                 {[2024, 2025, 2026, 2027].map(y => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}
               </SelectContent>
             </Select>
-            {employee.hourlyRate && (
+            {employee.dailyRate && (
               <span className="text-sm text-muted-foreground ml-auto">
-                Salario: <strong className="text-primary">${parseFloat(employee.hourlyRate).toFixed(2)}/hr</strong>
+                Salario diario: <strong className="text-primary">${parseFloat(employee.dailyRate).toFixed(2)}</strong>
               </span>
             )}
           </div>

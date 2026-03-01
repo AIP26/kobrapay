@@ -539,12 +539,24 @@ function EmployeeDetail({
                     <p className="text-sm text-foreground bg-muted/30 rounded p-2">{emp.notes}</p>
                   </div>
                 )}
-                {(emp as any).hourlyRate && parseFloat((emp as any).hourlyRate) > 0 && (
+                {(emp as any).dailyRate && parseFloat((emp as any).dailyRate) > 0 && (
                   <div>
-                    <p className="text-xs text-muted-foreground">Salario por Hora</p>
+                    <p className="text-xs text-muted-foreground">Salario Diario</p>
                     <p className="font-semibold text-primary text-lg">
-                      ${parseFloat((emp as any).hourlyRate).toFixed(2)}<span className="text-xs text-muted-foreground font-normal ml-1">/hr</span>
+                      ${parseFloat((emp as any).dailyRate).toFixed(2)}<span className="text-xs text-muted-foreground font-normal ml-1">/día</span>
                     </p>
+                  </div>
+                )}
+                {(emp as any).dailyHours && parseFloat((emp as any).dailyHours) > 0 && (
+                  <div>
+                    <p className="text-xs text-muted-foreground">Horas de Trabajo al Día</p>
+                    <p className="font-medium text-foreground">{parseFloat((emp as any).dailyHours)} hrs/día</p>
+                  </div>
+                )}
+                {(emp as any).restDay && (
+                  <div>
+                    <p className="text-xs text-muted-foreground">Día de Descanso</p>
+                    <p className="font-medium text-foreground">{{ monday: "Lunes", tuesday: "Martes", wednesday: "Miércoles", thursday: "Jueves", friday: "Viernes", saturday: "Sábado", sunday: "Domingo" }[(emp as any).restDay as string] ?? (emp as any).restDay}</p>
                   </div>
                 )}
                 {(emp as any).paymentCycle && (
@@ -676,8 +688,12 @@ export default function Colaboradores() {
   const [selectedId, setSelectedId] = useState<number | null>(null);
 
   const deleteMutation = trpc.employees.delete.useMutation({
-    onSuccess: () => { toast.success("Colaborador eliminado"); utils.employees.list.invalidate(); },
-    onError: (e) => toast.error(e.message),
+    onSuccess: () => {
+      toast.success("Colaborador eliminado");
+      utils.employees.list.invalidate();
+      utils.employees.list.refetch();
+    },
+    onError: (e) => toast.error("Error al eliminar: " + e.message),
   });
 
   if (selectedId !== null) {

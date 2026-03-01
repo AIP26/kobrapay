@@ -465,3 +465,14 @@
 - [ ] Tabla attendance_records para reloj checador (entrada/salida con timestamp y ubicación)
 - [ ] Página de Reloj Checador: botón de entrada/salida y historial por colaborador
 - [ ] Reporte de asistencia por período (exportar CSV)
+
+## Correcciones y mejoras RH/Nómina/Checador (ronda 3)
+- [ ] Corregir bug: eliminar colaborador dice "eliminado" pero no se borra de la BD
+- [ ] Cambiar "salario por hora" a "salario diario" en todo el sistema
+- [ ] Agregar campo "día de descanso" programable en perfil del colaborador
+- [ ] Agregar campo "horas diarias" en perfil del colaborador
+- [ ] Opción de horas extras (toggle + tarifa opcional)
+- [ ] Reflejar descanso/permiso/ausencia en nómina con desglose
+- [ ] Corregir historial del checador: mostrar día, hora entrada, hora salida, horas/minutos trabajados
+- [ ] Corregir botón Calcular en Nómina (no abre nada)
+- [ ] Reporte de nómina desglosado por días laborados, ausencias, horas extras
