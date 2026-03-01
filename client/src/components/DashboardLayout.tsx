@@ -40,6 +40,7 @@ import {
   BookUser,
   Pill,
   ClipboardList,
+  ShieldCheck,
 } from "lucide-react";
 import { useState, useCallback, useMemo } from "react";
 import GlobalSearch from "./GlobalSearch";
@@ -117,6 +118,8 @@ const NAV_GROUPS = [
       { href: "/dashboard/proveedores", icon: BookUser, label: "Proveedores" },
       { href: "/dashboard/prescriptions", icon: ClipboardList, label: "Prescripciones" },
       { href: "/dashboard/farmacia", icon: Pill, label: "Farmacia" },
+      { href: "/dashboard/module-access", icon: ShieldCheck, label: "Control de Módulos" },
+      { href: "/dashboard/module-manager", icon: ShieldCheck, label: "Accesos Equipo" },
     ],
   },
   {

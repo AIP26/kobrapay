@@ -900,3 +900,31 @@ export const pharmacyPrescriptions = mysqlTable("pharmacy_prescriptions", {
 });
 export type PharmacyPrescription = typeof pharmacyPrescriptions.$inferSelect;
 export type InsertPharmacyPrescription = typeof pharmacyPrescriptions.$inferInsert;
+
+// ─── Control de Acceso por Módulo ─────────────────────────────────────────────
+// Módulos controlados: 'prescriptions', 'pharmacy'
+export const moduleAccess = mysqlTable("module_access", {
+  id: int("id").primaryKey().autoincrement(),
+  userId: int("userId").notNull().references(() => users.id),
+  module: varchar("module", { length: 64 }).notNull(),
+  isActive: boolean("isActive").default(true).notNull(),
+  grantedBy: int("grantedBy").notNull().references(() => users.id),
+  grantedAt: timestamp("grantedAt").defaultNow().notNull(),
+  revokedAt: timestamp("revokedAt"),
+  notes: text("notes"),
+});
+export type ModuleAccess = typeof moduleAccess.$inferSelect;
+
+export const moduleRequests = mysqlTable("module_requests", {
+  id: int("id").primaryKey().autoincrement(),
+  userId: int("userId").notNull().references(() => users.id),
+  module: varchar("module", { length: 64 }).notNull(),
+  businessType: varchar("businessType", { length: 255 }),
+  message: text("message"),
+  status: varchar("status", { length: 32 }).default("pending").notNull(),
+  reviewedBy: int("reviewedBy"),
+  reviewedAt: timestamp("reviewedAt"),
+  reviewNotes: text("reviewNotes"),
+  requestedAt: timestamp("requestedAt").defaultNow().notNull(),
+});
+export type ModuleRequest = typeof moduleRequests.$inferSelect;

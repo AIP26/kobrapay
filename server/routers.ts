@@ -3896,6 +3896,230 @@ export const appRouter = router({
         return { success: true };
       }),
   }),
+
+  // ─── Control de Acceso por Módulo ───────────────────────────────────────────────────
+  moduleAccess: router({
+    // Verificar si el usuario actual tiene acceso a un módulo
+    check: protectedProcedure
+      .input(z.object({ module: z.string() }))
+      .query(async ({ ctx, input }) => {
+        // El superadmin siempre tiene acceso
+        if (ctx.isSuperAdmin) return { hasAccess: true, isSuperAdmin: true };
+        const db = await import('./db').then(m => m.getDb ? m.getDb() : null);
+        if (!db) return { hasAccess: false, isSuperAdmin: false };
+        const { moduleAccess } = await import('../drizzle/schema');
+        const { eq, and } = await import('drizzle-orm');
+        const result = await db.select().from(moduleAccess)
+          .where(and(
+            eq(moduleAccess.userId, ctx.user.id),
+            eq(moduleAccess.module, input.module),
+            eq(moduleAccess.isActive, true)
+          )).limit(1);
+        return { hasAccess: result.length > 0, isSuperAdmin: false };
+      }),
+
+    // Solicitar acceso a un módulo (usuario/admin)
+    requestAccess: protectedProcedure
+      .input(z.object({
+        module: z.string(),
+        businessType: z.string().optional(),
+        message: z.string().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        if (ctx.isSuperAdmin) return { success: true, alreadyGranted: true };
+        const db = await import('./db').then(m => m.getDb ? m.getDb() : null);
+        if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
+        const { moduleAccess, moduleRequests } = await import('../drizzle/schema');
+        const { eq, and } = await import('drizzle-orm');
+        // Verificar si ya tiene acceso
+        const existing = await db.select().from(moduleAccess)
+          .where(and(eq(moduleAccess.userId, ctx.user.id), eq(moduleAccess.module, input.module), eq(moduleAccess.isActive, true))).limit(1);
+        if (existing.length > 0) return { success: true, alreadyGranted: true };
+        // Verificar si ya tiene solicitud pendiente
+        const pendingReq = await db.select().from(moduleRequests)
+          .where(and(eq(moduleRequests.userId, ctx.user.id), eq(moduleRequests.module, input.module), eq(moduleRequests.status, 'pending'))).limit(1);
+        if (pendingReq.length > 0) return { success: true, alreadyRequested: true };
+        // Crear solicitud
+        await db.insert(moduleRequests).values({
+          userId: ctx.user.id,
+          module: input.module,
+          businessType: input.businessType || null,
+          message: input.message || null,
+          status: 'pending',
+        });
+        // Notificar al superadmin
+        try {
+          const { notifyOwner } = await import('./_core/notification');
+          const moduleLabel = input.module === 'prescriptions' ? 'Prescripciones Médicas' : 'Farmacia';
+          await notifyOwner({
+            title: `⚠️ Solicitud de acceso: ${moduleLabel}`,
+            content: `El usuario ${ctx.user.name || ctx.user.email} (ID: ${ctx.user.id}) solicita acceso al módulo ${moduleLabel}.\nTipo de negocio: ${input.businessType || 'No especificado'}\nMensaje: ${input.message || 'Sin mensaje'}\n\nRevisa el panel de superadmin para aprobar o rechazar.`,
+          });
+        } catch (e) { /* notificación no crítica */ }
+        return { success: true, requested: true };
+      }),
+
+    // [SUPERADMIN] Listar solicitudes pendientes
+    listRequests: protectedProcedure.query(async ({ ctx }) => {
+      if (!ctx.isSuperAdmin) throw new TRPCError({ code: 'FORBIDDEN' });
+      const db = await import('./db').then(m => m.getDb ? m.getDb() : null);
+      if (!db) return [];
+      const { moduleRequests, users } = await import('../drizzle/schema');
+      const { eq, desc } = await import('drizzle-orm');
+      const requests = await db.select({
+        id: moduleRequests.id,
+        userId: moduleRequests.userId,
+        module: moduleRequests.module,
+        businessType: moduleRequests.businessType,
+        message: moduleRequests.message,
+        status: moduleRequests.status,
+        requestedAt: moduleRequests.requestedAt,
+        reviewedAt: moduleRequests.reviewedAt,
+        reviewNotes: moduleRequests.reviewNotes,
+        userName: users.name,
+        userEmail: users.email,
+        userRole: users.role,
+      }).from(moduleRequests)
+        .leftJoin(users, eq(moduleRequests.userId, users.id))
+        .orderBy(desc(moduleRequests.requestedAt));
+      return requests;
+    }),
+
+    // [SUPERADMIN] Listar todos los accesos activos
+    listAccess: protectedProcedure.query(async ({ ctx }) => {
+      if (!ctx.isSuperAdmin) throw new TRPCError({ code: 'FORBIDDEN' });
+      const db = await import('./db').then(m => m.getDb ? m.getDb() : null);
+      if (!db) return [];
+      const { moduleAccess, users } = await import('../drizzle/schema');
+      const { eq, desc } = await import('drizzle-orm');
+      return db.select({
+        id: moduleAccess.id,
+        userId: moduleAccess.userId,
+        module: moduleAccess.module,
+        isActive: moduleAccess.isActive,
+        grantedAt: moduleAccess.grantedAt,
+        notes: moduleAccess.notes,
+        userName: users.name,
+        userEmail: users.email,
+      }).from(moduleAccess)
+        .leftJoin(users, eq(moduleAccess.userId, users.id))
+        .orderBy(desc(moduleAccess.grantedAt));
+    }),
+
+    // [SUPERADMIN] Aprobar solicitud y otorgar acceso
+    approveRequest: protectedProcedure
+      .input(z.object({ requestId: z.number(), notes: z.string().optional() }))
+      .mutation(async ({ ctx, input }) => {
+        if (!ctx.isSuperAdmin) throw new TRPCError({ code: 'FORBIDDEN' });
+        const db = await import('./db').then(m => m.getDb ? m.getDb() : null);
+        if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
+        const { moduleAccess, moduleRequests } = await import('../drizzle/schema');
+        const { eq, and } = await import('drizzle-orm');
+        // Obtener la solicitud
+        const req = await db.select().from(moduleRequests).where(eq(moduleRequests.id, input.requestId)).limit(1);
+        if (!req[0]) throw new TRPCError({ code: 'NOT_FOUND' });
+        // Otorgar acceso (upsert)
+        const existing = await db.select().from(moduleAccess)
+          .where(and(eq(moduleAccess.userId, req[0].userId), eq(moduleAccess.module, req[0].module))).limit(1);
+        if (existing.length > 0) {
+          await db.update(moduleAccess).set({ isActive: true, grantedBy: ctx.user.id, grantedAt: new Date(), notes: input.notes || null, revokedAt: null })
+            .where(and(eq(moduleAccess.userId, req[0].userId), eq(moduleAccess.module, req[0].module)));
+        } else {
+          await db.insert(moduleAccess).values({ userId: req[0].userId, module: req[0].module, isActive: true, grantedBy: ctx.user.id, notes: input.notes || null });
+        }
+        // Actualizar solicitud
+        await db.update(moduleRequests).set({ status: 'approved', reviewedBy: ctx.user.id, reviewedAt: new Date(), reviewNotes: input.notes || null })
+          .where(eq(moduleRequests.id, input.requestId));
+        return { success: true };
+      }),
+
+    // [SUPERADMIN] Rechazar solicitud
+    rejectRequest: protectedProcedure
+      .input(z.object({ requestId: z.number(), notes: z.string().optional() }))
+      .mutation(async ({ ctx, input }) => {
+        if (!ctx.isSuperAdmin) throw new TRPCError({ code: 'FORBIDDEN' });
+        const db = await import('./db').then(m => m.getDb ? m.getDb() : null);
+        if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
+        const { moduleRequests } = await import('../drizzle/schema');
+        const { eq } = await import('drizzle-orm');
+        await db.update(moduleRequests).set({ status: 'rejected', reviewedBy: ctx.user.id, reviewedAt: new Date(), reviewNotes: input.notes || null })
+          .where(eq(moduleRequests.id, input.requestId));
+        return { success: true };
+      }),
+
+    // [SUPERADMIN] Otorgar acceso directamente (sin solicitud)
+    grantAccess: protectedProcedure
+      .input(z.object({ userId: z.number(), module: z.string(), notes: z.string().optional() }))
+      .mutation(async ({ ctx, input }) => {
+        if (!ctx.isSuperAdmin) throw new TRPCError({ code: 'FORBIDDEN' });
+        const db = await import('./db').then(m => m.getDb ? m.getDb() : null);
+        if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
+        const { moduleAccess } = await import('../drizzle/schema');
+        const { eq, and } = await import('drizzle-orm');
+        const existing = await db.select().from(moduleAccess)
+          .where(and(eq(moduleAccess.userId, input.userId), eq(moduleAccess.module, input.module))).limit(1);
+        if (existing.length > 0) {
+          await db.update(moduleAccess).set({ isActive: true, grantedBy: ctx.user.id, grantedAt: new Date(), notes: input.notes || null, revokedAt: null })
+            .where(and(eq(moduleAccess.userId, input.userId), eq(moduleAccess.module, input.module)));
+        } else {
+          await db.insert(moduleAccess).values({ userId: input.userId, module: input.module, isActive: true, grantedBy: ctx.user.id, notes: input.notes || null });
+        }
+        return { success: true };
+      }),
+
+    // [SUPERADMIN] Revocar acceso
+    revokeAccess: protectedProcedure
+      .input(z.object({ userId: z.number(), module: z.string() }))
+      .mutation(async ({ ctx, input }) => {
+        if (!ctx.isSuperAdmin) throw new TRPCError({ code: 'FORBIDDEN' });
+        const db = await import('./db').then(m => m.getDb ? m.getDb() : null);
+        if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
+        const { moduleAccess } = await import('../drizzle/schema');
+        const { eq, and } = await import('drizzle-orm');
+        await db.update(moduleAccess).set({ isActive: false, revokedAt: new Date() })
+          .where(and(eq(moduleAccess.userId, input.userId), eq(moduleAccess.module, input.module)));
+        return { success: true };
+      }),
+
+    // [ADMIN] Gestionar acceso de sus colaboradores al módulo
+    grantToCollaborator: protectedProcedure
+      .input(z.object({ collaboratorUserId: z.number(), module: z.string() }))
+      .mutation(async ({ ctx, input }) => {
+        if (ctx.user.role !== 'admin' && !ctx.isSuperAdmin) throw new TRPCError({ code: 'FORBIDDEN' });
+        const db = await import('./db').then(m => m.getDb ? m.getDb() : null);
+        if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
+        const { moduleAccess } = await import('../drizzle/schema');
+        const { eq, and } = await import('drizzle-orm');
+        // Verificar que el admin mismo tiene acceso al módulo
+        if (!ctx.isSuperAdmin) {
+          const adminAccess = await db.select().from(moduleAccess)
+            .where(and(eq(moduleAccess.userId, ctx.user.id), eq(moduleAccess.module, input.module), eq(moduleAccess.isActive, true))).limit(1);
+          if (adminAccess.length === 0) throw new TRPCError({ code: 'FORBIDDEN', message: 'No tienes acceso a este módulo' });
+        }
+        const existing = await db.select().from(moduleAccess)
+          .where(and(eq(moduleAccess.userId, input.collaboratorUserId), eq(moduleAccess.module, input.module))).limit(1);
+        if (existing.length > 0) {
+          await db.update(moduleAccess).set({ isActive: true, grantedBy: ctx.user.id, grantedAt: new Date() })
+            .where(and(eq(moduleAccess.userId, input.collaboratorUserId), eq(moduleAccess.module, input.module)));
+        } else {
+          await db.insert(moduleAccess).values({ userId: input.collaboratorUserId, module: input.module, isActive: true, grantedBy: ctx.user.id });
+        }
+        return { success: true };
+      }),
+
+    revokeFromCollaborator: protectedProcedure
+      .input(z.object({ collaboratorUserId: z.number(), module: z.string() }))
+      .mutation(async ({ ctx, input }) => {
+        if (ctx.user.role !== 'admin' && !ctx.isSuperAdmin) throw new TRPCError({ code: 'FORBIDDEN' });
+        const db = await import('./db').then(m => m.getDb ? m.getDb() : null);
+        if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
+        const { moduleAccess } = await import('../drizzle/schema');
+        const { eq, and } = await import('drizzle-orm');
+        await db.update(moduleAccess).set({ isActive: false, revokedAt: new Date() })
+          .where(and(eq(moduleAccess.userId, input.collaboratorUserId), eq(moduleAccess.module, input.module)));
+        return { success: true };
+      }),
+  }),
 });
 export type AppRouter = typeof appRouter;
 

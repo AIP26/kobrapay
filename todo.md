@@ -589,3 +589,14 @@
 - [x] Página Farmacia.tsx: lista de clientes con buscador, perfil de cliente con historial de prescripciones
 - [x] Subida de archivos: foto, PDF, imagen escaneada de prescripción
 - [x] Agregar al sidebar en grupo "Empresa"
+
+## Control de Acceso por Módulo (Prescripciones / Farmacia)
+- [ ] Tabla module_access: (userId, module, grantedBy, grantedAt, isActive, notes)
+- [ ] Tabla module_requests: (userId, module, requestedAt, status, reviewedBy, reviewedAt, notes)
+- [ ] Backend: superadmin puede listar solicitudes, aprobar/revocar acceso por módulo
+- [ ] Backend: admin puede solicitar acceso a módulo y gestionar acceso de sus colaboradores
+- [ ] Frontend: Prescriptions y Farmacia muestran pantalla de "acceso restringido" si no tienen permiso
+- [ ] Frontend: botón "Solicitar acceso" que notifica al superadmin
+- [ ] Panel superadmin: lista de solicitudes pendientes con botón aprobar/rechazar
+- [ ] Sidebar: ocultar Prescripciones y Farmacia si no tienen acceso
+- [ ] Notificación al superadmin cuando llega solicitud de acceso farmacéutico

@@ -45,6 +45,8 @@ import Training from "./pages/Training";
 import Proveedores from "./pages/Proveedores";
 import Prescriptions from "./pages/Prescriptions";
 import Farmacia from "./pages/Farmacia";
+import ModuleAccessAdmin from "./pages/ModuleAccessAdmin";
+import ModuleAccessManager from "./pages/ModuleAccessManager";
 
 function Router() {
   return (
@@ -84,6 +86,8 @@ function Router() {
       <Route path="/dashboard/proveedores" component={Proveedores} />
       <Route path="/dashboard/prescriptions" component={Prescriptions} />
       <Route path="/dashboard/farmacia" component={Farmacia} />
+      <Route path="/dashboard/module-access" component={ModuleAccessAdmin} />
+      <Route path="/dashboard/module-manager" component={ModuleAccessManager} />
       <Route path="/sign-contract/:token" component={SignContract} />
       <Route path="/complete-profile" component={CompleteProfile} />
       <Route path="/dashboard/profile" component={MyProfile} />

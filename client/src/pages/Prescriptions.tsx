@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
+import { ModuleGuard } from "@/components/ModuleGuard";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -754,7 +755,9 @@ function PrescriptionsInner() {
 export default function Prescriptions() {
   return (
     <DashboardLayout>
-      <PrescriptionsInner />
+      <ModuleGuard module="prescriptions">
+        <PrescriptionsInner />
+      </ModuleGuard>
     </DashboardLayout>
   );
 }

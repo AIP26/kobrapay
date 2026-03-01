@@ -1,5 +1,6 @@
 import { useState } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
+import { ModuleGuard } from "@/components/ModuleGuard";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -640,7 +641,9 @@ function FarmaciaInner() {
 export default function Farmacia() {
   return (
     <DashboardLayout>
-      <FarmaciaInner />
+      <ModuleGuard module="pharmacy">
+        <FarmaciaInner />
+      </ModuleGuard>
     </DashboardLayout>
   );
 }
