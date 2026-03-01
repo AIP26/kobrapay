@@ -14,8 +14,9 @@ import { toast } from "sonner";
 import {
   FileText, Plus, Printer, Send, Trash2, Pen, RotateCcw,
   Upload, User, Stethoscope, Pill, Settings, X, Eye, ChevronLeft,
-  Phone, Mail, Building2, BadgeCheck, Save, Pencil
+  Phone, Mail, Building2, BadgeCheck, Save, Pencil, Download
 } from "lucide-react";
+import { generatePrescriptionPdf } from "@/lib/generatePrescriptionPdf";
 
 // ─── Tipos ────────────────────────────────────────────────────────────────────
 interface Medication {
@@ -492,6 +493,34 @@ function PrescriptionView({ prescription, profile, onClose }: {
 
   const handlePrint = () => window.print();
 
+  const handleDownloadPdf = async () => {
+    try {
+      const meds: Medication[] = (() => {
+        try { return JSON.parse(prescription.medications); } catch { return []; }
+      })();
+      await generatePrescriptionPdf({
+        doctorName: profile?.fullName || "Doctor",
+        specialty: profile?.specialty,
+        licenseNumber: profile?.licenseNumber,
+        phone: profile?.phone,
+        email: profile?.email,
+        address: profile?.address,
+        headerImageUrl: profile?.membreteUrl,
+        stampUrl: profile?.stampUrl,
+        signatureDataUrl: prescription.signatureDataUrl || null,
+        patientName: prescription.patientName,
+        patientAge: prescription.patientAge,
+        prescriptionDate: prescription.prescriptionDate,
+        diagnosis: prescription.diagnosis,
+        medications: meds.map(m => ({ name: m.name, dose: m.dose, instructions: [m.frequency, m.duration, m.instructions].filter(Boolean).join(" · ") })),
+        notes: prescription.instructions,
+        folio: prescription.id ? `RX-${String(prescription.id).padStart(5, "0")}` : undefined,
+      });
+    } catch (e) {
+      toast.error("Error al generar PDF");
+    }
+  };
+
   const handleWhatsApp = () => {
     const text = encodeURIComponent(
       `*RECETA MÉDICA*\n\n` +
@@ -528,6 +557,9 @@ function PrescriptionView({ prescription, profile, onClose }: {
         </Button>
         <Button size="sm" onClick={handlePrint}>
           <Printer className="w-4 h-4 mr-1" /> Imprimir
+        </Button>
+        <Button size="sm" variant="outline" onClick={handleDownloadPdf} className="bg-blue-50 border-blue-300 text-blue-700 hover:bg-blue-100">
+          <Download className="w-4 h-4 mr-1" /> PDF
         </Button>
         <Button size="sm" variant="outline" onClick={handleWhatsApp} className="bg-green-50 border-green-300 text-green-700 hover:bg-green-100">
           <Send className="w-4 h-4 mr-1" /> WhatsApp

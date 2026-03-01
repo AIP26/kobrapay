@@ -100,6 +100,7 @@ export default function Dashboard() {
               iconColor: "text-green-600",
               iconBg: "bg-green-100",
               sub: "Monto bruto total",
+              href: "/dashboard/sales",
             },
             {
               label: "Comisiones ganadas",
@@ -108,6 +109,7 @@ export default function Dashboard() {
               iconColor: "text-cyan-600",
               iconBg: "bg-cyan-100",
               sub: "Tu ganancia",
+              href: "/dashboard/commissions",
             },
             {
               label: "Ventas exitosas",
@@ -116,6 +118,7 @@ export default function Dashboard() {
               iconColor: "text-emerald-600",
               iconBg: "bg-emerald-100",
               sub: "Pagos completados",
+              href: "/dashboard/transactions",
             },
             {
               label: "Pagos pendientes",
@@ -124,20 +127,23 @@ export default function Dashboard() {
               iconColor: "text-amber-600",
               iconBg: "bg-amber-100",
               sub: "Esperando pago",
+              href: "/dashboard/links",
             },
-          ].map(({ label, value, icon: Icon, iconColor, iconBg, sub }) => (
-            <Card key={label} className="border-gray-200 shadow-sm">
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between mb-2">
-                  <p className="text-xs text-gray-500 font-medium">{label}</p>
-                  <div className={`w-8 h-8 ${iconBg} rounded-lg flex items-center justify-center`}>
-                    <Icon className={`w-4 h-4 ${iconColor}`} />
+          ].map(({ label, value, icon: Icon, iconColor, iconBg, sub, href }) => (
+            <Link key={label} href={href}>
+              <Card className="border-gray-200 shadow-sm cursor-pointer hover:shadow-md hover:border-gray-300 transition-all">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-xs text-gray-500 font-medium">{label}</p>
+                    <div className={`w-8 h-8 ${iconBg} rounded-lg flex items-center justify-center`}>
+                      <Icon className={`w-4 h-4 ${iconColor}`} />
+                    </div>
                   </div>
-                </div>
-                <p className="text-xl font-bold text-gray-800">{value}</p>
-                <p className="text-xs text-gray-400 mt-0.5">{sub}</p>
-              </CardContent>
-            </Card>
+                  <p className="text-xl font-bold text-gray-800">{value}</p>
+                  <p className="text-xs text-gray-400 mt-0.5">{sub}</p>
+                </CardContent>
+              </Card>
+            </Link>
           ))}
         </div>
 
@@ -151,6 +157,7 @@ export default function Dashboard() {
               iconColor: "text-green-600",
               iconBg: "bg-green-100",
               sub: `${stats?.todayTransactions ?? 0} transacciones hoy`,
+              href: "/dashboard/transactions",
             },
             {
               label: "Este mes",
@@ -159,6 +166,7 @@ export default function Dashboard() {
               iconColor: "text-blue-600",
               iconBg: "bg-blue-100",
               sub: `${stats?.monthTransactions ?? 0} transacciones`,
+              href: "/dashboard/report",
             },
             {
               label: "Clientes",
@@ -167,6 +175,7 @@ export default function Dashboard() {
               iconColor: "text-purple-600",
               iconBg: "bg-purple-100",
               sub: "Base de clientes",
+              href: "/dashboard/clients",
             },
             {
               label: "Monto neto",
@@ -175,20 +184,23 @@ export default function Dashboard() {
               iconColor: "text-emerald-600",
               iconBg: "bg-emerald-100",
               sub: "Después de comisiones",
+              href: "/dashboard/sales",
             },
-          ].map(({ label, value, icon: Icon, iconColor, iconBg, sub }) => (
-            <Card key={label} className="border-gray-200 shadow-sm">
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between mb-2">
-                  <p className="text-xs text-gray-500 font-medium">{label}</p>
-                  <div className={`w-8 h-8 ${iconBg} rounded-lg flex items-center justify-center`}>
-                    <Icon className={`w-4 h-4 ${iconColor}`} />
+          ].map(({ label, value, icon: Icon, iconColor, iconBg, sub, href }) => (
+            <Link key={label} href={href}>
+              <Card className="border-gray-200 shadow-sm cursor-pointer hover:shadow-md hover:border-gray-300 transition-all">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-xs text-gray-500 font-medium">{label}</p>
+                    <div className={`w-8 h-8 ${iconBg} rounded-lg flex items-center justify-center`}>
+                      <Icon className={`w-4 h-4 ${iconColor}`} />
+                    </div>
                   </div>
-                </div>
-                <p className="text-xl font-bold text-gray-800">{value}</p>
-                <p className="text-xs text-gray-400 mt-0.5">{sub}</p>
-              </CardContent>
-            </Card>
+                  <p className="text-xl font-bold text-gray-800">{value}</p>
+                  <p className="text-xs text-gray-400 mt-0.5">{sub}</p>
+                </CardContent>
+              </Card>
+            </Link>
           ))}
         </div>
 
@@ -203,6 +215,7 @@ export default function Dashboard() {
                 iconColor: "text-blue-600",
                 iconBg: "bg-blue-100",
                 sub: `${clientStats.totalClients} total`,
+                href: "/dashboard/clients",
               },
               {
                 label: "Transacciones totales",
@@ -211,6 +224,7 @@ export default function Dashboard() {
                 iconColor: "text-purple-600",
                 iconBg: "bg-purple-100",
                 sub: "De todos tus clientes",
+                href: "/dashboard/transactions",
               },
               {
                 label: "Comisión total plataforma",
@@ -219,6 +233,7 @@ export default function Dashboard() {
                 iconColor: "text-green-600",
                 iconBg: "bg-green-100",
                 sub: "Ganancia de la plataforma",
+                href: "/dashboard/commissions",
               },
               {
                 label: "Total de enlaces",
@@ -227,9 +242,11 @@ export default function Dashboard() {
                 iconColor: "text-indigo-600",
                 iconBg: "bg-indigo-100",
                 sub: "Creados en la plataforma",
+                href: "/dashboard/links",
               },
-            ].map(({ label, value, icon: Icon, iconColor, iconBg, sub }) => (
-              <Card key={label} className="border-blue-100 bg-blue-50/50 shadow-sm">
+            ].map(({ label, value, icon: Icon, iconColor, iconBg, sub, href }) => (
+              <Link key={label} href={href}>
+              <Card className="border-blue-100 bg-blue-50/50 shadow-sm cursor-pointer hover:shadow-md hover:border-blue-200 transition-all">
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between mb-2">
                     <p className="text-xs text-blue-600 font-medium">{label}</p>
@@ -241,6 +258,7 @@ export default function Dashboard() {
                   <p className="text-xs text-blue-400 mt-0.5">{sub}</p>
                 </CardContent>
               </Card>
+              </Link>
             ))}
           </div>
         )}

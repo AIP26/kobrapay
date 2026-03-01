@@ -23,6 +23,10 @@ import {
   Newspaper,
   Check,
   X,
+  Upload,
+  Image as ImageIcon,
+  FileText,
+  Wand2,
 } from "lucide-react";
 import {
   Dialog,
@@ -122,16 +126,21 @@ function MagazineFormModal({
   const [edition, setEdition] = useState(magazine?.edition || "");
   const [aiPrompt, setAiPrompt] = useState("");
   const [generating, setGenerating] = useState(false);
+  const [mode, setMode] = useState<'ai' | 'upload'>('ai');
+  const [coverFile, setCoverFile] = useState<File | null>(null);
+  const [coverPreview, setCoverPreview] = useState<string | null>(null);
+  const [attachedFiles, setAttachedFiles] = useState<File[]>([]);
+  const [uploading, setUploading] = useState(false);
 
   const createMutation = trpc.magazine.create.useMutation({
-    onSuccess: () => {
-      toast.success("Revista creada ✅");
-      utils.magazine.list.invalidate();
-      onSaved();
-    },
     onError: (e) => toast.error(e.message),
   });
-
+  const uploadCoverMutation = trpc.magazine.uploadCover.useMutation({
+    onError: (e) => toast.error("Error al subir portada: " + e.message),
+  });
+  const uploadFileMutation = trpc.magazine.uploadFile.useMutation({
+    onError: (e) => toast.error("Error al subir archivo: " + e.message),
+  });
   const generateMutation = trpc.magazine.generateContent.useMutation({
     onSuccess: () => {
       toast.success("Contenido generado con IA 🤖");
@@ -141,11 +150,34 @@ function MagazineFormModal({
     onError: (e) => toast.error("Error al generar: " + e.message),
   });
 
+  const readFileAsBase64 = (file: File): Promise<string> =>
+    new Promise((res, rej) => {
+      const reader = new FileReader();
+      reader.onload = () => res((reader.result as string).split(',')[1]);
+      reader.onerror = rej;
+      reader.readAsDataURL(file);
+    });
+
   const handleCreate = async () => {
     if (!title.trim()) { toast.error("El título es obligatorio"); return; }
     setGenerating(true);
     try {
-      await createMutation.mutateAsync({ title, subtitle, edition, aiPrompt: aiPrompt || undefined });
+      const mag = await createMutation.mutateAsync({ title, subtitle, edition, aiPrompt: mode === 'ai' ? (aiPrompt || undefined) : undefined });
+      if (mag && coverFile) {
+        const b64 = await readFileAsBase64(coverFile);
+        const ext = coverFile.name.split('.').pop() || 'jpg';
+        await uploadCoverMutation.mutateAsync({ id: mag.id, fileBase64: b64, mimeType: coverFile.type, ext });
+      }
+      if (mag && attachedFiles.length > 0) {
+        for (const f of attachedFiles) {
+          const b64 = await readFileAsBase64(f);
+          const ext = f.name.split('.').pop() || 'pdf';
+          await uploadFileMutation.mutateAsync({ id: mag.id, fileBase64: b64, mimeType: f.type, ext, fileName: f.name });
+        }
+      }
+      toast.success("Revista creada ✅");
+      utils.magazine.list.invalidate();
+      onSaved();
     } finally {
       setGenerating(false);
     }
@@ -161,11 +193,34 @@ function MagazineFormModal({
     }
   };
 
+  const handleUploadForExisting = async () => {
+    if (!magazine) return;
+    if (!coverFile && attachedFiles.length === 0) { toast.error("Selecciona al menos un archivo"); return; }
+    setUploading(true);
+    try {
+      if (coverFile) {
+        const b64 = await readFileAsBase64(coverFile);
+        const ext = coverFile.name.split('.').pop() || 'jpg';
+        await uploadCoverMutation.mutateAsync({ id: magazine.id, fileBase64: b64, mimeType: coverFile.type, ext });
+      }
+      for (const f of attachedFiles) {
+        const b64 = await readFileAsBase64(f);
+        const ext = f.name.split('.').pop() || 'pdf';
+        await uploadFileMutation.mutateAsync({ id: magazine.id, fileBase64: b64, mimeType: f.type, ext, fileName: f.name });
+      }
+      toast.success("Archivos subidos ✅");
+      utils.magazine.list.invalidate();
+      onSaved();
+    } finally {
+      setUploading(false);
+    }
+  };
+
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>{magazine ? "Generar contenido con IA" : "Nueva Revista"}</DialogTitle>
+          <DialogTitle>{magazine ? "Actualizar Revista" : "Nueva Revista"}</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4 py-2">
@@ -183,37 +238,143 @@ function MagazineFormModal({
                 <Label>Edición</Label>
                 <Input value={edition} onChange={e => setEdition(e.target.value)} placeholder="Ej: Marzo 2026 | Vol. 1" className="mt-1" />
               </div>
+              {/* Modo de creación */}
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setMode('ai')}
+                  className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg border text-sm font-medium transition-colors ${
+                    mode === 'ai' ? 'bg-orange-500 text-white border-orange-500' : 'bg-white text-gray-600 border-gray-200 hover:border-orange-300'
+                  }`}
+                >
+                  <Wand2 className="w-4 h-4" /> Crear con IA
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setMode('upload')}
+                  className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg border text-sm font-medium transition-colors ${
+                    mode === 'upload' ? 'bg-blue-500 text-white border-blue-500' : 'bg-white text-gray-600 border-gray-200 hover:border-blue-300'
+                  }`}
+                >
+                  <Upload className="w-4 h-4" /> Subir mi revista
+                </button>
+              </div>
             </>
           )}
 
-          <div className="bg-orange-50 rounded-xl p-4 border border-orange-200">
-            <div className="flex items-center gap-2 mb-2">
-              <Sparkles className="w-4 h-4 text-orange-500" />
-              <Label className="text-orange-800 font-semibold">Generar contenido con IA</Label>
+          {/* Imagen de portada */}
+          <div>
+            <Label className="flex items-center gap-1"><ImageIcon className="w-3.5 h-3.5" /> Imagen de portada (opcional)</Label>
+            <div
+              className="mt-1 border-2 border-dashed border-gray-200 rounded-lg p-3 text-center cursor-pointer hover:border-orange-300 transition-colors"
+              onClick={() => document.getElementById('cover-upload-hr')?.click()}
+            >
+              {coverPreview ? (
+                <img src={coverPreview} alt="Portada" className="h-24 mx-auto object-contain rounded" />
+              ) : (
+                <div className="flex flex-col items-center gap-1 py-2">
+                  <ImageIcon className="w-6 h-6 text-gray-300" />
+                  <span className="text-xs text-gray-400">Haz clic para subir imagen de portada</span>
+                </div>
+              )}
             </div>
-            <Textarea
-              value={aiPrompt}
-              onChange={e => setAiPrompt(e.target.value)}
-              placeholder="Describe el tema de esta edición... Ej: 'Logros del equipo en febrero, tips de productividad y bienvenida a nuevos colaboradores'"
-              rows={4}
-              className="mt-1 text-sm"
+            <input
+              id="cover-upload-hr"
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={e => {
+                const f = e.target.files?.[0];
+                if (!f) return;
+                setCoverFile(f);
+                const reader = new FileReader();
+                reader.onload = () => setCoverPreview(reader.result as string);
+                reader.readAsDataURL(f);
+              }}
             />
-            <p className="text-xs text-orange-600 mt-2">
-              La IA generará entre 3 y 5 secciones con contenido profesional y motivador para tus colaboradores.
-            </p>
           </div>
+
+          {/* Archivos adjuntos (PDF, imágenes, documentos) */}
+          <div>
+            <Label className="flex items-center gap-1"><FileText className="w-3.5 h-3.5" /> Archivos de la revista (PDF, imágenes, docs)</Label>
+            <div
+              className="mt-1 border-2 border-dashed border-gray-200 rounded-lg p-3 cursor-pointer hover:border-blue-300 transition-colors"
+              onClick={() => document.getElementById('files-upload-hr')?.click()}
+            >
+              {attachedFiles.length > 0 ? (
+                <div className="space-y-1">
+                  {attachedFiles.map((f, i) => (
+                    <div key={i} className="flex items-center justify-between text-xs bg-blue-50 rounded px-2 py-1">
+                      <span className="truncate text-blue-700">{f.name}</span>
+                      <button type="button" onClick={e => { e.stopPropagation(); setAttachedFiles(prev => prev.filter((_, j) => j !== i)); }} className="text-red-400 hover:text-red-600 ml-2">
+                        <X className="w-3 h-3" />
+                      </button>
+                    </div>
+                  ))}
+                  <p className="text-xs text-gray-400 text-center mt-1">Haz clic para agregar más archivos</p>
+                </div>
+              ) : (
+                <div className="flex flex-col items-center gap-1 py-2">
+                  <Upload className="w-6 h-6 text-gray-300" />
+                  <span className="text-xs text-gray-400">Haz clic para subir PDF, fotos, documentos</span>
+                </div>
+              )}
+            </div>
+            <input
+              id="files-upload-hr"
+              type="file"
+              accept="image/*,.pdf,.doc,.docx,.ppt,.pptx"
+              multiple
+              className="hidden"
+              onChange={e => {
+                const files = Array.from(e.target.files || []);
+                setAttachedFiles(prev => [...prev, ...files]);
+              }}
+            />
+          </div>
+
+          {/* Generación con IA */}
+          {(mode === 'ai' || magazine) && (
+            <div className="bg-orange-50 rounded-xl p-4 border border-orange-200">
+              <div className="flex items-center gap-2 mb-2">
+                <Sparkles className="w-4 h-4 text-orange-500" />
+                <Label className="text-orange-800 font-semibold">Generar contenido con IA</Label>
+              </div>
+              <Textarea
+                value={aiPrompt}
+                onChange={e => setAiPrompt(e.target.value)}
+                placeholder="Describe el tema de esta edición... Ej: 'Logros del equipo en febrero, tips de productividad y bienvenida a nuevos colaboradores'"
+                rows={3}
+                className="mt-1 text-sm"
+              />
+              <p className="text-xs text-orange-600 mt-2">
+                La IA generará entre 3 y 5 secciones con contenido profesional y motivador.
+              </p>
+            </div>
+          )}
         </div>
 
         <DialogFooter className="gap-2">
           <Button variant="outline" onClick={onClose}>Cancelar</Button>
           {magazine ? (
-            <Button
-              onClick={handleGenerateForExisting}
-              disabled={generating || !aiPrompt.trim()}
-              className="bg-orange-500 hover:bg-orange-600 text-white"
-            >
-              {generating ? <><RefreshCw className="w-4 h-4 mr-2 animate-spin" /> Generando...</> : <><Sparkles className="w-4 h-4 mr-2" /> Generar con IA</>}
-            </Button>
+            <div className="flex gap-2">
+              {(coverFile || attachedFiles.length > 0) && (
+                <Button
+                  onClick={handleUploadForExisting}
+                  disabled={uploading}
+                  className="bg-blue-500 hover:bg-blue-600 text-white"
+                >
+                  {uploading ? <><RefreshCw className="w-4 h-4 mr-2 animate-spin" /> Subiendo...</> : <><Upload className="w-4 h-4 mr-2" /> Subir archivos</>}
+                </Button>
+              )}
+              <Button
+                onClick={handleGenerateForExisting}
+                disabled={generating || !aiPrompt.trim()}
+                className="bg-orange-500 hover:bg-orange-600 text-white"
+              >
+                {generating ? <><RefreshCw className="w-4 h-4 mr-2 animate-spin" /> Generando...</> : <><Sparkles className="w-4 h-4 mr-2" /> Generar con IA</>}
+              </Button>
+            </div>
           ) : (
             <Button
               onClick={handleCreate}

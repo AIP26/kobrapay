@@ -360,6 +360,7 @@ function PatientDetailPanel({
 
   const { data: appointments = [] } = trpc.medical.appointments.listByPatient.useQuery({ patientId: patient.id });
   const { data: records = [] } = trpc.medical.records.listByPatient.useQuery({ patientId: patient.id });
+  const { data: patientRx = [] } = trpc.prescriptions.list.useQuery({ patientId: patient.id });
 
   const createAppt = trpc.medical.appointments.create.useMutation({
     onSuccess: () => {
@@ -471,6 +472,7 @@ function PatientDetailPanel({
               <TabsTrigger value="info" className="data-[state=active]:bg-[#FF6B00] data-[state=active]:text-white text-gray-300">Información</TabsTrigger>
               <TabsTrigger value="appointments" className="data-[state=active]:bg-[#FF6B00] data-[state=active]:text-white text-gray-300">Citas ({appointments.length})</TabsTrigger>
               <TabsTrigger value="records" className="data-[state=active]:bg-[#FF6B00] data-[state=active]:text-white text-gray-300">Expediente ({records.length})</TabsTrigger>
+              <TabsTrigger value="prescriptions" className="data-[state=active]:bg-[#FF6B00] data-[state=active]:text-white text-gray-300">💊 Recetas ({patientRx.length})</TabsTrigger>
               <TabsTrigger value="files" className="data-[state=active]:bg-[#FF6B00] data-[state=active]:text-white text-gray-300">Archivos ({allAttachments.length})</TabsTrigger>
             </TabsList>
           </Tabs>
@@ -639,6 +641,55 @@ function PatientDetailPanel({
                         ) : null;
                       } catch { return null; }
                     })()}
+                  </div>
+                ))
+              )}
+            </div>
+          )}
+
+          {/* TAB: Recetas */}
+          {activeTab === "prescriptions" && (
+            <div className="space-y-3">
+              {(patientRx as any[]).length === 0 ? (
+                <div className="text-center py-12 text-gray-400">
+                  <div className="text-4xl mb-3">💊</div>
+                  <div className="text-sm">Sin recetas registradas para este paciente</div>
+                </div>
+              ) : (
+                (patientRx as any[]).map((rx: any) => (
+                  <div key={rx.id} className="bg-gray-800 border border-gray-700 rounded-lg p-4">
+                    <div className="flex items-start justify-between mb-2">
+                      <div>
+                        <div className="font-semibold text-white text-sm">
+                          {new Date(rx.prescriptionDate).toLocaleDateString("es-MX", { year: "numeric", month: "long", day: "numeric" })}
+                        </div>
+                        {rx.diagnosis && (
+                          <div className="text-xs text-[#FF6B00] mt-1">Dx: {rx.diagnosis}</div>
+                        )}
+                      </div>
+                      <span className="text-xs px-2 py-0.5 rounded-full bg-green-900/40 text-green-400 border border-green-700/40">
+                        Receta #{rx.id}
+                      </span>
+                    </div>
+                    {rx.medications && (() => {
+                      try {
+                        const meds = JSON.parse(rx.medications) as Array<{name:string;dose:string;instructions:string}>;
+                        return (
+                          <div className="mt-2 space-y-1">
+                            {meds.map((m: any, i: number) => (
+                              <div key={i} className="text-xs bg-gray-700/50 rounded px-2 py-1">
+                                <span className="text-white font-medium">{m.name}</span>
+                                {m.dose && <span className="text-gray-400 ml-2">{m.dose}</span>}
+                                {m.instructions && <span className="text-gray-500 ml-2">— {m.instructions}</span>}
+                              </div>
+                            ))}
+                          </div>
+                        );
+                      } catch { return <div className="text-xs text-gray-400 mt-1">{rx.medications}</div>; }
+                    })()}
+                    {rx.instructions && (
+                      <div className="text-xs text-gray-400 mt-2 italic">{rx.instructions}</div>
+                    )}
                   </div>
                 ))
               )}

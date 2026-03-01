@@ -632,3 +632,25 @@
 - [ ] Notificación al aprobar acceso (al negocio)
 - [ ] Historial de recetas por paciente en Agenda Médica
 - [ ] Exportar receta como PDF descargable
+
+## Completado en esta sesión (Mar 1, 2026)
+- [x] Magazine: subida de imagen de portada y archivos PDF/imágenes
+- [x] Magazine: modo "Crear con IA" vs "Subir mi revista"
+- [x] Panel de asistente (AssistantPanel.tsx) creado
+- [x] Tarjetas del panel clickeables con navegación
+- [x] Historial de recetas por paciente en MedicalAgenda
+- [x] Exportar receta como PDF (generatePrescriptionPdf.ts)
+- [x] Botón de descarga PDF en Prescriptions.tsx
+- [x] Agenda de Proveedores con buscador en tiempo real
+- [x] Prescripciones médicas con firma digital canvas
+- [x] Farmacia con clientes y subida de prescripciones escaneadas
+- [x] Sector Salud como grupo colapsable en sidebar
+- [x] ModuleGuard con superadmin sin restricciones
+- [x] Panel de Control de Módulos corregido para superadmin
+- [x] isSuperAdmin reconoce role=admin en BD
+- [x] EditPrescriptionModal para editar recetas existentes
+- [x] Sello del doctor en perfil de prescripciones
+- [x] 15 opciones de negocio en formulario de solicitud (incluyendo dentista)
+- [x] Panel de asistente con flujo de dos niveles
+- [x] Training: botón refresh y subida de imagen de portada
+- [x] uploadCourseCover en backend

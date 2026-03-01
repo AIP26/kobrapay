@@ -128,6 +128,7 @@ const NAV_GROUPS = [
       { href: "/dashboard/farmacia", icon: Pill, label: "Farmacia" },
       { href: "/dashboard/module-access", icon: ShieldCheck, label: "Control de Módulos" },
       { href: "/dashboard/module-manager", icon: ShieldCheck, label: "Accesos Equipo" },
+      { href: "/dashboard/assistant-panel", icon: UserCog, label: "Panel Asistente" },
     ],
   },
   {

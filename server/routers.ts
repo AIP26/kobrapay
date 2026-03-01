@@ -3465,6 +3465,52 @@ export const appRouter = router({
         await db.delete(magazines).where(and(eq(magazines.id, input.id), eq(magazines.ownerId, ctx.user.id)));
         return { success: true };
       }),
+    uploadCover: protectedProcedure
+      .input(z.object({
+        id: z.number(),
+        fileBase64: z.string(),
+        mimeType: z.string().default('image/jpeg'),
+        ext: z.string().default('jpg'),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const db = await import('./db').then(m => m.getDb ? m.getDb() : null);
+        if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
+        const { magazines } = await import('../drizzle/schema');
+        const { eq, and } = await import('drizzle-orm');
+        const existing = await db.select().from(magazines).where(and(eq(magazines.id, input.id), eq(magazines.ownerId, ctx.user.id))).limit(1);
+        if (!existing[0]) throw new TRPCError({ code: 'NOT_FOUND' });
+        const base64Data = input.fileBase64.replace(/^data:[^;]+;base64,/, '');
+        const buffer = Buffer.from(base64Data, 'base64');
+        const key = `magazines/${ctx.user.id}/cover-${input.id}-${Date.now()}.${input.ext}`;
+        const { url } = await storagePut(key, buffer, input.mimeType);
+        await db.update(magazines).set({ coverImageUrl: url, coverImageKey: key, updatedAt: new Date() }).where(and(eq(magazines.id, input.id), eq(magazines.ownerId, ctx.user.id)));
+        return { url };
+      }),
+    uploadFile: protectedProcedure
+      .input(z.object({
+        id: z.number(),
+        fileBase64: z.string(),
+        mimeType: z.string(),
+        ext: z.string().default('pdf'),
+        fileName: z.string().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const db = await import('./db').then(m => m.getDb ? m.getDb() : null);
+        if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
+        const { magazines } = await import('../drizzle/schema');
+        const { eq, and } = await import('drizzle-orm');
+        const existing = await db.select().from(magazines).where(and(eq(magazines.id, input.id), eq(magazines.ownerId, ctx.user.id))).limit(1);
+        if (!existing[0]) throw new TRPCError({ code: 'NOT_FOUND' });
+        const base64Data = input.fileBase64.replace(/^data:[^;]+;base64,/, '');
+        const buffer = Buffer.from(base64Data, 'base64');
+        const key = `magazines/${ctx.user.id}/file-${input.id}-${Date.now()}.${input.ext}`;
+        const { url } = await storagePut(key, buffer, input.mimeType);
+        let sections: any[] = [];
+        try { if (existing[0].content) sections = JSON.parse(existing[0].content); } catch {}
+        sections.push({ type: 'file', title: input.fileName || 'Archivo adjunto', fileUrl: url, mimeType: input.mimeType });
+        await db.update(magazines).set({ content: JSON.stringify(sections), updatedAt: new Date() }).where(and(eq(magazines.id, input.id), eq(magazines.ownerId, ctx.user.id)));
+        return { url };
+      }),
     generateContent: protectedProcedure
       .input(z.object({ id: z.number(), prompt: z.string().min(1) }))
       .mutation(async ({ ctx, input }) => {
