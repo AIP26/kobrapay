@@ -96,6 +96,8 @@ function PaymentForm({ token }: { token: string }) {
   const [lang, setLang] = useState<"es" | "en">("es");
   const [paymentError, setPaymentError] = useState<{ title: string; description: string; action: string } | null>(null);
   const [selectedMsi, setSelectedMsi] = useState<number | null>(null);
+  const [tipAmount, setTipAmount] = useState<number>(0);
+  const [tipCustom, setTipCustom] = useState("");
   const [paymentRequest, setPaymentRequest] = useState<PaymentRequest | null>(null);
   const [walletAvailable, setWalletAvailable] = useState(false);
   const [walletChecked, setWalletChecked] = useState(false);
@@ -918,6 +920,49 @@ function PaymentForm({ token }: { token: string }) {
 
                   {!clientSecret ? (
                     <div>
+                      {/* Propina */}
+                      {(() => {
+                        const rawTip = (linkData as Record<string, unknown>).tipEnabled;
+                        const rawSugg = (linkData as Record<string, unknown>).tipSuggestions;
+                        if (!rawTip) return null;
+                        const baseAmt = parseFloat(String(linkData.amount));
+                        const suggestions: number[] = rawSugg ? JSON.parse(String(rawSugg)) : [10, 15, 20];
+                        const effectiveTip = tipCustom ? (parseFloat(tipCustom) || 0) : tipAmount;
+                        return (
+                          <div className="mb-4 bg-amber-50 border border-amber-200 rounded-xl p-4">
+                            <p className="text-sm font-semibold text-amber-800 mb-1">💰 ¿Deseas agregar una propina?</p>
+                            <p className="text-xs text-amber-600 mb-3">Opcional. Se suma al total del pago.</p>
+                            <div className="flex flex-wrap gap-2 mb-3">
+                              <button type="button" onClick={() => { setTipAmount(0); setTipCustom(""); }}
+                                className={`px-3 py-1.5 rounded-lg text-sm font-medium border transition-all ${
+                                  tipAmount === 0 && !tipCustom ? "bg-amber-500 text-white border-amber-500" : "bg-white text-gray-600 border-gray-200 hover:border-amber-300"
+                                }`}>Sin propina</button>
+                              {suggestions.map(pct => {
+                                const tipVal = Math.round(baseAmt * pct / 100 * 100) / 100;
+                                return (
+                                  <button key={pct} type="button" onClick={() => { setTipAmount(tipVal); setTipCustom(""); }}
+                                    className={`px-3 py-1.5 rounded-lg text-sm font-medium border transition-all ${
+                                      tipAmount === tipVal && !tipCustom ? "bg-amber-500 text-white border-amber-500" : "bg-white text-gray-600 border-gray-200 hover:border-amber-300"
+                                    }`}>
+                                    {pct}% (+{formatMXN(tipVal)})
+                                  </button>
+                                );
+                              })}
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs text-gray-500">Otro monto:</span>
+                              <input type="number" min="0" step="1" placeholder="$0.00" value={tipCustom}
+                                onChange={e => { setTipCustom(e.target.value); setTipAmount(0); }}
+                                className="border border-gray-200 rounded-lg px-3 py-1.5 text-sm w-28 focus:outline-none focus:border-amber-400" />
+                            </div>
+                            {effectiveTip > 0 && (
+                              <p className="text-xs text-amber-700 mt-2 font-medium">
+                                Total con propina: {formatMXN(baseAmt + effectiveTip)}
+                              </p>
+                            )}
+                          </div>
+                        );
+                      })()}
                       {/* MSI Selector */}
                       {(() => {
                         const rawMsi = (linkData as Record<string, unknown>).msiOptions;

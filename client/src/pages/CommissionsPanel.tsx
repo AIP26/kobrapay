@@ -12,8 +12,11 @@ import {
   Building2,
   Calendar,
   Activity,
+  Download,
+  FileText,
 } from "lucide-react";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
+import { Button } from "@/components/ui/button";
 import {
   BarChart,
   Bar,
@@ -97,6 +100,38 @@ export default function CommissionsPanel() {
 
   // Top 5 clientes por comisión
   const top5 = [...clients].sort((a, b) => b.totalCommission - a.totalCommission).slice(0, 5);
+  const [generatingPdf, setGeneratingPdf] = useState(false);
+
+  const generateCommissionReport = async () => {
+    setGeneratingPdf(true);
+    try {
+      const now = new Date();
+      const dateStr = now.toLocaleDateString("es-MX", { dateStyle: "full" });
+      const rows = clients
+        .slice().sort((a, b) => b.totalCommission - a.totalCommission)
+        .map((c, i) => `<tr style="background:${i % 2 === 0 ? "#fff" : "#f9fafb"}"><td style="padding:8px 12px;font-size:13px;border-bottom:1px solid #e5e7eb;">${i + 1}</td><td style="padding:8px 12px;font-size:13px;border-bottom:1px solid #e5e7eb;font-weight:600;">${c.businessName || c.name}</td><td style="padding:8px 12px;font-size:13px;border-bottom:1px solid #e5e7eb;">${c.commissionRate}%</td><td style="padding:8px 12px;font-size:13px;border-bottom:1px solid #e5e7eb;">${c.totalTransactions}</td><td style="padding:8px 12px;font-size:13px;border-bottom:1px solid #e5e7eb;">${fmt(c.totalVolume)}</td><td style="padding:8px 12px;font-size:13px;border-bottom:1px solid #e5e7eb;font-weight:700;color:#059669;">${fmt(c.totalCommission)}</td><td style="padding:8px 12px;font-size:13px;border-bottom:1px solid #e5e7eb;"><span style="background:${c.status === "active" ? "#d1fae5" : "#fee2e2"};color:${c.status === "active" ? "#065f46" : "#991b1b"};padding:2px 8px;border-radius:9999px;font-size:11px;font-weight:600;">${c.status === "active" ? "Activo" : "Suspendido"}</span></td></tr>`)
+        .join("");
+      const monthlyRows = (data?.monthly ?? []).map(m => {
+        const [year, mo] = m.month.split("-");
+        const MONTHS = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
+        return `<tr><td style="padding:6px 12px;font-size:12px;border-bottom:1px solid #e5e7eb;">${MONTHS[parseInt(mo)-1]} ${year}</td><td style="padding:6px 12px;font-size:12px;border-bottom:1px solid #e5e7eb;font-weight:700;color:#059669;">${fmt(m.amount)}</td></tr>`;
+      }).join("");
+      const html = `<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>Reporte de Comisiones KobraPay</title><style>@media print{body{margin:0;}}body{font-family:Arial,sans-serif;padding:32px;color:#111;max-width:900px;margin:0 auto;}</style></head><body><div style="text-align:center;margin-bottom:28px;border-bottom:2px solid #00c853;padding-bottom:16px;"><h1 style="color:#00c853;font-size:26px;margin:0;font-weight:800;">KobraPay</h1><h2 style="font-size:18px;margin:6px 0 4px;color:#111;">Reporte de Comisiones</h2><p style="color:#6b7280;font-size:13px;margin:0;">Generado el ${dateStr}</p></div><div style="display:flex;gap:20px;margin-bottom:24px;"><div style="flex:1;background:#f0fdf4;border-radius:8px;padding:14px 18px;"><p style="font-size:11px;color:#6b7280;margin:0 0 4px;">Total Comisiones Ganadas</p><p style="font-size:22px;font-weight:800;color:#059669;margin:0;">${fmt(totalEarned)}</p></div><div style="flex:1;background:#f9fafb;border-radius:8px;padding:14px 18px;"><p style="font-size:11px;color:#6b7280;margin:0 0 4px;">Total Transacciones</p><p style="font-size:22px;font-weight:800;margin:0;">${totalTx}</p></div><div style="flex:1;background:#f9fafb;border-radius:8px;padding:14px 18px;"><p style="font-size:11px;color:#6b7280;margin:0 0 4px;">Clientes Activos</p><p style="font-size:22px;font-weight:800;margin:0;">${activeClients}</p></div><div style="flex:1;background:#f9fafb;border-radius:8px;padding:14px 18px;"><p style="font-size:11px;color:#6b7280;margin:0 0 4px;">Comisión Promedio</p><p style="font-size:22px;font-weight:800;margin:0;">${avgCommission.toFixed(1)}%</p></div></div><h3 style="font-size:15px;font-weight:700;margin:0 0 10px;color:#111;">Desglose por Negocio</h3><table width="100%" style="border-collapse:collapse;font-family:Arial,sans-serif;margin-bottom:28px;"><thead><tr style="background:#f0fdf4;"><th style="padding:8px 12px;font-size:11px;text-align:left;color:#6b7280;">#</th><th style="padding:8px 12px;font-size:11px;text-align:left;color:#6b7280;">Negocio</th><th style="padding:8px 12px;font-size:11px;text-align:left;color:#6b7280;">Comisión %</th><th style="padding:8px 12px;font-size:11px;text-align:left;color:#6b7280;">Transacciones</th><th style="padding:8px 12px;font-size:11px;text-align:left;color:#6b7280;">Volumen</th><th style="padding:8px 12px;font-size:11px;text-align:left;color:#6b7280;">Tu Comisión</th><th style="padding:8px 12px;font-size:11px;text-align:left;color:#6b7280;">Estatus</th></tr></thead><tbody>${rows || '<tr><td colspan="7" style="padding:12px;text-align:center;color:#9ca3af;">Sin clientes registrados</td></tr>'}</tbody></table>${data?.monthly?.length ? `<h3 style="font-size:15px;font-weight:700;margin:0 0 10px;color:#111;">Historial Mensual</h3><table width="40%" style="border-collapse:collapse;font-family:Arial,sans-serif;"><thead><tr style="background:#f9fafb;"><th style="padding:6px 12px;font-size:11px;text-align:left;color:#6b7280;">Mes</th><th style="padding:6px 12px;font-size:11px;text-align:left;color:#6b7280;">Comisiones</th></tr></thead><tbody>${monthlyRows}</tbody></table>` : ""}<div style="margin-top:32px;text-align:center;color:#9ca3af;font-size:11px;border-top:1px solid #e5e7eb;padding-top:12px;">KobraPay · kobrapay.mx · Reporte generado automáticamente</div></body></html>`;
+      const blob = new Blob([html], { type: "text/html;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `Comisiones_KobraPay_${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}.html`;
+      document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+      const { toast } = await import("sonner");
+      toast.success("Reporte descargado", { description: "Abre el archivo HTML e imprime como PDF (Ctrl+P)." });
+    } catch {
+      const { toast } = await import("sonner");
+      toast.error("Error al generar el reporte");
+    } finally {
+      setGeneratingPdf(false);
+    }
+  };
 
   return (
     <DashboardLayout title="Panel de Comisiones">
@@ -109,10 +144,15 @@ export default function CommissionsPanel() {
               Ingresos de la plataforma por comisiones de clientes
             </p>
           </div>
-          <Badge className="bg-amber-100 text-amber-700 border-amber-200 gap-1.5" variant="outline">
-            <Activity className="w-3.5 h-3.5" />
-            Super Admin
-          </Badge>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={generateCommissionReport} disabled={generatingPdf || isLoading}>
+              {generatingPdf ? <><FileText className="w-4 h-4 mr-1.5 animate-pulse" />Generando...</> : <><Download className="w-4 h-4 mr-1.5" />Descargar Reporte</>}
+            </Button>
+            <Badge className="bg-amber-100 text-amber-700 border-amber-200 gap-1.5" variant="outline">
+              <Activity className="w-3.5 h-3.5" />
+              Super Admin
+            </Badge>
+          </div>
         </div>
 
         {/* KPI Cards */}

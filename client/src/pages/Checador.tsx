@@ -109,7 +109,17 @@ type EmpInfo = {
   position?: string | null;
   photoUrl?: string | null;
   dailyRate?: string | null;
+  dailyHours?: string | null;
 };
+
+// ─── Helper: formatear minutos ───────────────────────────────────────────────
+function formatMins(mins: number): string {
+  if (mins < 1) return `${Math.round(mins * 60)}s`;
+  if (mins < 60) return `${Math.round(mins)}min`;
+  const h = Math.floor(mins / 60);
+  const m = Math.round(mins % 60);
+  return m > 0 ? `${h}hr ${m}min` : `${h}hr`;
+}
 
 // ─── Modal historial detallado de un colaborador ─────────────────────────────
 function EmployeeHistoryModal({
@@ -123,6 +133,7 @@ function EmployeeHistoryModal({
   onClose: () => void;
   onAbsence: (emp: EmpInfo) => void;
 }) {
+  const shiftMins = parseFloat(employee?.dailyHours ?? "8") * 60;
   const today = new Date();
   // null = sin filtro (todos los registros)
   const [histYear, setHistYear] = useState<number | null>(null);
@@ -193,15 +204,20 @@ function EmployeeHistoryModal({
   }
   const sortedDays = Object.keys(byDay).sort((a, b) => b.localeCompare(a));
 
+  // Calcular total de minutos trabajados usando todos los pares entrada/salida
   const totalWorkedMins = sortedDays.reduce((sum, day) => {
-    const recs = byDay[day];
-    const inRec = recs.find(r => r.type === "in");
-    const outRec = recs.find(r => r.type === "out");
-    if (inRec && outRec) {
-      const mins = Math.round((new Date(outRec.timestamp).getTime() - new Date(inRec.timestamp).getTime()) / 60000);
-      return sum + (mins > 0 ? mins : 0);
+    const recs = byDay[day].slice().sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+    const pendingIns: AttRec[] = [];
+    let dayMins = 0;
+    for (const r of recs) {
+      if (r.type === "in") pendingIns.push(r);
+      else if (r.type === "out" && pendingIns.length > 0) {
+        const inR = pendingIns.shift()!;
+        const ms = new Date(r.timestamp).getTime() - new Date(inR.timestamp).getTime();
+        dayMins += Math.max(0, ms / 60000);
+      }
     }
-    return sum;
+    return sum + dayMins;
   }, 0);
 
   if (!employee) return null;
@@ -278,29 +294,41 @@ function EmployeeHistoryModal({
               </div>
             ) : (
               sortedDays.map(day => {
-                const recs = byDay[day];
-                const inRec = recs.find(r => r.type === "in");
-                const outRec = recs.find(r => r.type === "out");
-                const absRec = recs.find(r => r.type === "absence");
-                let hoursWorked = "";
-                if (inRec && outRec) {
-                  const totalMs = new Date(outRec.timestamp).getTime() - new Date(inRec.timestamp).getTime();
-                  const totalSecs = Math.round(totalMs / 1000);
-                  const mins = Math.round(totalMs / 60000);
-                  if (totalSecs < 60) {
-                    hoursWorked = `${totalSecs}s`;
-                  } else if (mins < 60) {
-                    hoursWorked = `${mins}m`;
-                  } else {
-                    hoursWorked = `${Math.floor(mins / 60)}h ${mins % 60}m`;
+                const dayRecs = byDay[day].slice().sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+                const absRec = dayRecs.find(r => r.type === "absence");
+                // Emparejar entradas con salidas
+                const pairs: { inRec: AttRec; outRec: AttRec | null }[] = [];
+                const soloOuts: AttRec[] = [];
+                const pendingIns: AttRec[] = [];
+                for (const r of dayRecs) {
+                  if (r.type === "in") pendingIns.push(r);
+                  else if (r.type === "out") {
+                    if (pendingIns.length > 0) pairs.push({ inRec: pendingIns.shift()!, outRec: r });
+                    else soloOuts.push(r);
                   }
                 }
+                for (const r of pendingIns) pairs.push({ inRec: r, outRec: null });
+                const pairMins = pairs.map(p => {
+                  if (!p.outRec) return 0;
+                  return Math.max(0, (new Date(p.outRec.timestamp).getTime() - new Date(p.inRec.timestamp).getTime()) / 60000);
+                });
+                const totalDayMins = pairMins.reduce((s, m) => s + m, 0);
+                const extraMins = totalDayMins - shiftMins;
                 return (
                   <div key={day} className="p-3 rounded-lg border bg-card">
                     <div className="flex items-center justify-between mb-2 flex-wrap gap-1">
                       <span className="font-medium text-sm capitalize">{formatDateFull(day)}</span>
                       <div className="flex items-center gap-2">
-                        {hoursWorked && <span className="text-xs font-semibold text-primary bg-primary/10 px-2 py-0.5 rounded-full">{hoursWorked}</span>}
+                        {totalDayMins > 0 && (
+                          <span className="text-xs font-semibold text-primary bg-primary/10 px-2 py-0.5 rounded-full">
+                            {formatMins(totalDayMins)}
+                          </span>
+                        )}
+                        {extraMins > 0 && (
+                          <span className="text-xs font-bold text-green-500 bg-green-500/10 px-2 py-0.5 rounded-full">
+                            +{formatMins(extraMins)} extra
+                          </span>
+                        )}
                         {absRec && (
                           <Badge className={`border-0 text-xs ${getAbsenceConfig(absRec.absenceType || "rest").color}`}>
                             {getAbsenceConfig(absRec.absenceType || "rest").label}
@@ -308,34 +336,72 @@ function EmployeeHistoryModal({
                         )}
                       </div>
                     </div>
-                    <div className="flex gap-2 flex-wrap">
-                      {recs.map(r => (
-                        <div key={r.id} className="group flex items-center gap-1.5 text-xs text-muted-foreground bg-muted/40 rounded-lg px-2 py-1">
-                          {r.type === "in" && <LogIn className="w-3.5 h-3.5 text-green-500" />}
-                          {r.type === "out" && <LogOut className="w-3.5 h-3.5 text-red-500" />}
-                          {r.type === "absence" && <AlertCircle className="w-3.5 h-3.5 text-orange-500" />}
-                          <span>
-                            {r.type === "in" && `Entrada: ${formatTime(r.timestamp)}`}
-                            {r.type === "out" && `Salida: ${formatTime(r.timestamp)}`}
-                            {r.type === "absence" && (r.comment ? `${getAbsenceConfig(r.absenceType || "rest").label}: ${r.comment}` : getAbsenceConfig(r.absenceType || "rest").label)}
-                          </span>
-                          {r.editedAt && <span className="text-muted-foreground/50 text-xs" title="Editado por admin">✎</span>}
+                    <div className="space-y-1.5">
+                      {pairs.map((pair, idx) => (
+                        <div key={pair.inRec.id} className="flex items-start gap-2 flex-wrap">
+                          {/* Entrada */}
+                          <div className="group flex items-center gap-1.5 text-xs text-muted-foreground bg-muted/40 rounded-lg px-2 py-1">
+                            <LogIn className="w-3.5 h-3.5 text-green-500 shrink-0" />
+                            <span>Entrada: {formatTime(pair.inRec.timestamp)}</span>
+                            {pair.inRec.notes && <span className="text-muted-foreground/70 italic ml-1">· {pair.inRec.notes}</span>}
+                            {pair.inRec.editedAt && <span className="text-muted-foreground/50 text-xs" title="Editado">✎</span>}
+                            {isAdmin && (
+                              <div className="hidden group-hover:flex items-center gap-0.5 ml-1">
+                                <button onClick={() => openEdit(pair.inRec)} className="text-blue-400 hover:text-blue-600 p-0.5"><Pencil className="w-3 h-3" /></button>
+                                <button onClick={() => { if (confirm("¿Eliminar?")) deleteMutation.mutate({ id: pair.inRec.id }); }} className="text-red-400 hover:text-red-600 p-0.5"><Trash2 className="w-3 h-3" /></button>
+                              </div>
+                            )}
+                          </div>
+                          {/* Salida */}
+                          {pair.outRec ? (
+                            <div className="group flex items-center gap-1.5 text-xs text-muted-foreground bg-muted/40 rounded-lg px-2 py-1">
+                              <LogOut className="w-3.5 h-3.5 text-red-500 shrink-0" />
+                              <span>Salida: {formatTime(pair.outRec.timestamp)}</span>
+                              {pair.outRec.notes && <span className="text-muted-foreground/70 italic ml-1">· {pair.outRec.notes}</span>}
+                              {pair.outRec.editedAt && <span className="text-muted-foreground/50 text-xs" title="Editado">✎</span>}
+                              {isAdmin && (
+                                <div className="hidden group-hover:flex items-center gap-0.5 ml-1">
+                                  <button onClick={() => openEdit(pair.outRec!)} className="text-blue-400 hover:text-blue-600 p-0.5"><Pencil className="w-3 h-3" /></button>
+                                  <button onClick={() => { if (confirm("¿Eliminar?")) deleteMutation.mutate({ id: pair.outRec!.id }); }} className="text-red-400 hover:text-red-600 p-0.5"><Trash2 className="w-3 h-3" /></button>
+                                </div>
+                              )}
+                            </div>
+                          ) : (
+                            <span className="text-xs text-orange-400 bg-orange-400/10 px-2 py-1 rounded-lg">Sin salida registrada</span>
+                          )}
+                          {/* Tiempo del par */}
+                          {pairMins[idx] > 0 && (
+                            <span className="text-xs font-semibold text-foreground/60 bg-muted rounded-full px-2 py-0.5 self-center">
+                              {formatMins(pairMins[idx])}
+                            </span>
+                          )}
+                        </div>
+                      ))}
+                      {soloOuts.map(r => (
+                        <div key={r.id} className="group flex items-center gap-1.5 text-xs text-orange-400 bg-orange-400/10 rounded-lg px-2 py-1">
+                          <LogOut className="w-3.5 h-3.5" />
+                          <span>Salida sin entrada: {formatTime(r.timestamp)}</span>
+                          {r.notes && <span className="italic ml-1">· {r.notes}</span>}
                           {isAdmin && (
                             <div className="hidden group-hover:flex items-center gap-0.5 ml-1">
                               <button onClick={() => openEdit(r)} className="text-blue-400 hover:text-blue-600 p-0.5"><Pencil className="w-3 h-3" /></button>
-                              <button
-                                onClick={() => {
-                                  if (confirm("¿Eliminar este registro? Esta acción no se puede deshacer."))
-                                    deleteMutation.mutate({ id: r.id });
-                                }}
-                                className="text-red-400 hover:text-red-600 p-0.5"
-                              >
-                                <Trash2 className="w-3 h-3" />
-                              </button>
+                              <button onClick={() => { if (confirm("¿Eliminar?")) deleteMutation.mutate({ id: r.id }); }} className="text-red-400 hover:text-red-600 p-0.5"><Trash2 className="w-3 h-3" /></button>
                             </div>
                           )}
                         </div>
                       ))}
+                      {absRec && (
+                        <div className="group flex items-center gap-1.5 text-xs text-muted-foreground bg-muted/40 rounded-lg px-2 py-1">
+                          <AlertCircle className="w-3.5 h-3.5 text-orange-500" />
+                          <span>{absRec.comment ? `${getAbsenceConfig(absRec.absenceType || "rest").label}: ${absRec.comment}` : getAbsenceConfig(absRec.absenceType || "rest").label}</span>
+                          {isAdmin && (
+                            <div className="hidden group-hover:flex items-center gap-0.5 ml-1">
+                              <button onClick={() => openEdit(absRec)} className="text-blue-400 hover:text-blue-600 p-0.5"><Pencil className="w-3 h-3" /></button>
+                              <button onClick={() => { if (confirm("¿Eliminar?")) deleteMutation.mutate({ id: absRec.id }); }} className="text-red-400 hover:text-red-600 p-0.5"><Trash2 className="w-3 h-3" /></button>
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </div>
                   </div>
                 );
@@ -430,12 +496,14 @@ function EmployeeCheckCard({
   isAdmin,
 }: {
   employee: EmpInfo;
-  onCheckIn: (type: "in" | "out") => void;
+  onCheckIn: (type: "in" | "out", notes?: string) => void;
   isPending: boolean;
   onViewHistory: () => void;
   onAbsence: () => void;
   isAdmin: boolean;
 }) {
+  const [noteModal, setNoteModal] = useState<{ type: "in" | "out" } | null>(null);
+  const [noteText, setNoteText] = useState("");
   const lastRecordQuery = trpc.attendance.getLastRecord.useQuery({ employeeId: employee.id });
   const lastRecord = lastRecordQuery.data;
   const isCurrentlyIn = lastRecord?.type === "in";
@@ -472,7 +540,7 @@ function EmployeeCheckCard({
           size="sm"
           variant={isCurrentlyIn ? "outline" : "default"}
           className={isCurrentlyIn ? "" : "bg-green-600 hover:bg-green-700 text-white"}
-          onClick={() => onCheckIn("in")}
+          onClick={() => { setNoteText(""); setNoteModal({ type: "in" }); }}
           disabled={isPending || isCurrentlyIn}
           title="Registrar Entrada"
         >
@@ -481,7 +549,7 @@ function EmployeeCheckCard({
         <Button
           size="sm"
           variant={isCurrentlyIn ? "destructive" : "outline"}
-          onClick={() => onCheckIn("out")}
+          onClick={() => { setNoteText(""); setNoteModal({ type: "out" }); }}
           disabled={isPending || !isCurrentlyIn}
           title="Registrar Salida"
         >
@@ -493,6 +561,38 @@ function EmployeeCheckCard({
           </Button>
         )}
       </div>
+      {/* Mini-modal de nota al registrar entrada/salida */}
+      <Dialog open={!!noteModal} onOpenChange={v => { if (!v) setNoteModal(null); }}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              {noteModal?.type === "in" ? <LogIn className="w-4 h-4 text-green-500" /> : <LogOut className="w-4 h-4 text-red-500" />}
+              {noteModal?.type === "in" ? "Registrar Entrada" : "Registrar Salida"} — {employee.fullName}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="py-2">
+            <Label className="text-sm">Nota / Motivo (opcional)</Label>
+            <Input
+              className="mt-1"
+              placeholder={noteModal?.type === "out" ? "Ej: Salió al médico, regresa a las 3pm..." : "Ej: Llegó tarde por tráfico..."}
+              value={noteText}
+              onChange={e => setNoteText(e.target.value)}
+              onKeyDown={e => { if (e.key === "Enter") { onCheckIn(noteModal!.type, noteText || undefined); setNoteModal(null); } }}
+              autoFocus
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setNoteModal(null)}>Cancelar</Button>
+            <Button
+              className={noteModal?.type === "in" ? "bg-green-600 hover:bg-green-700 text-white" : "bg-red-600 hover:bg-red-700 text-white"}
+              disabled={isPending}
+              onClick={() => { onCheckIn(noteModal!.type, noteText || undefined); setNoteModal(null); }}
+            >
+              {noteModal?.type === "in" ? "✅ Confirmar Entrada" : "🔴 Confirmar Salida"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
@@ -671,7 +771,7 @@ export default function Checador() {
                   <EmployeeCheckCard
                     key={emp.id}
                     employee={emp}
-                    onCheckIn={(type) => checkInMutation.mutate({ employeeId: emp.id, type })}
+                    onCheckIn={(type, notes) => checkInMutation.mutate({ employeeId: emp.id, type, notes })}
                     isPending={checkInMutation.isPending && checkInMutation.variables?.employeeId === emp.id}
                     onViewHistory={() => setSelectedEmployee(emp)}
                     onAbsence={() => setAbsenceEmployee(emp)}

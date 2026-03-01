@@ -544,3 +544,58 @@ export async function sendRecurringPaymentEmail(data: {
     return false;
   }
 }
+
+
+// ─── Notificación de Cita Médica ─────────────────────────────────────────────
+export async function sendAppointmentEmail(data: {
+  patientEmail: string;
+  patientName: string;
+  doctorName: string;
+  businessName: string;
+  appointmentDate: string;
+  appointmentTime: string;
+  reason: string;
+  notes?: string;
+  action: "created" | "updated" | "cancelled";
+}): Promise<boolean> {
+  const resend = getResend();
+  if (!resend) {
+    console.warn("[Email] RESEND_API_KEY no configurada. No se envio notificacion de cita.");
+    return false;
+  }
+  const actionLabels: Record<string, { subject: string; title: string; color: string; icon: string }> = {
+    created: { subject: "Cita agendada", title: "Cita Confirmada", color: "#00c853", icon: "✅" },
+    updated: { subject: "Cita modificada", title: "Cita Actualizada", color: "#f59e0b", icon: "✏️" },
+    cancelled: { subject: "Cita cancelada", title: "Cita Cancelada", color: "#ef4444", icon: "❌" },
+  };
+  const label = actionLabels[data.action];
+  const dateFormatted = new Intl.DateTimeFormat("es-MX", {
+    weekday: "long", year: "numeric", month: "long", day: "numeric",
+    timeZone: "America/Mexico_City",
+  }).format(new Date(data.appointmentDate));
+  const actionMsg = data.action === "created"
+    ? "Tu cita ha sido <strong>confirmada</strong> con los siguientes detalles:"
+    : data.action === "updated"
+    ? "Los detalles de tu cita han sido <strong>actualizados</strong>:"
+    : `Tu cita ha sido <strong>cancelada</strong>. Si tienes dudas, contacta a ${data.businessName}.`;
+  const notesRow = data.notes
+    ? `<tr style="border-top:1px solid #e5e7eb"><td style="color:#6b7280;font-size:13px;padding:12px">Notas</td><td style="color:#374151;font-size:13px;padding:12px">${data.notes}</td></tr>`
+    : "";
+  const reminderBlock = data.action !== "cancelled"
+    ? `<div style="margin-top:24px;padding:16px;background:#fffbeb;border-radius:8px;border-left:4px solid #f59e0b"><p style="margin:0;color:#92400e;font-size:13px"><strong>Recordatorio:</strong> Por favor llega 10 minutos antes de tu cita. Si necesitas cancelar, contacta a ${data.businessName}.</p></div>`
+    : "";
+  const html = `<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"></head><body style="margin:0;padding:0;background:#f4f4f5;font-family:Arial,sans-serif"><table width="100%" style="background:#f4f4f5;padding:40px 0"><tr><td align="center"><table width="580" style="background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.08)"><tr><td style="background:${label.color};padding:28px 40px"><h1 style="margin:0;color:#fff;font-size:22px;font-weight:800">${label.icon} ${label.title}</h1><p style="margin:6px 0 0;color:rgba(255,255,255,0.85);font-size:14px">${data.businessName} · KobraPay</p></td></tr><tr><td style="padding:32px 40px"><p style="color:#374151;font-size:15px;margin:0 0 12px">Hola <strong>${data.patientName}</strong>,</p><p style="color:#374151;font-size:15px;margin:0 0 20px">${actionMsg}</p><table width="100%" style="background:#f9fafb;border-radius:8px;border:1px solid #e5e7eb"><tr><td style="color:#6b7280;font-size:13px;padding:12px;width:40%">Médico</td><td style="color:#111827;font-weight:700;font-size:14px;padding:12px">${data.doctorName}</td></tr><tr style="border-top:1px solid #e5e7eb"><td style="color:#6b7280;font-size:13px;padding:12px">Fecha</td><td style="color:#111827;font-size:14px;padding:12px;text-transform:capitalize">${dateFormatted}</td></tr><tr style="border-top:1px solid #e5e7eb"><td style="color:#6b7280;font-size:13px;padding:12px">Hora</td><td style="color:${label.color};font-weight:800;font-size:16px;padding:12px">${data.appointmentTime}</td></tr><tr style="border-top:1px solid #e5e7eb"><td style="color:#6b7280;font-size:13px;padding:12px">Motivo</td><td style="color:#111827;font-size:14px;padding:12px">${data.reason}</td></tr>${notesRow}</table>${reminderBlock}</td></tr><tr><td style="background:#f9fafb;padding:16px 40px;text-align:center;border-top:1px solid #f3f4f6"><p style="margin:0;color:#9ca3af;font-size:12px">Notificacion enviada por <strong style="color:#00c853">KobraPay</strong> · kobrapay.mx</p></td></tr></table></td></tr></table></body></html>`;
+  try {
+    const { error } = await resend.emails.send({
+      from: `${data.businessName} via KobraPay <${ENV.fromEmail}>`,
+      to: data.patientEmail,
+      subject: `${label.subject} — ${dateFormatted} ${data.appointmentTime}`,
+      html,
+    });
+    if (error) { console.error("[Email] Error al enviar notificacion de cita:", error); return false; }
+    return true;
+  } catch (err) {
+    console.error("[Email] Excepcion al enviar notificacion de cita:", err);
+    return false;
+  }
+}

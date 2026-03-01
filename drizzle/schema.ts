@@ -120,6 +120,10 @@ export const paymentLinks = mysqlTable("payment_links", {
   chargebackProtectionText: text("chargebackProtectionText"),
   // MSI: meses sin intereses habilitados (JSON array: [3,6,9,12])
   msiOptions: text("msiOptions"),
+  // Propina: habilitar propina en el pago
+  tipEnabled: boolean("tipEnabled").default(false).notNull(),
+  // Opciones de propina sugeridas (JSON array de porcentajes: [10,15,20] o null para solo monto manual)
+  tipSuggestions: text("tipSuggestions"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });

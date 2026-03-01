@@ -476,3 +476,27 @@
 - [ ] Corregir historial del checador: mostrar día, hora entrada, hora salida, horas/minutos trabajados
 - [ ] Corregir botón Calcular en Nómina (no abre nada)
 - [ ] Reporte de nómina desglosado por días laborados, ausencias, horas extras
+
+## Fase 27 - Notificaciones de Cita Médica + Reporte Comisiones PDF
+- [ ] Notificación por email al paciente cuando se agenda una cita (fecha, hora, médico, motivo)
+- [ ] Notificación por email al paciente cuando se modifica o cancela una cita
+- [ ] Botón "Descargar Reporte PDF" en Desglose de Comisiones (superadmin) con resumen mensual
+
+## Fase 28 - Manual de Puesto por Empleado
+- [ ] Tabla job_position_files en DB (employeeId, fileName, fileUrl, fileKey, uploadedAt, uploadedBy)
+- [ ] Backend: subir archivo de descripción de puesto a S3 (solo admin)
+- [ ] Backend: listar archivos de descripción de puesto por empleado
+- [ ] Backend: eliminar archivo de descripción de puesto (solo admin)
+- [ ] En perfil de colaborador (admin): sección "Manual de Puesto" con subida de archivos PDF/Word/imagen
+- [ ] En perfil de colaborador (empleado): sección "Mi Manual de Puesto" solo lectura con descarga
+
+## Fase 29 - Propina en Links de Pago y Proceso de Cobro
+- [ ] Campo "habilitar propina" (toggle) en formulario de crear link de pago
+- [ ] Opciones de propina sugeridas: 10%, 15%, 20% (botones de selección rápida)
+- [ ] Campo de propina manual en pesos (input numérico)
+- [ ] Mostrar propina en la página pública de pago (PayPage) cuando está habilitada
+- [ ] Incluir monto de propina en el total del cobro al procesar el pago
+- [ ] Mostrar propina desglosada en el comprobante de pago y en Mis Ventas
+
+## Pendiente para el final (no implementar aún)
+- [ ] Manual de procedimientos completo con imágenes por área (superadmin, admin, empleado)

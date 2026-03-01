@@ -45,9 +45,11 @@ import {
   Edit2,
   X,
   Calendar,
+  BookOpen,
 } from "lucide-react";
 
 const DOC_TYPES = [
+  { value: "manual_puesto", label: "Manual de Puesto", icon: BookOpen, color: "text-emerald-600" },
   { value: "cv", label: "CV Laboral", icon: FileText, color: "text-blue-500" },
   { value: "ine", label: "Identificación (INE/Pasaporte)", icon: IdCard, color: "text-green-500" },
   { value: "domicilio", label: "Comprobante de Domicilio", icon: Home, color: "text-orange-500" },
@@ -634,11 +636,21 @@ function EmployeeDetail({
             </Button>
           </CardHeader>
           <CardContent>
+            {/* Aviso especial si hay manual de puesto */}
+            {(emp.documents ?? []).some(d => d.type === "manual_puesto") && (
+              <div className="mb-4 flex items-center gap-3 bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 rounded-lg px-4 py-3">
+                <BookOpen className="w-5 h-5 text-emerald-600 shrink-0" />
+                <div>
+                  <p className="text-sm font-semibold text-emerald-700 dark:text-emerald-400">Manual de Puesto disponible</p>
+                  <p className="text-xs text-emerald-600 dark:text-emerald-500">El colaborador puede ver su manual de puesto en su sesión.</p>
+                </div>
+              </div>
+            )}
             {(emp.documents ?? []).length === 0 ? (
               <div className="text-center py-10 text-muted-foreground">
                 <FileText className="w-10 h-10 mx-auto mb-3 opacity-30" />
                 <p className="text-sm">No hay documentos en el expediente</p>
-                <p className="text-xs mt-1">Sube CV, INE, comprobante de domicilio y referencias</p>
+                <p className="text-xs mt-1">Sube CV, INE, comprobante de domicilio, manual de puesto y referencias</p>
               </div>
             ) : (
               <div className="space-y-4">

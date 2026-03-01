@@ -50,6 +50,8 @@ export default function CreateLink() {
     chargebackProtectionText: "",
   });
   const [msiOptions, setMsiOptions] = useState<number[]>([]);
+  const [tipEnabled, setTipEnabled] = useState(false);
+  const [tipSuggestions, setTipSuggestions] = useState<number[]>([10, 15, 20]);
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [createdLink, setCreatedLink] = useState<{
     token: string;
@@ -112,6 +114,8 @@ export default function CreateLink() {
       usdExchangeRate: exchangeRate,
       chargebackProtectionText: form.chargebackProtectionText.trim() || undefined,
       msiOptions: msiOptions.length > 0 ? msiOptions : undefined,
+      tipEnabled,
+      tipSuggestions: tipEnabled && tipSuggestions.length > 0 ? tipSuggestions : undefined,
     });
   };
 
@@ -165,6 +169,8 @@ export default function CreateLink() {
     setCreatedLink(null);
     setCopied(false);
     setMsiOptions([]);
+    setTipEnabled(false);
+    setTipSuggestions([10, 15, 20]);
     setForm({ clientName: "", clientEmail: "", amount: "", description: "", currency: "MXN", expiresInDays: "0", requireOtp: false, requireSelfie: false, requireSignature: false, requireIdUpload: false, usdExchangeRate: "", chargebackProtectionText: "" });
   };
 
@@ -565,6 +571,49 @@ export default function CreateLink() {
                       )}
                     </div>
 
+                    {/* Propina */}
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <Label className="text-gray-700 font-medium flex items-center gap-1.5">
+                            <DollarSign className="w-3.5 h-3.5 text-gray-400" />
+                            Propina opcional
+                          </Label>
+                          <p className="text-xs text-gray-400 mt-0.5">El cliente podrá agregar una propina al monto del pago.</p>
+                        </div>
+                        <Switch checked={tipEnabled} onCheckedChange={setTipEnabled} />
+                      </div>
+                      {tipEnabled && (
+                        <div className="pl-4 border-l-2 border-cyan-200 space-y-3">
+                          <div>
+                            <p className="text-xs text-gray-500 font-medium mb-2">Porcentajes sugeridos (el cliente también puede ingresar monto manual)</p>
+                            <div className="flex flex-wrap gap-2">
+                              {[5, 10, 15, 20, 25].map(pct => (
+                                <button
+                                  key={pct}
+                                  type="button"
+                                  onClick={() => setTipSuggestions(prev =>
+                                    prev.includes(pct) ? prev.filter(p => p !== pct) : [...prev, pct].sort((a, b) => a - b)
+                                  )}
+                                  className={`px-3 py-1.5 rounded-lg text-sm font-medium border transition-all ${
+                                    tipSuggestions.includes(pct)
+                                      ? "bg-amber-500 text-white border-amber-500"
+                                      : "bg-white text-gray-600 border-gray-200 hover:border-amber-300"
+                                  }`}
+                                >
+                                  {pct}%
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                          {tipSuggestions.length > 0 && (
+                            <p className="text-xs text-amber-600">
+                              Opciones: {tipSuggestions.map(p => `${p}%`).join(", ")} + monto manual
+                            </p>
+                          )}
+                        </div>
+                      )}
+                    </div>
                     {/* Texto anti-contracargos */}
                     <div className="space-y-1.5">
                       <Label className="text-gray-700 font-medium flex items-center gap-1.5">

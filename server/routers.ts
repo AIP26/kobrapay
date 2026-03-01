@@ -373,6 +373,9 @@ export const appRouter = router({
           usdExchangeRate: z.number().min(0).default(0),
           // MSI: array de meses habilitados (ej: [3, 6, 9, 12])
           msiOptions: z.array(z.number().int().min(3).max(24)).optional(),
+          // Propina
+          tipEnabled: z.boolean().default(false),
+          tipSuggestions: z.array(z.number().int().min(1).max(100)).optional(),
         })
       )
       .mutation(async ({ ctx, input }) => {
@@ -409,9 +412,10 @@ export const appRouter = router({
           usdExchangeRate: String(input.usdExchangeRate),
           commissionRate: String(commissionRate),
           commissionAmount: String(commissionAmount),
-          msiOptions: input.msiOptions && input.msiOptions.length > 0 ? JSON.stringify(input.msiOptions) : null,
+           msiOptions: input.msiOptions && input.msiOptions.length > 0 ? JSON.stringify(input.msiOptions) : null,
+          tipEnabled: input.tipEnabled,
+          tipSuggestions: input.tipSuggestions && input.tipSuggestions.length > 0 ? JSON.stringify(input.tipSuggestions) : null,
         });
-
         return { ...link, netAmount };
       }),
 
@@ -2156,7 +2160,7 @@ export const appRouter = router({
     addDocument: protectedProcedure
       .input(z.object({
         employeeId: z.number(),
-        type: z.enum(["cv", "ine", "domicilio", "referencia_laboral", "referencia_personal", "otro"]),
+        type: z.enum(["manual_puesto", "cv", "ine", "domicilio", "referencia_laboral", "referencia_personal", "otro"]),
         name: z.string(),
         fileUrl: z.string(),
         fileKey: z.string(),
@@ -2208,7 +2212,7 @@ export const appRouter = router({
     uploadDocument: protectedProcedure
       .input(z.object({
         employeeId: z.number(),
-        type: z.enum(["cv", "ine", "domicilio", "referencia_laboral", "referencia_personal", "otro"]),
+        type: z.enum(["manual_puesto", "cv", "ine", "domicilio", "referencia_laboral", "referencia_personal", "otro"]),
         name: z.string(),
         fileBase64: z.string(),
         mimeType: z.string(),
@@ -2843,8 +2847,9 @@ export const appRouter = router({
           notes: z.string().optional().or(z.literal('')),
         }))
         .mutation(async ({ ctx, input }) => {
-          const { createMedicalAppointment } = await import('./db');
-          return createMedicalAppointment({
+          const { createMedicalAppointment, getMedicalPatientById } = await import('./db');
+          const { sendAppointmentEmail } = await import('./_core/email');
+          const appt = await createMedicalAppointment({
             ownerId: ctx.user.id,
             patientId: input.patientId,
             title: input.title,
@@ -2854,6 +2859,29 @@ export const appRouter = router({
             status: 'scheduled',
             reminderSent: false,
           });
+          try {
+            const patient = await getMedicalPatientById(input.patientId, ctx.user.id);
+            if (patient?.email) {
+              const apptDate = new Date(input.appointmentDate);
+              const timeStr = apptDate.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit', hour12: true, timeZone: 'America/Mexico_City' });
+              const patientFullName = [patient.firstName, patient.lastName].filter(Boolean).join(' ');
+              const vendorSett = await getVendorSettings(ctx.user.id);
+              await sendAppointmentEmail({
+                patientEmail: patient.email,
+                patientName: patientFullName,
+                doctorName: ctx.user.name || 'Su médico',
+                businessName: vendorSett?.businessName || ctx.user.name || 'Consultorio',
+                appointmentDate: input.appointmentDate,
+                appointmentTime: timeStr,
+                reason: input.title,
+                notes: input.notes || undefined,
+                action: 'created',
+              });
+            }
+          } catch (emailErr) {
+            console.warn('[Agenda] No se pudo enviar email de cita:', emailErr);
+          }
+          return appt;
         }),
       update: protectedProcedure
         .input(z.object({
@@ -2863,14 +2891,37 @@ export const appRouter = router({
           durationMinutes: z.number().optional(),
           status: z.string().optional(),
           notes: z.string().optional().or(z.literal('')),
+          patientEmail: z.string().optional(),
+          patientName: z.string().optional(),
         }))
         .mutation(async ({ ctx, input }) => {
           const { updateMedicalAppointment } = await import('./db');
-          const { id, appointmentDate, ...rest } = input;
+          const { sendAppointmentEmail } = await import('./_core/email');
+          const { id, appointmentDate, patientEmail, patientName, ...rest } = input;
           await updateMedicalAppointment(id, ctx.user.id, {
             ...rest,
             ...(appointmentDate ? { appointmentDate: new Date(appointmentDate) } : {}),
           });
+          if (patientEmail && patientName && appointmentDate) {
+            try {
+              const isCancelled = input.status === 'cancelled';
+              const apptDate = new Date(appointmentDate);
+              const timeStr = apptDate.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit', hour12: true, timeZone: 'America/Mexico_City' });
+              await sendAppointmentEmail({
+                patientEmail,
+                patientName,
+                doctorName: ctx.user.name || 'Su médico',
+                businessName: ctx.user.name || 'Consultorio',
+                appointmentDate,
+                appointmentTime: timeStr,
+                reason: input.title || 'Consulta',
+                notes: input.notes || undefined,
+                action: isCancelled ? 'cancelled' : 'updated',
+              });
+            } catch (emailErr) {
+              console.warn('[Agenda] No se pudo enviar email de actualización de cita:', emailErr);
+            }
+          }
           return { success: true };
         }),
       delete: protectedProcedure
