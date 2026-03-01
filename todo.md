@@ -600,3 +600,11 @@
 - [ ] Panel superadmin: lista de solicitudes pendientes con botón aprobar/rechazar
 - [ ] Sidebar: ocultar Prescripciones y Farmacia si no tienen acceso
 - [ ] Notificación al superadmin cuando llega solicitud de acceso farmacéutico
+
+## Mejoras Prescripciones y Sidebar Clínico
+- [ ] Campo stamp_url en tabla prescriptions (sello del doctor)
+- [ ] Backend: updatePrescription (editar receta existente)
+- [ ] Backend: uploadStamp (subir sello en perfil del doctor)
+- [ ] Prescriptions.tsx: botón editar en cada receta guardada
+- [ ] Prescriptions.tsx: campo para subir sello en perfil del doctor
+- [ ] Sidebar: grupo colapsable "Clínico" con Agenda Médica, Prescripciones, Farmacia, Proveedores, Control de Módulos

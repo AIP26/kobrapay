@@ -3721,7 +3721,6 @@ export const appRouter = router({
         const result = await db.select().from(prescriptions).where(eq(prescriptions.doctorId, ctx.user.id)).orderBy(desc(prescriptions.createdAt)).limit(1);
         return result[0];
       }),
-
     delete: protectedProcedure
       .input(z.object({ id: z.number() }))
       .mutation(async ({ ctx, input }) => {
@@ -3732,7 +3731,70 @@ export const appRouter = router({
         await db.delete(prescriptions).where(and(eq(prescriptions.id, input.id), eq(prescriptions.doctorId, ctx.user.id)));
         return { success: true };
       }),
+
+    // Editar prescripción existente
+    update: protectedProcedure
+      .input(z.object({
+        id: z.number(),
+        patientName: z.string().min(1).optional(),
+        patientAge: z.string().optional(),
+        patientGender: z.string().optional(),
+        diagnosis: z.string().optional(),
+        medications: z.string().optional(),
+        instructions: z.string().optional(),
+        signatureBase64: z.string().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const db = await import('./db').then(m => m.getDb ? m.getDb() : null);
+        if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
+        const { prescriptions } = await import('../drizzle/schema');
+        const { eq, and } = await import('drizzle-orm');
+        const existing = await db.select().from(prescriptions).where(and(eq(prescriptions.id, input.id), eq(prescriptions.doctorId, ctx.user.id))).limit(1);
+        if (!existing.length) throw new TRPCError({ code: 'NOT_FOUND', message: 'Prescripción no encontrada' });
+        const updates: Record<string, any> = {};
+        if (input.patientName !== undefined) updates.patientName = input.patientName;
+        if (input.patientAge !== undefined) updates.patientAge = input.patientAge;
+        if (input.patientGender !== undefined) updates.patientGender = input.patientGender;
+        if (input.diagnosis !== undefined) updates.diagnosis = input.diagnosis;
+        if (input.medications !== undefined) updates.medications = input.medications;
+        if (input.instructions !== undefined) updates.instructions = input.instructions;
+        if (input.signatureBase64) {
+          const { storagePut } = await import('./storage');
+          const buffer = Buffer.from(input.signatureBase64.replace(/^data:image\/png;base64,/, ''), 'base64');
+          const key = `prescription-signatures/${ctx.user.id}-${Date.now()}.png`;
+          const { url } = await storagePut(key, buffer, 'image/png');
+          updates.signatureUrl = url;
+          updates.signatureKey = key;
+          updates.status = 'signed';
+        }
+        await db.update(prescriptions).set(updates).where(and(eq(prescriptions.id, input.id), eq(prescriptions.doctorId, ctx.user.id)));
+        const result = await db.select().from(prescriptions).where(eq(prescriptions.id, input.id)).limit(1);
+        return result[0];
+      }),
+
+    // Subir sello del doctor
+    uploadStamp: protectedProcedure
+      .input(z.object({ fileName: z.string(), fileBase64: z.string(), mimeType: z.string() }))
+      .mutation(async ({ ctx, input }) => {
+        const { storagePut } = await import('./storage');
+        const db = await import('./db').then(m => m.getDb ? m.getDb() : null);
+        if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
+        const { doctorProfiles } = await import('../drizzle/schema');
+        const { eq } = await import('drizzle-orm');
+        const buffer = Buffer.from(input.fileBase64, 'base64');
+        const ext = input.fileName.split('.').pop() || 'png';
+        const key = `doctor-stamps/${ctx.user.id}-${Date.now()}.${ext}`;
+        const { url } = await storagePut(key, buffer, input.mimeType);
+        const existing = await db.select().from(doctorProfiles).where(eq(doctorProfiles.userId, ctx.user.id)).limit(1);
+        if (existing.length > 0) {
+          await db.update(doctorProfiles).set({ stampUrl: url, stampKey: key, updatedAt: new Date() }).where(eq(doctorProfiles.userId, ctx.user.id));
+        } else {
+          await db.insert(doctorProfiles).values({ userId: ctx.user.id, stampUrl: url, stampKey: key });
+        }
+        return { url, key };
+      }),
   }),
+
 
   // ─── Módulo Farmacia ─────────────────────────────────────────────────────
   pharmacy: router({

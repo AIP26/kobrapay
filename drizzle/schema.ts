@@ -843,6 +843,9 @@ export const doctorProfiles = mysqlTable("doctor_profiles", {
   // Imagen del membrete (URL en S3)
   membreteUrl: text("membreteUrl"),
   membreteKey: text("membreteKey"),
+  // Sello del doctor (URL en S3)
+  stampUrl: text("stampUrl"),
+  stampKey: text("stampKey"),
   // Firma guardada (URL en S3)
   savedSignatureUrl: text("savedSignatureUrl"),
   savedSignatureKey: text("savedSignatureKey"),

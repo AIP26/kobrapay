@@ -113,9 +113,17 @@ const NAV_GROUPS = [
       { href: "/dashboard/contracts", icon: Handshake, label: "Contratos" },
       { href: "/dashboard/agents", icon: UserPlus, label: "Vendedores" },
       { href: "/dashboard/commissions", icon: TrendingUp, label: "Comisiones" },
-      { href: "/dashboard/medical", icon: Stethoscope, label: "Agenda Médica" },
       { href: "/dashboard/training", icon: GraduationCap, label: "Capacitaciones" },
       { href: "/dashboard/proveedores", icon: BookUser, label: "Proveedores" },
+    ],
+  },
+  {
+    id: "sector_salud",
+    label: "Sector Salud",
+    icon: Stethoscope,
+    color: "text-emerald-500/70",
+    items: [
+      { href: "/dashboard/medical", icon: Stethoscope, label: "Agenda Médica" },
       { href: "/dashboard/prescriptions", icon: ClipboardList, label: "Prescripciones" },
       { href: "/dashboard/farmacia", icon: Pill, label: "Farmacia" },
       { href: "/dashboard/module-access", icon: ShieldCheck, label: "Control de Módulos" },

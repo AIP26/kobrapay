@@ -123,6 +123,15 @@ export function ModuleGuard({ module, children }: ModuleGuardProps) {
                   <SelectItem value="consultorio">Consultorio médico</SelectItem>
                   <SelectItem value="hospital">Hospital</SelectItem>
                   <SelectItem value="dentista">Consultorio dental</SelectItem>
+                  <SelectItem value="estetica">Medicina estética</SelectItem>
+                  <SelectItem value="spa">Spa / Centro de bienestar</SelectItem>
+                  <SelectItem value="nutricion">Nutrición / Dietista</SelectItem>
+                  <SelectItem value="psicologia">Psicología / Salud mental</SelectItem>
+                  <SelectItem value="fisioterapia">Fisioterapia / Rehabilitación</SelectItem>
+                  <SelectItem value="veterinaria">Veterinaria</SelectItem>
+                  <SelectItem value="laboratorio">Laboratorio clínico</SelectItem>
+                  <SelectItem value="optometria">Optometría / Óptica</SelectItem>
+                  <SelectItem value="quiropraxia">Quiropraxia / Osteopatía</SelectItem>
                   <SelectItem value="otro">Otro</SelectItem>
                 </SelectContent>
               </Select>

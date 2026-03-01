@@ -14,7 +14,7 @@ import { toast } from "sonner";
 import {
   FileText, Plus, Printer, Send, Trash2, Pen, RotateCcw,
   Upload, User, Stethoscope, Pill, Settings, X, Eye, ChevronLeft,
-  Phone, Mail, Building2, BadgeCheck, Save
+  Phone, Mail, Building2, BadgeCheck, Save, Pencil
 } from "lucide-react";
 
 // ─── Tipos ────────────────────────────────────────────────────────────────────
@@ -164,6 +164,10 @@ function DoctorProfileModal({ open, onClose }: { open: boolean; onClose: () => v
     onSuccess: () => { toast.success("Membrete subido"); utils.prescriptions.getDoctorProfile.invalidate(); },
     onError: (e) => toast.error("Error al subir membrete: " + e.message),
   });
+  const uploadStamp = trpc.prescriptions.uploadStamp.useMutation({
+    onSuccess: () => { toast.success("Sello subido correctamente"); utils.prescriptions.getDoctorProfile.invalidate(); },
+    onError: (e) => toast.error("Error al subir sello: " + e.message),
+  });
   const saveSignature = trpc.prescriptions.saveSignature.useMutation({
     onSuccess: () => { toast.success("Firma guardada en perfil"); utils.prescriptions.getDoctorProfile.invalidate(); },
     onError: (e) => toast.error("Error: " + e.message),
@@ -194,6 +198,18 @@ function DoctorProfileModal({ open, onClose }: { open: boolean; onClose: () => v
     reader.onload = (ev) => {
       const base64 = (ev.target?.result as string).split(",")[1];
       uploadMembrete.mutate({ fileName: file.name, fileBase64: base64, mimeType: file.type });
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleStampUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 3 * 1024 * 1024) { toast.error("El sello no debe superar 3 MB"); return; }
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const base64 = (ev.target?.result as string).split(",")[1];
+      uploadStamp.mutate({ fileName: file.name, fileBase64: base64, mimeType: file.type });
     };
     reader.readAsDataURL(file);
   };
@@ -249,6 +265,24 @@ function DoctorProfileModal({ open, onClose }: { open: boolean; onClose: () => v
                 <p className="text-xs text-muted-foreground">{uploadMembrete.isPending ? "Subiendo..." : "Clic para subir imagen (JPG, PNG, PDF)"}</p>
               </div>
               <input type="file" accept="image/*,.pdf" className="hidden" onChange={handleMembreteUpload} disabled={uploadMembrete.isPending} />
+            </label>
+          </div>
+
+          {/* Sello */}
+          <div className="space-y-2 border rounded-lg p-3">
+            <Label className="flex items-center gap-1.5 font-semibold">
+              <Upload className="w-4 h-4" /> Sello del Doctor / Clínica
+            </Label>
+            <p className="text-xs text-muted-foreground">Sube la imagen de tu sello oficial. Aparecerá en la parte inferior de cada receta junto a la firma.</p>
+            {(profile as any)?.stampUrl && (
+              <img src={(profile as any).stampUrl} alt="Sello" className="max-h-24 object-contain border rounded" />
+            )}
+            <label className="cursor-pointer">
+              <div className="border-2 border-dashed border-border rounded-lg p-3 text-center hover:border-primary/50 transition-colors">
+                <Upload className="w-5 h-5 mx-auto text-muted-foreground mb-1" />
+                <p className="text-xs text-muted-foreground">{uploadStamp.isPending ? "Subiendo..." : "Clic para subir sello (JPG, PNG)"}</p>
+              </div>
+              <input type="file" accept="image/*" className="hidden" onChange={handleStampUpload} disabled={uploadStamp.isPending} />
             </label>
           </div>
 
@@ -600,6 +634,123 @@ function PrescriptionView({ prescription, profile, onClose }: {
   );
 }
 
+// ─── Modal Editar Receta ─────────────────────────────────────────────────────
+function EditPrescriptionModal({ prescription, open, onClose, onUpdated }: {
+  prescription: any; open: boolean; onClose: () => void; onUpdated: () => void;
+}) {
+  const updateMutation = trpc.prescriptions.update.useMutation({
+    onSuccess: () => { toast.success("Receta actualizada"); onUpdated(); },
+    onError: (e) => toast.error("Error al actualizar: " + e.message),
+  });
+
+  const meds: Medication[] = (() => { try { return JSON.parse(prescription.medications); } catch { return []; } })();
+
+  const [form, setForm] = useState({
+    patientName: prescription.patientName || "",
+    patientAge: prescription.patientAge || "",
+    patientGender: prescription.patientGender || "",
+    diagnosis: prescription.diagnosis || "",
+    instructions: prescription.instructions || "",
+  });
+  const [medications, setMedications] = useState<Medication[]>(meds.length > 0 ? meds : [{ name: "", dose: "", frequency: "", duration: "", instructions: "" }]);
+
+  const addMed = () => setMedications(m => [...m, { name: "", dose: "", frequency: "", duration: "", instructions: "" }]);
+  const removeMed = (i: number) => setMedications(m => m.filter((_, idx) => idx !== i));
+  const updateMed = (i: number, field: keyof Medication, value: string) =>
+    setMedications(m => m.map((med, idx) => idx === i ? { ...med, [field]: value } : med));
+
+  const handleSave = () => {
+    if (!form.patientName.trim()) { toast.error("El nombre del paciente es obligatorio"); return; }
+    if (medications.some(m => !m.name.trim())) { toast.error("Todos los medicamentos deben tener nombre"); return; }
+    updateMutation.mutate({
+      id: prescription.id,
+      ...form,
+      medications: JSON.stringify(medications),
+    });
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onClose}>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Pencil className="w-5 h-5 text-primary" /> Editar Receta
+          </DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4">
+          {/* Datos del paciente */}
+          <div className="grid grid-cols-3 gap-3">
+            <div className="col-span-3 space-y-1">
+              <Label>Nombre del Paciente *</Label>
+              <Input value={form.patientName} onChange={e => setForm(f => ({ ...f, patientName: e.target.value }))} />
+            </div>
+            <div className="space-y-1">
+              <Label>Edad</Label>
+              <Input value={form.patientAge} onChange={e => setForm(f => ({ ...f, patientAge: e.target.value }))} placeholder="Ej. 35 años" />
+            </div>
+            <div className="space-y-1">
+              <Label>Género</Label>
+              <Select value={form.patientGender} onValueChange={v => setForm(f => ({ ...f, patientGender: v }))}>
+                <SelectTrigger><SelectValue placeholder="Seleccionar" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="masculino">Masculino</SelectItem>
+                  <SelectItem value="femenino">Femenino</SelectItem>
+                  <SelectItem value="otro">Otro</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1">
+              <Label>Diagnóstico</Label>
+              <Input value={form.diagnosis} onChange={e => setForm(f => ({ ...f, diagnosis: e.target.value }))} />
+            </div>
+          </div>
+
+          {/* Medicamentos */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <Label className="font-semibold">Medicamentos</Label>
+              <Button variant="outline" size="sm" onClick={addMed}><Plus className="w-3.5 h-3.5 mr-1" /> Agregar</Button>
+            </div>
+            {medications.map((med, i) => (
+              <div key={i} className="grid grid-cols-5 gap-2 p-3 border rounded-lg">
+                <div className="col-span-2 space-y-1">
+                  <Label className="text-xs">Medicamento *</Label>
+                  <Input value={med.name} onChange={e => updateMed(i, "name", e.target.value)} placeholder="Nombre" className="h-8 text-sm" />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Dosis</Label>
+                  <Input value={med.dose} onChange={e => updateMed(i, "dose", e.target.value)} placeholder="500mg" className="h-8 text-sm" />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Frecuencia</Label>
+                  <Input value={med.frequency} onChange={e => updateMed(i, "frequency", e.target.value)} placeholder="c/8h" className="h-8 text-sm" />
+                </div>
+                <div className="flex items-end">
+                  <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => removeMed(i)} disabled={medications.length === 1}>
+                    <X className="w-3.5 h-3.5" />
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="space-y-1">
+            <Label>Indicaciones adicionales</Label>
+            <Textarea value={form.instructions} onChange={e => setForm(f => ({ ...f, instructions: e.target.value }))} rows={2} />
+          </div>
+
+          <div className="flex gap-2 justify-end">
+            <Button variant="outline" onClick={onClose}>Cancelar</Button>
+            <Button onClick={handleSave} disabled={updateMutation.isPending}>
+              <Save className="w-4 h-4 mr-1" /> {updateMutation.isPending ? "Guardando..." : "Guardar Cambios"}
+            </Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 // ─── Página Principal ─────────────────────────────────────────────────────────
 function PrescriptionsInner() {
   const utils = trpc.useUtils();
@@ -613,6 +764,7 @@ function PrescriptionsInner() {
   const [showNew, setShowNew] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
   const [viewPrescription, setViewPrescription] = useState<any | null>(null);
+  const [editPrescription, setEditPrescription] = useState<any | null>(null);
 
   if (viewPrescription) {
     return (
@@ -712,6 +864,9 @@ function PrescriptionsInner() {
                       <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setViewPrescription(rx)} title="Ver / Imprimir">
                         <Eye className="w-4 h-4" />
                       </Button>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-blue-600 hover:text-blue-700" onClick={() => setEditPrescription(rx)} title="Editar receta">
+                        <Pencil className="w-4 h-4" />
+                      </Button>
                       <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setViewPrescription(rx)} title="Imprimir">
                         <Printer className="w-4 h-4" />
                       </Button>
@@ -739,6 +894,14 @@ function PrescriptionsInner() {
       {/* Modales */}
       <DoctorProfileModal open={showProfile} onClose={() => setShowProfile(false)} />
       <NewPrescriptionModal open={showNew} onClose={() => setShowNew(false)} onCreated={() => {}} />
+      {editPrescription && (
+        <EditPrescriptionModal
+          prescription={editPrescription}
+          open={!!editPrescription}
+          onClose={() => setEditPrescription(null)}
+          onUpdated={() => { utils.prescriptions.list.invalidate(); setEditPrescription(null); }}
+        />
+      )}
 
       {/* Estilos de impresión */}
       <style>{`
