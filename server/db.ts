@@ -1556,3 +1556,10 @@ export async function deleteEvidenceFromProgress(data: {
     evidenceName: null,
   }).where(where);
 }
+
+// ─── Contratos: eliminar ──────────────────────────────────────────────────────
+export async function deleteContract(id: number, createdByUserId: number): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("DB not available");
+  await db.delete(contracts).where(and(eq(contracts.id, id), eq(contracts.createdByUserId, createdByUserId)));
+}

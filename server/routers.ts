@@ -1382,7 +1382,42 @@ export const appRouter = router({
           signedFromIp: ip,
           status: "signed",
         });
+        // Notificar al admin que el cliente firmó
+        try {
+          const db = await import('./db').then(m => m.getDb ? m.getDb() : null);
+          if (db) {
+            const { users: usersTable } = await import('../drizzle/schema');
+            const { eq: eqOp } = await import('drizzle-orm');
+            const adminUser = await db.select().from(usersTable).where(eqOp(usersTable.id, contract.createdByUserId)).limit(1);
+            if (adminUser[0]) {
+              await createNotification({
+                userId: adminUser[0].id,
+                type: 'contract_signed',
+                title: '\u2712\ufe0f Contrato firmado por el cliente',
+                message: `${contract.clientName} ha firmado el contrato No. KP-${String(contract.id).padStart(5, '0')}. Entra a Contratos para firmarlo t\u00fa tambi\u00e9n.`,
+                actionUrl: '/contracts',
+                metadata: JSON.stringify({ contractId: contract.id, clientName: contract.clientName }),
+              });
+            }
+          }
+          await notifyOwner({
+            title: `\u2712\ufe0f Contrato firmado \u2014 ${contract.clientName}`,
+            content: `El cliente ${contract.clientName} (${contract.clientEmail}) firm\u00f3 el contrato No. KP-${String(contract.id).padStart(5, '0')}. Comisi\u00f3n: ${contract.commissionRate}%. Entra al panel para firmarlo.`,
+          });
+        } catch (e) {
+          console.warn('[Contracts] Error enviando notificaci\u00f3n de firma:', e);
+        }
         return { success: true, signatureUrl };
+      }),
+
+    delete: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        const { deleteContract } = await import('./db');
+        const contract = await getContractById(input.id);
+        if (!contract || contract.createdByUserId !== ctx.user.id) throw new TRPCError({ code: 'NOT_FOUND' });
+        await deleteContract(input.id, ctx.user.id);
+        return { success: true };
       }),
 
     uploadDocument: publicProcedure

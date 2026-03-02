@@ -9,7 +9,7 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { FileText, Plus, Send, Eye, Copy, CheckCircle, Archive, Edit, Download, Search, X, ExternalLink, MessageCircle, Mail, PenLine } from "lucide-react";
+import { FileText, Plus, Send, Eye, Copy, CheckCircle, Archive, Edit, Download, Search, X, ExternalLink, MessageCircle, Mail, PenLine, Trash2 } from "lucide-react";
 import jsPDF from "jspdf";
 
 type ContractStatus = "draft" | "sent" | "signed" | "archived";
@@ -578,6 +578,14 @@ export default function Contracts() {
     onSuccess: () => { toast.success("Contrato actualizado"); refetch(); },
     onError: (e) => toast.error(e.message),
   });
+  const deleteMutation = trpc.contracts.delete.useMutation({
+    onSuccess: () => { toast.success("Contrato eliminado correctamente"); refetch(); },
+    onError: (e) => toast.error("Error al eliminar: " + e.message),
+  });
+  const handleDelete = (contract: ContractData) => {
+    if (!confirm(`¿Eliminar el contrato de ${contract.clientName}? Esta acción no se puede deshacer.`)) return;
+    deleteMutation.mutate({ id: contract.id });
+  };
 
   const defaultForm = {
     clientName: "", clientEmail: "", clientPhone: "", clientRfc: "", clientCurp: "",
@@ -920,6 +928,16 @@ export default function Contracts() {
                             <Archive className="w-4 h-4" />
                           </Button>
                         )}
+                        {/* Eliminar */}
+                        <Button
+                          size="sm" variant="ghost"
+                          onClick={() => handleDelete(contract as ContractData)}
+                          className="text-red-400 hover:text-red-600"
+                          title="Eliminar contrato"
+                          disabled={deleteMutation.isPending}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
                       </div>
                     </td>
                   </tr>
