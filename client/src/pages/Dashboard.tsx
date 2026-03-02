@@ -2,7 +2,7 @@ import DashboardLayout from "@/components/DashboardLayout";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Link } from "wouter";
+import { Link as RouterLink } from "wouter";
 import {
   ArrowRight,
   BarChart3,
@@ -130,7 +130,7 @@ export default function Dashboard() {
               href: "/dashboard/links",
             },
           ].map(({ label, value, icon: Icon, iconColor, iconBg, sub, href }) => (
-            <Link key={label} href={href}>
+            <RouterLink key={label} href={href}>
               <Card className="border-gray-200 shadow-sm cursor-pointer hover:shadow-md hover:border-gray-300 transition-all">
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between mb-2">
@@ -143,7 +143,7 @@ export default function Dashboard() {
                   <p className="text-xs text-gray-400 mt-0.5">{sub}</p>
                 </CardContent>
               </Card>
-            </Link>
+            </RouterLink>
           ))}
         </div>
 
@@ -187,7 +187,7 @@ export default function Dashboard() {
               href: "/dashboard/sales",
             },
           ].map(({ label, value, icon: Icon, iconColor, iconBg, sub, href }) => (
-            <Link key={label} href={href}>
+            <RouterLink key={label} href={href}>
               <Card className="border-gray-200 shadow-sm cursor-pointer hover:shadow-md hover:border-gray-300 transition-all">
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between mb-2">
@@ -200,7 +200,7 @@ export default function Dashboard() {
                   <p className="text-xs text-gray-400 mt-0.5">{sub}</p>
                 </CardContent>
               </Card>
-            </Link>
+            </RouterLink>
           ))}
         </div>
 
@@ -245,7 +245,7 @@ export default function Dashboard() {
                 href: "/dashboard/links",
               },
             ].map(({ label, value, icon: Icon, iconColor, iconBg, sub, href }) => (
-              <Link key={label} href={href}>
+              <RouterLink key={label} href={href}>
               <Card className="border-blue-100 bg-blue-50/50 shadow-sm cursor-pointer hover:shadow-md hover:border-blue-200 transition-all">
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between mb-2">
@@ -258,7 +258,7 @@ export default function Dashboard() {
                   <p className="text-xs text-blue-400 mt-0.5">{sub}</p>
                 </CardContent>
               </Card>
-              </Link>
+              </RouterLink>
             ))}
           </div>
         )}
@@ -274,9 +274,9 @@ export default function Dashboard() {
                   Ventas últimos 7 días
                 </CardTitle>
                 <Button asChild variant="ghost" size="sm" className="text-cyan-600 hover:text-cyan-700 hover:bg-cyan-50 h-8 text-xs">
-                  <Link href="/dashboard/sales">
+                  <RouterLink href="/dashboard/sales">
                     Ver detalle <ArrowRight className="w-3.5 h-3.5 ml-1" />
-                  </Link>
+                  </RouterLink>
                 </Button>
               </div>
             </CardHeader>
@@ -322,7 +322,7 @@ export default function Dashboard() {
                 { href: "/dashboard/widget", icon: Code2, label: "Widget de Pago", sub: "Para tu sitio web", color: "bg-white hover:bg-gray-50 border border-gray-200", textColor: "text-gray-800", subColor: "text-gray-400" },
                 { href: "/dashboard/recurring", icon: RefreshCw, label: "Cobros Recurrentes", sub: "Suscripciones", color: "bg-white hover:bg-gray-50 border border-gray-200", textColor: "text-gray-800", subColor: "text-gray-400" },
               ].map(({ href, icon: Icon, label, sub, color, textColor, subColor }) => (
-                <Link key={href} href={href}>
+                <RouterLink key={href} href={href}>
                   <div className={`flex items-center gap-3 p-3 ${color} rounded-xl cursor-pointer transition-all group`}>
                     <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center flex-shrink-0">
                       <Icon className={`w-4 h-4 ${textColor}`} />
@@ -333,7 +333,7 @@ export default function Dashboard() {
                     </div>
                     <ArrowRight className={`w-3.5 h-3.5 ${textColor} opacity-60 group-hover:translate-x-0.5 transition-transform`} />
                   </div>
-                </Link>
+                </RouterLink>
               ))}
             </CardContent>
           </Card>
@@ -345,9 +345,9 @@ export default function Dashboard() {
             <div className="flex items-center justify-between">
               <CardTitle className="text-base font-semibold text-gray-800">Últimos enlaces</CardTitle>
               <Button asChild variant="ghost" size="sm" className="text-cyan-600 hover:text-cyan-700 hover:bg-cyan-50 h-8 text-xs">
-                <Link href="/dashboard/links">
+                <RouterLink href="/dashboard/links">
                   Ver todos <ArrowRight className="w-3.5 h-3.5 ml-1" />
-                </Link>
+                </RouterLink>
               </Button>
             </div>
           </CardHeader>
@@ -372,10 +372,10 @@ export default function Dashboard() {
                 </div>
                 <p className="text-sm text-gray-500 mb-3">Aún no has creado ningún enlace</p>
                 <Button asChild size="sm" className="bg-cyan-500 hover:bg-cyan-400 text-white">
-                  <Link href="/dashboard/create">
+                  <RouterLink href="/dashboard/create">
                     <Plus className="w-3.5 h-3.5 mr-1.5" />
                     Crear primer enlace
-                  </Link>
+                  </RouterLink>
                 </Button>
               </div>
             ) : (

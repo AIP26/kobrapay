@@ -14,6 +14,8 @@ import {
   Activity,
   Download,
   FileText,
+  X,
+  ChevronRight,
 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -44,11 +46,14 @@ const MONTH_LABELS: Record<string, string> = {
   "09": "Sep", "10": "Oct", "11": "Nov", "12": "Dic",
 };
 
+type DrillDownType = "comisiones" | "transacciones" | "clientes" | "promedio" | null;
+
 export default function CommissionsPanel() {
   const { user, loading: authLoading } = useAuth();
   const isSuperAdmin = (user as Record<string, unknown>)?.isSuperAdmin === true;
   const isAdmin = user?.role === "admin";
   const canAccess = isSuperAdmin || isAdmin;
+  const [drillDown, setDrillDown] = useState<DrillDownType>(null);
 
   const { data, isLoading } = trpc.commissions.summary.useQuery(undefined, {
     enabled: canAccess,
@@ -65,7 +70,6 @@ export default function CommissionsPanel() {
     });
   }, [data]);
 
-  // Mientras carga la sesión, no mostrar error de acceso
   if (authLoading) {
     return (
       <DashboardLayout title="Comisiones">
@@ -98,7 +102,6 @@ export default function CommissionsPanel() {
     ? clients.reduce((s, c) => s + parseFloat(c.commissionRate || "0"), 0) / clients.length
     : 0;
 
-  // Top 5 clientes por comisión
   const top5 = [...clients].sort((a, b) => b.totalCommission - a.totalCommission).slice(0, 5);
   const [generatingPdf, setGeneratingPdf] = useState(false);
 
@@ -133,6 +136,190 @@ export default function CommissionsPanel() {
     }
   };
 
+  // ─── Drill-down panel content ────────────────────────────────────────────────
+  const DrillDownPanel = () => {
+    if (!drillDown) return null;
+
+    const sortedByCommission = [...clients].sort((a, b) => b.totalCommission - a.totalCommission);
+    const sortedByTx = [...clients].sort((a, b) => b.totalTransactions - a.totalTransactions);
+    const sortedByRate = [...clients].sort((a, b) => parseFloat(b.commissionRate || "0") - parseFloat(a.commissionRate || "0"));
+
+    const titles: Record<DrillDownType & string, string> = {
+      comisiones: "Detalle de Comisiones",
+      transacciones: "Detalle de Transacciones",
+      clientes: "Clientes Activos",
+      promedio: "Comisiones por Cliente",
+    };
+
+    return (
+      <div className="fixed inset-0 z-50 flex justify-end" onClick={() => setDrillDown(null)}>
+        <div
+          className="w-full max-w-lg bg-white h-full shadow-2xl overflow-y-auto border-l border-gray-200"
+          onClick={e => e.stopPropagation()}
+        >
+          {/* Header */}
+          <div className="sticky top-0 bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between z-10">
+            <div>
+              <h2 className="font-bold text-gray-900 text-lg">{titles[drillDown]}</h2>
+              <p className="text-xs text-gray-400 mt-0.5">
+                {drillDown === "comisiones" && `Total: ${fmt(totalEarned)}`}
+                {drillDown === "transacciones" && `${totalTx.toLocaleString()} transacciones`}
+                {drillDown === "clientes" && `${activeClients} de ${clients.length} activos`}
+                {drillDown === "promedio" && `Promedio: ${avgCommission.toFixed(2)}%`}
+              </p>
+            </div>
+            <button
+              onClick={() => setDrillDown(null)}
+              className="p-2 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+
+          <div className="p-6 space-y-3">
+            {/* Comisiones: historial mensual + top clientes */}
+            {drillDown === "comisiones" && (
+              <>
+                {data?.monthly && data.monthly.length > 0 && (
+                  <div className="mb-4">
+                    <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Historial mensual</h3>
+                    <div className="space-y-2">
+                      {[...data.monthly].reverse().map(m => {
+                        const [year, mo] = m.month.split("-");
+                        const MONTHS = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
+                        const pct = totalEarned > 0 ? (m.amount / totalEarned) * 100 : 0;
+                        return (
+                          <div key={m.month} className="flex items-center gap-3">
+                            <span className="text-xs text-gray-500 w-16 flex-shrink-0">{MONTHS[parseInt(mo)-1]} {year.slice(2)}</span>
+                            <div className="flex-1 bg-gray-100 rounded-full h-2">
+                              <div className="bg-emerald-500 h-2 rounded-full" style={{ width: `${Math.min(pct, 100)}%` }} />
+                            </div>
+                            <span className="text-sm font-semibold text-emerald-600 w-20 text-right">{fmtShort(m.amount)}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+                <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Por cliente</h3>
+                {sortedByCommission.length === 0 ? (
+                  <p className="text-gray-400 text-sm text-center py-8">Sin datos aún</p>
+                ) : sortedByCommission.map((c, i) => (
+                  <div key={c.clientId} className="flex items-center gap-3 p-3 rounded-lg border border-gray-100 hover:bg-gray-50">
+                    <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${i === 0 ? "bg-amber-100 text-amber-700" : i === 1 ? "bg-gray-200 text-gray-600" : "bg-gray-100 text-gray-500"}`}>{i+1}</div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-gray-900 truncate">{c.businessName || c.name}</p>
+                      <p className="text-xs text-gray-400">{c.commissionRate}% · {c.totalTransactions} txs</p>
+                    </div>
+                    <p className="text-sm font-bold text-emerald-600">{fmt(c.totalCommission)}</p>
+                  </div>
+                ))}
+              </>
+            )}
+
+            {/* Transacciones: ranking por número de transacciones */}
+            {drillDown === "transacciones" && (
+              <>
+                <div className="grid grid-cols-2 gap-3 mb-4">
+                  <div className="bg-cyan-50 rounded-xl p-4">
+                    <p className="text-xs text-cyan-600 font-medium">Total transacciones</p>
+                    <p className="text-2xl font-bold text-cyan-700 mt-1">{totalTx.toLocaleString()}</p>
+                  </div>
+                  <div className="bg-gray-50 rounded-xl p-4">
+                    <p className="text-xs text-gray-500 font-medium">Clientes con txs</p>
+                    <p className="text-2xl font-bold text-gray-700 mt-1">{clients.filter(c => c.totalTransactions > 0).length}</p>
+                  </div>
+                </div>
+                <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Ranking por transacciones</h3>
+                {sortedByTx.length === 0 ? (
+                  <p className="text-gray-400 text-sm text-center py-8">Sin datos aún</p>
+                ) : sortedByTx.map((c, i) => (
+                  <div key={c.clientId} className="flex items-center gap-3 p-3 rounded-lg border border-gray-100 hover:bg-gray-50">
+                    <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${i === 0 ? "bg-cyan-100 text-cyan-700" : "bg-gray-100 text-gray-500"}`}>{i+1}</div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-gray-900 truncate">{c.businessName || c.name}</p>
+                      <p className="text-xs text-gray-400">{c.email}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm font-bold text-cyan-600">{c.totalTransactions.toLocaleString()}</p>
+                      <p className="text-xs text-gray-400">txs</p>
+                    </div>
+                  </div>
+                ))}
+              </>
+            )}
+
+            {/* Clientes activos */}
+            {drillDown === "clientes" && (
+              <>
+                <div className="grid grid-cols-3 gap-3 mb-4">
+                  <div className="bg-green-50 rounded-xl p-3 text-center">
+                    <p className="text-xs text-green-600 font-medium">Activos</p>
+                    <p className="text-xl font-bold text-green-700 mt-1">{clients.filter(c => c.status === "active").length}</p>
+                  </div>
+                  <div className="bg-yellow-50 rounded-xl p-3 text-center">
+                    <p className="text-xs text-yellow-600 font-medium">Pendientes</p>
+                    <p className="text-xl font-bold text-yellow-700 mt-1">{clients.filter(c => c.status === "pending").length}</p>
+                  </div>
+                  <div className="bg-red-50 rounded-xl p-3 text-center">
+                    <p className="text-xs text-red-600 font-medium">Suspendidos</p>
+                    <p className="text-xl font-bold text-red-700 mt-1">{clients.filter(c => c.status === "suspended").length}</p>
+                  </div>
+                </div>
+                <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Todos los clientes</h3>
+                {clients.length === 0 ? (
+                  <p className="text-gray-400 text-sm text-center py-8">Sin clientes registrados</p>
+                ) : clients.map(c => (
+                  <div key={c.clientId} className="flex items-center gap-3 p-3 rounded-lg border border-gray-100 hover:bg-gray-50">
+                    <div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center flex-shrink-0">
+                      <span className="text-xs font-bold text-purple-700">{(c.businessName || c.name || "?")[0].toUpperCase()}</span>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-gray-900 truncate">{c.businessName || c.name}</p>
+                      <p className="text-xs text-gray-400">{c.email}</p>
+                    </div>
+                    <Badge
+                      className={c.status === "active" ? "bg-green-100 text-green-700 border-green-200" : c.status === "suspended" ? "bg-red-100 text-red-700 border-red-200" : "bg-yellow-100 text-yellow-700 border-yellow-200"}
+                      variant="outline"
+                    >
+                      {c.status === "active" ? "Activo" : c.status === "suspended" ? "Suspendido" : "Pendiente"}
+                    </Badge>
+                  </div>
+                ))}
+              </>
+            )}
+
+            {/* Promedio: tasa de comisión por cliente */}
+            {drillDown === "promedio" && (
+              <>
+                <div className="bg-orange-50 rounded-xl p-4 mb-4">
+                  <p className="text-xs text-orange-600 font-medium">Comisión promedio global</p>
+                  <p className="text-3xl font-bold text-orange-700 mt-1">{avgCommission.toFixed(2)}%</p>
+                  <p className="text-xs text-orange-500 mt-1">Calculado sobre {clients.length} clientes</p>
+                </div>
+                <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Tasa por cliente</h3>
+                {sortedByRate.length === 0 ? (
+                  <p className="text-gray-400 text-sm text-center py-8">Sin datos aún</p>
+                ) : sortedByRate.map(c => (
+                  <div key={c.clientId} className="flex items-center gap-3 p-3 rounded-lg border border-gray-100 hover:bg-gray-50">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-gray-900 truncate">{c.businessName || c.name}</p>
+                      <p className="text-xs text-gray-400">{c.totalTransactions} transacciones · {fmt(c.totalVolume)} volumen</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm font-bold text-orange-600">{c.commissionRate}%</p>
+                      <p className="text-xs text-gray-400">{fmt(c.totalCommission)}</p>
+                    </div>
+                  </div>
+                ))}
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <DashboardLayout title="Panel de Comisiones">
       <div className="max-w-6xl mx-auto space-y-6">
@@ -155,15 +342,19 @@ export default function CommissionsPanel() {
           </div>
         </div>
 
-        {/* KPI Cards */}
+        {/* KPI Cards — clickeables */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <Card>
+          {/* Total comisiones */}
+          <Card
+            className="cursor-pointer hover:shadow-md hover:border-emerald-300 group"
+            onClick={() => setDrillDown(drillDown === "comisiones" ? null : "comisiones")}
+          >
             <CardContent className="p-5">
               <div className="flex items-center justify-between mb-3">
                 <div className="p-2 bg-emerald-100 rounded-lg">
                   <DollarSign className="w-5 h-5 text-emerald-600" />
                 </div>
-                <ArrowUpRight className="w-4 h-4 text-emerald-500" />
+                <ChevronRight className="w-4 h-4 text-emerald-400 group-hover:text-emerald-600" />
               </div>
               {isLoading ? (
                 <div className="h-8 bg-gray-100 animate-pulse rounded w-24 mb-1" />
@@ -174,12 +365,17 @@ export default function CommissionsPanel() {
             </CardContent>
           </Card>
 
-          <Card>
+          {/* Transacciones */}
+          <Card
+            className="cursor-pointer hover:shadow-md hover:border-cyan-300 group"
+            onClick={() => setDrillDown(drillDown === "transacciones" ? null : "transacciones")}
+          >
             <CardContent className="p-5">
               <div className="flex items-center justify-between mb-3">
                 <div className="p-2 bg-cyan-100 rounded-lg">
                   <BarChart3 className="w-5 h-5 text-cyan-600" />
                 </div>
+                <ChevronRight className="w-4 h-4 text-cyan-400 group-hover:text-cyan-600" />
               </div>
               {isLoading ? (
                 <div className="h-8 bg-gray-100 animate-pulse rounded w-16 mb-1" />
@@ -190,12 +386,17 @@ export default function CommissionsPanel() {
             </CardContent>
           </Card>
 
-          <Card>
+          {/* Clientes activos */}
+          <Card
+            className="cursor-pointer hover:shadow-md hover:border-purple-300 group"
+            onClick={() => setDrillDown(drillDown === "clientes" ? null : "clientes")}
+          >
             <CardContent className="p-5">
               <div className="flex items-center justify-between mb-3">
                 <div className="p-2 bg-purple-100 rounded-lg">
                   <Users className="w-5 h-5 text-purple-600" />
                 </div>
+                <ChevronRight className="w-4 h-4 text-purple-400 group-hover:text-purple-600" />
               </div>
               {isLoading ? (
                 <div className="h-8 bg-gray-100 animate-pulse rounded w-12 mb-1" />
@@ -206,12 +407,17 @@ export default function CommissionsPanel() {
             </CardContent>
           </Card>
 
-          <Card>
+          {/* Comisión promedio */}
+          <Card
+            className="cursor-pointer hover:shadow-md hover:border-orange-300 group"
+            onClick={() => setDrillDown(drillDown === "promedio" ? null : "promedio")}
+          >
             <CardContent className="p-5">
               <div className="flex items-center justify-between mb-3">
                 <div className="p-2 bg-orange-100 rounded-lg">
                   <TrendingUp className="w-5 h-5 text-orange-600" />
                 </div>
+                <ChevronRight className="w-4 h-4 text-orange-400 group-hover:text-orange-600" />
               </div>
               {isLoading ? (
                 <div className="h-8 bg-gray-100 animate-pulse rounded w-16 mb-1" />
@@ -241,7 +447,7 @@ export default function CommissionsPanel() {
                   Sin datos de comisiones aún
                 </div>
               ) : (
-                <ResponsiveContainer width="100%" height={220}>
+                <ResponsiveContainer width="100%" height={200}>
                   <BarChart data={chartData} margin={{ top: 4, right: 4, left: 0, bottom: 0 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                     <XAxis dataKey="label" tick={{ fontSize: 11, fill: "#6b7280" }} />
@@ -401,6 +607,9 @@ export default function CommissionsPanel() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Drill-down panel */}
+      <DrillDownPanel />
     </DashboardLayout>
   );
 }
