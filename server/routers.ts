@@ -1691,6 +1691,11 @@ export const appRouter = router({
         createdAt: transactions.createdAt,
         payerName: transactions.payerName,
         payerEmail: transactions.payerEmail,
+        cardLast4: transactions.cardLast4,
+        cardBrand: transactions.cardBrand,
+        operationNumber: transactions.operationNumber,
+        currency: transactions.currency,
+        paymentLinkId: transactions.paymentLinkId,
       }).from(transactions)
         .where(eq(transactions.status, 'succeeded'))
         .orderBy(desc(transactions.createdAt));
@@ -1764,11 +1769,21 @@ export const appRouter = router({
         .slice(-12)
         .map(([month, amount]) => ({ month, amount }));
 
+      // Enriquecer transacciones con nombre del cliente (negocio)
+      const enrichedTxs = allTxs.map(tx => {
+        const clientData = clientMap.get(tx.userId);
+        return {
+          ...tx,
+          clientName: clientData?.businessName || clientData?.name || 'Cliente desconocido',
+          clientEmail: clientData?.email || null,
+        };
+      });
       return {
         totalEarned,
         totalTransactions: allTxs.length,
         clients: Array.from(clientMap.values()).sort((a, b) => b.totalCommission - a.totalCommission),
         monthly,
+        transactions: enrichedTxs,
       };
     }),
   }),

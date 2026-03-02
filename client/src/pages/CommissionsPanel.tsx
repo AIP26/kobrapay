@@ -217,37 +217,60 @@ export default function CommissionsPanel() {
               </>
             )}
 
-            {/* Transacciones: ranking por número de transacciones */}
-            {drillDown === "transacciones" && (
-              <>
-                <div className="grid grid-cols-2 gap-3 mb-4">
-                  <div className="bg-cyan-50 rounded-xl p-4">
-                    <p className="text-xs text-cyan-600 font-medium">Total transacciones</p>
-                    <p className="text-2xl font-bold text-cyan-700 mt-1">{totalTx.toLocaleString()}</p>
-                  </div>
-                  <div className="bg-gray-50 rounded-xl p-4">
-                    <p className="text-xs text-gray-500 font-medium">Clientes con txs</p>
-                    <p className="text-2xl font-bold text-gray-700 mt-1">{clients.filter(c => c.totalTransactions > 0).length}</p>
-                  </div>
-                </div>
-                <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Ranking por transacciones</h3>
-                {sortedByTx.length === 0 ? (
-                  <p className="text-gray-400 text-sm text-center py-8">Sin datos aún</p>
-                ) : sortedByTx.map((c, i) => (
-                  <div key={c.clientId} className="flex items-center gap-3 p-3 rounded-lg border border-gray-100 hover:bg-gray-50">
-                    <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${i === 0 ? "bg-cyan-100 text-cyan-700" : "bg-gray-100 text-gray-500"}`}>{i+1}</div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-gray-900 truncate">{c.businessName || c.name}</p>
-                      <p className="text-xs text-gray-400">{c.email}</p>
+            {/* Transacciones: lista real de transacciones individuales */}
+            {drillDown === "transacciones" && (() => {
+              const txList = (data as Record<string, unknown> & { transactions?: Array<{
+                id: number;
+                payerName: string | null;
+                payerEmail: string | null;
+                amount: string;
+                commissionAmount: string;
+                netAmount: string;
+                currency: string;
+                cardBrand: string | null;
+                cardLast4: string | null;
+                operationNumber: string | null;
+                createdAt: Date;
+                clientName: string;
+              }> })?.transactions ?? [];
+              return (
+                <>
+                  <div className="grid grid-cols-2 gap-3 mb-4">
+                    <div className="bg-cyan-50 rounded-xl p-4">
+                      <p className="text-xs text-cyan-600 font-medium">Total transacciones</p>
+                      <p className="text-2xl font-bold text-cyan-700 mt-1">{totalTx.toLocaleString()}</p>
                     </div>
-                    <div className="text-right">
-                      <p className="text-sm font-bold text-cyan-600">{c.totalTransactions.toLocaleString()}</p>
-                      <p className="text-xs text-gray-400">txs</p>
+                    <div className="bg-emerald-50 rounded-xl p-4">
+                      <p className="text-xs text-emerald-600 font-medium">Comisiones generadas</p>
+                      <p className="text-2xl font-bold text-emerald-700 mt-1">{fmt(totalEarned)}</p>
                     </div>
                   </div>
-                ))}
-              </>
-            )}
+                  <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Transacciones exitosas ({txList.length})</h3>
+                  {txList.length === 0 ? (
+                    <p className="text-gray-400 text-sm text-center py-8">Sin transacciones aún</p>
+                  ) : txList.map((tx) => (
+                    <div key={tx.id} className="p-3 rounded-lg border border-gray-100 hover:bg-gray-50 space-y-1.5">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-semibold text-gray-900 truncate">{tx.payerName || "Pagador desconocido"}</p>
+                          <p className="text-xs text-gray-400 truncate">{tx.payerEmail || "—"}</p>
+                        </div>
+                        <div className="text-right flex-shrink-0">
+                          <p className="text-sm font-bold text-gray-900">{fmt(parseFloat(tx.amount))}</p>
+                          <p className="text-xs text-emerald-600 font-medium">+{fmt(parseFloat(tx.commissionAmount))} comisión</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3 text-xs text-gray-400">
+                        <span className="bg-gray-100 px-2 py-0.5 rounded font-mono">{tx.clientName}</span>
+                        {tx.cardBrand && <span>{tx.cardBrand.toUpperCase()} ···{tx.cardLast4}</span>}
+                        {tx.operationNumber && <span>#{tx.operationNumber}</span>}
+                        <span className="ml-auto">{new Date(tx.createdAt).toLocaleDateString("es-MX", { day: "2-digit", month: "short", year: "numeric" })}</span>
+                      </div>
+                    </div>
+                  ))}
+                </>
+              );
+            })()}
 
             {/* Clientes activos */}
             {drillDown === "clientes" && (
