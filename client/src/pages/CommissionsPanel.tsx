@@ -16,6 +16,12 @@ import {
   FileText,
   X,
   ChevronRight,
+  CreditCard,
+  Hash,
+  User,
+  Mail,
+  CheckCircle2,
+  Clock,
 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -48,12 +54,28 @@ const MONTH_LABELS: Record<string, string> = {
 
 type DrillDownType = "comisiones" | "transacciones" | "clientes" | "promedio" | null;
 
+type TxDetail = {
+  id: number;
+  payerName: string | null;
+  payerEmail: string | null;
+  amount: string;
+  commissionAmount: string;
+  netAmount: string;
+  currency: string;
+  cardBrand: string | null;
+  cardLast4: string | null;
+  operationNumber: string | null;
+  createdAt: Date;
+  clientName: string;
+};
+
 export default function CommissionsPanel() {
   const { user, loading: authLoading } = useAuth();
   const isSuperAdmin = (user as Record<string, unknown>)?.isSuperAdmin === true;
   const isAdmin = user?.role === "admin";
   const canAccess = isSuperAdmin || isAdmin;
   const [drillDown, setDrillDown] = useState<DrillDownType>(null);
+  const [selectedTx, setSelectedTx] = useState<TxDetail | null>(null);
 
   const { data, isLoading } = trpc.commissions.summary.useQuery(undefined, {
     enabled: canAccess,
@@ -249,7 +271,11 @@ export default function CommissionsPanel() {
                   {txList.length === 0 ? (
                     <p className="text-gray-400 text-sm text-center py-8">Sin transacciones aún</p>
                   ) : txList.map((tx) => (
-                    <div key={tx.id} className="p-3 rounded-lg border border-gray-100 hover:bg-gray-50 space-y-1.5">
+                    <div
+                      key={tx.id}
+                      className="p-3 rounded-lg border border-gray-100 hover:bg-emerald-50 hover:border-emerald-200 cursor-pointer space-y-1.5 transition-colors"
+                      onClick={() => setSelectedTx(tx as TxDetail)}
+                    >
                       <div className="flex items-start justify-between gap-2">
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-semibold text-gray-900 truncate">{tx.payerName || "Pagador desconocido"}</p>
@@ -265,6 +291,7 @@ export default function CommissionsPanel() {
                         {tx.cardBrand && <span>{tx.cardBrand.toUpperCase()} ···{tx.cardLast4}</span>}
                         {tx.operationNumber && <span>#{tx.operationNumber}</span>}
                         <span className="ml-auto">{new Date(tx.createdAt).toLocaleDateString("es-MX", { day: "2-digit", month: "short", year: "numeric" })}</span>
+                        <ChevronRight className="w-3.5 h-3.5 text-gray-300" />
                       </div>
                     </div>
                   ))}
@@ -337,6 +364,104 @@ export default function CommissionsPanel() {
                 ))}
               </>
             )}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // ─── Modal desglose de transacción individual ──────────────────────────────
+  const TxDetailModal = () => {
+    if (!selectedTx) return null;
+    const amount = parseFloat(selectedTx.amount);
+    const commission = parseFloat(selectedTx.commissionAmount);
+    const net = parseFloat(selectedTx.netAmount);
+    return (
+      <div className="fixed inset-0 z-[60] flex items-center justify-center p-4" onClick={() => setSelectedTx(null)}>
+        <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
+        <div
+          className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden"
+          onClick={e => e.stopPropagation()}
+        >
+          {/* Header */}
+          <div className="bg-gradient-to-r from-emerald-500 to-cyan-500 px-6 py-5 text-white">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className="w-5 h-5" />
+                <span className="font-semibold text-sm">Transacción Exitosa</span>
+              </div>
+              <button onClick={() => setSelectedTx(null)} className="p-1 hover:bg-white/20 rounded-lg">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <p className="text-3xl font-bold">{fmt(amount)}</p>
+            <p className="text-emerald-100 text-sm mt-1">
+              {new Date(selectedTx.createdAt).toLocaleDateString("es-MX", { weekday: "long", day: "2-digit", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" })}
+            </p>
+          </div>
+
+          {/* Desglose financiero */}
+          <div className="px-6 py-4 border-b border-gray-100">
+            <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Desglose financiero</h3>
+            <div className="space-y-2">
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-500">Monto cobrado</span>
+                <span className="font-semibold text-gray-900">{fmt(amount)}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-500">Comisión KobraPay</span>
+                <span className="font-semibold text-emerald-600">+{fmt(commission)}</span>
+              </div>
+              <div className="flex justify-between text-sm border-t border-dashed border-gray-200 pt-2 mt-2">
+                <span className="text-gray-500">Neto al cliente</span>
+                <span className="font-bold text-gray-900">{fmt(net)}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Datos del pagador */}
+          <div className="px-6 py-4 border-b border-gray-100">
+            <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Datos del pagador</h3>
+            <div className="space-y-2">
+              <div className="flex items-center gap-3 text-sm">
+                <User className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                <span className="text-gray-700">{selectedTx.payerName || "No registrado"}</span>
+              </div>
+              <div className="flex items-center gap-3 text-sm">
+                <Mail className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                <span className="text-gray-700">{selectedTx.payerEmail || "No registrado"}</span>
+              </div>
+              {selectedTx.cardBrand && (
+                <div className="flex items-center gap-3 text-sm">
+                  <CreditCard className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                  <span className="text-gray-700">{selectedTx.cardBrand.toUpperCase()} •••• {selectedTx.cardLast4}</span>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Datos de la operación */}
+          <div className="px-6 py-4">
+            <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Datos de la operación</h3>
+            <div className="space-y-2">
+              <div className="flex items-center gap-3 text-sm">
+                <Building2 className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                <span className="text-gray-500">Cliente KobraPay:</span>
+                <span className="font-medium text-gray-700">{selectedTx.clientName}</span>
+              </div>
+              {selectedTx.operationNumber && (
+                <div className="flex items-center gap-3 text-sm">
+                  <Hash className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                  <span className="text-gray-500">No. Operación:</span>
+                  <span className="font-mono text-gray-700 text-xs bg-gray-100 px-2 py-0.5 rounded">{selectedTx.operationNumber}</span>
+                </div>
+              )}
+              <div className="flex items-center gap-3 text-sm">
+                <Clock className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                <span className="text-gray-500">Fecha:</span>
+                <span className="text-gray-700">{new Date(selectedTx.createdAt).toLocaleString("es-MX")}</span>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -633,6 +758,9 @@ export default function CommissionsPanel() {
 
       {/* Drill-down panel */}
       <DrillDownPanel />
+
+      {/* Modal desglose individual de transacción */}
+      <TxDetailModal />
     </DashboardLayout>
   );
 }

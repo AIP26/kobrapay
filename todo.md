@@ -677,3 +677,4 @@
 - [ ] Frontend: indicador en sidebar si la cuenta no está conectada aún
 - [ ] PENDIENTE USUARIO: activar Stripe Connect en dashboard.stripe.com cuando vaya a dar de alta clientes reales
 - [ ] PENDIENTE FINAL: presentación comercial KobraPay vs competencia
+- [ ] Desglose de transacción al hacer clic en lista del Panel de Comisiones
