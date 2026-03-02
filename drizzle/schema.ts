@@ -1,4 +1,5 @@
 import {
+  bigint,
   boolean,
   decimal,
   int,
@@ -938,3 +939,73 @@ export const moduleRequests = mysqlTable("module_requests", {
   requestedAt: timestamp("requestedAt").defaultNow().notNull(),
 });
 export type ModuleRequest = typeof moduleRequests.$inferSelect;
+
+// ─── Encuesta de Onboarding Inteligente ───────────────────────────────────────
+export const onboardingSurveys = mysqlTable("onboarding_surveys", {
+  id: int("id").primaryKey().autoincrement(),
+  userId: int("userId").notNull().references(() => users.id),
+  // Tipo y tamaño del negocio
+  businessType: varchar("businessType", { length: 100 }).notNull(),
+  businessSize: varchar("businessSize", { length: 50 }).notNull(),
+  // Volumen financiero estimado
+  monthlyRevenueEstimate: varchar("monthlyRevenueEstimate", { length: 50 }).notNull(),
+  // Necesidades de pago
+  needsCardPayments: boolean("needsCardPayments").default(true),
+  needsInternationalCards: boolean("needsInternationalCards").default(false),
+  needsRecurringBilling: boolean("needsRecurringBilling").default(false),
+  needsInvoicing: boolean("needsInvoicing").default(false),
+  needsMultipleBankAccounts: boolean("needsMultipleBankAccounts").default(false),
+  // Módulos de interés (JSON array como texto)
+  interestedModules: text("interestedModules"),
+  // Contexto adicional
+  currentPaymentProcessor: varchar("currentPaymentProcessor", { length: 100 }),
+  mainChallenge: text("mainChallenge"),
+  // Plan recomendado (calculado automáticamente)
+  recommendedPlan: varchar("recommendedPlan", { length: 50 }),
+  recommendedCommission: decimal("recommendedCommission", { precision: 5, scale: 2 }),
+  planReasoning: text("planReasoning"),
+  // Estado del flujo de aprobación
+  status: varchar("status", { length: 30 }).default("pending_review").notNull(),
+  assistantNotes: text("assistantNotes"),
+  reviewedByAssistantAt: bigint("reviewedByAssistantAt", { mode: "number" }),
+  reviewedByAdminAt: bigint("reviewedByAdminAt", { mode: "number" }),
+  createdAt: bigint("createdAt", { mode: "number" }).notNull(),
+  updatedAt: bigint("updatedAt", { mode: "number" }).notNull(),
+});
+export type OnboardingSurvey = typeof onboardingSurveys.$inferSelect;
+export type InsertOnboardingSurvey = typeof onboardingSurveys.$inferInsert;
+
+// ─── Cuentas Bancarias (múltiples por usuario, Express + Custom) ──────────────
+export const bankAccounts = mysqlTable("bank_accounts", {
+  id: int("id").primaryKey().autoincrement(),
+  userId: int("user_id").notNull().references(() => users.id),
+  // Tipo de cuenta Stripe Connect
+  connectType: mysqlEnum("connect_type", ["express", "custom"]).default("express").notNull(),
+  // Stripe Connect
+  stripeAccountId: varchar("stripe_account_id", { length: 128 }),
+  stripeStatus: mysqlEnum("stripe_status", ["not_started", "pending", "active", "restricted", "disabled"]).default("not_started").notNull(),
+  stripeChargesEnabled: boolean("stripe_charges_enabled").default(false).notNull(),
+  stripePayoutsEnabled: boolean("stripe_payouts_enabled").default(false).notNull(),
+  stripeDetailsSubmitted: boolean("stripe_details_submitted").default(false).notNull(),
+  stripeOnboardedAt: bigint("stripe_onboarded_at", { mode: "number" }),
+  // Datos bancarios
+  accountAlias: varchar("account_alias", { length: 100 }),
+  bankName: varchar("bank_name", { length: 100 }),
+  clabe: varchar("clabe", { length: 18 }),
+  accountNumber: varchar("account_number", { length: 20 }),
+  cardNumber: varchar("card_number", { length: 16 }),
+  // Datos fiscales
+  accountHolderName: varchar("account_holder_name", { length: 255 }),
+  rfc: varchar("rfc", { length: 20 }),
+  curp: varchar("curp", { length: 18 }),
+  razonSocial: varchar("razon_social", { length: 255 }),
+  regimenFiscal: varchar("regimen_fiscal", { length: 100 }),
+  // Estado
+  isPrimary: boolean("is_primary").default(false).notNull(),
+  isActive: boolean("is_active").default(true).notNull(),
+  notes: text("notes"),
+  createdAt: bigint("created_at", { mode: "number" }).notNull(),
+  updatedAt: bigint("updated_at", { mode: "number" }).notNull(),
+});
+export type BankAccount = typeof bankAccounts.$inferSelect;
+export type InsertBankAccount = typeof bankAccounts.$inferInsert;

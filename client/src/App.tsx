@@ -49,6 +49,8 @@ import ModuleAccessAdmin from "./pages/ModuleAccessAdmin";
 import ModuleAccessManager from "./pages/ModuleAccessManager";
 import AssistantPanel from "./pages/AssistantPanel";
 import StripeConnect from "./pages/StripeConnect";
+import Advisor from "./pages/Advisor";
+import OnboardingSurvey from "./pages/OnboardingSurvey";
 
 function Router() {
   return (
@@ -91,7 +93,10 @@ function Router() {
       <Route path="/dashboard/module-access" component={ModuleAccessAdmin} />
       <Route path="/dashboard/module-manager" component={ModuleAccessManager} />
       <Route path="/dashboard/assistant-panel" component={AssistantPanel} />
+      <Route path="/dashboard/stripe-connect" component={StripeConnect} />
       <Route path="/dashboard/connect" component={StripeConnect} />
+      <Route path="/onboarding" component={OnboardingSurvey} />
+      <Route path="/dashboard/advisor" component={Advisor} />
       <Route path="/sign-contract/:token" component={SignContract} />
       <Route path="/complete-profile" component={CompleteProfile} />
       <Route path="/dashboard/profile" component={MyProfile} />

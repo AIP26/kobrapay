@@ -42,6 +42,7 @@ import {
   ClipboardList,
   ShieldCheck,
   Wallet,
+  Bot,
 } from "lucide-react";
 import { useState, useCallback, useMemo } from "react";
 import GlobalSearch from "./GlobalSearch";
@@ -84,6 +85,7 @@ const NAV_GROUPS = [
       { href: "/dashboard", icon: Home, label: "Panel" },
       { href: "/dashboard/sales", icon: BarChart3, label: "Mis Ventas" },
       { href: "/dashboard/report", icon: FileText, label: "Reporte Mensual" },
+      { href: "/dashboard/advisor", icon: Bot, label: "KobraPay Advisor", superAdminOnly: true },
     ],
   },
   {
@@ -205,7 +207,8 @@ function Sidebar({
     return group?.items.some(i => location === i.href) ?? false;
   };
 
-  const isItemVisible = (href: string) => {
+  const isItemVisible = (href: string, superAdminOnly?: boolean) => {
+    if (superAdminOnly && !isSuperAdmin) return false;
     if (isSuperAdmin) return true;
     const permKey = ITEM_PERMISSION_MAP[href];
     if (!permKey) return true; // sin restricción = siempre visible
@@ -246,7 +249,7 @@ function Sidebar({
             if (group.adminOnly && !isAdmin && !isSuperAdmin) return null;
 
             // Filtrar ítems visibles según permisos
-            const visibleItems = group.items.filter(({ href }) => isItemVisible(href));
+            const visibleItems = group.items.filter(({ href, superAdminOnly }: { href: string; superAdminOnly?: boolean }) => isItemVisible(href, superAdminOnly));
             if (visibleItems.length === 0) return null;
 
             const groupActive = isGroupActive(group.id);

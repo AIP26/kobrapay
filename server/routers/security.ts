@@ -112,6 +112,6 @@ export const securityRouter = router({
    * Check if current user is superadmin (used by frontend to show/hide sections)
    */
   checkSuperAdmin: protectedProcedure.query(({ ctx }) => {
-    return { isSuperAdmin: isSuperAdmin(ctx.user.openId) };
+    return { isSuperAdmin: isSuperAdmin(ctx.user.openId, ctx.user.role) };
   }),
 });

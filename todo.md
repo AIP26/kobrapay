@@ -678,3 +678,7 @@
 - [ ] PENDIENTE USUARIO: activar Stripe Connect en dashboard.stripe.com cuando vaya a dar de alta clientes reales
 - [ ] PENDIENTE FINAL: presentación comercial KobraPay vs competencia
 - [ ] Desglose de transacción al hacer clic en lista del Panel de Comisiones
+- [ ] Chatbot IA KobraPay Advisor en panel superadmin
+- [ ] Exportar recibo PDF desde modal de transacción
+- [ ] Filtro de fechas en drill-down de transacciones
+- [ ] Búsqueda por nombre/email en panel de transacciones

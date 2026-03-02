@@ -4650,6 +4650,543 @@ export const appRouter = router({
       }).from(users).orderBy(desc(users.createdAt));
     }),
   }),
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // BANK ACCOUNTS — Múltiples cuentas bancarias por usuario (Express + Custom)
+  // ─────────────────────────────────────────────────────────────────────────
+  bankAccounts: router({
+    // Listar todas las cuentas del usuario
+    list: protectedProcedure.query(async ({ ctx }) => {
+      const db = await import('./db').then(m => m.getDb ? m.getDb() : null);
+      if (!db) return [];
+      const { bankAccounts } = await import('../drizzle/schema');
+      const { eq, desc } = await import('drizzle-orm');
+      return db.select().from(bankAccounts)
+        .where(eq(bankAccounts.userId, ctx.user.id))
+        .orderBy(desc(bankAccounts.isPrimary), desc(bankAccounts.createdAt));
+    }),
+
+    // Crear nueva cuenta bancaria
+    create: protectedProcedure
+      .input(z.object({
+        connectType: z.enum(['express', 'custom']).default('express'),
+        accountAlias: z.string().min(1).max(100),
+        bankName: z.string().max(100).optional(),
+        clabe: z.string().length(18).optional().or(z.literal('')),
+        accountNumber: z.string().max(20).optional(),
+        cardNumber: z.string().max(16).optional(),
+        accountHolderName: z.string().max(255).optional(),
+        rfc: z.string().max(20).optional(),
+        curp: z.string().max(18).optional(),
+        razonSocial: z.string().max(255).optional(),
+        regimenFiscal: z.string().max(100).optional(),
+        isPrimary: z.boolean().default(false),
+        notes: z.string().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const db = await import('./db').then(m => m.getDb ? m.getDb() : null);
+        if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
+        const { bankAccounts } = await import('../drizzle/schema');
+        const { eq } = await import('drizzle-orm');
+        const now = Date.now();
+        // Si es primaria, quitar primaria de las demás
+        if (input.isPrimary) {
+          await db.update(bankAccounts)
+            .set({ isPrimary: false })
+            .where(eq(bankAccounts.userId, ctx.user.id));
+        }
+        const result = await db.insert(bankAccounts).values({
+          userId: ctx.user.id,
+          connectType: input.connectType,
+          accountAlias: input.accountAlias,
+          bankName: input.bankName || null,
+          clabe: input.clabe || null,
+          accountNumber: input.accountNumber || null,
+          cardNumber: input.cardNumber || null,
+          accountHolderName: input.accountHolderName || null,
+          rfc: input.rfc || null,
+          curp: input.curp || null,
+          razonSocial: input.razonSocial || null,
+          regimenFiscal: input.regimenFiscal || null,
+          isPrimary: input.isPrimary,
+          createdAt: now,
+          updatedAt: now,
+        });
+        return { success: true, id: Number((result as any).insertId) };
+      }),
+
+    // Actualizar cuenta bancaria
+    update: protectedProcedure
+      .input(z.object({
+        id: z.number(),
+        accountAlias: z.string().min(1).max(100).optional(),
+        bankName: z.string().max(100).optional(),
+        clabe: z.string().max(18).optional(),
+        accountNumber: z.string().max(20).optional(),
+        cardNumber: z.string().max(16).optional(),
+        accountHolderName: z.string().max(255).optional(),
+        rfc: z.string().max(20).optional(),
+        curp: z.string().max(18).optional(),
+        razonSocial: z.string().max(255).optional(),
+        regimenFiscal: z.string().max(100).optional(),
+        isPrimary: z.boolean().optional(),
+        notes: z.string().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const db = await import('./db').then(m => m.getDb ? m.getDb() : null);
+        if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
+        const { bankAccounts } = await import('../drizzle/schema');
+        const { eq, and } = await import('drizzle-orm');
+        if (input.isPrimary) {
+          await db.update(bankAccounts)
+            .set({ isPrimary: false })
+            .where(eq(bankAccounts.userId, ctx.user.id));
+        }
+        const { id, ...rest } = input;
+        await db.update(bankAccounts)
+          .set({ ...rest, updatedAt: Date.now() })
+          .where(and(eq(bankAccounts.id, id), eq(bankAccounts.userId, ctx.user.id)));
+        return { success: true };
+      }),
+
+    // Eliminar cuenta bancaria
+    delete: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        const db = await import('./db').then(m => m.getDb ? m.getDb() : null);
+        if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
+        const { bankAccounts } = await import('../drizzle/schema');
+        const { eq, and } = await import('drizzle-orm');
+        await db.delete(bankAccounts)
+          .where(and(eq(bankAccounts.id, input.id), eq(bankAccounts.userId, ctx.user.id)));
+        return { success: true };
+      }),
+
+    // Iniciar onboarding de Stripe Connect para una cuenta específica
+    startStripeOnboarding: protectedProcedure
+      .input(z.object({
+        bankAccountId: z.number(),
+        returnUrl: z.string().url(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const db = await import('./db').then(m => m.getDb ? m.getDb() : null);
+        if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
+        const { bankAccounts } = await import('../drizzle/schema');
+        const { eq, and } = await import('drizzle-orm');
+        const stripeClient = new Stripe(process.env.STRIPE_SECRET_KEY || '', { apiVersion: '2026-02-25.clover' as any });
+
+        const rows = await db.select().from(bankAccounts)
+          .where(and(eq(bankAccounts.id, input.bankAccountId), eq(bankAccounts.userId, ctx.user.id)))
+          .limit(1);
+        if (!rows.length) throw new TRPCError({ code: 'NOT_FOUND' });
+        const account = rows[0];
+
+        let stripeAccountId = account.stripeAccountId;
+        if (!stripeAccountId) {
+          const stripeAccount = await stripeClient.accounts.create({
+            type: account.connectType === 'custom' ? 'custom' : 'express',
+            country: 'MX',
+            email: ctx.user.email || undefined,
+            capabilities: {
+              card_payments: { requested: true },
+              transfers: { requested: true },
+            },
+            business_type: 'individual',
+            metadata: { kobrapay_user_id: String(ctx.user.id), bank_account_id: String(account.id) },
+          });
+          stripeAccountId = stripeAccount.id;
+          await db.update(bankAccounts)
+            .set({ stripeAccountId, stripeStatus: 'pending', updatedAt: Date.now() })
+            .where(eq(bankAccounts.id, account.id));
+        }
+
+        const accountLink = await stripeClient.accountLinks.create({
+          account: stripeAccountId,
+          refresh_url: `${input.returnUrl}?connect=refresh&account=${account.id}`,
+          return_url: `${input.returnUrl}?connect=success&account=${account.id}`,
+          type: 'account_onboarding',
+        });
+        return { url: accountLink.url };
+      }),
+
+    // Obtener estado de Stripe para una cuenta
+    getStripeStatus: protectedProcedure
+      .input(z.object({ bankAccountId: z.number() }))
+      .query(async ({ ctx, input }) => {
+        const db = await import('./db').then(m => m.getDb ? m.getDb() : null);
+        if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
+        const { bankAccounts } = await import('../drizzle/schema');
+        const { eq, and } = await import('drizzle-orm');
+        const rows = await db.select().from(bankAccounts)
+          .where(and(eq(bankAccounts.id, input.bankAccountId), eq(bankAccounts.userId, ctx.user.id)))
+          .limit(1);
+        if (!rows.length) throw new TRPCError({ code: 'NOT_FOUND' });
+        const account = rows[0];
+        if (!account.stripeAccountId) return { status: 'not_started', chargesEnabled: false, payoutsEnabled: false };
+        try {
+          const stripeClient = new Stripe(process.env.STRIPE_SECRET_KEY || '', { apiVersion: '2026-02-25.clover' as any });
+          const stripeAcc = await stripeClient.accounts.retrieve(account.stripeAccountId);
+          const newStatus = stripeAcc.charges_enabled ? 'active' : stripeAcc.details_submitted ? 'pending' : 'not_started';
+          await db.update(bankAccounts).set({
+            stripeStatus: newStatus as any,
+            stripeChargesEnabled: stripeAcc.charges_enabled,
+            stripePayoutsEnabled: stripeAcc.payouts_enabled ?? false,
+            stripeDetailsSubmitted: stripeAcc.details_submitted,
+            updatedAt: Date.now(),
+          }).where(eq(bankAccounts.id, account.id));
+          return { status: newStatus, chargesEnabled: stripeAcc.charges_enabled, payoutsEnabled: stripeAcc.payouts_enabled ?? false };
+        } catch {
+          return { status: account.stripeStatus, chargesEnabled: account.stripeChargesEnabled, payoutsEnabled: account.stripePayoutsEnabled };
+        }
+      }),
+
+    // Obtener saldo de una cuenta Stripe Connect
+    getBalance: protectedProcedure
+      .input(z.object({ bankAccountId: z.number() }))
+      .query(async ({ ctx, input }) => {
+        const db = await import('./db').then(m => m.getDb ? m.getDb() : null);
+        if (!db) return { available: 0, pending: 0, currency: 'MXN' };
+        const { bankAccounts } = await import('../drizzle/schema');
+        const { eq, and } = await import('drizzle-orm');
+        const rows = await db.select().from(bankAccounts)
+          .where(and(eq(bankAccounts.id, input.bankAccountId), eq(bankAccounts.userId, ctx.user.id)))
+          .limit(1);
+        if (!rows.length || !rows[0].stripeAccountId || !rows[0].stripeChargesEnabled) {
+          return { available: 0, pending: 0, currency: 'MXN' };
+        }
+        const stripeClient = new Stripe(process.env.STRIPE_SECRET_KEY || '', { apiVersion: '2026-02-25.clover' as any });
+        const balance = await stripeClient.balance.retrieve({ stripeAccount: rows[0].stripeAccountId! });
+        const avail = balance.available.find(b => b.currency === 'mxn') || balance.available[0];
+        const pend = balance.pending.find(b => b.currency === 'mxn') || balance.pending[0];
+        return {
+          available: avail ? avail.amount / 100 : 0,
+          pending: pend ? pend.amount / 100 : 0,
+          currency: 'MXN',
+        };
+      }),
+
+    // Solicitar retiro de una cuenta
+    requestPayout: protectedProcedure
+      .input(z.object({ bankAccountId: z.number(), amount: z.number().positive() }))
+      .mutation(async ({ ctx, input }) => {
+        const db = await import('./db').then(m => m.getDb ? m.getDb() : null);
+        if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
+        const { bankAccounts } = await import('../drizzle/schema');
+        const { eq, and } = await import('drizzle-orm');
+        const rows = await db.select().from(bankAccounts)
+          .where(and(eq(bankAccounts.id, input.bankAccountId), eq(bankAccounts.userId, ctx.user.id)))
+          .limit(1);
+        if (!rows.length || !rows[0].stripeAccountId || !rows[0].stripePayoutsEnabled) {
+          throw new TRPCError({ code: 'FORBIDDEN', message: 'Esta cuenta no tiene retiros habilitados.' });
+        }
+        const stripeClient = new Stripe(process.env.STRIPE_SECRET_KEY || '', { apiVersion: '2026-02-25.clover' as any });
+        const payout = await stripeClient.payouts.create(
+          { amount: Math.round(input.amount * 100), currency: 'mxn' },
+          { stripeAccount: rows[0].stripeAccountId! }
+        );
+        return { id: payout.id, amount: payout.amount / 100, arrivalDate: new Date(payout.arrival_date * 1000) };
+      }),
+  }),
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // ONBOARDING SURVEY — Encuesta de calificación post-registro
+  // ─────────────────────────────────────────────────────────────────────────
+  onboarding: router({
+    // Verificar si el usuario ya completó la encuesta
+    getSurveyStatus: protectedProcedure.query(async ({ ctx }) => {
+      const db = await import('./db').then(m => m.getDb ? m.getDb() : null);
+      if (!db) return { completed: false, survey: null };
+      const { onboardingSurveys } = await import('../drizzle/schema');
+      const { eq } = await import('drizzle-orm');
+      const surveys = await db.select().from(onboardingSurveys)
+        .where(eq(onboardingSurveys.userId, ctx.user.id))
+        .limit(1);
+      if (surveys.length === 0) return { completed: false, survey: null };
+      return { completed: true, survey: surveys[0] };
+    }),
+
+    // Guardar respuestas de la encuesta y calcular plan recomendado
+    submitSurvey: protectedProcedure
+      .input(z.object({
+        businessType: z.string().min(1),
+        businessSize: z.string().min(1),
+        monthlyRevenueEstimate: z.string().min(1),
+        needsCardPayments: z.boolean().default(true),
+        needsInternationalCards: z.boolean().default(false),
+        needsRecurringBilling: z.boolean().default(false),
+        needsInvoicing: z.boolean().default(false),
+        needsMultipleBankAccounts: z.boolean().default(false),
+        interestedModules: z.array(z.string()).default([]),
+        currentPaymentProcessor: z.string().optional(),
+        mainChallenge: z.string().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const db = await import('./db').then(m => m.getDb ? m.getDb() : null);
+        if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
+        const { onboardingSurveys } = await import('../drizzle/schema');
+        const { eq } = await import('drizzle-orm');
+
+        // Calcular plan recomendado basado en respuestas
+        let recommendedPlan = 'express';
+        let recommendedCommission = 3.0;
+        let planReasoning = '';
+
+        const revenueMap: Record<string, number> = {
+          '<10k': 5000, '10k-50k': 30000, '50k-100k': 75000,
+          '100k-500k': 300000, '500k+': 750000,
+        };
+        const estimatedRevenue = revenueMap[input.monthlyRevenueEstimate] || 5000;
+
+        if (
+          input.needsMultipleBankAccounts ||
+          input.businessSize === 'large' ||
+          estimatedRevenue >= 300000
+        ) {
+          recommendedPlan = 'custom';
+          recommendedCommission = 2.0;
+          planReasoning = 'Empresa grande o con necesidad de múltiples cuentas bancarias. Se recomienda Stripe Connect Custom para mayor flexibilidad y mejor tasa.';
+        } else if (estimatedRevenue >= 75000 || input.businessSize === 'medium') {
+          recommendedPlan = 'express';
+          recommendedCommission = 2.5;
+          planReasoning = 'Negocio mediano con buen volumen. Stripe Connect Express es ideal para recibir pagos directamente con tasa competitiva.';
+        } else {
+          recommendedPlan = 'express';
+          recommendedCommission = 3.0;
+          planReasoning = 'Negocio pequeño o nuevo. Stripe Connect Express es la mejor opción para empezar sin complicaciones.';
+        }
+
+        const now = Date.now();
+
+        // Verificar si ya existe una encuesta para este usuario
+        const existing = await db.select({ id: onboardingSurveys.id })
+          .from(onboardingSurveys)
+          .where(eq(onboardingSurveys.userId, ctx.user.id))
+          .limit(1);
+
+        const surveyData = {
+          userId: ctx.user.id,
+          businessType: input.businessType,
+          businessSize: input.businessSize,
+          monthlyRevenueEstimate: input.monthlyRevenueEstimate,
+          needsCardPayments: input.needsCardPayments,
+          needsInternationalCards: input.needsInternationalCards,
+          needsRecurringBilling: input.needsRecurringBilling,
+          needsInvoicing: input.needsInvoicing,
+          needsMultipleBankAccounts: input.needsMultipleBankAccounts,
+          interestedModules: JSON.stringify(input.interestedModules),
+          currentPaymentProcessor: input.currentPaymentProcessor || null,
+          mainChallenge: input.mainChallenge || null,
+          recommendedPlan,
+          recommendedCommission: String(recommendedCommission),
+          planReasoning,
+          status: 'pending_review',
+          updatedAt: now,
+        };
+
+        if (existing.length > 0) {
+          await db.update(onboardingSurveys)
+            .set(surveyData)
+            .where(eq(onboardingSurveys.userId, ctx.user.id));
+        } else {
+          await db.insert(onboardingSurveys).values({ ...surveyData, createdAt: now });
+        }
+
+        // Notificar al superadmin/asistente
+        const revenueLabels: Record<string, string> = {
+          '<10k': 'Menos de $10,000 MXN',
+          '10k-50k': '$10,000 - $50,000 MXN',
+          '50k-100k': '$50,000 - $100,000 MXN',
+          '100k-500k': '$100,000 - $500,000 MXN',
+          '500k+': 'Más de $500,000 MXN',
+        };
+        await notifyOwner({
+          title: '🎯 Nueva encuesta de onboarding',
+          content: `Usuario: ${ctx.user.name || ctx.user.email}\nNegocio: ${input.businessType} (${input.businessSize})\nIngreso mensual: ${revenueLabels[input.monthlyRevenueEstimate] || input.monthlyRevenueEstimate}\nPlan recomendado: ${recommendedPlan.toUpperCase()} al ${recommendedCommission}%\nRazón: ${planReasoning}`,
+        });
+
+        return { success: true, recommendedPlan, recommendedCommission, planReasoning };
+      }),
+
+    // [ASSISTANT/SUPERADMIN] Listar todas las encuestas pendientes
+    listSurveys: protectedProcedure
+      .input(z.object({
+        status: z.string().optional(),
+      }).optional())
+      .query(async ({ ctx, input }) => {
+        const isAssistant = ctx.user.role === 'assistant' || ctx.isSuperAdmin;
+        if (!isAssistant) throw new TRPCError({ code: 'FORBIDDEN' });
+        const db = await import('./db').then(m => m.getDb ? m.getDb() : null);
+        if (!db) return [];
+        const { onboardingSurveys, users } = await import('../drizzle/schema');
+        const { desc, eq, and } = await import('drizzle-orm');
+        const conditions = input?.status
+          ? [eq(onboardingSurveys.status, input.status)]
+          : [];
+        const rows = await db.select({
+          survey: onboardingSurveys,
+          userName: users.name,
+          userEmail: users.email,
+        })
+          .from(onboardingSurveys)
+          .leftJoin(users, eq(onboardingSurveys.userId, users.id))
+          .where(conditions.length > 0 ? and(...conditions) : undefined)
+          .orderBy(desc(onboardingSurveys.createdAt));
+        return rows;
+      }),
+
+    // [ASSISTANT] Pre-aprobar encuesta con notas
+    assistantReview: protectedProcedure
+      .input(z.object({
+        surveyId: z.number(),
+        assistantNotes: z.string().optional(),
+        action: z.enum(['approve', 'reject', 'request_info']),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const isAssistant = ctx.user.role === 'assistant' || ctx.isSuperAdmin;
+        if (!isAssistant) throw new TRPCError({ code: 'FORBIDDEN' });
+        const db = await import('./db').then(m => m.getDb ? m.getDb() : null);
+        if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
+        const { onboardingSurveys } = await import('../drizzle/schema');
+        const { eq } = await import('drizzle-orm');
+        const newStatus = input.action === 'approve' ? 'assistant_approved'
+          : input.action === 'reject' ? 'rejected'
+          : 'pending_info';
+        await db.update(onboardingSurveys)
+          .set({
+            status: newStatus,
+            assistantNotes: input.assistantNotes || null,
+            reviewedByAssistantAt: Date.now(),
+            updatedAt: Date.now(),
+          })
+          .where(eq(onboardingSurveys.id, input.surveyId));
+        // Notificar al superadmin si el asistente aprobó
+        if (input.action === 'approve') {
+          await notifyOwner({
+            title: '✅ Encuesta pre-aprobada por asistente',
+            content: `El asistente aprobó la encuesta #${input.surveyId}. Notas: ${input.assistantNotes || 'Sin notas'}. Pendiente de aprobación final.`,
+          });
+        }
+        return { success: true };
+      }),
+
+    // [SUPERADMIN] Aprobación final y asignación de plan
+    adminApprove: protectedProcedure
+      .input(z.object({
+        surveyId: z.number(),
+        finalPlan: z.string(),
+        finalCommission: z.number(),
+        adminNotes: z.string().optional(),
+        action: z.enum(['approve', 'reject']),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        if (!ctx.isSuperAdmin) throw new TRPCError({ code: 'FORBIDDEN' });
+        const db = await import('./db').then(m => m.getDb ? m.getDb() : null);
+        if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
+        const { onboardingSurveys, users, vendorSettings } = await import('../drizzle/schema');
+        const { eq } = await import('drizzle-orm');
+
+        const surveys = await db.select().from(onboardingSurveys)
+          .where(eq(onboardingSurveys.id, input.surveyId))
+          .limit(1);
+        if (surveys.length === 0) throw new TRPCError({ code: 'NOT_FOUND' });
+        const survey = surveys[0];
+
+        const newStatus = input.action === 'approve' ? 'approved' : 'rejected';
+        await db.update(onboardingSurveys)
+          .set({
+            status: newStatus,
+            recommendedPlan: input.finalPlan,
+            recommendedCommission: String(input.finalCommission),
+            planReasoning: input.adminNotes || survey.planReasoning,
+            reviewedByAdminAt: Date.now(),
+            updatedAt: Date.now(),
+          })
+          .where(eq(onboardingSurveys.id, input.surveyId));
+
+        // Si se aprueba, actualizar la comisión del usuario en vendor_settings
+        if (input.action === 'approve') {
+          await db.update(vendorSettings)
+            .set({ commissionRate: String(input.finalCommission) })
+            .where(eq(vendorSettings.userId, survey.userId));
+          // Activar la cuenta del usuario
+          await db.update(users)
+            .set({ accountStatus: 'active' })
+            .where(eq(users.id, survey.userId));
+        }
+        return { success: true };
+      }),
+  }),
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // KOBRAPAY ADVISOR — Chatbot de IA privado para el superadmin
+  // ─────────────────────────────────────────────────────────────────────────
+  advisor: router({
+    chat: protectedProcedure
+      .input(z.object({
+        messages: z.array(z.object({
+          role: z.enum(['user', 'assistant']),
+          content: z.string(),
+        })),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        if (!ctx.isSuperAdmin) throw new TRPCError({ code: 'FORBIDDEN' });
+        const { invokeLLM } = await import('./_core/llm');
+        const systemPrompt = `Eres el Asesor Estratégico de KobraPay, un asistente de IA privado y exclusivo para el dueño de la plataforma KobraPay. Tu nombre es "KobraPay Advisor".
+
+KobraPay es una plataforma mexicana de cobros y pagos con las siguientes características:
+- Procesa pagos con tarjeta (Visa, Mastercard, Amex) vía Stripe
+- Cobra 1.5% de comisión por transacción (más 1.5% de Stripe = 3% total al cliente)
+- Soporta Stripe Connect Express: los negocios reciben el dinero en su cuenta bancaria (CLABE)
+- Módulos disponibles: Cobros, Links de Pago, Cobros Recurrentes, Facturas, Contratos Digitales, Agenda Médica, Expedientes RH, Sector Salud, Revista Corporativa
+- Clientes objetivo: negocios mexicanos pequeños y medianos
+- Dominio: kobrapay.mx
+- Sin mensualidad, sin hardware, sin contratos de permanencia
+
+COMPETENCIA Y PRECIOS (datos actualizados 2026):
+- Clip: 2.9% por transacción, sin mensualidad
+- Conekta: 2.9% tarjetas MX, 3.9% internacionales
+- Stripe directo: 1.5% + $3 MXN tarjetas MX, 3.6% + $3 MXN internacionales (requiere conocimientos técnicos)
+- PayPal: 3.5% + fijo, $25 MXN por retiro
+- Mercado Pago: 3.29% tarjetas MX, 5.99% internacionales
+- KobraPay: 3% total (1.5% KobraPay + 1.5% Stripe) — MÁS BARATO que Clip, Conekta, PayPal y Mercado Pago
+
+ESTRATEGIA DE NEGOCIACIÓN Y PRECIOS FLEXIBLES:
+- Precio estándar: 3% total (1.5% KobraPay + 1.5% Stripe)
+- Para clientes con volumen >$50K MXN/mes: ofrecer 2.5% total (reducir KobraPay a 1%)
+- Para clientes con volumen >$100K MXN/mes: ofrecer 2.3% total (reducir KobraPay a 0.8%)
+- Para clientes con volumen >$500K MXN/mes: ofrecer 2% total (reducir KobraPay a 0.5%)
+- Siempre destacar: sin mensualidad, sin hardware, retiro cuando quieran, módulos extra incluidos
+- Ventaja diferencial CLAVE: KobraPay incluye módulos de gestión empresarial (Agenda Médica, Expedientes RH, Contratos Digitales, Facturas) que NINGUNO de los competidores ofrece
+
+CÁLCULO DE GANANCIAS PARA KOBRAPAY:
+- Si el cliente procesa $10K MXN/mes: KobraPay gana $150 MXN/mes
+- Si el cliente procesa $50K MXN/mes: KobraPay gana $750 MXN/mes
+- Si el cliente procesa $100K MXN/mes: KobraPay gana $1,500 MXN/mes
+- Si el cliente procesa $500K MXN/mes: KobraPay gana $7,500 MXN/mes
+- Recuerda: Stripe siempre cobra su 1.5% aparte, eso no es ganancia de KobraPay
+
+Tu rol es:
+1. Ayudar al dueño a NEGOCIAR con clientes potenciales (dar argumentos, calcular precios)
+2. Responder dudas sobre la plataforma, precios y competencia
+3. Sugerir estrategias para CONSEGUIR y RETENER clientes en México
+4. Explicar conceptos técnicos (Stripe Connect, webhooks, etc.) de forma simple y clara
+5. Calcular cuánto ganaría KobraPay con un cliente específico según su volumen
+6. Dar consejos de ventas, marketing y propuestas comerciales para el mercado mexicano
+7. Ayudar a redactar mensajes, propuestas o respuestas para clientes
+
+Responde SIEMPRE en español mexicano, de forma directa, práctica y como si fueras un socio de negocios experimentado. Sé conciso pero completo. Cuando calcules comisiones o ganancias, muestra los números claramente con formato de tabla cuando sea útil.`;
+
+        const response = await invokeLLM({
+          messages: [
+            { role: 'system', content: systemPrompt },
+            ...input.messages,
+          ],
+        });
+        const content = response?.choices?.[0]?.message?.content;
+        if (!content) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Sin respuesta del modelo' });
+        return { message: typeof content === 'string' ? content : JSON.stringify(content) };
+      }),
+  }),
 });
 export type AppRouter = typeof appRouter;
 
