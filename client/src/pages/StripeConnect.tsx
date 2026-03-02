@@ -19,6 +19,10 @@ import {
   DollarSign,
   TrendingUp,
   ExternalLink,
+  History,
+  ArrowDownToLine,
+  Hourglass,
+  XCircle,
 } from "lucide-react";
 
 export default function StripeConnect() {
@@ -47,6 +51,11 @@ export default function StripeConnect() {
 
   const { data: balance, isLoading: balanceLoading, refetch: refetchBalance } =
     trpc.vendor.connectBalance.useQuery(undefined, {
+      enabled: connectStatus?.chargesEnabled === true,
+    });
+
+  const { data: payoutHistory, isLoading: historyLoading } =
+    trpc.vendor.connectPayoutHistory.useQuery(undefined, {
       enabled: connectStatus?.chargesEnabled === true,
     });
 
@@ -331,6 +340,76 @@ export default function StripeConnect() {
             </CardContent>
           </Card>
         </div>
+      )}
+
+      {/* Historial de retiros */}
+      {connectStatus?.chargesEnabled && (
+        <Card className="border-2 border-gray-100">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2">
+              <History className="w-4 h-4 text-[#00C896]" />
+              Historial de retiros
+            </CardTitle>
+            <CardDescription>Últimos 20 retiros realizados a tu cuenta bancaria</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {historyLoading ? (
+              <div className="flex items-center gap-2 text-gray-400 text-sm">
+                <RefreshCw className="w-4 h-4 animate-spin" /> Cargando historial...
+              </div>
+            ) : !payoutHistory?.payouts.length ? (
+              <div className="text-center py-8 text-gray-400">
+                <ArrowDownToLine className="w-8 h-8 mx-auto mb-2 opacity-40" />
+                <p className="text-sm">Aún no has realizado ningún retiro</p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-gray-100">
+                      <th className="text-left py-2 px-3 text-gray-500 font-medium">Fecha</th>
+                      <th className="text-left py-2 px-3 text-gray-500 font-medium">Monto</th>
+                      <th className="text-left py-2 px-3 text-gray-500 font-medium">Estado</th>
+                      <th className="text-left py-2 px-3 text-gray-500 font-medium">Llega el</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {payoutHistory.payouts.map((p) => (
+                      <tr key={p.id} className="border-b border-gray-50 hover:bg-gray-50">
+                        <td className="py-2 px-3 text-gray-600">
+                          {new Date(p.createdAt).toLocaleDateString("es-MX", { day: "2-digit", month: "short", year: "numeric" })}
+                        </td>
+                        <td className="py-2 px-3 font-semibold text-gray-800">
+                          ${p.amount.toLocaleString("es-MX", { minimumFractionDigits: 2 })} {p.currency}
+                        </td>
+                        <td className="py-2 px-3">
+                          {p.status === "paid" ? (
+                            <span className="inline-flex items-center gap-1 text-emerald-600 font-medium">
+                              <CheckCircle2 className="w-3.5 h-3.5" /> Pagado
+                            </span>
+                          ) : p.status === "pending" || p.status === "in_transit" ? (
+                            <span className="inline-flex items-center gap-1 text-amber-600 font-medium">
+                              <Hourglass className="w-3.5 h-3.5" /> En tránsito
+                            </span>
+                          ) : p.status === "failed" ? (
+                            <span className="inline-flex items-center gap-1 text-red-500 font-medium">
+                              <XCircle className="w-3.5 h-3.5" /> Fallido
+                            </span>
+                          ) : (
+                            <span className="text-gray-400">{p.status}</span>
+                          )}
+                        </td>
+                        <td className="py-2 px-3 text-gray-500">
+                          {new Date(p.arrivalDate).toLocaleDateString("es-MX", { day: "2-digit", month: "short", year: "numeric" })}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </CardContent>
+        </Card>
       )}
 
       {/* Cómo funciona */}

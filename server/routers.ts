@@ -309,9 +309,34 @@ export const appRouter = router({
         }, { stripeAccount: settings.stripeConnectAccountId });
         return { id: payout.id, amount: payout.amount / 100, currency: payout.currency.toUpperCase(), status: payout.status, arrivalDate: new Date(payout.arrival_date * 1000) };
       }),
-  }),
 
-  // ─── Gestión de clientes de la plataforma (multi-tenant) ──────────────────
+    // Historial de retiros de la cuenta Connect
+    connectPayoutHistory: protectedProcedure.query(async ({ ctx }) => {
+      const settings = await getVendorSettings(ctx.user.id);
+      if (!settings?.stripeConnectAccountId) return { payouts: [] };
+      try {
+        const stripeClient = new Stripe(process.env.STRIPE_SECRET_KEY || "", { apiVersion: "2026-02-25.clover" as any });
+        const payouts = await stripeClient.payouts.list(
+          { limit: 20 },
+          { stripeAccount: settings.stripeConnectAccountId }
+        );
+        return {
+          payouts: payouts.data.map(p => ({
+            id: p.id,
+            amount: p.amount / 100,
+            currency: p.currency.toUpperCase(),
+            status: p.status,
+            arrivalDate: new Date(p.arrival_date * 1000),
+            createdAt: new Date(p.created * 1000),
+            description: p.description || null,
+          })),
+        };
+      } catch {
+        return { payouts: [] };
+      }
+    }),
+  }),
+  // ─── Gestión de clientes de la plataforma (multi-tenant) ───────────────────
   clients: router({
     list: protectedProcedure.query(async ({ ctx }) => {
       if (ctx.user.role !== "admin" && !ctx.isSuperAdmin) throw new TRPCError({ code: "FORBIDDEN" });
@@ -906,7 +931,16 @@ export const appRouter = router({
         const amountCents = Math.round(amount * 100);
         const currency = link.currency.toLowerCase();
 
-        const paymentIntent = await stripe.paymentIntents.create({
+        // Verificar si el vendedor tiene Stripe Connect activo
+        const vendorSettings = await getVendorSettings(link.userId);
+        const connectedAccountId = vendorSettings?.stripeConnectAccountId;
+        const connectEnabled = vendorSettings?.stripeConnectChargesEnabled;
+
+        // Comisión de plataforma KobraPay: 1.5% del monto total
+        const kobraPayFeeRate = 0.015;
+        const kobraPayFeeCents = Math.round(amountCents * kobraPayFeeRate);
+
+        const paymentIntentParams: Parameters<typeof stripe.paymentIntents.create>[0] = {
           amount: amountCents,
           currency,
           metadata: {
@@ -920,10 +954,20 @@ export const appRouter = router({
             commissionRate: String(commissionRate),
             commissionAmount: String(commissionAmount),
             netAmount: String(netAmount),
+            kobrapayFee: String(kobraPayFeeCents),
+            useConnect: connectEnabled ? "true" : "false",
           },
           description: link.description,
           receipt_email: input.payerEmail,
-        });
+        };
+
+        // Si el vendedor tiene Connect activo, enrutar pago y retener comisión KobraPay
+        if (connectedAccountId && connectEnabled) {
+          paymentIntentParams.application_fee_amount = kobraPayFeeCents;
+          paymentIntentParams.transfer_data = { destination: connectedAccountId };
+        }
+
+        const paymentIntent = await stripe.paymentIntents.create(paymentIntentParams);
 
         const ipAddress = input.ipAddress || (ctx.req.headers["x-forwarded-for"] as string) || ctx.req.socket?.remoteAddress || "";
         const userAgent = input.userAgent || (ctx.req.headers["user-agent"] as string) || "";
