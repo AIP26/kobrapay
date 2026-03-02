@@ -322,6 +322,49 @@ export function registerStripeWebhook(app: express.Application) {
             break;
           }
 
+          // ─── Stripe Connect: onboarding completado ──────────────────────────
+          case "account.updated": {
+            const account = event.data.object as Stripe.Account;
+            console.log(`[Stripe Webhook] account.updated: ${account.id} charges=${account.charges_enabled} payouts=${account.payouts_enabled}`);
+            try {
+              const { getDb } = await import('./db');
+              const { vendorSettings } = await import('../drizzle/schema');
+              const { eq } = await import('drizzle-orm');
+              const db = await getDb();
+              if (!db) break;
+              // Buscar el vendor que tiene este stripeConnectAccountId
+              const [vendor] = await db.select().from(vendorSettings)
+                .where(eq(vendorSettings.stripeConnectAccountId, account.id))
+                .limit(1);
+              if (vendor) {
+                const newStatus = account.charges_enabled ? 'active' : account.details_submitted ? 'pending' : 'not_started';
+                await db.update(vendorSettings)
+                  .set({
+                    stripeConnectStatus: newStatus as 'active' | 'pending' | 'not_started' | 'restricted' | 'disabled',
+                    stripeConnectChargesEnabled: account.charges_enabled,
+                    stripeConnectPayoutsEnabled: account.payouts_enabled,
+                    stripeConnectDetailsSubmitted: account.details_submitted,
+                    stripeConnectOnboardedAt: account.charges_enabled && !vendor.stripeConnectOnboardedAt ? new Date() : vendor.stripeConnectOnboardedAt,
+                  })
+                  .where(eq(vendorSettings.id, vendor.id));
+                // Notificar al usuario si su cuenta quedó activa
+                if (account.charges_enabled && !vendor.stripeConnectChargesEnabled) {
+                  await createNotification({
+                    userId: vendor.userId,
+                    type: 'module_approved',
+                    title: '✅ ¡Tu cuenta de cobros está activa!',
+                    message: 'Tu cuenta Stripe Connect fue verificada. Ya puedes recibir pagos directamente en tu cuenta bancaria.',
+                    actionUrl: '/dashboard/connect',
+                  });
+                }
+                console.log(`[Stripe Webhook] Vendor ${vendor.userId} Connect status updated to: ${newStatus}`);
+              }
+            } catch (err) {
+              console.error('[Stripe Webhook] Error updating Connect account:', err);
+            }
+            break;
+          }
+
           default:
             console.log(`[Stripe Webhook] Unhandled event type: ${event.type}`);
         }

@@ -46,7 +46,14 @@ export const vendorSettings = mysqlTable("vendor_settings", {
   businessPhone: varchar("businessPhone", { length: 32 }),
   logoUrl: text("logoUrl"),
   currency: varchar("currency", { length: 8 }).default("MXN").notNull(),
-  // Stripe
+  // Stripe Connect (para que el cliente reciba pagos en su propia cuenta)
+  stripeConnectAccountId: varchar("stripeConnectAccountId", { length: 128 }),
+  stripeConnectStatus: mysqlEnum("stripeConnectStatus", ["not_started", "pending", "active", "restricted", "disabled"]).default("not_started").notNull(),
+  stripeConnectChargesEnabled: boolean("stripeConnectChargesEnabled").default(false).notNull(),
+  stripeConnectPayoutsEnabled: boolean("stripeConnectPayoutsEnabled").default(false).notNull(),
+  stripeConnectDetailsSubmitted: boolean("stripeConnectDetailsSubmitted").default(false).notNull(),
+  stripeConnectOnboardedAt: timestamp("stripeConnectOnboardedAt"),
+  // Stripe legacy
   stripeAccountId: varchar("stripeAccountId", { length: 128 }),
   stripeOnboarded: mysqlEnum("stripeOnboarded", ["pending", "complete", "restricted"]).default("pending").notNull(),
   // Comisión que cobra la plataforma a este usuario (% por transacción)

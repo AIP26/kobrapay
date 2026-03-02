@@ -663,3 +663,17 @@
 - [x] Agregar notificación al usuario cuando el superadmin aprueba su solicitud de módulo
 - [x] Agregar más tipos de iconos al NotificationBell (module_approved, module_rejected, appointment_reminder, birthday, new_payment)
 - [x] Vincular prescripciones con pacientes de la Agenda Médica: búsqueda en tiempo real al crear receta
+
+## Stripe Connect (2026-03-01)
+- [ ] Schema: agregar stripe_connect_account_id, onboarding_status, charges_enabled, payouts_enabled a vendor_settings
+- [ ] Backend: procedimiento stripeConnect.createOnboardingLink (Express account)
+- [ ] Backend: procedimiento stripeConnect.getAccountStatus
+- [ ] Backend: procedimiento stripeConnect.createPaymentWithTransfer (cobro con comisión automática)
+- [ ] Backend: procedimiento stripeConnect.getBalance (saldo disponible)
+- [ ] Backend: procedimiento stripeConnect.requestPayout (retiro a cuenta bancaria)
+- [ ] Webhook: manejar account.updated para actualizar estado de onboarding
+- [ ] Frontend: página /connect — onboarding guiado para conectar cuenta Stripe
+- [ ] Frontend: dashboard de saldo disponible y botón de retiro
+- [ ] Frontend: indicador en sidebar si la cuenta no está conectada aún
+- [ ] PENDIENTE USUARIO: activar Stripe Connect en dashboard.stripe.com cuando vaya a dar de alta clientes reales
+- [ ] PENDIENTE FINAL: presentación comercial KobraPay vs competencia

@@ -41,6 +41,7 @@ import {
   Pill,
   ClipboardList,
   ShieldCheck,
+  Wallet,
 } from "lucide-react";
 import { useState, useCallback, useMemo } from "react";
 import GlobalSearch from "./GlobalSearch";
@@ -98,6 +99,7 @@ const NAV_GROUPS = [
       { href: "/dashboard/invoices", icon: FileText, label: "Mis Facturas" },
       { href: "/dashboard/payers", icon: Users, label: "Mis Pagadores" },
       { href: "/dashboard/expedientes", icon: FolderOpen, label: "Expedientes" },
+      { href: "/dashboard/connect", icon: Wallet, label: "Cuenta de Cobros" },
     ],
   },
   {

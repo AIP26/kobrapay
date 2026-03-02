@@ -179,6 +179,136 @@ export const appRouter = router({
           chargebackText: input.chargebackText || null,
         });
       }),
+
+    // ─── Stripe Connect ────────────────────────────────────────────────────────────────────────────────
+    // Crear o continuar el onboarding de Stripe Connect
+    connectOnboard: protectedProcedure
+      .input(z.object({ returnUrl: z.string().url() }))
+      .mutation(async ({ ctx, input }) => {
+        const stripeClient = new Stripe(process.env.STRIPE_SECRET_KEY || "", { apiVersion: "2026-02-25.clover" as any });
+        const { getDb } = await import('./db');
+        const db = await getDb();
+        if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
+        const { vendorSettings } = await import('../drizzle/schema');
+        const { eq } = await import('drizzle-orm');
+
+        const settings = await getVendorSettings(ctx.user.id);
+        let accountId = settings?.stripeConnectAccountId;
+
+        // Crear cuenta Express si no existe
+        if (!accountId) {
+          const account = await stripeClient.accounts.create({
+            type: 'express',
+            country: 'MX',
+            email: ctx.user.email || undefined,
+            capabilities: {
+              card_payments: { requested: true },
+              transfers: { requested: true },
+            },
+            business_type: 'individual',
+            metadata: { kobrapay_user_id: String(ctx.user.id) },
+          });
+          accountId = account.id;
+          // Guardar en BD
+          if (settings) {
+            await db.update(vendorSettings)
+              .set({ stripeConnectAccountId: accountId, stripeConnectStatus: 'pending' })
+              .where(eq(vendorSettings.userId, ctx.user.id));
+          } else {
+            await db.insert(vendorSettings).values({
+              userId: ctx.user.id,
+              businessName: ctx.user.name || 'Mi Negocio',
+              stripeConnectAccountId: accountId,
+              stripeConnectStatus: 'pending',
+            });
+          }
+        }
+
+        // Crear link de onboarding
+        const accountLink = await stripeClient.accountLinks.create({
+          account: accountId,
+          refresh_url: `${input.returnUrl}?connect=refresh`,
+          return_url: `${input.returnUrl}?connect=success`,
+          type: 'account_onboarding',
+        });
+
+        return { url: accountLink.url, accountId };
+      }),
+
+    // Obtener estado de la cuenta Connect
+    connectStatus: protectedProcedure.query(async ({ ctx }) => {
+      const settings = await getVendorSettings(ctx.user.id);
+      if (!settings?.stripeConnectAccountId) {
+        return { status: 'not_started' as const, chargesEnabled: false, payoutsEnabled: false, detailsSubmitted: false, accountId: null as string | null };
+      }
+      try {
+        const stripeClient = new Stripe(process.env.STRIPE_SECRET_KEY || "", { apiVersion: "2026-02-25.clover" as any });
+        const account = await stripeClient.accounts.retrieve(settings.stripeConnectAccountId);
+        const { getDb } = await import('./db');
+        const db = await getDb();
+        if (db) {
+          const { vendorSettings } = await import('../drizzle/schema');
+          const { eq } = await import('drizzle-orm');
+          const newStatus = account.charges_enabled ? 'active' : account.details_submitted ? 'pending' : 'not_started';
+          await db.update(vendorSettings).set({
+            stripeConnectStatus: newStatus as any,
+            stripeConnectChargesEnabled: account.charges_enabled,
+            stripeConnectPayoutsEnabled: account.payouts_enabled,
+            stripeConnectDetailsSubmitted: account.details_submitted,
+          }).where(eq(vendorSettings.userId, ctx.user.id));
+        }
+        return {
+          status: (account.charges_enabled ? 'active' : account.details_submitted ? 'pending' : 'not_started') as string,
+          chargesEnabled: account.charges_enabled,
+          payoutsEnabled: account.payouts_enabled,
+          detailsSubmitted: account.details_submitted,
+          accountId: settings.stripeConnectAccountId,
+          businessName: (account.business_profile as any)?.name || null as string | null,
+          email: account.email || null as string | null,
+        };
+      } catch {
+        return {
+          status: settings.stripeConnectStatus || 'not_started',
+          chargesEnabled: settings.stripeConnectChargesEnabled,
+          payoutsEnabled: settings.stripeConnectPayoutsEnabled,
+          detailsSubmitted: settings.stripeConnectDetailsSubmitted,
+          accountId: settings.stripeConnectAccountId,
+          businessName: null as string | null,
+          email: null as string | null,
+        };
+      }
+    }),
+
+    // Obtener saldo disponible en la cuenta Connect
+    connectBalance: protectedProcedure.query(async ({ ctx }) => {
+      const settings = await getVendorSettings(ctx.user.id);
+      if (!settings?.stripeConnectAccountId || !settings.stripeConnectChargesEnabled) {
+        return { available: [] as {amount: number, currency: string}[], pending: [] as {amount: number, currency: string}[] };
+      }
+      const stripeClient = new Stripe(process.env.STRIPE_SECRET_KEY || "", { apiVersion: "2026-02-25.clover" as any });
+      const balance = await stripeClient.balance.retrieve({ stripeAccount: settings.stripeConnectAccountId });
+      return {
+        available: balance.available.map(b => ({ amount: b.amount / 100, currency: b.currency.toUpperCase() })),
+        pending: balance.pending.map(b => ({ amount: b.amount / 100, currency: b.currency.toUpperCase() })),
+      };
+    }),
+
+    // Solicitar retiro (payout) a cuenta bancaria
+    connectPayout: protectedProcedure
+      .input(z.object({ amount: z.number().positive(), currency: z.string().default('mxn') }))
+      .mutation(async ({ ctx, input }) => {
+        const settings = await getVendorSettings(ctx.user.id);
+        if (!settings?.stripeConnectAccountId || !settings.stripeConnectPayoutsEnabled) {
+          throw new TRPCError({ code: 'FORBIDDEN', message: 'Tu cuenta no tiene retiros habilitados aún. Completa el proceso de verificación.' });
+        }
+        const stripeClient = new Stripe(process.env.STRIPE_SECRET_KEY || "", { apiVersion: "2026-02-25.clover" as any });
+        const payout = await stripeClient.payouts.create({
+          amount: Math.round(input.amount * 100),
+          currency: input.currency,
+          metadata: { kobrapay_user_id: String(ctx.user.id) },
+        }, { stripeAccount: settings.stripeConnectAccountId });
+        return { id: payout.id, amount: payout.amount / 100, currency: payout.currency.toUpperCase(), status: payout.status, arrivalDate: new Date(payout.arrival_date * 1000) };
+      }),
   }),
 
   // ─── Gestión de clientes de la plataforma (multi-tenant) ──────────────────
