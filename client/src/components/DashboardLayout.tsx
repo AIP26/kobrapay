@@ -348,7 +348,11 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     enabled: isAuthenticated && !loading,
     staleTime: 10 * 60 * 1000,
   });
-  // Redirigir a /onboarding si no ha completado la encuesta (excepto si ya está ahí)
+  // isSuperAdmin y role del usuario (disponible desde auth.me)
+  const userRole = (user as Record<string, unknown>)?.role as string | undefined;
+  const userIsSuperAdmin = (user as Record<string, unknown>)?.isSuperAdmin === true;
+  // Redirigir a /onboarding si no ha completado la encuesta
+  // EXCLUIR: superadmin, asistente, admin
   useEffect(() => {
     if (
       isAuthenticated &&
@@ -356,11 +360,14 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       !surveyLoading &&
       surveyStatus &&
       !surveyStatus.completed &&
+      !userIsSuperAdmin &&
+      userRole !== 'assistant' &&
+      userRole !== 'admin' &&
       location !== "/onboarding"
     ) {
       window.location.href = "/onboarding";
     }
-  }, [isAuthenticated, loading, surveyLoading, surveyStatus, location]);
+  }, [isAuthenticated, loading, surveyLoading, surveyStatus, location, userIsSuperAdmin, userRole]);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   // Grupos colapsados por defecto

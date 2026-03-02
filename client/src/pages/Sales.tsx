@@ -387,10 +387,34 @@ function TransactionDetailModal({
             <p className={`text-4xl font-black mb-2 ${tx.status === "succeeded" ? "text-gray-900" : "text-gray-400 line-through"}`}>
               {formatCurrency(gross, tx.currency)}
             </p>
-            <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-semibold border ${cfg.color}`}>
-              <StatusIcon className="w-4 h-4" />
-              {cfg.label}
-            </span>
+            {tx.status === "pending" ? (
+              <span className="relative group inline-flex">
+                <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-semibold border cursor-help ${cfg.color}`}>
+                  <StatusIcon className="w-4 h-4" />
+                  {cfg.label}
+                  <svg className="w-3.5 h-3.5 ml-0.5 opacity-60" fill="none" viewBox="0 0 24 24" stroke="currentColor"><circle cx="12" cy="12" r="10" strokeWidth="2"/><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 16v-4M12 8h.01"/></svg>
+                </span>
+                {/* Tooltip burbuja */}
+                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-72 bg-gray-900 text-white text-xs rounded-xl shadow-xl p-3 opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-200 z-50">
+                  <p className="font-semibold text-amber-300 mb-1.5">¿Por qué está pendiente?</p>
+                  <ul className="space-y-1 text-gray-200">
+                    <li className="flex items-start gap-1.5"><span className="text-amber-400 mt-0.5">•</span> El cliente abrió el enlace pero no completó el pago</li>
+                    <li className="flex items-start gap-1.5"><span className="text-amber-400 mt-0.5">•</span> No ingresó todos sus datos de tarjeta</li>
+                    <li className="flex items-start gap-1.5"><span className="text-amber-400 mt-0.5">•</span> Cerró la ventana antes de confirmar</li>
+                    <li className="flex items-start gap-1.5"><span className="text-amber-400 mt-0.5">•</span> El banco requirió verificación adicional (3D Secure) y no la completó</li>
+                    <li className="flex items-start gap-1.5"><span className="text-amber-400 mt-0.5">•</span> El pago está en proceso de autorización</li>
+                  </ul>
+                  <p className="text-gray-400 mt-2 text-[10px]">Si el cliente ya pagó y sigue pendiente, espera unos minutos y actualiza.</p>
+                  {/* Flecha del tooltip */}
+                  <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-900" />
+                </div>
+              </span>
+            ) : (
+              <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-semibold border ${cfg.color}`}>
+                <StatusIcon className="w-4 h-4" />
+                {cfg.label}
+              </span>
+            )}
             <p className="text-xs text-gray-400 mt-2">{formatDate(tx.createdAt)}</p>
           </div>
 

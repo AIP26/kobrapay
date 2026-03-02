@@ -73,8 +73,8 @@ function AssistantPanelInner() {
     onSuccess: () => { toast.success("Plan asignado y cuenta activada"); refetchSurveys(); setSelectedSurvey(null); setSurveyNotes(""); setSurveyAction(null); },
     onError: (e) => toast.error(e.message),
   });
-  const pendingSurveys = (surveys as any[]).filter((s) => s.survey?.status === "pending");
-  const reviewedSurveys = (surveys as any[]).filter((s) => s.survey?.status === "assistant_approved");
+  const pendingSurveys = (surveys as any[]).filter((s) => s.survey?.status === "pending_review" || s.survey?.status === "pending");
+  const reviewedSurveys = (surveys as any[]).filter((s) => s.survey?.status === "assistant_approved" || s.survey?.status === "pending_info");
   const doneSurveys = (surveys as any[]).filter((s) => s.survey?.status === "approved" || s.survey?.status === "rejected");
 
   const preApprove = trpc.moduleAccess.assistantPreApprove.useMutation({
@@ -500,9 +500,10 @@ function RequestCard({
 
 const SURVEY_STATUS_LABELS: Record<string, { label: string; color: string }> = {
   pending: { label: "Pendiente", color: "bg-yellow-100 text-yellow-800" },
+  pending_review: { label: "Pendiente de revisión", color: "bg-yellow-100 text-yellow-800" },
   assistant_approved: { label: "Pre-aprobado", color: "bg-blue-100 text-blue-800" },
-  pending_info: { label: "Solicita info", color: "bg-orange-100 text-orange-800" },
-  approved: { label: "Aprobado", color: "bg-green-100 text-green-800" },
+  pending_info: { label: "Solicita más info", color: "bg-orange-100 text-orange-800" },
+  approved: { label: "Aprobado ✅", color: "bg-green-100 text-green-800" },
   rejected: { label: "Rechazado", color: "bg-red-100 text-red-800" },
 };
 

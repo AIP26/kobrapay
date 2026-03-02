@@ -123,19 +123,20 @@ export default function OnboardingSurvey() {
 
   const handleSubmit = () => {
     // Mapear los campos nuevos al schema existente del backend
+    // Mapear al formato que espera el backend
     const revenueMap: Record<string, string> = {
-      menos_10k: 'menos_10k_mensual',
-      '10k_50k': '10k_50k_mensual',
-      '50k_200k': '50k_200k_mensual',
-      '200k_500k': '200k_500k_mensual',
-      mas_500k: 'mas_500k_mensual',
+      menos_10k: '<10k',
+      '10k_50k': '10k-50k',
+      '50k_200k': '50k-100k',
+      '200k_500k': '100k-500k',
+      mas_500k: '500k+',
     };
     const sizeMap: Record<string, string> = {
-      solo_yo: 'micro',
-      '2_5': 'pequena',
-      '6_20': 'pequena',
-      '21_100': 'mediana',
-      mas_100: 'grande',
+      solo_yo: 'small',
+      '2_5': 'small',
+      '6_20': 'small',
+      '21_100': 'medium',
+      mas_100: 'large',
     };
     submitMutation.mutate({
       businessType: form.businessType,
