@@ -5125,6 +5125,239 @@ export const appRouter = router({
   // ─────────────────────────────────────────────────────────────────────────
   // KOBRAPAY ADVISOR — Chatbot de IA privado para el superadmin
   // ─────────────────────────────────────────────────────────────────────────
+  // ─── IA para Asistente (mismo contexto KobraPay) ───────────────────────────
+  assistantAdvisor: router({
+    chat: protectedProcedure
+      .input(z.object({
+        messages: z.array(z.object({
+          role: z.enum(['user', 'assistant']),
+          content: z.string(),
+        })),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const isAssistant = ctx.user.role === 'assistant' || ctx.isSuperAdmin;
+        if (!isAssistant) throw new TRPCError({ code: 'FORBIDDEN' });
+        const { invokeLLM } = await import('./_core/llm');
+        const systemPrompt = `Eres el Asesor Estratégico de KobraPay para el equipo interno. Tu nombre es "KobraPay Advisor".
+
+KobraPay es una plataforma mexicana de cobros y pagos con las siguientes características:
+- Procesa pagos con tarjeta (Visa, Mastercard, Amex) vía Stripe
+- Cobra 1.5% de comisión por transacción (más 1.5% de Stripe = 3% total al cliente)
+- Soporta Stripe Connect Express: los negocios reciben el dinero en su cuenta bancaria (CLABE)
+- Módulos disponibles: Cobros, Links de Pago, Cobros Recurrentes, Facturas, Contratos Digitales, Agenda Médica, Expedientes RH, Sector Salud
+- Clientes objetivo: negocios mexicanos pequeños y medianos
+- Dominio: kobrapay.mx
+- Sin mensualidad, sin hardware, sin contratos de permanencia
+
+COMPETENCIA Y PRECIOS (datos actualizados 2026):
+- Clip: 2.9% por transacción
+- Conekta: 2.9% tarjetas MX, 3.9% internacionales
+- Stripe directo: 1.5% + $3 MXN tarjetas MX
+- PayPal: 3.5% + fijo
+- Mercado Pago: 3.29% tarjetas MX
+- KobraPay: 3% total — MÁS BARATO que todos los anteriores
+
+Tu rol como asistente es:
+1. Ayudar a gestionar clientes y solicitudes de la plataforma
+2. Responder dudas sobre la plataforma, precios y competencia
+3. Apoyar en la revisión de encuestas de onboarding y asignación de planes
+4. Dar información sobre los módulos disponibles y sus precios
+5. Ayudar a redactar comunicaciones con clientes
+
+Responde SIEMPRE en español mexicano, de forma directa y profesional.`;
+        const response = await invokeLLM({
+          messages: [{ role: 'system', content: systemPrompt }, ...input.messages],
+        });
+        const content = response?.choices?.[0]?.message?.content;
+        if (!content) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Sin respuesta del modelo' });
+        return { message: typeof content === 'string' ? content : JSON.stringify(content) };
+      }),
+  }),
+
+  // ─── IA para Administrador (consultoría de negocios) ─────────────────────────
+  adminAdvisor: router({
+    chat: protectedProcedure
+      .input(z.object({
+        messages: z.array(z.object({
+          role: z.enum(['user', 'assistant']),
+          content: z.string(),
+        })),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const isAdmin = ctx.user.role === 'admin' || ctx.isSuperAdmin;
+        if (!isAdmin) throw new TRPCError({ code: 'FORBIDDEN' });
+        const { invokeLLM } = await import('./_core/llm');
+        const systemPrompt = `Eres un Consultor de Negocios experto para clientes de KobraPay. Tu nombre es "KobraPay Business Advisor".
+
+Tu función es ayudar a los administradores (clientes de la plataforma KobraPay) a:
+1. Optimizar sus operaciones de cobro y pagos
+2. Estrategias de crecimiento para su negocio en México
+3. Consejos sobre gestión financiera, flujo de caja y rentabilidad
+4. Cómo aprovechar al máximo los módulos de KobraPay (Facturas, Contratos, Agenda, RH)
+5. Mejores prácticas para reducir contracargos y fraudes
+6. Cómo fidelizar clientes y aumentar ventas
+7. Análisis de sus métricas de cobro y sugerencias de mejora
+8. Consejos legales básicos (LFPDPPP, SAT, CFDI) — siempre recomendar consultar un abogado para temas específicos
+
+NO tienes acceso a datos específicos de la cuenta del usuario. Responde con consejos generales de negocios.
+
+Responde SIEMPRE en español mexicano, de forma práctica, directa y como si fueras un consultor de negocios experimentado. Sé conciso pero completo.`;
+        const response = await invokeLLM({
+          messages: [{ role: 'system', content: systemPrompt }, ...input.messages],
+        });
+        const content = response?.choices?.[0]?.message?.content;
+        if (!content) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Sin respuesta del modelo' });
+        return { message: typeof content === 'string' ? content : JSON.stringify(content) };
+      }),
+  }),
+
+  // ─── Cuenta de Asociado ────────────────────────────────────────────────────
+  associate: router({
+    // IA del Asociado (para ventas y simulador)
+    chat: protectedProcedure
+      .input(z.object({
+        messages: z.array(z.object({
+          role: z.enum(['user', 'assistant']),
+          content: z.string(),
+        })),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const isAssociate = ctx.user.role === 'associate' || ctx.isSuperAdmin;
+        if (!isAssociate) throw new TRPCError({ code: 'FORBIDDEN' });
+        const { invokeLLM } = await import('./_core/llm');
+        const systemPrompt = `Eres el Asesor de Ventas de KobraPay para Asociados. Tu nombre es "KobraPay Sales Coach".
+
+KobraPay es una plataforma mexicana de cobros y pagos:
+- Procesa pagos con tarjeta (Visa, Mastercard, Amex) vía Stripe
+- 3% total por transacción (1.5% KobraPay + 1.5% Stripe)
+- Sin mensualidad, sin hardware, sin contratos de permanencia
+- Stripe Connect: los negocios reciben dinero directo a su CLABE bancaria
+- Módulos: Cobros, Links de Pago, Facturas, Contratos, Agenda Médica, RH, POS
+
+PLANES DISPONIBLES:
+- Express: para negocios pequeños, comisión 3%, sin mensualidad
+- Connect: para negocios medianos, comisión 2.5%, con Stripe Connect
+- Custom: para empresas grandes, comisión negociable desde 2%, módulos a la medida
+- Enterprise: para corporativos, comisión desde 1.5%, integración API completa
+
+COMISIÓN DEL ASOCIADO:
+- El asociado gana 0.5% de cada transacción de los clientes que registre
+- Ejemplo: cliente procesa $100K MXN/mes → asociado gana $500 MXN/mes
+- Comisión pagada mensualmente por KobraPay
+
+COMPETENCIA:
+- Clip: 2.9%, sin módulos empresariales
+- Mercado Pago: 3.29%, sin soporte personalizado
+- Conekta: 2.9%, orientado a e-commerce
+- KobraPay: 3% total, con módulos de gestión empresarial incluidos
+
+Tu rol es:
+1. Ayudar al asociado a VENDER KobraPay a negocios mexicanos
+2. Dar argumentos de venta y respuestas a objeciones
+3. Calcular cuánto ganará el asociado con un cliente específico
+4. Sugerir qué plan ofrecer según el perfil del cliente
+5. Ayudar a redactar mensajes de WhatsApp, emails y propuestas comerciales
+6. Dar tips de prospección y cierre de ventas
+
+Responde SIEMPRE en español mexicano, de forma motivadora, práctica y orientada a cerrar ventas.`;
+        const response = await invokeLLM({
+          messages: [{ role: 'system', content: systemPrompt }, ...input.messages],
+        });
+        const content = response?.choices?.[0]?.message?.content;
+        if (!content) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Sin respuesta del modelo' });
+        return { message: typeof content === 'string' ? content : JSON.stringify(content) };
+      }),
+
+    // Listar clientes registrados por el asociado
+    listClients: protectedProcedure.query(async ({ ctx }) => {
+      const isAssociate = ctx.user.role === 'associate' || ctx.isSuperAdmin;
+      if (!isAssociate) throw new TRPCError({ code: 'FORBIDDEN' });
+      const db = await import('./db').then(m => m.getDb ? m.getDb() : null);
+      if (!db) return [];
+      const { associateCommissions } = await import('../drizzle/schema');
+      const { eq, desc } = await import('drizzle-orm');
+      return db.select().from(associateCommissions)
+        .where(eq(associateCommissions.associateUserId, ctx.user.id))
+        .orderBy(desc(associateCommissions.createdAt));
+    }),
+
+    // Registrar un nuevo cliente prospecto
+    registerClient: protectedProcedure
+      .input(z.object({
+        clientName: z.string().min(1).max(255),
+        clientEmail: z.string().email(),
+        clientBusinessName: z.string().max(255).optional(),
+        clientPhone: z.string().max(32).optional(),
+        assignedPlan: z.enum(['express', 'connect', 'custom', 'enterprise']).optional(),
+        notes: z.string().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const isAssociate = ctx.user.role === 'associate' || ctx.isSuperAdmin;
+        if (!isAssociate) throw new TRPCError({ code: 'FORBIDDEN' });
+        const db = await import('./db').then(m => m.getDb ? m.getDb() : null);
+        if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
+        const { associateCommissions } = await import('../drizzle/schema');
+        const now = Date.now();
+        const result = await db.insert(associateCommissions).values({
+          associateUserId: ctx.user.id,
+          clientEmail: input.clientEmail,
+          clientName: input.clientName,
+          clientBusinessName: input.clientBusinessName || null,
+          clientPhone: input.clientPhone || null,
+          assignedPlan: input.assignedPlan || null,
+          notes: input.notes || null,
+          status: 'pending',
+          commissionRate: '1.00',
+          totalVolumeProcessed: '0.00',
+          totalCommissionEarned: '0.00',
+          createdAt: now,
+          updatedAt: now,
+        });
+        // Notificar al superadmin
+        notifyOwner({
+          title: '🤝 Nuevo cliente registrado por Asociado',
+          content: `El asociado ${ctx.user.name || ctx.user.email} registró un nuevo cliente.\n\nCliente: ${input.clientName}\nEmail: ${input.clientEmail}\nNegocio: ${input.clientBusinessName || 'No especificado'}\nPlan sugerido: ${input.assignedPlan || 'Por definir'}\nNotas: ${input.notes || 'Sin notas'}`,
+        }).catch(() => {});
+        return { success: true, id: Number((result as any).insertId) };
+      }),
+
+    // Obtener resumen de comisiones del asociado
+    getCommissionSummary: protectedProcedure.query(async ({ ctx }) => {
+      const isAssociate = ctx.user.role === 'associate' || ctx.isSuperAdmin;
+      if (!isAssociate) throw new TRPCError({ code: 'FORBIDDEN' });
+      const db = await import('./db').then(m => m.getDb ? m.getDb() : null);
+      if (!db) return { totalClients: 0, activeClients: 0, pendingClients: 0, totalVolume: 0, totalEarned: 0 };
+      const { associateCommissions } = await import('../drizzle/schema');
+      const { eq, sum, count } = await import('drizzle-orm');
+      const clients = await db.select().from(associateCommissions)
+        .where(eq(associateCommissions.associateUserId, ctx.user.id));
+      const totalClients = clients.length;
+      const activeClients = clients.filter(c => c.status === 'active').length;
+      const pendingClients = clients.filter(c => c.status === 'pending').length;
+      const totalVolume = clients.reduce((acc, c) => acc + parseFloat(String(c.totalVolumeProcessed) || '0'), 0);
+      const totalEarned = clients.reduce((acc, c) => acc + parseFloat(String(c.totalCommissionEarned) || '0'), 0);
+      return { totalClients, activeClients, pendingClients, totalVolume, totalEarned };
+    }),
+
+    // [SuperAdmin] Listar todos los asociados y sus clientes
+    listAllAssociates: protectedProcedure.query(async ({ ctx }) => {
+      if (!ctx.isSuperAdmin) throw new TRPCError({ code: 'FORBIDDEN' });
+      const db = await import('./db').then(m => m.getDb ? m.getDb() : null);
+      if (!db) return [];
+      const { users, associateCommissions } = await import('../drizzle/schema');
+      const { eq, desc } = await import('drizzle-orm');
+      const associates = await db.select().from(users).where(eq(users.role, 'associate'));
+      const result = await Promise.all(associates.map(async (assoc) => {
+        const clients = await db.select().from(associateCommissions)
+          .where(eq(associateCommissions.associateUserId, assoc.id))
+          .orderBy(desc(associateCommissions.createdAt));
+        const totalEarned = clients.reduce((acc, c) => acc + parseFloat(String(c.totalCommissionEarned) || '0'), 0);
+        return { associate: assoc, clients, totalEarned };
+      }));
+      return result;
+    }),
+  }),
+
   advisor: router({
     chat: protectedProcedure
       .input(z.object({

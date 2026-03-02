@@ -19,7 +19,7 @@ export const users = mysqlTable("users", {
   email: varchar("email", { length: 320 }),
   loginMethod: varchar("loginMethod", { length: 64 }),
   // superadmin = dueño de la plataforma (tú), admin = cliente de la plataforma, user = empleado del cliente
-  role: mysqlEnum("role", ["user", "admin", "superadmin", "assistant"]).default("user").notNull(),
+  role: mysqlEnum("role", ["user", "admin", "superadmin", "assistant", "associate"]).default("user").notNull(),
   // Rol específico para colaboradores (staff): asistente = contratos+pagos, operador = solo pagos
   staffRole: mysqlEnum("staffRole", ["asistente", "operador"]).default("operador"),
   // Estado de la cuenta: pending = esperando aprobación, active = aprobado, blocked = rechazado/bloqueado
@@ -1008,3 +1008,43 @@ export const bankAccounts = mysqlTable("bank_accounts", {
 });
 export type BankAccount = typeof bankAccounts.$inferSelect;
 export type InsertBankAccount = typeof bankAccounts.$inferInsert;
+
+// ─── Comisiones de Asociados ──────────────────────────────────────────────────
+export const associateCommissions = mysqlTable("associate_commissions", {
+  id: int("id").primaryKey().autoincrement(),
+  associateUserId: int("associateUserId").notNull().references(() => users.id),
+  clientUserId: int("clientUserId"),
+  clientEmail: varchar("clientEmail", { length: 320 }).notNull(),
+  clientName: varchar("clientName", { length: 255 }).notNull(),
+  clientBusinessName: varchar("clientBusinessName", { length: 255 }),
+  clientPhone: varchar("clientPhone", { length: 32 }),
+  status: mysqlEnum("status", ["pending", "active", "rejected", "inactive"]).default("pending").notNull(),
+  assignedPlan: varchar("assignedPlan", { length: 50 }),
+  commissionRate: decimal("commissionRate", { precision: 5, scale: 2 }).default("1.00").notNull(),
+  totalVolumeProcessed: decimal("totalVolumeProcessed", { precision: 14, scale: 2 }).default("0.00").notNull(),
+  totalCommissionEarned: decimal("totalCommissionEarned", { precision: 14, scale: 2 }).default("0.00").notNull(),
+  notes: text("notes"),
+  approvedAt: int("approvedAt"),
+  createdAt: int("createdAt").notNull(),
+  updatedAt: int("updatedAt").notNull(),
+});
+export type AssociateCommission = typeof associateCommissions.$inferSelect;
+export type InsertAssociateCommission = typeof associateCommissions.$inferInsert;
+
+// ─── Clientes captados por asociados ─────────────────────────────────────────
+export const associateClients = mysqlTable("associate_clients", {
+  id: int("id").autoincrement().primaryKey(),
+  associateId: int("associate_id").notNull(),
+  clientName: varchar("client_name", { length: 255 }).notNull(),
+  clientEmail: varchar("client_email", { length: 255 }).notNull(),
+  clientBusinessName: varchar("client_business_name", { length: 255 }),
+  clientPhone: varchar("client_phone", { length: 50 }),
+  assignedPlan: mysqlEnum("assigned_plan", ["express", "connect", "custom", "enterprise"]),
+  status: mysqlEnum("status", ["pending", "active", "rejected", "inactive"]).notNull().default("pending"),
+  notes: text("notes"),
+  createdAt: int("created_at").notNull(),
+  updatedAt: int("updated_at").notNull(),
+});
+
+export type AssociateClient = typeof associateClients.$inferSelect;
+export type InsertAssociateClient = typeof associateClients.$inferInsert;

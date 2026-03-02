@@ -682,3 +682,12 @@
 - [ ] Exportar recibo PDF desde modal de transacción
 - [ ] Filtro de fechas en drill-down de transacciones
 - [ ] Búsqueda por nombre/email en panel de transacciones
+
+## Fase - IA para Asistente, Admin y Cuenta de Asociado
+- [ ] IA para el Asistente (chat con contexto KobraPay igual al superadmin)
+- [ ] IA para el Administrador (chat de consultoría de negocios, contexto diferente)
+- [ ] Rol "associate" en tabla users
+- [ ] Tabla associate_commissions para seguimiento de comisiones
+- [ ] Procedimientos tRPC para Cuenta de Asociado (registro de clientes, simulador, comisiones)
+- [ ] Página AssociateDashboard con simulador de planes, registro de clientes y comisiones
+- [ ] Ruta y acceso /associate en App.tsx

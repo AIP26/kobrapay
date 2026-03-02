@@ -86,6 +86,9 @@ const NAV_GROUPS = [
       { href: "/dashboard/sales", icon: BarChart3, label: "Mis Ventas" },
       { href: "/dashboard/report", icon: FileText, label: "Reporte Mensual" },
       { href: "/dashboard/advisor", icon: Bot, label: "KobraPay Advisor", superAdminOnly: true },
+      { href: "/dashboard/assistant-advisor", icon: Bot, label: "Advisor IA", assistantOnly: true },
+      { href: "/dashboard/business-advisor", icon: Bot, label: "Business Advisor", adminOnly: true },
+      { href: "/dashboard/associate", icon: Users, label: "Cuenta de Asociado", associateOnly: true },
     ],
   },
   {
@@ -207,8 +210,11 @@ function Sidebar({
     return group?.items.some(i => location === i.href) ?? false;
   };
 
-  const isItemVisible = (href: string, superAdminOnly?: boolean) => {
+  const isItemVisible = (href: string, superAdminOnly?: boolean, assistantOnly?: boolean, adminOnly?: boolean, associateOnly?: boolean) => {
     if (superAdminOnly && !isSuperAdmin) return false;
+    if (assistantOnly) return isSuperAdmin || permissions['__isAssistant'] === true;
+    if (adminOnly) return isSuperAdmin || isAdmin;
+    if (associateOnly) return isSuperAdmin || permissions['__isAssociate'] === true;
     if (isSuperAdmin) return true;
     const permKey = ITEM_PERMISSION_MAP[href];
     if (!permKey) return true; // sin restricción = siempre visible
@@ -249,7 +255,7 @@ function Sidebar({
             if (group.adminOnly && !isAdmin && !isSuperAdmin) return null;
 
             // Filtrar ítems visibles según permisos
-            const visibleItems = group.items.filter(({ href, superAdminOnly }: { href: string; superAdminOnly?: boolean }) => isItemVisible(href, superAdminOnly));
+            const visibleItems = group.items.filter(({ href, superAdminOnly, assistantOnly, adminOnly, associateOnly }: { href: string; superAdminOnly?: boolean; assistantOnly?: boolean; adminOnly?: boolean; associateOnly?: boolean }) => isItemVisible(href, superAdminOnly, assistantOnly, adminOnly, associateOnly));
             if (visibleItems.length === 0) return null;
 
             const groupActive = isGroupActive(group.id);
@@ -363,6 +369,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       !userIsSuperAdmin &&
       userRole !== 'assistant' &&
       userRole !== 'admin' &&
+      userRole !== 'associate' &&
       location !== "/onboarding"
     ) {
       window.location.href = "/onboarding";
@@ -443,8 +450,23 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       // Todos los permisos activos para el superadmin
       return Object.fromEntries(Object.keys(ITEM_PERMISSION_MAP).map(k => [k, true]));
     }
-    if (!rawPerms) return {} as Record<string, boolean>;
-    try { return JSON.parse(rawPerms) as Record<string, boolean>; } catch { return {} as Record<string, boolean>; }
+    const base: Record<string, boolean> = {};
+    if (!rawPerms) {
+      // Agregar flags de rol especial
+      if (userRole === 'assistant') base['__isAssistant'] = true;
+      if (userRole === 'associate') base['__isAssociate'] = true;
+      return base;
+    }
+    try {
+      const parsed = JSON.parse(rawPerms) as Record<string, boolean>;
+      if (userRole === 'assistant') parsed['__isAssistant'] = true;
+      if (userRole === 'associate') parsed['__isAssociate'] = true;
+      return parsed;
+    } catch {
+      if (userRole === 'assistant') base['__isAssistant'] = true;
+      if (userRole === 'associate') base['__isAssociate'] = true;
+      return base;
+    }
   })();
 
   const sidebarProps = {

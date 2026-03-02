@@ -50,6 +50,9 @@ import ModuleAccessManager from "./pages/ModuleAccessManager";
 import AssistantPanel from "./pages/AssistantPanel";
 import StripeConnect from "./pages/StripeConnect";
 import Advisor from "./pages/Advisor";
+import AssistantAdvisor from "./pages/AssistantAdvisor";
+import AdminAdvisor from "./pages/AdminAdvisor";
+import AssociateDashboard from "./pages/AssociateDashboard";
 import OnboardingSurvey from "./pages/OnboardingSurvey";
 
 function Router() {
@@ -97,6 +100,9 @@ function Router() {
       <Route path="/dashboard/connect" component={StripeConnect} />
       <Route path="/onboarding" component={OnboardingSurvey} />
       <Route path="/dashboard/advisor" component={Advisor} />
+      <Route path="/dashboard/assistant-advisor" component={AssistantAdvisor} />
+      <Route path="/dashboard/business-advisor" component={AdminAdvisor} />
+      <Route path="/dashboard/associate" component={AssociateDashboard} />
       <Route path="/sign-contract/:token" component={SignContract} />
       <Route path="/complete-profile" component={CompleteProfile} />
       <Route path="/dashboard/profile" component={MyProfile} />
