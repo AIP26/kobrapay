@@ -44,7 +44,7 @@ import {
   Wallet,
   Bot,
 } from "lucide-react";
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo, useEffect } from "react";
 import GlobalSearch from "./GlobalSearch";
 import { NotificationBell } from "./NotificationBell";
 import { Link, useLocation } from "wouter";
@@ -343,6 +343,24 @@ function Sidebar({
 export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const { user, loading, isAuthenticated } = useAuth();
   const [location] = useLocation();
+  // Encuesta de onboarding: verificar si ya fue completada
+  const { data: surveyStatus, isLoading: surveyLoading } = trpc.onboarding.getSurveyStatus.useQuery(undefined, {
+    enabled: isAuthenticated && !loading,
+    staleTime: 10 * 60 * 1000,
+  });
+  // Redirigir a /onboarding si no ha completado la encuesta (excepto si ya está ahí)
+  useEffect(() => {
+    if (
+      isAuthenticated &&
+      !loading &&
+      !surveyLoading &&
+      surveyStatus &&
+      !surveyStatus.completed &&
+      location !== "/onboarding"
+    ) {
+      window.location.href = "/onboarding";
+    }
+  }, [isAuthenticated, loading, surveyLoading, surveyStatus, location]);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   // Grupos colapsados por defecto

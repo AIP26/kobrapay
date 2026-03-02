@@ -4,7 +4,7 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import DashboardLayout from "@/components/DashboardLayout";
-import { ShieldCheck, Clock, CheckCircle, XCircle, Users, Settings } from "lucide-react";
+import { ShieldCheck, Clock, CheckCircle, XCircle, Users, Settings, ClipboardList, Star } from "lucide-react";
 
 const MODULE_LABELS: Record<string, string> = {
   prescriptions: "Prescripciones Médicas",
@@ -38,7 +38,7 @@ const STATUS_LABELS: Record<string, { label: string; color: string }> = {
 
 function AssistantPanelInner() {
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState<"requests" | "users">("requests");
+  const [activeTab, setActiveTab] = useState<"requests" | "surveys" | "users">("requests");
   const [selectedRequest, setSelectedRequest] = useState<number | null>(null);
   const [notes, setNotes] = useState("");
   const [showNotesFor, setShowNotesFor] = useState<{ id: number; action: "approve" | "reject" } | null>(null);
@@ -58,6 +58,24 @@ function AssistantPanelInner() {
 
   const { data: requests = [], refetch, isLoading } = trpc.moduleAccess.listPendingForAssistant.useQuery();
   const { data: allUsers = [], isLoading: loadingUsers } = trpc.moduleAccess.listAllUsers.useQuery(undefined, { enabled: isSuperAdmin });
+  // Encuestas de onboarding
+  const { data: surveys = [], refetch: refetchSurveys, isLoading: loadingSurveys } = trpc.onboarding.listSurveys.useQuery(undefined);
+  const [selectedSurvey, setSelectedSurvey] = useState<number | null>(null);
+  const [surveyNotes, setSurveyNotes] = useState("");
+  const [surveyAction, setSurveyAction] = useState<"approve" | "reject" | null>(null);
+  const [finalPlan, setFinalPlan] = useState("express");
+  const [finalCommission, setFinalCommission] = useState(3.5);
+  const assistantReview = trpc.onboarding.assistantReview.useMutation({
+    onSuccess: () => { toast.success("Encuesta revisada"); refetchSurveys(); setSelectedSurvey(null); setSurveyNotes(""); setSurveyAction(null); },
+    onError: (e) => toast.error(e.message),
+  });
+  const adminApprove = trpc.onboarding.adminApprove.useMutation({
+    onSuccess: () => { toast.success("Plan asignado y cuenta activada"); refetchSurveys(); setSelectedSurvey(null); setSurveyNotes(""); setSurveyAction(null); },
+    onError: (e) => toast.error(e.message),
+  });
+  const pendingSurveys = (surveys as any[]).filter((s) => s.survey?.status === "pending");
+  const reviewedSurveys = (surveys as any[]).filter((s) => s.survey?.status === "assistant_approved");
+  const doneSurveys = (surveys as any[]).filter((s) => s.survey?.status === "approved" || s.survey?.status === "rejected");
 
   const preApprove = trpc.moduleAccess.assistantPreApprove.useMutation({
     onSuccess: () => { toast.success("Solicitud pre-aprobada — pasará a revisión del superadmin"); refetch(); setShowNotesFor(null); setNotes(""); },
@@ -106,13 +124,23 @@ function AssistantPanelInner() {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-2 mb-6 border-b border-gray-200">
+      <div className="flex gap-2 mb-6 border-b border-gray-200 flex-wrap">
         <button
           onClick={() => setActiveTab("requests")}
           className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${activeTab === "requests" ? "border-purple-600 text-purple-700" : "border-transparent text-gray-500 hover:text-gray-700"}`}
         >
           <Settings className="w-4 h-4 inline mr-1" />
           Solicitudes de Módulos
+        </button>
+        <button
+          onClick={() => setActiveTab("surveys")}
+          className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors inline-flex items-center gap-1 ${activeTab === "surveys" ? "border-emerald-600 text-emerald-700" : "border-transparent text-gray-500 hover:text-gray-700"}`}
+        >
+          <ClipboardList className="w-4 h-4" />
+          Encuestas de Clientes
+          {pendingSurveys.length > 0 && (
+            <span className="ml-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold">{pendingSurveys.length}</span>
+          )}
         </button>
         {isSuperAdmin && (
           <button
@@ -253,6 +281,107 @@ function AssistantPanelInner() {
         </div>
       )}
 
+      {/* Tab: Encuestas de Onboarding */}
+      {activeTab === "surveys" && (
+        <div className="space-y-4">
+          {loadingSurveys ? (
+            <div className="text-center py-10 text-gray-400">Cargando encuestas...</div>
+          ) : surveys.length === 0 ? (
+            <div className="text-center py-10 text-gray-400">
+              <ClipboardList className="w-12 h-12 mx-auto mb-3 opacity-30" />
+              <p>No hay encuestas de clientes aun</p>
+            </div>
+          ) : (
+            <>
+              {pendingSurveys.length > 0 && (
+                <div>
+                  <h3 className="text-sm font-semibold text-yellow-700 mb-2 flex items-center gap-1"><Clock className="w-4 h-4" /> Pendientes ({pendingSurveys.length})</h3>
+                  <div className="space-y-3">
+                    {pendingSurveys.map((row: any) => (
+                      <SurveyCard key={row.survey.id} row={row} isSuperAdmin={isSuperAdmin}
+                        onAction={(id, action) => { setSelectedSurvey(id); setSurveyAction(action); setSurveyNotes(""); setFinalPlan(row.survey.recommendedPlan || "express"); setFinalCommission(parseFloat(row.survey.recommendedCommission) || 3.5); }}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+              {reviewedSurveys.length > 0 && (
+                <div>
+                  <h3 className="text-sm font-semibold text-blue-700 mb-2 flex items-center gap-1"><Star className="w-4 h-4" /> Pre-aprobados — esperando aprobacion final ({reviewedSurveys.length})</h3>
+                  <div className="space-y-3">
+                    {reviewedSurveys.map((row: any) => (
+                      <SurveyCard key={row.survey.id} row={row} isSuperAdmin={isSuperAdmin}
+                        onAction={(id, action) => { setSelectedSurvey(id); setSurveyAction(action); setSurveyNotes(""); setFinalPlan(row.survey.recommendedPlan || "express"); setFinalCommission(parseFloat(row.survey.recommendedCommission) || 3.5); }}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+              {doneSurveys.length > 0 && (
+                <div>
+                  <h3 className="text-sm font-semibold text-gray-500 mb-2">Procesados ({doneSurveys.length})</h3>
+                  <div className="space-y-3">
+                    {doneSurveys.map((row: any) => (
+                      <SurveyCard key={row.survey.id} row={row} isSuperAdmin={isSuperAdmin} readonly />
+                    ))}
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      )}
+
+      {/* Modal de revision de encuesta */}
+      {selectedSurvey !== null && surveyAction !== null && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
+            <h3 className="text-lg font-bold mb-3">
+              {surveyAction === "approve" ? "Aprobar encuesta" : "Rechazar encuesta"}
+            </h3>
+            {isSuperAdmin && surveyAction === "approve" && (
+              <div className="space-y-3 mb-4">
+                <div>
+                  <label className="text-sm font-medium text-gray-700 block mb-1">Plan a asignar</label>
+                  <select value={finalPlan} onChange={e => setFinalPlan(e.target.value)} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm">
+                    <option value="express">Express - Basico</option>
+                    <option value="connect">Connect - Estandar</option>
+                    <option value="custom">Custom - Avanzado</option>
+                    <option value="enterprise">Enterprise - Corporativo</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-gray-700 block mb-1">Comision (%)</label>
+                  <input type="number" step="0.1" min="1" max="10" value={finalCommission} onChange={e => setFinalCommission(parseFloat(e.target.value))} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
+                </div>
+              </div>
+            )}
+            <textarea
+              value={surveyNotes}
+              onChange={e => setSurveyNotes(e.target.value)}
+              placeholder={isSuperAdmin ? "Notas para el cliente (opcional)..." : "Notas para el superadmin (opcional)..."}
+              className="w-full border border-gray-300 rounded-lg p-3 text-sm resize-none h-24 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+            />
+            <div className="flex gap-3 mt-4">
+              <Button
+                className={`flex-1 ${surveyAction === "approve" ? "bg-emerald-600 hover:bg-emerald-700" : "bg-red-600 hover:bg-red-700"} text-white`}
+                onClick={() => {
+                  if (isSuperAdmin) {
+                    adminApprove.mutate({ surveyId: selectedSurvey, finalPlan, finalCommission, adminNotes: surveyNotes || undefined, action: surveyAction });
+                  } else {
+                    assistantReview.mutate({ surveyId: selectedSurvey, assistantNotes: surveyNotes || undefined, action: surveyAction });
+                  }
+                }}
+                disabled={assistantReview.isPending || adminApprove.isPending}
+              >
+                {surveyAction === "approve" ? (isSuperAdmin ? "Aprobar y activar cuenta" : "Pre-aprobar") : "Rechazar"}
+              </Button>
+              <Button variant="outline" className="flex-1" onClick={() => { setSelectedSurvey(null); setSurveyAction(null); setSurveyNotes(""); }}>Cancelar</Button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Modal de notas */}
       {showNotesFor && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
@@ -360,6 +489,80 @@ function RequestCard({
               onClick={() => setShowNotesFor?.({ id: req.id, action: "reject" })}
               disabled={loading}
             >
+              <XCircle className="w-3 h-3 mr-1" /> Rechazar
+            </Button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+const SURVEY_STATUS_LABELS: Record<string, { label: string; color: string }> = {
+  pending: { label: "Pendiente", color: "bg-yellow-100 text-yellow-800" },
+  assistant_approved: { label: "Pre-aprobado", color: "bg-blue-100 text-blue-800" },
+  pending_info: { label: "Solicita info", color: "bg-orange-100 text-orange-800" },
+  approved: { label: "Aprobado", color: "bg-green-100 text-green-800" },
+  rejected: { label: "Rechazado", color: "bg-red-100 text-red-800" },
+};
+
+const PLAN_LABELS: Record<string, string> = {
+  express: "Express",
+  connect: "Connect",
+  custom: "Custom",
+  enterprise: "Enterprise",
+};
+
+function SurveyCard({ row, isSuperAdmin, onAction, readonly }: {
+  row: any;
+  isSuperAdmin: boolean;
+  onAction?: (id: number, action: "approve" | "reject") => void;
+  readonly?: boolean;
+}) {
+  const s = row.survey;
+  const status = SURVEY_STATUS_LABELS[s.status] || { label: s.status, color: "bg-gray-100 text-gray-600" };
+  const services = (() => { try { return JSON.parse(s.interestedModules || "[]"); } catch { return []; } })();
+  return (
+    <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="font-semibold text-gray-900 text-sm">{row.userName || "Usuario"}</span>
+            <span className="text-gray-400 text-xs">{row.userEmail}</span>
+            <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${status.color}`}>{status.label}</span>
+            {s.recommendedPlan && (
+              <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800">
+                Plan sugerido: {PLAN_LABELS[s.recommendedPlan] || s.recommendedPlan}
+              </span>
+            )}
+          </div>
+          <div className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1">
+            <span className="text-xs text-gray-500">Tipo: <span className="font-medium text-gray-700">{s.businessType}</span></span>
+            <span className="text-xs text-gray-500">Tamano: <span className="font-medium text-gray-700">{s.businessSize}</span></span>
+            <span className="text-xs text-gray-500">Ingresos: <span className="font-medium text-gray-700">{s.monthlyRevenueEstimate}</span></span>
+            <span className="text-xs text-gray-500">Multi-cuenta: <span className="font-medium text-gray-700">{s.needsMultipleBankAccounts ? "Si" : "No"}</span></span>
+          </div>
+          {services.length > 0 && (
+            <div className="mt-1 flex flex-wrap gap-1">
+              {services.map((svc: string) => (
+                <span key={svc} className="px-1.5 py-0.5 bg-gray-100 text-gray-600 rounded text-xs">{svc}</span>
+              ))}
+            </div>
+          )}
+          {s.mainChallenge && (
+            <p className="mt-2 text-xs text-gray-600 bg-gray-50 rounded-lg p-2 italic">"{s.mainChallenge}"</p>
+          )}
+          {s.assistantNotes && (
+            <p className="mt-1 text-xs text-blue-600">Notas asistente: {s.assistantNotes}</p>
+          )}
+          <p className="text-xs text-gray-400 mt-1">{new Date(s.createdAt).toLocaleDateString("es-MX", { day: "2-digit", month: "short", year: "numeric" })}</p>
+        </div>
+        {!readonly && onAction && (
+          <div className="flex gap-2 shrink-0 flex-col">
+            <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs" onClick={() => onAction(s.id, "approve")}>
+              <CheckCircle className="w-3 h-3 mr-1" /> {isSuperAdmin ? "Aprobar" : "Pre-aprobar"}
+            </Button>
+            <Button size="sm" variant="outline" className="text-red-600 border-red-200 hover:bg-red-50 text-xs" onClick={() => onAction(s.id, "reject")}>
               <XCircle className="w-3 h-3 mr-1" /> Rechazar
             </Button>
           </div>

@@ -967,10 +967,10 @@ export const onboardingSurveys = mysqlTable("onboarding_surveys", {
   // Estado del flujo de aprobación
   status: varchar("status", { length: 30 }).default("pending_review").notNull(),
   assistantNotes: text("assistantNotes"),
-  reviewedByAssistantAt: bigint("reviewedByAssistantAt", { mode: "number" }),
-  reviewedByAdminAt: bigint("reviewedByAdminAt", { mode: "number" }),
-  createdAt: bigint("createdAt", { mode: "number" }).notNull(),
-  updatedAt: bigint("updatedAt", { mode: "number" }).notNull(),
+  reviewedByAssistantAt: int("reviewedByAssistantAt"),
+  reviewedByAdminAt: int("reviewedByAdminAt"),
+  createdAt: int("createdAt").notNull(),
+  updatedAt: int("updatedAt").notNull(),
 });
 export type OnboardingSurvey = typeof onboardingSurveys.$inferSelect;
 export type InsertOnboardingSurvey = typeof onboardingSurveys.$inferInsert;
@@ -987,7 +987,7 @@ export const bankAccounts = mysqlTable("bank_accounts", {
   stripeChargesEnabled: boolean("stripe_charges_enabled").default(false).notNull(),
   stripePayoutsEnabled: boolean("stripe_payouts_enabled").default(false).notNull(),
   stripeDetailsSubmitted: boolean("stripe_details_submitted").default(false).notNull(),
-  stripeOnboardedAt: bigint("stripe_onboarded_at", { mode: "number" }),
+  stripeOnboardedAt: int("stripe_onboarded_at"),
   // Datos bancarios
   accountAlias: varchar("account_alias", { length: 100 }),
   bankName: varchar("bank_name", { length: 100 }),
@@ -1004,8 +1004,8 @@ export const bankAccounts = mysqlTable("bank_accounts", {
   isPrimary: boolean("is_primary").default(false).notNull(),
   isActive: boolean("is_active").default(true).notNull(),
   notes: text("notes"),
-  createdAt: bigint("created_at", { mode: "number" }).notNull(),
-  updatedAt: bigint("updated_at", { mode: "number" }).notNull(),
+  createdAt: int("created_at").notNull(),
+  updatedAt: int("updated_at").notNull(),
 });
 export type BankAccount = typeof bankAccounts.$inferSelect;
 export type InsertBankAccount = typeof bankAccounts.$inferInsert;

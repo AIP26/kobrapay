@@ -4712,6 +4712,11 @@ export const appRouter = router({
           createdAt: now,
           updatedAt: now,
         });
+        // Notificar al superadmin sobre la nueva cuenta bancaria registrada
+        notifyOwner({
+          title: '\uD83C\uDFE6 Nueva cuenta bancaria registrada',
+          content: `El usuario ${ctx.user.name || ctx.user.email} (ID: ${ctx.user.id}) registr\u00F3 una nueva cuenta bancaria.\n\nAlias: ${input.accountAlias}\nTipo: ${input.connectType}\nBanco: ${input.bankName || 'No especificado'}\nTitular: ${input.accountHolderName || 'No especificado'}\nRFC: ${input.rfc || 'No especificado'}\nRaz\u00F3n Social: ${input.razonSocial || 'No especificado'}\n\nRevisa y valida los datos fiscales antes de activar cobros.`,
+        }).catch(() => {});
         return { success: true, id: Number((result as any).insertId) };
       }),
 
