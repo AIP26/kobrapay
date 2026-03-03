@@ -132,11 +132,35 @@ function AssociateQuoteSimulator() {
   const [emailSent, setEmailSent] = useState(false);
   const [aiPreview, setAiPreview] = useState("");
 
+  const logQuoteMutation = trpc.quote.logQuote.useMutation();
   const sendQuoteMutation = trpc.quote.sendByEmail.useMutation({
     onSuccess: (data) => {
       setEmailSent(true);
       if (data.aiExplanation) setAiPreview(data.aiExplanation);
       toast.success(`Cotización enviada a ${prospectEmail}`);
+      // Registrar en historial de cotizaciones
+      const m = parseFloat(amount) || 0;
+      const kR = parseFloat(kobrapayRate) / 100 || 0;
+      const iR = parseFloat(ivaRate) / 100 || 0;
+      const sR = mode === "online" ? 0.029 : 0.027;
+      const sF = mode === "online" ? 0.30 : 0.05;
+      const sFee = m * sR + sF;
+      const kFee = m * kR;
+      const kIva = kFee * iR;
+      const total = sFee + kFee + kIva;
+      const net = m - total;
+      const eff = m > 0 ? (total / m) * 100 : 0;
+      logQuoteMutation.mutate({
+        prospectEmail,
+        prospectName,
+        monthlyVolume: parseFloat(monthlyVolume) || 0,
+        singleAmount: m,
+        kpRate: parseFloat(kobrapayRate) || 0,
+        mode,
+        netAmount: net,
+        totalFee: total,
+        effectiveRate: eff,
+      });
     },
     onError: () => toast.error("Error al enviar la cotización. Verifica el email."),
   });

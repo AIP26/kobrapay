@@ -6,10 +6,15 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { CheckCircle2, User, Building2, Phone, Calendar, FileText, Shield } from "lucide-react";
+import { CheckCircle2, User, Building2, Phone, Calendar, FileText, Shield, Bot } from "lucide-react";
+import { Turnstile } from "@marsidev/react-turnstile";
 
 const KOBRAPAY_ICON = "https://files.manuscdn.com/user_upload_by_module/session_file/310519663381362445/yMTQoaqGYTxuRnnF.png";
 const KOBRAPAY_LOGO = "https://files.manuscdn.com/user_upload_by_module/session_file/310519663381362445/BlaEgmymroahADGF.png";
+
+// Cloudflare Turnstile site key
+// Use env var in production; fallback to Cloudflare's always-pass test key for dev
+const TURNSTILE_SITE_KEY = (import.meta.env.VITE_TURNSTILE_SITE_KEY as string) || "1x00000000000000000000AA";
 
 const BUSINESS_TYPES = [
   "Comercio al por menor",
@@ -38,6 +43,8 @@ export default function CompleteProfile() {
     businessType: "",
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+  const [turnstileError, setTurnstileError] = useState(false);
 
   const saveMutation = trpc.profile.save.useMutation({
     onSuccess: () => {
@@ -88,6 +95,10 @@ export default function CompleteProfile() {
     if (step === 1 && validateStep1()) setStep(2);
     else if (step === 2 && validateStep2()) setStep(3);
     else if (step === 3 && validateStep3()) {
+      if (!turnstileToken) {
+        toast.error("Por favor completa la verificación de seguridad antes de continuar");
+        return;
+      }
       saveMutation.mutate({
         fullName: form.fullName,
         birthDate: form.birthDate,
@@ -230,7 +241,7 @@ export default function CompleteProfile() {
             </div>
           )}
 
-          {/* Step 3: Negocio */}
+          {/* Step 3: Negocio + Anti-bot */}
           {step === 3 && (
             <div className="space-y-4">
               <div>
@@ -260,7 +271,43 @@ export default function CompleteProfile() {
                 </Select>
                 {errors.businessType && <p className="text-red-400 text-xs mt-1">{errors.businessType}</p>}
               </div>
-              <div className="bg-white/5 border border-white/10 rounded-xl p-4 mt-2">
+
+              {/* Verificación anti-bot Cloudflare Turnstile */}
+              <div className="bg-white/5 border border-white/10 rounded-xl p-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <Bot className="w-4 h-4 text-emerald-400" />
+                  <span className="text-xs text-gray-300 font-medium">Verificación de seguridad</span>
+                  <span className="text-xs text-gray-500">— confirma que eres humano</span>
+                </div>
+                <div className="flex justify-center">
+                  <Turnstile
+                    siteKey={TURNSTILE_SITE_KEY}
+                    onSuccess={(token) => {
+                      setTurnstileToken(token);
+                      setTurnstileError(false);
+                    }}
+                    onError={() => {
+                      setTurnstileToken(null);
+                      setTurnstileError(true);
+                    }}
+                    onExpire={() => setTurnstileToken(null)}
+                    options={{ theme: "dark", language: "es" }}
+                  />
+                </div>
+                {turnstileError && (
+                  <p className="text-red-400 text-xs mt-2 text-center">
+                    Error en la verificación. Recarga la página e intenta de nuevo.
+                  </p>
+                )}
+                {turnstileToken && (
+                  <div className="flex items-center justify-center gap-1.5 mt-2">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                    <span className="text-xs text-emerald-400">Verificación completada</span>
+                  </div>
+                )}
+              </div>
+
+              <div className="bg-white/5 border border-white/10 rounded-xl p-4">
                 <p className="text-xs text-gray-400 leading-relaxed">
                   Al completar tu registro, tu cuenta quedará en <strong className="text-white">revisión</strong>. Recibirás una notificación cuando sea aprobada (generalmente en menos de 24 horas).
                 </p>
@@ -281,8 +328,8 @@ export default function CompleteProfile() {
             )}
             <Button
               onClick={handleNext}
-              disabled={saveMutation.isPending}
-              className="flex-1 bg-emerald-500 hover:bg-emerald-400 text-white font-semibold"
+              disabled={saveMutation.isPending || (step === 3 && !turnstileToken)}
+              className="flex-1 bg-emerald-500 hover:bg-emerald-400 text-white font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {saveMutation.isPending ? "Guardando..." :
                step === 3 ? "Completar registro" : "Continuar"}

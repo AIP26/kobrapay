@@ -433,9 +433,21 @@ function ClientQuoteSimulator() {
   const [showEmailForm, setShowEmailForm] = useState(false);
   const [prospectEmail, setProspectEmail] = useState("");
   const [prospectName, setProspectName] = useState("");
+  const logQuote = trpc.quote.logQuote.useMutation();
   const sendQuote = trpc.quote.sendByEmail.useMutation({
     onSuccess: () => {
       toast.success("Cotización enviada", { description: `Email enviado a ${prospectEmail}` });
+      // Registrar en historial de cotizaciones
+      logQuote.mutate({
+        prospectEmail,
+        prospectName,
+        singleAmount: amount,
+        kpRate: kpRateStr !== "" ? parseFloat(kpRateStr) || 0 : defaultKp,
+        mode,
+        netAmount,
+        totalFee: totalDeductions,
+        effectiveRate,
+      });
       setShowEmailForm(false);
       setProspectEmail("");
       setProspectName("");

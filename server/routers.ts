@@ -6199,6 +6199,108 @@ Responde SOLO con JSON válido:
         });
         return { success: sent };
       }),
+
+    // Registrar cotización enviada en el historial
+    logQuote: protectedProcedure
+      .input(z.object({
+        prospectEmail: z.string().email(),
+        prospectName: z.string().default(""),
+        monthlyVolume: z.number().default(0),
+        singleAmount: z.number().default(0),
+        kpRate: z.number().default(0),
+        mode: z.enum(["online", "terminal"]).default("online"),
+        netAmount: z.number().default(0),
+        totalFee: z.number().default(0),
+        effectiveRate: z.number().default(0),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const { getDb } = await import("./db");
+        const db = await getDb();
+        if (!db) return { ok: false };
+        const { quoteLogs } = await import("../drizzle/schema");
+        await db.insert(quoteLogs).values({
+          senderId: ctx.user.id,
+          senderName: ctx.user.name || ctx.user.email || "",
+          prospectEmail: input.prospectEmail,
+          prospectName: input.prospectName,
+          monthlyVolume: String(input.monthlyVolume),
+          singleAmount: String(input.singleAmount),
+          kpRate: String(input.kpRate),
+          mode: input.mode,
+          netAmount: String(input.netAmount),
+          totalFee: String(input.totalFee),
+          effectiveRate: String(input.effectiveRate),
+          registered: 0,
+          emailSent: 1,
+          createdAt: Date.now(),
+        });
+        return { ok: true };
+      }),
+
+    // Historial de cotizaciones enviadas
+    getLogs: protectedProcedure
+      .input(z.object({
+        page: z.number().default(1),
+        limit: z.number().default(20),
+        all: z.boolean().default(false),
+      }))
+      .query(async ({ ctx, input }) => {
+        const { getDb } = await import("./db");
+        const db = await getDb();
+        if (!db) return { logs: [], total: 0, page: 1, limit: 20 };
+        const { quoteLogs } = await import("../drizzle/schema");
+        const { eq, desc, count } = await import("drizzle-orm");
+        const isSuperAdminUser = ctx.user.role === "admin";
+        const showAll = input.all && isSuperAdminUser;
+        const offset = (input.page - 1) * input.limit;
+        const baseQuery = showAll
+          ? db.select().from(quoteLogs)
+          : db.select().from(quoteLogs).where(eq(quoteLogs.senderId, ctx.user.id));
+        const rows = await baseQuery.orderBy(desc(quoteLogs.createdAt)).limit(input.limit).offset(offset);
+        const countQuery = showAll
+          ? db.select({ total: count() }).from(quoteLogs)
+          : db.select({ total: count() }).from(quoteLogs).where(eq(quoteLogs.senderId, ctx.user.id));
+        const countResult = await countQuery;
+        return { logs: rows, total: countResult[0]?.total ?? 0, page: input.page, limit: input.limit };
+      }),
+
+    // Estadisticas de cotizaciones
+    getStats: protectedProcedure
+      .input(z.object({ all: z.boolean().default(false) }))
+      .query(async ({ ctx, input }) => {
+        const { getDb } = await import("./db");
+        const db = await getDb();
+        if (!db) return { totalSent: 0, totalConverted: 0, conversionRate: 0, avgRate: 0, totalVolumeQuoted: 0 };
+        const { quoteLogs } = await import("../drizzle/schema");
+        const { eq, sum, avg, count } = await import("drizzle-orm");
+        const isSuperAdminUser = ctx.user.role === "admin";
+        const showAll = input.all && isSuperAdminUser;
+        const baseQuery = showAll
+          ? db.select({
+              totalSent: count(),
+              totalConverted: sum(quoteLogs.registered),
+              avgRate: avg(quoteLogs.effectiveRate),
+              totalVolume: sum(quoteLogs.monthlyVolume),
+            }).from(quoteLogs)
+          : db.select({
+              totalSent: count(),
+              totalConverted: sum(quoteLogs.registered),
+              avgRate: avg(quoteLogs.effectiveRate),
+              totalVolume: sum(quoteLogs.monthlyVolume),
+            }).from(quoteLogs).where(eq(quoteLogs.senderId, ctx.user.id));
+        const rows = await baseQuery;
+        const r = rows[0];
+        const totalSent = r?.totalSent ?? 0;
+        const totalConverted = Number(r?.totalConverted ?? 0);
+        const conversionRate = totalSent > 0 ? Math.round((totalConverted / totalSent) * 100) : 0;
+        return {
+          totalSent,
+          totalConverted,
+          conversionRate,
+          avgRate: Number(r?.avgRate ?? 0),
+          totalVolumeQuoted: Number(r?.totalVolume ?? 0),
+        };
+      }),
   }),
 });
 export type AppRouter = typeof appRouter;

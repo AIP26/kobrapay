@@ -7,6 +7,7 @@ import {
   mysqlTable,
   text,
   timestamp,
+  tinyint,
   varchar,
 } from "drizzle-orm/mysql-core";
 
@@ -1125,3 +1126,25 @@ export const registrationScores = mysqlTable("registration_scores", {
 });
 export type RegistrationScore = typeof registrationScores.$inferSelect;
 export type InsertRegistrationScore = typeof registrationScores.$inferInsert;
+
+// ─── Quote Logs ─────────────────────────────────────────────────────────────
+export const quoteLogs = mysqlTable("quote_logs", {
+  id: int("id").autoincrement().primaryKey(),
+  senderId: int("sender_id").notNull(),
+  senderName: varchar("sender_name", { length: 255 }).notNull().default(""),
+  prospectEmail: varchar("prospect_email", { length: 255 }).notNull(),
+  prospectName: varchar("prospect_name", { length: 255 }).notNull().default(""),
+  monthlyVolume: decimal("monthly_volume", { precision: 15, scale: 2 }).notNull().default("0"),
+  singleAmount: decimal("single_amount", { precision: 15, scale: 2 }).notNull().default("0"),
+  kpRate: decimal("kp_rate", { precision: 5, scale: 2 }).notNull().default("0"),
+  mode: varchar("mode", { length: 20 }).notNull().default("online"),
+  netAmount: decimal("net_amount", { precision: 15, scale: 2 }).notNull().default("0"),
+  totalFee: decimal("total_fee", { precision: 15, scale: 2 }).notNull().default("0"),
+  effectiveRate: decimal("effective_rate", { precision: 5, scale: 2 }).notNull().default("0"),
+  registered: tinyint("registered").notNull().default(0),
+  registeredAt: bigint("registered_at", { mode: "number" }),
+  emailSent: tinyint("email_sent").notNull().default(1),
+  createdAt: bigint("created_at", { mode: "number" }).notNull(),
+});
+export type QuoteLog = typeof quoteLogs.$inferSelect;
+export type InsertQuoteLog = typeof quoteLogs.$inferInsert;
