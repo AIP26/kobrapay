@@ -44,6 +44,8 @@ import {
   Wallet,
   Bot,
   LifeBuoy,
+  ArrowLeftRight,
+  Brain,
 } from "lucide-react";
 import { useState, useCallback, useMemo, useEffect, useRef } from "react";
 import GlobalSearch from "./GlobalSearch";
@@ -106,6 +108,7 @@ const NAV_GROUPS = [
       { href: "/dashboard/payers", icon: Users, label: "Mis Pagadores" },
       { href: "/dashboard/expedientes", icon: FolderOpen, label: "Expedientes" },
       { href: "/dashboard/connect", icon: Wallet, label: "Cuenta de Cobros" },
+      { href: "/dashboard/transfers", icon: ArrowLeftRight, label: "Transferencias" },
     ],
   },
   {
@@ -160,6 +163,7 @@ const NAV_GROUPS = [
     items: [
       { href: "/dashboard/clients", icon: Users, label: "Mis Clientes" },
       { href: "/dashboard/registrations", icon: UserCog, label: "Registros" },
+      { href: "/dashboard/ai-scoring", icon: Brain, label: "Scoring IA" },
       { href: "/dashboard/security", icon: Shield, label: "Seguridad" },
     ],
   },

@@ -198,6 +198,10 @@ function TransactionDetailModal({
   const commRate = Number(tx.commissionRate || 0);
   const commAmt = Number(tx.commissionAmount || 0);
   const net = Number(tx.netAmount || gross);
+  const { data: settings } = trpc.vendor.getSettings.useQuery();
+  const ivaRate = settings?.ivaEnabled !== false ? Number(settings?.ivaRate || 16) / 100 : 0;
+  const ivaAmt = commAmt * ivaRate;
+  const totalKobraPay = commAmt + ivaAmt;
   const failureDetails = tx.status === "failed" ? getFailureDetails(tx.errorMessage) : null;
   const operationNumber = generateOperationNumber(tx);
   const description = tx.metadata ? (() => { try { return JSON.parse(tx.metadata).description || ""; } catch { return ""; } })() : "";
@@ -513,14 +517,26 @@ function TransactionDetailModal({
                   <span className="text-gray-600">Monto bruto</span>
                   <span className="font-semibold text-gray-800">{formatCurrency(gross, tx.currency)}</span>
                 </div>
-                {commRate > 0 && (
+                 {commRate > 0 && (
                   <>
                     <div className="flex justify-between text-sm">
-                      <span className="text-gray-600">Comisión ({commRate}%)</span>
+                      <span className="text-gray-600">Comisión KobraPay ({commRate}%)</span>
                       <span className="font-semibold text-red-600">-{formatCurrency(commAmt)}</span>
                     </div>
+                    {ivaRate > 0 && (
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-600">IVA sobre comisión ({(ivaRate * 100).toFixed(0)}%)</span>
+                        <span className="font-semibold text-orange-600">-{formatCurrency(ivaAmt)}</span>
+                      </div>
+                    )}
+                    {ivaRate > 0 && (
+                      <div className="flex justify-between text-sm bg-orange-50 border border-orange-200 rounded-lg px-3 py-2">
+                        <span className="text-orange-800 font-semibold">Total KobraPay (comisión + IVA)</span>
+                        <span className="font-bold text-orange-800">-{formatCurrency(totalKobraPay)}</span>
+                      </div>
+                    )}
                     <div className="flex justify-between text-sm border-t border-green-200 pt-2">
-                      <span className="font-bold text-gray-800">Monto neto</span>
+                      <span className="font-bold text-gray-800">Monto neto para ti</span>
                       <span className="font-black text-green-700 text-base">{formatCurrency(net)}</span>
                     </div>
                   </>

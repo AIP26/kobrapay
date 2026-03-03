@@ -5801,6 +5801,156 @@ Responde SIEMPRE en español mexicano, de forma amable, clara y paso a paso. Si 
         return { success: true };
       }),
   }),
+
+  // ─── Motor de Scoring IA para Registro de Clientes ───────────────────────────
+  aiScoring: router({
+    // Evaluar una solicitud de registro con IA
+    evaluate: protectedProcedure
+      .input(z.object({
+        applicantEmail: z.string().email(),
+        applicantName: z.string().optional(),
+        businessName: z.string().optional(),
+        businessType: z.string().optional(),
+        monthlyRevenue: z.string().optional(),
+        rfc: z.string().optional(),
+        phone: z.string().optional(),
+        associateClientId: z.number().optional(),
+        onboardingSurveyId: z.number().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        if (!ctx.isSuperAdmin && ctx.user.role !== 'assistant') throw new TRPCError({ code: 'FORBIDDEN' });
+        const db = await import('./db').then(m => m.getDb());
+        if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
+        const { registrationScores } = await import('../drizzle/schema');
+        const { eq, or } = await import('drizzle-orm');
+        const { invokeLLM } = await import('./_core/llm');
+
+        // Verificar duplicados
+        const existing = await db.select().from(registrationScores)
+          .where(eq(registrationScores.applicantEmail, input.applicantEmail));
+        const isDuplicate = existing.length > 0;
+
+        // Llamar a la IA para scoring
+        const prompt = `Eres un motor de scoring para KobraPay, una plataforma de pagos mexicana.
+Evalúa esta solicitud de registro de negocio y asigna un score del 0 al 100.
+
+Datos del solicitante:
+- Email: ${input.applicantEmail}
+- Nombre: ${input.applicantName || 'No proporcionado'}
+- Negocio: ${input.businessName || 'No proporcionado'}
+- Tipo de negocio: ${input.businessType || 'No especificado'}
+- Ingresos mensuales estimados: ${input.monthlyRevenue || 'No especificado'}
+- RFC: ${input.rfc || 'No proporcionado'}
+- Teléfono: ${input.phone || 'No proporcionado'}
+- ¿Email ya registrado antes?: ${isDuplicate ? 'SÍ - POSIBLE DUPLICADO' : 'No'}
+
+Criterios de scoring:
+- 80-100: Auto-aprobar (negocio legítimo, datos completos, sin señales de riesgo)
+- 50-79: Revisión manual (datos incompletos o señales menores de riesgo)
+- 0-49: Auto-rechazar (señales claras de fraude, duplicado, datos falsos)
+
+Responde SOLO con JSON válido:
+{
+  "score": <número 0-100>,
+  "decision": "auto_approved" | "manual_review" | "auto_rejected",
+  "reasoning": "<explicación breve en español>",
+  "riskFlags": ["<señal1>", "<señal2>"],
+  "scoreFactors": {
+    "emailQuality": <0-20>,
+    "businessInfo": <0-20>,
+    "rfcProvided": <0-20>,
+    "revenueEstimate": <0-20>,
+    "noDuplicates": <0-20>
+  }
+}`;
+
+        let aiScore = 50;
+        let decision: 'auto_approved' | 'manual_review' | 'auto_rejected' = 'manual_review';
+        let aiReasoning = 'Revisión manual requerida';
+        let riskFlags: string[] = [];
+        let scoreFactors = {};
+
+        try {
+          const aiResponse = await invokeLLM({
+            messages: [
+              { role: 'system', content: 'Eres un motor de scoring de riesgo para una plataforma de pagos. Responde SOLO con JSON válido, sin markdown.' },
+              { role: 'user', content: prompt },
+            ],
+          });
+          const rawContent = aiResponse.choices[0]?.message?.content;
+          const content = typeof rawContent === 'string' ? rawContent : '{}';
+          const parsed = JSON.parse(content);
+          aiScore = Math.min(100, Math.max(0, parsed.score || 50));
+          decision = parsed.decision || 'manual_review';
+          aiReasoning = parsed.reasoning || 'Sin razonamiento';
+          riskFlags = parsed.riskFlags || [];
+          scoreFactors = parsed.scoreFactors || {};
+        } catch (e) {
+          // Si la IA falla, usar revisión manual
+          aiReasoning = 'Error al evaluar con IA - revisión manual requerida';
+        }
+
+        // Guardar en la base de datos
+        const now = Date.now();
+        const [record] = await db.insert(registrationScores).values({
+          applicantEmail: input.applicantEmail,
+          applicantName: input.applicantName,
+          businessName: input.businessName,
+          associateClientId: input.associateClientId,
+          onboardingSurveyId: input.onboardingSurveyId,
+          aiScore,
+          decision,
+          scoreFactors: JSON.stringify(scoreFactors),
+          riskFlags: JSON.stringify(riskFlags),
+          aiReasoning,
+          createdAt: now,
+          updatedAt: now,
+        });
+
+        return { aiScore, decision, aiReasoning, riskFlags, scoreFactors, id: record?.insertId };
+      }),
+
+    // Listar todos los scores (para el superadmin)
+    list: protectedProcedure
+      .input(z.object({
+        limit: z.number().min(1).max(100).default(50),
+        decision: z.enum(['auto_approved', 'manual_review', 'auto_rejected']).optional(),
+      }))
+      .query(async ({ ctx, input }) => {
+        if (!ctx.isSuperAdmin && ctx.user.role !== 'assistant') throw new TRPCError({ code: 'FORBIDDEN' });
+        const db = await import('./db').then(m => m.getDb());
+        if (!db) return [];
+        const { registrationScores } = await import('../drizzle/schema');
+        const { desc, eq } = await import('drizzle-orm');
+        let query = db.select().from(registrationScores).orderBy(desc(registrationScores.createdAt)).limit(input.limit);
+        return query;
+      }),
+
+    // Revisión manual: aprobar o rechazar
+    review: protectedProcedure
+      .input(z.object({
+        scoreId: z.number(),
+        decision: z.enum(['auto_approved', 'auto_rejected']),
+        reviewerNotes: z.string().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        if (!ctx.isSuperAdmin) throw new TRPCError({ code: 'FORBIDDEN' });
+        const db = await import('./db').then(m => m.getDb());
+        if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
+        const { registrationScores } = await import('../drizzle/schema');
+        const { eq } = await import('drizzle-orm');
+        await db.update(registrationScores)
+          .set({
+            decision: input.decision,
+            reviewedBy: ctx.user.id,
+            reviewedAt: Date.now(),
+            reviewerNotes: input.reviewerNotes,
+            updatedAt: Date.now(),
+          })
+          .where(eq(registrationScores.id, input.scoreId));
+        return { success: true };
+      }),
+  }),
 });
 export type AppRouter = typeof appRouter;
 

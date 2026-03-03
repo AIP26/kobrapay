@@ -1098,3 +1098,30 @@ export const feedbackMessages = mysqlTable("feedback_messages", {
 });
 export type FeedbackMessage = typeof feedbackMessages.$inferSelect;
 export type InsertFeedbackMessage = typeof feedbackMessages.$inferInsert;
+
+// ─── Scoring IA para solicitudes de registro ──────────────────────────────────
+export const registrationScores = mysqlTable("registration_scores", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("user_id"),
+  associateClientId: int("associate_client_id"),
+  onboardingSurveyId: int("onboarding_survey_id"),
+  applicantEmail: varchar("applicant_email", { length: 255 }).notNull(),
+  applicantName: varchar("applicant_name", { length: 255 }),
+  businessName: varchar("business_name", { length: 255 }),
+  aiScore: int("ai_score").notNull().default(0),
+  decision: mysqlEnum("decision", ["auto_approved", "manual_review", "auto_rejected"]).notNull().default("manual_review"),
+  scoreFactors: text("score_factors"),
+  riskFlags: text("risk_flags"),
+  captchaVerified: boolean("captcha_verified").default(false).notNull(),
+  captchaToken: varchar("captcha_token", { length: 500 }),
+  ipAddress: varchar("ip_address", { length: 45 }),
+  userAgent: text("user_agent"),
+  aiReasoning: text("ai_reasoning"),
+  reviewedBy: int("reviewed_by"),
+  reviewedAt: bigint("reviewed_at", { mode: "number" }),
+  reviewerNotes: text("reviewer_notes"),
+  createdAt: bigint("created_at", { mode: "number" }).notNull(),
+  updatedAt: bigint("updated_at", { mode: "number" }).notNull(),
+});
+export type RegistrationScore = typeof registrationScores.$inferSelect;
+export type InsertRegistrationScore = typeof registrationScores.$inferInsert;

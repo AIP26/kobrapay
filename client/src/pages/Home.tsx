@@ -172,6 +172,164 @@ function FeatureModal({ feature, onClose }: { feature: typeof FEATURES[0]; onClo
 const KOBRAPAY_LOGO = "https://files.manuscdn.com/user_upload_by_module/session_file/310519663381362445/BlaEgmymroahADGF.png";
 const KOBRAPAY_ICON = "https://files.manuscdn.com/user_upload_by_module/session_file/310519663381362445/yMTQoaqGYTxuRnnF.png";
 
+// Planes con tasas por volumen mensual
+const VOLUME_TIERS = [
+  { label: "Express", min: 0, max: 50000, kpRate: 3.0, stripe: 1.5, stripeFixed: 3, color: "emerald" },
+  { label: "Connect", min: 50001, max: 150000, kpRate: 2.5, stripe: 1.5, stripeFixed: 3, color: "cyan" },
+  { label: "Custom", min: 150001, max: 500000, kpRate: 2.0, stripe: 1.5, stripeFixed: 3, color: "violet" },
+  { label: "Enterprise", min: 500001, max: 9999999, kpRate: 1.5, stripe: 1.5, stripeFixed: 3, color: "amber" },
+];
+
+function PublicQuoteCalculator() {
+  const [monthlyVolume, setMonthlyVolume] = useState(50000);
+  const [singleAmount, setSingleAmount] = useState(5000);
+  const iva = 0.16;
+
+  const tier = VOLUME_TIERS.find(t => monthlyVolume >= t.min && monthlyVolume <= t.max) || VOLUME_TIERS[0];
+  const nextTier = VOLUME_TIERS[VOLUME_TIERS.indexOf(tier) + 1];
+
+  // Cálculo para un cobro individual
+  const stripeFee = (singleAmount * (tier.stripe / 100)) + tier.stripeFixed;
+  const kpFee = singleAmount * (tier.kpRate / 100);
+  const kpIva = kpFee * iva;
+  const totalFees = stripeFee + kpFee + kpIva;
+  const netReceived = singleAmount - totalFees;
+  const effectiveRate = (totalFees / singleAmount) * 100;
+
+  // Comparativa con competencia
+  const competitors = [
+    { name: "Mercado Pago", rate: 3.29, fixed: 0 },
+    { name: "PayPal", rate: 3.5, fixed: 0 },
+    { name: "Clip", rate: 3.6, fixed: 0 },
+    { name: "Conekta", rate: 2.9, fixed: 3 },
+  ];
+
+  return (
+    <div className="bg-white/5 border border-white/10 rounded-3xl p-8">
+      <div className="grid lg:grid-cols-2 gap-10">
+        {/* Izquierda: controles */}
+        <div className="space-y-6">
+          {/* Slider volumen mensual */}
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <label className="text-sm font-semibold text-white">Volumen mensual estimado</label>
+              <span className="text-emerald-400 font-bold text-sm">${monthlyVolume.toLocaleString("es-MX")} MXN</span>
+            </div>
+            <input
+              type="range"
+              min={5000}
+              max={1000000}
+              step={5000}
+              value={monthlyVolume}
+              onChange={e => setMonthlyVolume(Number(e.target.value))}
+              className="w-full accent-emerald-500"
+            />
+            <div className="flex justify-between text-xs text-gray-500 mt-1">
+              <span>$5,000</span><span>$1,000,000</span>
+            </div>
+          </div>
+
+          {/* Plan actual */}
+          <div className={`rounded-2xl p-4 border ${
+            tier.color === "emerald" ? "bg-emerald-500/10 border-emerald-500/30" :
+            tier.color === "cyan" ? "bg-cyan-500/10 border-cyan-500/30" :
+            tier.color === "violet" ? "bg-violet-500/10 border-violet-500/30" :
+            "bg-amber-500/10 border-amber-500/30"
+          }`}>
+            <div className="flex items-center justify-between mb-2">
+              <span className={`text-xs font-bold uppercase tracking-wider ${
+                tier.color === "emerald" ? "text-emerald-400" :
+                tier.color === "cyan" ? "text-cyan-400" :
+                tier.color === "violet" ? "text-violet-400" : "text-amber-400"
+              }`}>Plan {tier.label}</span>
+              <span className="text-white font-black text-2xl">{tier.kpRate}%</span>
+            </div>
+            <p className="text-gray-400 text-xs">Comisión KobraPay para este volumen mensual</p>
+            {nextTier && (
+              <div className="mt-3 pt-3 border-t border-white/10">
+                <p className="text-xs text-gray-500">
+                  💡 Procesando <span className="text-white font-semibold">${nextTier.min.toLocaleString("es-MX")} MXN/mes</span> o más, tu tasa baja a{" "}
+                  <span className={`font-bold ${
+                    tier.color === "cyan" ? "text-violet-400" : "text-amber-400"
+                  }`}>{nextTier.kpRate}%</span> — Plan {nextTier.label}
+                </p>
+              </div>
+            )}
+          </div>
+
+          {/* Monto de cobro individual */}
+          <div>
+            <label className="text-sm font-semibold text-white block mb-2">Simula un cobro de</label>
+            <div className="relative">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">$</span>
+              <input
+                type="number"
+                value={singleAmount}
+                onChange={e => setSingleAmount(Math.max(1, Number(e.target.value)))}
+                className="w-full bg-white/5 border border-white/10 rounded-xl pl-7 pr-4 py-2.5 text-white text-sm focus:outline-none focus:border-emerald-500"
+              />
+              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs">MXN</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Derecha: resultados */}
+        <div className="space-y-4">
+          {/* Desglose */}
+          <div className="bg-black/30 rounded-2xl p-5 space-y-3">
+            <h4 className="text-sm font-bold text-white mb-3">Desglose del cobro</h4>
+            {[
+              { label: "Monto cobrado al cliente", value: singleAmount, color: "text-white", bold: true },
+              { label: `Comisión Stripe (${tier.stripe}% + $${tier.stripeFixed})`, value: -stripeFee, color: "text-gray-400" },
+              { label: `Comisión KobraPay (${tier.kpRate}%)`, value: -kpFee, color: "text-gray-400" },
+              { label: `IVA sobre comisión KobraPay (16%)`, value: -kpIva, color: "text-gray-400" },
+            ].map(item => (
+              <div key={item.label} className="flex items-center justify-between">
+                <span className={`text-xs ${item.color}`}>{item.label}</span>
+                <span className={`text-sm font-semibold ${item.bold ? "text-white" : "text-red-400"}`}>
+                  {item.value > 0 ? "" : "- "}${Math.abs(item.value).toLocaleString("es-MX", { minimumFractionDigits: 2 })}
+                </span>
+              </div>
+            ))}
+            <div className="border-t border-white/10 pt-3 flex items-center justify-between">
+              <span className="text-sm font-bold text-white">Tú recibes</span>
+              <span className="text-xl font-black text-emerald-400">${netReceived.toLocaleString("es-MX", { minimumFractionDigits: 2 })}</span>
+            </div>
+            <p className="text-xs text-gray-500 text-center">Tasa efectiva total: {effectiveRate.toFixed(2)}%</p>
+          </div>
+
+          {/* Comparativa */}
+          <div className="bg-black/30 rounded-2xl p-5">
+            <h4 className="text-sm font-bold text-white mb-3">vs. Competencia (mismo cobro)</h4>
+            <div className="space-y-2">
+              {competitors.map(c => {
+                const cFee = (singleAmount * c.rate / 100) + c.fixed;
+                const cNet = singleAmount - cFee;
+                const isWinner = netReceived > cNet;
+                return (
+                  <div key={c.name} className={`flex items-center justify-between rounded-lg px-3 py-2 ${
+                    isWinner ? "bg-emerald-500/10 border border-emerald-500/20" : "bg-white/5"
+                  }`}>
+                    <span className="text-xs text-gray-400">{c.name} ({c.rate}%)</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-gray-300">${cNet.toLocaleString("es-MX", { minimumFractionDigits: 2 })}</span>
+                      {isWinner && <span className="text-xs bg-emerald-500 text-white px-1.5 py-0.5 rounded-full font-bold">KobraPay gana</span>}
+                    </div>
+                  </div>
+                );
+              })}
+              <div className="flex items-center justify-between rounded-lg px-3 py-2 bg-emerald-500/20 border border-emerald-500/40">
+                <span className="text-xs font-bold text-emerald-300">KobraPay (Plan {tier.label})</span>
+                <span className="text-sm font-black text-emerald-400">${netReceived.toLocaleString("es-MX", { minimumFractionDigits: 2 })}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function Home() {
   const { isAuthenticated, loading } = useAuth();
   const [activeFeature, setActiveFeature] = useState<typeof FEATURES[0] | null>(null);
@@ -374,6 +532,17 @@ export default function Home() {
               );
             })}
           </div>
+        </div>
+      </section>
+
+      {/* Simulador de Comisiones */}
+      <section className="py-20 border-t border-white/5">
+        <div className="container max-w-5xl mx-auto">
+          <div className="text-center mb-10">
+            <h2 className="text-2xl lg:text-3xl font-bold text-white mb-3">Simula cuanto te cobraremos</h2>
+            <p className="text-gray-400 max-w-xl mx-auto">Mueve el slider para ver exactamente cuanto recibiras despues de comisiones. A mayor volumen, menor porcentaje.</p>
+          </div>
+          <PublicQuoteCalculator />
         </div>
       </section>
 

@@ -12,7 +12,8 @@ import {
   BookOpen, UserPlus, DollarSign, CheckCircle, Clock, XCircle,
   Download, Zap, TrendingUp, Crown, Rocket, ChevronRight,
   Phone, Mail, Building2, User, FileText, Star, AlertCircle,
-  Handshake, ArrowRight
+  Handshake, ArrowRight, Calculator, CreditCard, Smartphone,
+  ChevronDown, ChevronUp, ShieldCheck, HelpCircle, Store
 } from "lucide-react";
 
 // ─── Planes disponibles ───────────────────────────────────────────────────────
@@ -117,6 +118,212 @@ const PLANS = [
     argument: "Para el cliente grande que necesita un proveedor de pagos confiable con soporte dedicado y precios por volumen.",
   },
 ];
+
+// ─── Simulador de Cotización (para el asociado, con % editables) ─────────────────────────────────
+function AssociateQuoteSimulator() {
+  const [mode, setMode] = useState<"online" | "terminal">("online");
+  const [amount, setAmount] = useState("10000");
+  const [kobrapayRate, setKobrapayRate] = useState("1.5");
+  const [ivaRate, setIvaRate] = useState("16");
+
+  const monto = parseFloat(amount) || 0;
+  const kpRate = parseFloat(kobrapayRate) / 100 || 0;
+  const iva = parseFloat(ivaRate) / 100 || 0;
+  const stripeFee = mode === "online" ? monto * 0.029 + 0.30 : monto * 0.027 + 0.05;
+  const kpFee = monto * kpRate;
+  const kpIva = kpFee * iva;
+  const totalKp = kpFee + kpIva;
+  const totalDeducted = stripeFee + totalKp;
+  const netForBusiness = monto - totalDeducted;
+  const effectiveRate = monto > 0 ? (totalDeducted / monto) * 100 : 0;
+
+  const competitors = mode === "online" ? [
+    { name: "Mercado Pago", rate: 3.29, fixed: 0 },
+    { name: "PayPal", rate: 3.5, fixed: 0 },
+    { name: "Clip (online)", rate: 3.6, fixed: 0 },
+    { name: "Conekta", rate: 2.9, fixed: 0.30 },
+  ] : [
+    { name: "Clip (presencial)", rate: 3.6, fixed: 0 },
+    { name: "Mercado Pago Point", rate: 3.29, fixed: 0 },
+    { name: "BBVA Terminal", rate: 3.2, fixed: 0 },
+    { name: "Stripe solo", rate: 2.7, fixed: 0.05 },
+  ];
+
+  return (
+    <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+      <div className="bg-gradient-to-r from-indigo-600 to-violet-700 px-6 py-5 text-white">
+        <div className="flex items-center gap-3">
+          <Calculator className="w-6 h-6" />
+          <div>
+            <h3 className="text-lg font-bold">Simulador de Cotización</h3>
+            <p className="text-indigo-100 text-sm">Muéstrale a tu cliente exactamente cuánto paga y cuánto recibe</p>
+          </div>
+        </div>
+      </div>
+      <div className="p-6 space-y-5">
+        <div className="flex gap-2">
+          <button onClick={() => setMode("online")} className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold border transition-all ${mode === "online" ? "bg-indigo-600 text-white border-indigo-600" : "bg-gray-50 text-gray-600 border-gray-200 hover:border-indigo-300"}`}>
+            <Smartphone className="w-4 h-4" /> Cobro Online
+          </button>
+          <button onClick={() => setMode("terminal")} className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold border transition-all ${mode === "terminal" ? "bg-violet-600 text-white border-violet-600" : "bg-gray-50 text-gray-600 border-gray-200 hover:border-violet-300"}`}>
+            <CreditCard className="w-4 h-4" /> Terminal Física (Stripe)
+          </button>
+        </div>
+        {mode === "terminal" && (
+          <div className="bg-violet-50 border border-violet-200 rounded-xl p-3 text-xs text-violet-800">
+            <p className="font-semibold mb-1">📟 Stripe Terminal Reader</p>
+            <p>Lector físico que se conecta directamente a KobraPay. Cobros presenciales y online en un solo panel. Precio del lector: ~$299 USD (pago único).</p>
+          </div>
+        )}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div>
+            <label className="text-xs font-semibold text-gray-500 uppercase mb-1.5 block">Monto del cobro (MXN)</label>
+            <div className="relative">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">$</span>
+              <input type="number" value={amount} onChange={e => setAmount(e.target.value)} className="w-full pl-7 pr-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300" placeholder="10000" min="0" />
+            </div>
+          </div>
+          <div>
+            <label className="text-xs font-semibold text-gray-500 uppercase mb-1.5 block">% Comisión KobraPay</label>
+            <div className="relative">
+              <input type="number" value={kobrapayRate} onChange={e => setKobrapayRate(e.target.value)} className="w-full pl-3 pr-8 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300" placeholder="1.5" step="0.1" min="0" />
+              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">%</span>
+            </div>
+            <p className="text-xs text-gray-400 mt-1">Sugerido: 1.5% online / 0.8% terminal</p>
+          </div>
+          <div>
+            <label className="text-xs font-semibold text-gray-500 uppercase mb-1.5 block">% IVA sobre comisión</label>
+            <div className="relative">
+              <input type="number" value={ivaRate} onChange={e => setIvaRate(e.target.value)} className="w-full pl-3 pr-8 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300" placeholder="16" step="1" min="0" />
+              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">%</span>
+            </div>
+          </div>
+        </div>
+        {monto > 0 && (
+          <div className="space-y-3">
+            <div className="bg-gray-50 rounded-xl p-4 space-y-2">
+              <p className="text-xs font-semibold text-gray-400 uppercase mb-3">Desglose del cobro</p>
+              <div className="flex justify-between text-sm"><span className="text-gray-600">Monto bruto</span><span className="font-semibold">${monto.toLocaleString("es-MX", {minimumFractionDigits:2})} MXN</span></div>
+              <div className="flex justify-between text-sm"><span className="text-gray-600">Comisión Stripe ({mode === "online" ? "2.9% + $0.30" : "2.7% + $0.05"})</span><span className="text-red-500">-${stripeFee.toFixed(2)}</span></div>
+              <div className="flex justify-between text-sm"><span className="text-gray-600">Comisión KobraPay ({kobrapayRate}%)</span><span className="text-red-500">-${kpFee.toFixed(2)}</span></div>
+              {iva > 0 && <div className="flex justify-between text-sm"><span className="text-gray-600">IVA sobre comisión KobraPay ({ivaRate}%)</span><span className="text-orange-500">-${kpIva.toFixed(2)}</span></div>}
+              <div className="border-t border-gray-200 pt-2 mt-2 space-y-1">
+                <div className="flex justify-between text-sm"><span className="text-gray-600 font-medium">Total deducido</span><span className="font-semibold text-red-600">-${totalDeducted.toFixed(2)}</span></div>
+                <div className="flex justify-between"><span className="font-bold text-gray-900">Neto para el negocio</span><span className="font-black text-emerald-600 text-lg">${netForBusiness.toLocaleString("es-MX", {minimumFractionDigits:2})}</span></div>
+                <div className="flex justify-between text-xs"><span className="text-gray-400">Tasa efectiva total</span><span className="text-gray-500">{effectiveRate.toFixed(2)}%</span></div>
+              </div>
+            </div>
+            <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4">
+              <p className="text-xs font-semibold text-emerald-600 uppercase mb-2">Tu comisión como asociado (ejemplo 10%)</p>
+              <div className="flex items-center gap-2">
+                <span className="text-emerald-800 text-sm">Ganas por este cobro:</span>
+                <span className="font-bold text-emerald-700 text-base">${(kpFee * 0.10).toFixed(2)} MXN</span>
+              </div>
+            </div>
+            <div>
+              <p className="text-xs font-semibold text-gray-400 uppercase mb-2">Comparativa vs competencia</p>
+              <div className="space-y-1.5">
+                {competitors.map(c => {
+                  const cFee = monto * (c.rate / 100) + c.fixed;
+                  const cNet = monto - cFee;
+                  const isBetter = netForBusiness > cNet;
+                  return (
+                    <div key={c.name} className="flex items-center justify-between bg-gray-50 rounded-lg px-3 py-2">
+                      <span className="text-sm text-gray-600">{c.name} ({c.rate}%{c.fixed > 0 ? ` + $${c.fixed}` : ""})</span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium text-gray-700">Neto: ${cNet.toLocaleString("es-MX", {minimumFractionDigits:2})}</span>
+                        {isBetter && <span className="text-xs bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full font-semibold">KobraPay gana</span>}
+                      </div>
+                    </div>
+                  );
+                })}
+                <div className="flex items-center justify-between bg-indigo-50 border border-indigo-200 rounded-lg px-3 py-2">
+                  <span className="text-sm font-bold text-indigo-800">KobraPay (tu cotización)</span>
+                  <span className="text-sm font-black text-indigo-700">Neto: ${netForBusiness.toLocaleString("es-MX", {minimumFractionDigits:2})}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─── FAQ de Ventas ────────────────────────────────────────────────────────────
+const FAQ_ITEMS = [
+  {
+    q: "¿Puedo usar mi terminal física actual con KobraPay?",
+    a: "Las terminales de otros proveedores (Clip, bancos, etc.) no se conectan a KobraPay porque operan en redes separadas. Sin embargo, KobraPay ofrece el Stripe Terminal Reader, un lector físico que SÍ se integra directamente con tu panel. Así tienes cobros online y presenciales en un solo lugar, con un solo reporte y una sola comisión.",
+    icon: CreditCard,
+  },
+  {
+    q: "¿A qué tipo de negocios le puedo ofrecer KobraPay?",
+    a: "KobraPay es ideal para: profesionales independientes (abogados, contadores, coaches, psicólogos) que cobran por links; negocios de servicios con citas (spas, clínicas, gimnasios, salones) que quieren cobrar anticipos y membresías automáticas; pequeños comercios con venta online o a domicilio; escuelas y academias con mensualidades; y sector salud con agenda digital integrada.",
+    icon: Store,
+  },
+  {
+    q: "¿Por qué no simplemente recibir transferencias bancarias?",
+    a: "Las transferencias son 'gratuitas' en el momento, pero te cuestan tiempo, ventas perdidas y falta de profesionalismo. Con KobraPay tus clientes pagan con tarjeta (más ventas), recibes notificación instantánea, los cobros recurrentes se hacen automáticamente, emites facturas al instante y tienes herramientas de gestión que una transferencia jamás te dará. La comisión se paga sola con el tiempo que ahorras.",
+    icon: ShieldCheck,
+  },
+  {
+    q: "¿Cuánto cobra KobraPay? ¿Es más caro que la competencia?",
+    a: "KobraPay cobra desde 1.5% por cobro online (más IVA sobre la comisión). Comparado con Mercado Pago (3.29%), PayPal (3.5%), Clip (3.6%) y Conekta (2.9%), KobraPay es más económico. Sin mensualidad fija, sin contrato de permanencia y sin hardware para cobros online. Usa el simulador de arriba para ver el desglose exacto con los números de tu negocio.",
+    icon: DollarSign,
+  },
+  {
+    q: "¿Es seguro? ¿Qué pasa si hay un fraude?",
+    a: "KobraPay usa Stripe como procesador, el mismo que usan Amazon, Google y Shopify. Certificación PCI DSS Level 1 y verificación antifraude en tiempo real. En caso de disputas tienes herramientas para defenderte. Además, KobraPay puede solicitar selfie, firma y documento de identidad del pagador como evidencia adicional.",
+    icon: ShieldCheck,
+  },
+  {
+    q: "¿Qué pasa con negocios que ya tienen terminal (restaurantes, bares, spas)?",
+    a: "No competimos con su terminal actual, la complementamos. Argumento clave: '¿Qué pasa cuando un cliente quiere pagarte desde casa? ¿O cuando quieres cobrar un anticipo para una reserva grande? Para eso, KobraPay es la solución perfecta: sin hardware adicional, sin mensualidades, y con herramientas de gestión que tu terminal no tiene: agenda, contratos, facturas y expedientes.'",
+    icon: HelpCircle,
+  },
+];
+
+function SalesFAQ() {
+  const [open, setOpen] = useState<number | null>(null);
+  return (
+    <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+      <div className="bg-gradient-to-r from-teal-600 to-emerald-700 px-6 py-5 text-white">
+        <div className="flex items-center gap-3">
+          <HelpCircle className="w-6 h-6" />
+          <div>
+            <h3 className="text-lg font-bold">Preguntas Frecuentes de Clientes</h3>
+            <p className="text-teal-100 text-sm">Respuestas profesionales para las objeciones más comunes</p>
+          </div>
+        </div>
+      </div>
+      <div className="divide-y divide-gray-100">
+        {FAQ_ITEMS.map((item, i) => {
+          const Icon = item.icon;
+          const isOpen = open === i;
+          return (
+            <div key={i}>
+              <button onClick={() => setOpen(isOpen ? null : i)} className="w-full flex items-center justify-between gap-3 px-6 py-4 text-left hover:bg-gray-50 transition-colors">
+                <div className="flex items-center gap-3">
+                  <Icon className="w-4 h-4 text-teal-600 shrink-0" />
+                  <span className="text-sm font-semibold text-gray-800">{item.q}</span>
+                </div>
+                {isOpen ? <ChevronUp className="w-4 h-4 text-gray-400 shrink-0" /> : <ChevronDown className="w-4 h-4 text-gray-400 shrink-0" />}
+              </button>
+              {isOpen && (
+                <div className="px-6 pb-4">
+                  <div className="bg-teal-50 border border-teal-100 rounded-xl p-4">
+                    <p className="text-sm text-gray-700 leading-relaxed">{item.a}</p>
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; icon: React.ComponentType<{ className?: string }> }> = {
   pending: { label: "Pendiente revisión", color: "bg-yellow-50 text-yellow-700 border-yellow-200", icon: Clock },
@@ -388,7 +595,7 @@ export default function AssociateDashboard() {
               </div>
             </div>
 
-            {/* Tips rápidos */}
+            {/* Tips rapidos */}
             <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
               <div className="flex items-center gap-2 mb-2">
                 <Star className="w-4 h-4 text-amber-600" />
@@ -452,7 +659,7 @@ export default function AssociateDashboard() {
                         <p className="text-sm text-gray-700 leading-relaxed">{plan.argument}</p>
                       </div>
 
-                      {/* Expandible: características */}
+                      {/* Expandible: caracteristicas */}
                       {isSelected && (
                         <div className="space-y-2">
                           <p className="text-xs font-semibold text-gray-500 uppercase">Incluye</p>
@@ -523,6 +730,12 @@ export default function AssociateDashboard() {
                 ))}
               </div>
             </div>
+
+            {/* Simulador de Cotizacion */}
+            <AssociateQuoteSimulator />
+
+            {/* FAQ de Ventas */}
+            <SalesFAQ />
           </div>
         )}
 

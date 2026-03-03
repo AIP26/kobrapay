@@ -56,6 +56,8 @@ import AssociateDashboard from "./pages/AssociateDashboard";
 import OnboardingSurvey from "./pages/OnboardingSurvey";
 import Support from "./pages/Support";
 import Brochure from "./pages/Brochure";
+import Transfers from "./pages/Transfers";
+import AIScoring from "./pages/AIScoring";
 
 function Router() {
   return (
@@ -107,6 +109,8 @@ function Router() {
       <Route path="/dashboard/associate" component={AssociateDashboard} />
       <Route path="/dashboard/support" component={Support} />
       <Route path="/dashboard/brochure" component={Brochure} />
+      <Route path="/dashboard/transfers" component={Transfers} />
+      <Route path="/dashboard/ai-scoring" component={AIScoring} />
       <Route path="/sign-contract/:token" component={SignContract} />
       <Route path="/complete-profile" component={CompleteProfile} />
       <Route path="/dashboard/profile" component={MyProfile} />

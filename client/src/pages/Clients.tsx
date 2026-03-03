@@ -772,8 +772,14 @@ function CommissionBreakdownPanel({ onSelectClient }: { onSelectClient: (id: num
 
 // ─── Página principal ─────────────────────────────────────────────────────────
 export default function Clients() {
-  const { data: clients, isLoading, refetch } = trpc.clients.list.useQuery();
-  const { data: stats } = trpc.clients.getStats.useQuery();
+  const { data: clients, isLoading, refetch } = trpc.clients.list.useQuery(
+    undefined,
+    { refetchInterval: 60_000 } // Auto-refresh cada 60 segundos
+  );
+  const { data: stats } = trpc.clients.getStats.useQuery(
+    undefined,
+    { refetchInterval: 60_000 }
+  );
 
   const [activeTab, setActiveTab] = useState<"clients" | "commissions">("clients");
   const [selectedClientId, setSelectedClientId] = useState<number | null>(null);

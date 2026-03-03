@@ -779,3 +779,93 @@
 - [ ] Sección "Configuración Fiscal" en página de Settings: slider/input para % IVA + toggle on/off
 - [ ] Usar iva_rate dinámico en todos los cálculos de comisión (webhook, dashboard, CSV)
 - [ ] Mostrar tasa IVA actual en el header del dashboard como recordatorio
+
+## Sprint Mar 3, 2026 - IVA, Notificaciones, Comisiones PDF
+- [ ] Columna IVA en Mis Ventas (desglose: comisión base + IVA + total KobraPay)
+- [ ] Exportación CSV actualizada con columnas: comisión base, IVA, total KobraPay
+- [ ] Notificaciones push en tiempo real (WebSocket o polling) para campanita del superadmin
+- [ ] Modal de desglose de transacción en Panel de Comisiones (click en fila)
+- [ ] Reporte PDF de comisiones para superadmin (mensual, con membrete KobraPay)
+
+## Guía de Ventas del Asociado - Q&A Profesional
+- [ ] Sección "Preguntas Frecuentes de Clientes" en AssociateDashboard con respuestas profesionales
+- [ ] Q&A: ¿Puedo usar mi terminal física con KobraPay? (cobros digitales complementarios)
+- [ ] Q&A: ¿A qué negocios le puedo ofrecer KobraPay? (profesionales, servicios, salud, escuelas, etc.)
+- [ ] Q&A: ¿Por qué no solo recibir transferencias? (argumentos de valor)
+- [ ] Q&A: ¿Cuánto cuesta? (desglose de comisiones con IVA)
+- [ ] Q&A: ¿Es seguro? (Stripe, SSL, cifrado)
+- [ ] Guía de objeciones comunes con respuestas de cierre
+
+## Stripe Terminal - Cobros Presenciales (Módulo Futuro)
+- [ ] Activar Stripe Terminal en cuenta de Stripe (requiere acción manual del usuario en dashboard.stripe.com)
+- [ ] Schema DB: tabla terminal_readers (vendorId, stripeReaderId, label, status, locationId, createdAt)
+- [ ] Schema DB: tabla terminal_payments (vendorId, readerId, stripePaymentIntentId, amount, currency, status, cardBrand, cardLast4, createdAt)
+- [ ] Backend: procedimiento terminal.createLocation (registrar ubicación física)
+- [ ] Backend: procedimiento terminal.listReaders (listar lectores registrados)
+- [ ] Backend: procedimiento terminal.createPaymentIntent (iniciar cobro en lector)
+- [ ] Backend: procedimiento terminal.capturePayment (capturar cobro presencial)
+- [ ] Backend: webhook stripe terminal.reader.action_succeeded para registrar cobro
+- [ ] Frontend: página /dashboard/terminal — gestión de lectores y cobros presenciales
+- [ ] Frontend: unificar cobros online + presenciales en Mis Ventas (filtro por canal)
+- [ ] Frontend: catálogo de lectores Stripe (S700, BBPOS WisePOS E) con precio y botón de pedido
+- [ ] Comisión KobraPay sobre cobros presenciales igual que online (% configurable + IVA)
+- [ ] NOTA: Stripe Terminal requiere hardware físico certificado. Precio aprox $299 USD por lector.
+
+## Simulador Stripe Terminal + Comisión Configurable (Sprint actual)
+- [ ] Agregar pestaña "Terminal Física" en simulador del asociado
+- [ ] Simular cobro presencial: monto + tasa Stripe Terminal (2.7% + $0.05 USD) + % KobraPay configurable + IVA
+- [ ] Campo configurable en Settings: % comisión KobraPay para cobros presenciales (sugerido: 0.8%)
+- [ ] Campo configurable en Settings: % comisión KobraPay para cobros online (sugerido: 1.5%)
+- [ ] Mostrar desglose completo en simulador: Stripe fee + KobraPay fee + IVA + neto para el negocio
+- [ ] Sección "Catálogo de Terminales" en guía del asociado: Stripe Reader S700 y BBPOS WisePOS E con precios
+- [ ] Comparativa de costos vs competencia (BBVA, Clip, Mercado Pago) en simulador
+
+## Simulador de Cotización para Clientes
+- [ ] Componente reutilizable QuoteCalculator (solo monto editable, % fijos desde settings)
+- [ ] Agregar simulador en panel del cliente (Home.tsx o sección de herramientas)
+- [ ] Agregar simulador en landing page pública con slider de volumen mensual
+- [ ] Landing: mostrar % más alto por defecto, bajar % automáticamente según volumen mensual
+- [ ] Landing: mensaje dinámico "¿Procesas más de $X/mes? Tu tasa baja a Y%"
+- [ ] Mostrar desglose: Stripe fee + KobraPay fee + IVA + neto recibido
+- [ ] Comparativa vs competencia (Mercado Pago, Clip, PayPal) sin poder modificar %
+
+## Roadmap - Transferencias Nacionales e Internacionales
+- [ ] SPEI nacional: integración con banco/procesador para transferencias MXN
+- [ ] Transferencias internacionales: Wise Business API (USD/EUR/GBP a MXN)
+- [ ] Tipo Zelle: pagos P2P rápidos USA-México vía Wise o Remitly API
+- [ ] Multi-procesador: Stripe + Conekta (OXXO) + banco local (SPEI)
+- [ ] Sección "Transferencias" en el dashboard del cliente
+- [ ] Historial unificado: cobros online + presenciales + transferencias
+
+## Roadmap - Sistema de Referidos de Por Vida
+- [ ] Código de referido único por usuario (no solo asociados)
+- [ ] Dashboard de referidos: ganancias acumuladas de por vida
+- [ ] Niveles: Asociado formal (mayor %) vs Referido casual (menor %)
+- [ ] Comisión recurrente mientras el cliente referido esté activo
+
+## Presentación Profesional Alianza KobraPay-Bansi
+- [ ] Investigar Bansi: historia, productos, mercado objetivo
+- [ ] Preparar contenido: quiénes somos, misión, visión, objetivos
+- [ ] Propuesta de valor para Bansi: clientes de negocios, volumen
+- [ ] Lo que KobraPay pide: tasas preferenciales, integración SPEI directa
+- [ ] Lo que KobraPay ofrece: co-branding, clientes nuevos, volumen
+- [ ] Proyecciones de volumen y crecimiento
+- [ ] Generar slides profesionales
+
+## IA para Filtrado de Registros y Anti-Bot (Roadmap)
+- [ ] Integrar hCaptcha o Cloudflare Turnstile en formulario de registro para detectar bots
+- [ ] Motor de scoring IA para calificar clientes nuevos: score 0-100 basado en datos del negocio, RFC, historial
+- [ ] Reglas automaticas: score alto = aprobacion automatica, score medio = revision humana, score bajo = rechazo
+- [ ] Verificacion de identidad: validar RFC con SAT API, CURP, y documento de identidad con OCR
+- [ ] Deteccion de duplicados: mismo RFC, mismo email, misma IP = alerta de fraude automatica
+- [ ] Dashboard de IA para superadmin: ver score de cada solicitud y razon de la decision
+- [ ] Notificacion al superadmin solo cuando IA no puede decidir (casos ambiguos)
+- [ ] Tarjeta de comisiones co-branded KobraPay x Bansi para asociados y referidos
+
+## Expansion Internacional (Roadmap)
+- [ ] Soporte multi-moneda: USD, EUR, SEK (Suecia), GBP
+- [ ] Transferencias internacionales via Wise Business API
+- [ ] Tipo Zelle para USA-Mexico via Stripe o Remitly API
+- [ ] Cumplimiento fiscal por pais (IVA diferente en cada pais)
+- [ ] Asociado internacional: amigo en Suecia como primer asociado europeo
+- [ ] Interfaz multi-idioma (espanol, ingles, sueco)

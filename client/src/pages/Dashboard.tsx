@@ -27,7 +27,7 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 
 function formatCurrency(amount: number | string, currency = "MXN") {
   return new Intl.NumberFormat("es-MX", { style: "currency", currency }).format(Number(amount));
@@ -406,7 +406,113 @@ export default function Dashboard() {
             )}
           </CardContent>
         </Card>
+        {/* Simulador de Comisiones */}
+        <Card className="border-gray-200 shadow-sm">
+          <CardHeader className="pb-3 border-b border-gray-100">
+            <CardTitle className="text-base font-semibold text-gray-800 flex items-center gap-2">
+              <CreditCard className="w-4 h-4 text-emerald-600" />
+              Simulador de Comisiones
+            </CardTitle>
+            <p className="text-xs text-gray-500">Calcula exactamente cuanto recibiras en cada cobro</p>
+          </CardHeader>
+          <CardContent className="pt-4">
+            <ClientQuoteSimulator />
+          </CardContent>
+        </Card>
       </div>
     </DashboardLayout>
+  );
+}
+
+function ClientQuoteSimulator() {
+  const { data: settings } = trpc.vendor.getSettings.useQuery();
+  const [amount, setAmount] = useState(50000);
+  const [mode, setMode] = useState<"online" | "terminal">("online");
+
+  const kpRate = parseFloat(String(settings?.commissionRate ?? "1.5")) / 100;
+  const ivaRate = settings?.ivaEnabled ? parseFloat(String(settings?.ivaRate ?? "16")) / 100 : 0;
+
+  const stripeFee = mode === "online"
+    ? amount * 0.029 + 0.30
+    : amount * 0.027 + 0.05;
+  const kpFee = amount * kpRate;
+  const kpIva = kpFee * ivaRate;
+  const totalDeductions = stripeFee + kpFee + kpIva;
+  const netAmount = amount - totalDeductions;
+  const effectiveRate = (totalDeductions / amount) * 100;
+
+  return (
+    <div className="space-y-4">
+      <div className="flex gap-2">
+        <button
+          onClick={() => setMode("online")}
+          className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all ${
+            mode === "online"
+              ? "bg-emerald-600 text-white"
+              : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+          }`}
+        >
+          Cobro Online
+        </button>
+        <button
+          onClick={() => setMode("terminal")}
+          className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all ${
+            mode === "terminal"
+              ? "bg-indigo-600 text-white"
+              : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+          }`}
+        >
+          Terminal Fisica
+        </button>
+      </div>
+      <div>
+        <label className="text-xs font-semibold text-gray-500 uppercase mb-2 block">Monto a cobrar (MXN)</label>
+        <input
+          type="number"
+          value={amount}
+          onChange={(e) => setAmount(parseFloat(e.target.value) || 0)}
+          className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+          placeholder="50000"
+        />
+        <input
+          type="range"
+          min={100}
+          max={500000}
+          step={1000}
+          value={amount}
+          onChange={(e) => setAmount(parseFloat(e.target.value))}
+          className="w-full mt-2 accent-emerald-600"
+        />
+        <div className="flex justify-between text-xs text-gray-400 mt-1">
+          <span>$100</span>
+          <span>$500,000</span>
+        </div>
+      </div>
+      <div className="bg-gray-50 rounded-xl p-4 space-y-2">
+        <div className="flex justify-between text-sm">
+          <span className="text-gray-600">Monto bruto</span>
+          <span className="font-semibold">{formatCurrency(amount)}</span>
+        </div>
+        <div className="flex justify-between text-sm">
+          <span className="text-gray-600">Comision Stripe ({mode === "online" ? "2.9% + $0.30" : "2.7% + $0.05"})</span>
+          <span className="text-red-500">-{formatCurrency(stripeFee)}</span>
+        </div>
+        <div className="flex justify-between text-sm">
+          <span className="text-gray-600">Comision KobraPay ({(kpRate * 100).toFixed(2)}%)</span>
+          <span className="text-red-500">-{formatCurrency(kpFee)}</span>
+        </div>
+        {ivaRate > 0 && (
+          <div className="flex justify-between text-sm">
+            <span className="text-gray-600">IVA sobre comision ({(ivaRate * 100).toFixed(0)}%)</span>
+            <span className="text-orange-500">-{formatCurrency(kpIva)}</span>
+          </div>
+        )}
+        <div className="border-t border-gray-200 pt-2 flex justify-between">
+          <span className="font-semibold text-gray-800">Tu recibe</span>
+          <span className="font-bold text-emerald-600 text-lg">{formatCurrency(netAmount)}</span>
+        </div>
+        <p className="text-xs text-gray-400 text-center">Costo efectivo total: {effectiveRate.toFixed(2)}%</p>
+      </div>
+    </div>
   );
 }
