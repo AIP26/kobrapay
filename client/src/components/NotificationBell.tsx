@@ -40,6 +40,8 @@ function notificationIcon(type: string): string {
     case "appointment_reminder": return "📅";
     case "birthday": return "🎂";
     case "new_payment": return "💰";
+    case "payment_received": return "✅";
+    case "transfer": return "🏦";
     default: return "🔔";
   }
 }
@@ -51,7 +53,7 @@ export function NotificationBell() {
   const utils = trpc.useUtils();
 
   const { data: countData, refetch: refetchCount } = trpc.notifications.countUnread.useQuery(undefined, {
-    refetchInterval: 30000, // refrescar cada 30s
+    refetchInterval: 15000, // refrescar cada 15s para pagos en tiempo real
   });
   const { data: notifications = [], refetch: refetchList } = trpc.notifications.list.useQuery(undefined, {
     enabled: open,

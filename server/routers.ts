@@ -143,6 +143,15 @@ export const appRouter = router({
       ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
       return { success: true } as const;
     }),
+    completeOnboarding: protectedProcedure.mutation(async ({ ctx }) => {
+      const { getDb } = await import('./db');
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
+      const { users } = await import('../drizzle/schema');
+      const { eq } = await import('drizzle-orm');
+      await db.update(users).set({ onboardingCompleted: true }).where(eq(users.id, ctx.user.id));
+      return { success: true };
+    }),
   }),
 
   // ─── Configuración del vendedor ───────────────────────────────────────────

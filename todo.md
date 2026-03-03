@@ -874,3 +874,6 @@
 - [ ] Simplificar sidebar del cliente (rol user): mostrar solo Panel, Nuevo Cobro, Mis Links, Mis Ventas, Transferencias, Soporte, Configuración
 - [ ] Agregar slide Q&A a presentación Bansí con preguntas frecuentes y respuestas preparadas
 - [ ] Sistema de comisión escalonada para asociados: tabla 0.3%-5% según cantidad de clientes, editable por superadmin en tabla de comisiones
+- [x] Actualizar logo KobraPay navy en sidebar (LogoWithProfileSwitcher) y favicon
+- [x] Crear pantalla de onboarding rápido para usuarios nuevos (3 pasos interactivos)
+- [x] Implementar notificaciones push en el panel cuando un cliente paga un link

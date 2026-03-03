@@ -60,6 +60,8 @@ import Transfers from "./pages/Transfers";
 import AIScoring from "./pages/AIScoring";
 import QuoteLogs from "./pages/QuoteLogs";
 import KobraBot from "./components/KobraBot";
+import WelcomeOnboarding from "./components/WelcomeOnboarding";
+import { trpc } from "@/lib/trpc";
 import { useLocation } from "wouter";
 
 // Wrapper que muestra KobraBot solo en páginas del dashboard (usuarios autenticados)
@@ -68,6 +70,19 @@ function KobraBotWrapper() {
   const showBot = location.startsWith("/dashboard") || location.startsWith("/onboarding");
   if (!showBot) return null;
   return <KobraBot />;
+}
+
+// Wrapper que muestra el onboarding solo si el usuario no lo ha completado
+function OnboardingWrapper() {
+  const [location] = useLocation();
+  const { data: user } = trpc.auth.me.useQuery();
+  const showOnboarding =
+    user &&
+    !user.onboardingCompleted &&
+    (location.startsWith("/dashboard") || location === "/") &&
+    !location.includes("/pay/");
+  if (!showOnboarding) return null;
+  return <WelcomeOnboarding userName={user?.name || undefined} />;
 }
 
 function Router() {
@@ -144,6 +159,7 @@ function App() {
           <Toaster />
           <Router />
           <KobraBotWrapper />
+          <OnboardingWrapper />
         </TooltipProvider>
       </ThemeProvider>
     </ErrorBoundary>
