@@ -877,3 +877,6 @@
 - [x] Actualizar logo KobraPay navy en sidebar (LogoWithProfileSwitcher) y favicon
 - [x] Crear pantalla de onboarding rápido para usuarios nuevos (3 pasos interactivos)
 - [x] Implementar notificaciones push en el panel cuando un cliente paga un link
+- [ ] Botón de WhatsApp en notificaciones de pago recibido
+- [ ] Página de Perfil del Negocio con logo, nombre y datos fiscales
+- [ ] Selector de lada internacional en formulario de pago público

@@ -344,6 +344,55 @@ function PersonalSection({
   );
 }
 
+const REGIMENES_FISCALES = [
+  "601 - General de Ley Personas Morales",
+  "603 - Personas Morales con Fines no Lucrativos",
+  "605 - Sueldos y Salarios e Ingresos Asimilados a Salarios",
+  "606 - Arrendamiento",
+  "607 - Régimen de Enajenación o Adquisición de Bienes",
+  "608 - Demás ingresos",
+  "610 - Residentes en el Extranjero sin Establecimiento Permanente en México",
+  "611 - Ingresos por Dividendos (socios y accionistas)",
+  "612 - Personas Físicas con Actividades Empresariales y Profesionales",
+  "614 - Ingresos por intereses",
+  "615 - Régimen de los ingresos por obtención de premios",
+  "616 - Sin obligaciones fiscales",
+  "620 - Sociedades Cooperativas de Producción",
+  "621 - Incorporación Fiscal",
+  "622 - Actividades Agrícolas, Ganaderas, Silvícolas y Pesqueras",
+  "623 - Opcional para Grupos de Sociedades",
+  "624 - Coordinados",
+  "625 - Régimen de las Actividades Empresariales con ingresos a través de Plataformas Tecnológicas",
+  "626 - Régimen Simplificado de Confianza (RESICO)",
+];
+
+const USOS_CFDI = [
+  "G01 - Adquisición de mercancias",
+  "G02 - Devoluciones, descuentos o bonificaciones",
+  "G03 - Gastos en general",
+  "I01 - Construcciones",
+  "I02 - Mobilario y equipo de oficina por inversiones",
+  "I03 - Equipo de transporte",
+  "I04 - Equipo de computo y accesorios",
+  "I05 - Dados, troqueles, moldes, matrices y herramental",
+  "I06 - Comunicaciones telefónicas",
+  "I07 - Comunicaciones satelitales",
+  "I08 - Otra maquinaria y equipo",
+  "D01 - Honorarios médicos, dentales y gastos hospitalarios",
+  "D02 - Gastos médicos por incapacidad o discapacidad",
+  "D03 - Gastos funerales",
+  "D04 - Donativos",
+  "D05 - Intereses reales efectivamente pagados por créditos hipotecarios (casa habitación)",
+  "D06 - Aportaciones voluntarias al SAR",
+  "D07 - Primas por seguros de gastos médicos",
+  "D08 - Gastos de transportación escolar obligatoria",
+  "D09 - Depósitos en cuentas para el ahorro, primas que tengan como base planes de pensiones",
+  "D10 - Pagos por servicios educativos (colegiaturas)",
+  "S01 - Sin efectos fiscales",
+  "CP01 - Pagos",
+  "CN01 - Nómina",
+];
+
 // ─── Sección: Negocio ─────────────────────────────────────────────────────────
 function NegocioSection({
   profile, onSave, saving
@@ -352,10 +401,42 @@ function NegocioSection({
   onSave: (data: Record<string, string>) => void;
   saving: boolean;
 }) {
+  const logoInputRef = useRef<HTMLInputElement>(null);
+  const [logoPreview, setLogoPreview] = useState<string>(profile?.logoUrl || "");
+  const [uploadingLogo, setUploadingLogo] = useState(false);
+  const utils = trpc.useUtils();
+
+  const uploadLogoMutation = trpc.profile.uploadAvatar.useMutation({
+    onSuccess: (data) => {
+      setLogoPreview(data.url);
+      setUploadingLogo(false);
+      toast.success("Logo del negocio actualizado");
+      // Guardar la URL del logo en el perfil del negocio
+      onSave({ logoUrl: data.url });
+      utils.profile.get.invalidate();
+    },
+    onError: () => {
+      setUploadingLogo(false);
+      toast.error("Error al subir el logo");
+    },
+  });
+
+  const handleLogoChange = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 2 * 1024 * 1024) { toast.error("El logo no debe superar 2MB"); return; }
+    setUploadingLogo(true);
+    const base64 = await fileToBase64(file);
+    uploadLogoMutation.mutate({ base64, mimeType: file.type });
+  }, [uploadLogoMutation]);
+
   const [form, setForm] = useState({
     businessName: profile?.businessName || "",
     businessType: profile?.businessType || "",
     razonSocial: profile?.razonSocial || "",
+    rfcEmpresa: profile?.rfcEmpresa || "",
+    regimenFiscal: profile?.regimenFiscal || "",
+    usoCFDI: profile?.usoCFDI || "G03 - Gastos en general",
     direccionFiscal: profile?.direccionFiscal || "",
     codigoPostal: profile?.codigoPostal || "",
     ciudad: profile?.ciudad || "",
@@ -367,64 +448,114 @@ function NegocioSection({
     setForm(prev => ({ ...prev, [k]: e.target.value }));
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2"><Building2 className="h-5 w-5" /> Datos del Negocio</CardTitle>
-        <CardDescription>Información de tu empresa para facturación y cobros</CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label htmlFor="businessName">Nombre comercial <span className="text-destructive">*</span></Label>
-            <Input id="businessName" value={form.businessName} onChange={set("businessName")} placeholder="Mi Empresa SA" />
+    <div className="space-y-4">
+      {/* Logo del negocio */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base"><Camera className="h-4 w-4" /> Logo del Negocio</CardTitle>
+          <CardDescription>Aparece en tus recibos, facturas y página de pago</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center gap-6">
+            <div className="relative">
+              {logoPreview ? (
+                <img src={logoPreview} alt="Logo" className="w-24 h-24 rounded-xl object-contain border-2 border-dashed border-border bg-muted" />
+              ) : (
+                <div className="w-24 h-24 rounded-xl border-2 border-dashed border-border bg-muted flex flex-col items-center justify-center text-muted-foreground">
+                  <Building2 className="h-8 w-8 mb-1" />
+                  <span className="text-[10px]">Sin logo</span>
+                </div>
+              )}
+              {uploadingLogo && (
+                <div className="absolute inset-0 bg-black/40 rounded-xl flex items-center justify-center">
+                  <Loader2 className="h-6 w-6 text-white animate-spin" />
+                </div>
+              )}
+            </div>
+            <div className="flex-1 space-y-2">
+              <p className="text-sm text-muted-foreground">Formato PNG o JPG. Máximo 2MB. Recomendado: 400×400px con fondo transparente.</p>
+              <input ref={logoInputRef} type="file" accept="image/png,image/jpeg,image/webp" className="hidden" onChange={handleLogoChange} />
+              <Button variant="outline" size="sm" onClick={() => logoInputRef.current?.click()} disabled={uploadingLogo}>
+                <Upload className="h-4 w-4 mr-2" />
+                {uploadingLogo ? "Subiendo..." : logoPreview ? "Cambiar logo" : "Subir logo"}
+              </Button>
+            </div>
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="businessType">Giro del negocio</Label>
-            <Input id="businessType" value={form.businessType} onChange={set("businessType")} placeholder="Ej: Venta de ropa, Servicios médicos..." />
+        </CardContent>
+      </Card>
+
+      {/* Datos del negocio */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2"><Building2 className="h-5 w-5" /> Datos del Negocio</CardTitle>
+          <CardDescription>Información de tu empresa para facturación y cobros</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="businessName">Nombre comercial <span className="text-destructive">*</span></Label>
+              <Input id="businessName" value={form.businessName} onChange={set("businessName")} placeholder="Mi Empresa SA" />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="businessType">Giro del negocio</Label>
+              <Input id="businessType" value={form.businessType} onChange={set("businessType")} placeholder="Ej: Venta de ropa, Servicios médicos..." />
+            </div>
+            <div className="space-y-2 md:col-span-2">
+              <Label htmlFor="razonSocial">
+                Razón social
+                <Badge variant="outline" className="ml-2 text-xs">Requerida para facturación</Badge>
+              </Label>
+              <Input id="razonSocial" value={form.razonSocial} onChange={set("razonSocial")} placeholder="MI EMPRESA SOCIEDAD ANONIMA DE CV" className="uppercase" />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="rfcEmpresa">RFC de la empresa <span className="text-muted-foreground text-xs">(para facturas)</span></Label>
+              <Input id="rfcEmpresa" value={form.rfcEmpresa} onChange={set("rfcEmpresa")} placeholder="ABC123456XYZ" maxLength={13} className="uppercase" />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="regimenFiscal">Régimen fiscal</Label>
+              <select id="regimenFiscal" value={form.regimenFiscal} onChange={set("regimenFiscal")} className="w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring">
+                <option value="">Seleccionar régimen</option>
+                {REGIMENES_FISCALES.map(r => <option key={r} value={r}>{r}</option>)}
+              </select>
+            </div>
+            <div className="space-y-2 md:col-span-2">
+              <Label htmlFor="usoCFDI">Uso CFDI por defecto</Label>
+              <select id="usoCFDI" value={form.usoCFDI} onChange={set("usoCFDI")} className="w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring">
+                {USOS_CFDI.map(u => <option key={u} value={u}>{u}</option>)}
+              </select>
+            </div>
+            <div className="space-y-2 md:col-span-2">
+              <Label htmlFor="direccionFiscal">Dirección fiscal</Label>
+              <Input id="direccionFiscal" value={form.direccionFiscal} onChange={set("direccionFiscal")} placeholder="Calle, Número, Colonia" />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="codigoPostal">Código postal</Label>
+              <Input id="codigoPostal" value={form.codigoPostal} onChange={set("codigoPostal")} placeholder="06600" maxLength={5} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="ciudad">Ciudad</Label>
+              <Input id="ciudad" value={form.ciudad} onChange={set("ciudad")} placeholder="Ciudad de México" />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="estado">Estado</Label>
+              <select id="estado" value={form.estado} onChange={set("estado")} className="w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring">
+                <option value="">Seleccionar estado</option>
+                {ESTADOS_MX.map(e => <option key={e} value={e}>{e}</option>)}
+              </select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="sitioWeb">Sitio web</Label>
+              <Input id="sitioWeb" value={form.sitioWeb} onChange={set("sitioWeb")} placeholder="https://minegocio.com" type="url" />
+            </div>
           </div>
-          <div className="space-y-2 md:col-span-2">
-            <Label htmlFor="razonSocial">
-              Razón social
-              <Badge variant="outline" className="ml-2 text-xs">Requerida para facturación</Badge>
-            </Label>
-            <Input id="razonSocial" value={form.razonSocial} onChange={set("razonSocial")} placeholder="MI EMPRESA SOCIEDAD ANONIMA DE CV" className="uppercase" />
+          <div className="flex justify-end pt-2">
+            <Button onClick={() => onSave(form)} disabled={saving}>
+              {saving ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Guardando...</> : <><Save className="h-4 w-4 mr-2" />Guardar datos del negocio</>}
+            </Button>
           </div>
-          <div className="space-y-2 md:col-span-2">
-            <Label htmlFor="direccionFiscal">Dirección fiscal</Label>
-            <Input id="direccionFiscal" value={form.direccionFiscal} onChange={set("direccionFiscal")} placeholder="Calle, Número, Colonia" />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="codigoPostal">Código postal</Label>
-            <Input id="codigoPostal" value={form.codigoPostal} onChange={set("codigoPostal")} placeholder="06600" maxLength={5} />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="ciudad">Ciudad</Label>
-            <Input id="ciudad" value={form.ciudad} onChange={set("ciudad")} placeholder="Ciudad de México" />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="estado">Estado</Label>
-            <select
-              id="estado"
-              value={form.estado}
-              onChange={set("estado")}
-              className="w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring"
-            >
-              <option value="">Seleccionar estado</option>
-              {ESTADOS_MX.map(e => <option key={e} value={e}>{e}</option>)}
-            </select>
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="sitioWeb">Sitio web</Label>
-            <Input id="sitioWeb" value={form.sitioWeb} onChange={set("sitioWeb")} placeholder="https://minegocio.com" type="url" />
-          </div>
-        </div>
-        <div className="flex justify-end pt-2">
-          <Button onClick={() => onSave(form)} disabled={saving}>
-            {saving ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Guardando...</> : <><Save className="h-4 w-4 mr-2" />Guardar datos del negocio</>}
-          </Button>
-        </div>
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
+    </div>
   );
 }
 

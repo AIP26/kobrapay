@@ -529,6 +529,7 @@ export const appRouter = router({
         z.object({
           clientName: z.string().min(1).max(255),
           clientEmail: z.string().email().optional().or(z.literal("")),
+          clientPhone: z.string().max(32).optional().or(z.literal("")),
           amount: z.number().positive().min(1),
           description: z.string().min(1).max(1000),
           currency: z.enum(["MXN", "USD"]).default("MXN"),
@@ -568,6 +569,7 @@ export const appRouter = router({
           token,
           clientName: input.clientName,
           clientEmail: input.clientEmail || null,
+          clientPhone: input.clientPhone || null,
           amount: String(input.amount),
           currency: input.currency,
           description: input.description,

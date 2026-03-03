@@ -9,6 +9,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import { useState, useRef } from "react";
+import PhoneInput from "react-phone-number-input";
+import "react-phone-number-input/style.css";
 import { QRCodeSVG } from "qrcode.react";
 import {
   CheckCircle2,
@@ -38,6 +40,7 @@ export default function CreateLink() {
   const [form, setForm] = useState({
     clientName: "",
     clientEmail: "",
+    clientPhone: "",
     amount: "",
     description: "",
     currency: "MXN",
@@ -103,6 +106,7 @@ export default function CreateLink() {
     createLink.mutate({
       clientName: form.clientName.trim(),
       clientEmail: form.clientEmail.trim() || undefined,
+      clientPhone: form.clientPhone.trim() || undefined,
       amount,
       description: form.description.trim(),
       currency: form.currency as "MXN" | "USD",
@@ -171,7 +175,7 @@ export default function CreateLink() {
     setMsiOptions([]);
     setTipEnabled(false);
     setTipSuggestions([10, 15, 20]);
-    setForm({ clientName: "", clientEmail: "", amount: "", description: "", currency: "MXN", expiresInDays: "0", requireOtp: false, requireSelfie: false, requireSignature: false, requireIdUpload: false, usdExchangeRate: "", chargebackProtectionText: "" });
+    setForm({ clientName: "", clientEmail: "", clientPhone: "", amount: "", description: "", currency: "MXN", expiresInDays: "0", requireOtp: false, requireSelfie: false, requireSignature: false, requireIdUpload: false, usdExchangeRate: "", chargebackProtectionText: "" });
   };
 
   const commissionRate = parseFloat(String(settings?.commissionRate || 0));
@@ -347,6 +351,21 @@ export default function CreateLink() {
                   className="border-gray-200"
                 />
                 <p className="text-xs text-gray-400">Se usará para enviar el recibo de pago al cliente</p>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className="text-gray-700 font-medium">Teléfono del cliente (opcional)</Label>
+                <div className="border border-gray-200 rounded-md px-3 py-2 bg-white focus-within:border-blue-400 focus-within:ring-2 focus-within:ring-blue-100 transition-all">
+                  <PhoneInput
+                    international
+                    defaultCountry="MX"
+                    value={form.clientPhone}
+                    onChange={(val) => setForm({ ...form, clientPhone: val || "" })}
+                    className="phone-input-custom"
+                    placeholder="+52 55 1234 5678"
+                  />
+                </div>
+                <p className="text-xs text-gray-400">Para enviar el link por WhatsApp o SMS</p>
               </div>
 
               {/* Monto y moneda */}
