@@ -428,24 +428,49 @@ function ClientQuoteSimulator() {
   const { data: settings } = trpc.vendor.getSettings.useQuery();
   const [amount, setAmount] = useState(50000);
   const [mode, setMode] = useState<"online" | "terminal">("online");
+  const [showRates, setShowRates] = useState(false);
 
-  const kpRate = parseFloat(String(settings?.commissionRate ?? "1.5")) / 100;
-  const ivaRate = settings?.ivaEnabled ? parseFloat(String(settings?.ivaRate ?? "16")) / 100 : 0;
+  // Tasas editables — se inicializan desde la configuración del usuario
+  const defaultKp = parseFloat(String(settings?.commissionRate ?? "7"));
+  const defaultIva = settings?.ivaEnabled ? parseFloat(String(settings?.ivaRate ?? "16")) : 16;
+  const defaultStripeOnline = 2.9;
+  const defaultStripeTerminal = 2.7;
+  const defaultStripeFixedOnline = 0.30;
+  const defaultStripeFixedTerminal = 0.05;
 
-  const stripeFee = mode === "online"
-    ? amount * 0.029 + 0.30
-    : amount * 0.027 + 0.05;
+  const [kpRateStr, setKpRateStr] = useState<string>("");
+  const [ivaRateStr, setIvaRateStr] = useState<string>("");
+  const [stripeRateStr, setStripeRateStr] = useState<string>("");
+  const [stripeFixedStr, setStripeFixedStr] = useState<string>("");
+
+  // Valores efectivos: usa el campo manual si está escrito, si no usa el default
+  const kpRate = (kpRateStr !== "" ? parseFloat(kpRateStr) || 0 : defaultKp) / 100;
+  const ivaRate = (ivaRateStr !== "" ? parseFloat(ivaRateStr) || 0 : defaultIva) / 100;
+  const stripeRate = (stripeRateStr !== "" ? parseFloat(stripeRateStr) || 0
+    : mode === "online" ? defaultStripeOnline : defaultStripeTerminal) / 100;
+  const stripeFixed = stripeFixedStr !== "" ? parseFloat(stripeFixedStr) || 0
+    : mode === "online" ? defaultStripeFixedOnline : defaultStripeFixedTerminal;
+
+  const stripeFee = amount * stripeRate + stripeFixed;
   const kpFee = amount * kpRate;
   const kpIva = kpFee * ivaRate;
   const totalDeductions = stripeFee + kpFee + kpIva;
   const netAmount = amount - totalDeductions;
-  const effectiveRate = (totalDeductions / amount) * 100;
+  const effectiveRate = amount > 0 ? (totalDeductions / amount) * 100 : 0;
+
+  // Cuando cambia el modo, resetear los campos de stripe para que tomen el nuevo default
+  const handleModeChange = (m: "online" | "terminal") => {
+    setMode(m);
+    setStripeRateStr("");
+    setStripeFixedStr("");
+  };
 
   return (
     <div className="space-y-4">
+      {/* Selector de modo */}
       <div className="flex gap-2">
         <button
-          onClick={() => setMode("online")}
+          onClick={() => handleModeChange("online")}
           className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all ${
             mode === "online"
               ? "bg-emerald-600 text-white"
@@ -455,7 +480,7 @@ function ClientQuoteSimulator() {
           Cobro Online
         </button>
         <button
-          onClick={() => setMode("terminal")}
+          onClick={() => handleModeChange("terminal")}
           className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all ${
             mode === "terminal"
               ? "bg-indigo-600 text-white"
@@ -465,6 +490,8 @@ function ClientQuoteSimulator() {
           Terminal Fisica
         </button>
       </div>
+
+      {/* Monto */}
       <div>
         <label className="text-xs font-semibold text-gray-500 uppercase mb-2 block">Monto a cobrar (MXN)</label>
         <input
@@ -479,7 +506,7 @@ function ClientQuoteSimulator() {
           min={100}
           max={500000}
           step={1000}
-          value={amount}
+          value={Math.min(amount, 500000)}
           onChange={(e) => setAmount(parseFloat(e.target.value))}
           className="w-full mt-2 accent-emerald-600"
         />
@@ -488,13 +515,118 @@ function ClientQuoteSimulator() {
           <span>$500,000</span>
         </div>
       </div>
+
+      {/* Panel de tasas editables */}
+      <div>
+        <button
+          onClick={() => setShowRates(!showRates)}
+          className="flex items-center gap-1.5 text-xs font-semibold text-emerald-700 hover:text-emerald-800 transition-colors"
+        >
+          <svg className={`w-3.5 h-3.5 transition-transform ${showRates ? "rotate-90" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+          Ajustar porcentajes manualmente
+        </button>
+
+        {showRates && (
+          <div className="mt-3 grid grid-cols-2 gap-3 bg-emerald-50 rounded-xl p-4 border border-emerald-200">
+            <div>
+              <label className="text-xs font-semibold text-gray-600 mb-1 block">
+                Comisión KobraPay (%)
+              </label>
+              <div className="relative">
+                <input
+                  type="number"
+                  value={kpRateStr}
+                  onChange={(e) => setKpRateStr(e.target.value)}
+                  placeholder={defaultKp.toFixed(2)}
+                  step="0.1"
+                  min="0"
+                  max="100"
+                  className="w-full border border-gray-200 rounded-lg pl-3 pr-7 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400 bg-white"
+                />
+                <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 text-xs font-bold">%</span>
+              </div>
+              <p className="text-xs text-gray-400 mt-0.5">Default: {defaultKp.toFixed(2)}%</p>
+            </div>
+
+            <div>
+              <label className="text-xs font-semibold text-gray-600 mb-1 block">
+                IVA sobre comisión (%)
+              </label>
+              <div className="relative">
+                <input
+                  type="number"
+                  value={ivaRateStr}
+                  onChange={(e) => setIvaRateStr(e.target.value)}
+                  placeholder={defaultIva.toFixed(0)}
+                  step="1"
+                  min="0"
+                  max="100"
+                  className="w-full border border-gray-200 rounded-lg pl-3 pr-7 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400 bg-white"
+                />
+                <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 text-xs font-bold">%</span>
+              </div>
+              <p className="text-xs text-gray-400 mt-0.5">Default: {defaultIva.toFixed(0)}%</p>
+            </div>
+
+            <div>
+              <label className="text-xs font-semibold text-gray-600 mb-1 block">
+                Comisión Stripe (%)
+              </label>
+              <div className="relative">
+                <input
+                  type="number"
+                  value={stripeRateStr}
+                  onChange={(e) => setStripeRateStr(e.target.value)}
+                  placeholder={mode === "online" ? "2.90" : "2.70"}
+                  step="0.1"
+                  min="0"
+                  max="10"
+                  className="w-full border border-gray-200 rounded-lg pl-3 pr-7 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400 bg-white"
+                />
+                <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 text-xs font-bold">%</span>
+              </div>
+              <p className="text-xs text-gray-400 mt-0.5">Default: {mode === "online" ? "2.90" : "2.70"}%</p>
+            </div>
+
+            <div>
+              <label className="text-xs font-semibold text-gray-600 mb-1 block">
+                Cargo fijo Stripe ($)
+              </label>
+              <div className="relative">
+                <input
+                  type="number"
+                  value={stripeFixedStr}
+                  onChange={(e) => setStripeFixedStr(e.target.value)}
+                  placeholder={mode === "online" ? "0.30" : "0.05"}
+                  step="0.01"
+                  min="0"
+                  className="w-full border border-gray-200 rounded-lg pl-3 pr-7 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400 bg-white"
+                />
+                <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 text-xs font-bold">$</span>
+              </div>
+              <p className="text-xs text-gray-400 mt-0.5">Default: ${mode === "online" ? "0.30" : "0.05"}</p>
+            </div>
+
+            <div className="col-span-2">
+              <button
+                onClick={() => { setKpRateStr(""); setIvaRateStr(""); setStripeRateStr(""); setStripeFixedStr(""); }}
+                className="text-xs text-gray-500 hover:text-red-500 underline transition-colors"
+              >
+                Restablecer valores por defecto
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Resultado */}
       <div className="bg-gray-50 rounded-xl p-4 space-y-2">
         <div className="flex justify-between text-sm">
           <span className="text-gray-600">Monto bruto</span>
           <span className="font-semibold">{formatCurrency(amount)}</span>
         </div>
         <div className="flex justify-between text-sm">
-          <span className="text-gray-600">Comision Stripe ({mode === "online" ? "2.9% + $0.30" : "2.7% + $0.05"})</span>
+          <span className="text-gray-600">Comision Stripe ({(stripeRate * 100).toFixed(2)}% + ${stripeFixed.toFixed(2)})</span>
           <span className="text-red-500">-{formatCurrency(stripeFee)}</span>
         </div>
         <div className="flex justify-between text-sm">
