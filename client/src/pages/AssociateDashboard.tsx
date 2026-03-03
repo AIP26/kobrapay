@@ -1,21 +1,18 @@
-import { useState, useMemo } from "react";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from "recharts";
+import { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import DashboardLayout from "@/components/DashboardLayout";
-import { AIChatBox, type Message } from "@/components/AIChatBox";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import {
-  Bot, Sparkles, Users, DollarSign, TrendingUp, UserPlus,
-  CheckCircle, Clock, XCircle, Calculator, ChevronRight, Star,
-  Building2, Zap, Crown, Rocket, BarChart2, Award, Target
+  BookOpen, UserPlus, DollarSign, CheckCircle, Clock, XCircle,
+  Download, Zap, TrendingUp, Crown, Rocket, ChevronRight,
+  Phone, Mail, Building2, User, FileText, Star, AlertCircle,
+  Handshake, ArrowRight
 } from "lucide-react";
 
 // ─── Planes disponibles ───────────────────────────────────────────────────────
@@ -27,12 +24,22 @@ const PLANS = [
     color: "text-emerald-600",
     bg: "bg-emerald-50",
     border: "border-emerald-200",
+    headerBg: "from-emerald-500 to-teal-600",
     commission: 3.0,
-    description: "Para negocios pequeños que empiezan a cobrar con tarjeta",
-    features: ["Links de pago", "Cobros con tarjeta", "Historial de ventas", "Soporte básico"],
-    bestFor: "Tiendas, restaurantes, servicios locales",
-    minVolume: 0,
-    maxVolume: 50000,
+    price: "Sin costo fijo",
+    description: "La solución perfecta para negocios que quieren empezar a cobrar con tarjeta hoy mismo, sin complicaciones.",
+    pitch: "¿Tu cliente todavía cobra solo en efectivo? Con KobraPay Express puede recibir pagos con tarjeta desde el primer día, sin contratos complicados ni equipos costosos.",
+    features: [
+      "Links de pago por WhatsApp o correo",
+      "Cobros con tarjeta de crédito/débito",
+      "Historial completo de ventas",
+      "Panel de control en línea",
+      "Soporte por chat",
+    ],
+    bestFor: "Tiendas, restaurantes, servicios locales, vendedores independientes",
+    photo: "https://d2xsxph8kpxj0f.cloudfront.net/310519663381362445/Tm7GPbTEGgvmgj5v2qy4Z4/restaurante_6d945278.webp",
+    photoAlt: "Restaurante cobrando con tarjeta",
+    argument: "Ideal para el dueño del restaurante o tienda que pierde ventas porque el cliente no trae efectivo.",
   },
   {
     id: "connect",
@@ -41,12 +48,23 @@ const PLANS = [
     color: "text-blue-600",
     bg: "bg-blue-50",
     border: "border-blue-200",
+    headerBg: "from-blue-500 to-indigo-600",
     commission: 2.5,
-    description: "Para negocios en crecimiento que necesitan Stripe Connect",
-    features: ["Todo Express", "Stripe Connect (CLABE)", "Facturas digitales", "Contratos digitales", "Cobros recurrentes"],
-    bestFor: "Clínicas, escuelas, gimnasios, e-commerce",
-    minVolume: 50000,
-    maxVolume: 200000,
+    price: "Sin costo fijo",
+    description: "Para negocios en crecimiento que necesitan cobros recurrentes, contratos digitales y su propia cuenta bancaria de cobros.",
+    pitch: "¿Tu cliente tiene clientes que pagan mensualidades? Con Connect puede automatizar los cobros recurrentes y firmar contratos digitales sin papel.",
+    features: [
+      "Todo lo del plan Express",
+      "Cuenta bancaria propia (CLABE) para recibir pagos",
+      "Cobros recurrentes automáticos",
+      "Contratos digitales con firma electrónica",
+      "Agenda de citas para clínicas y servicios",
+      "Facturas digitales",
+    ],
+    bestFor: "Clínicas, escuelas, gimnasios, salones de belleza, e-commerce",
+    photo: "https://d2xsxph8kpxj0f.cloudfront.net/310519663381362445/Tm7GPbTEGgvmgj5v2qy4Z4/gimnasio_eefc674a.jpg",
+    photoAlt: "Gimnasio con membresías",
+    argument: "Perfecto para el gimnasio o clínica que quiere cobrar mensualidades automáticamente sin perseguir a sus clientes.",
   },
   {
     id: "custom",
@@ -55,12 +73,23 @@ const PLANS = [
     color: "text-purple-600",
     bg: "bg-purple-50",
     border: "border-purple-200",
+    headerBg: "from-purple-500 to-violet-600",
     commission: 2.0,
-    description: "Para empresas medianas con necesidades específicas",
-    features: ["Todo Connect", "Comisión negociable", "Módulos a la medida", "Agenda Médica", "Expedientes RH", "Soporte prioritario"],
-    bestFor: "Empresas medianas, hospitales, cadenas",
-    minVolume: 200000,
-    maxVolume: 1000000,
+    price: "Cotización personalizada",
+    description: "Para empresas medianas que necesitan módulos a la medida, agenda médica completa y gestión de personal.",
+    pitch: "¿Tu cliente tiene un consultorio o empresa con varios empleados? Custom les da una plataforma completa con expedientes, agenda y cobros todo en uno.",
+    features: [
+      "Todo lo del plan Connect",
+      "Módulos personalizados a su negocio",
+      "Agenda médica con expedientes de pacientes",
+      "Gestión de personal (RH básico)",
+      "Reportes avanzados",
+      "Soporte prioritario con gestor asignado",
+    ],
+    bestFor: "Consultorios médicos, hospitales pequeños, empresas con 10+ empleados",
+    photo: "https://d2xsxph8kpxj0f.cloudfront.net/310519663381362445/Tm7GPbTEGgvmgj5v2qy4Z4/consultorio_dc4d0003.webp",
+    photoAlt: "Consultorio médico",
+    argument: "El médico o empresario que quiere tener todo en un solo lugar: cobros, agenda, expedientes y personal.",
   },
   {
     id: "enterprise",
@@ -69,882 +98,252 @@ const PLANS = [
     color: "text-amber-600",
     bg: "bg-amber-50",
     border: "border-amber-200",
+    headerBg: "from-amber-500 to-orange-600",
     commission: 1.5,
-    description: "Para corporativos con alto volumen de transacciones",
-    features: ["Todo Custom", "Integración API completa", "Comisión desde 1.5%", "Gestor de cuenta dedicado", "SLA garantizado"],
-    bestFor: "Corporativos, cadenas nacionales, franquicias",
-    minVolume: 1000000,
-    maxVolume: Infinity,
+    price: "Negociable por volumen",
+    description: "Para corporativos y cadenas con alto volumen de transacciones que necesitan integración API y SLA garantizado.",
+    pitch: "¿Tu cliente es una cadena o corporativo? Enterprise les da integración directa con sus sistemas actuales y un gestor de cuenta dedicado.",
+    features: [
+      "Todo lo del plan Custom",
+      "Integración API completa con sus sistemas",
+      "Comisión desde 1.5% (negociable por volumen)",
+      "Gestor de cuenta dedicado",
+      "SLA garantizado (99.9% uptime)",
+      "Soporte 24/7 por teléfono",
+    ],
+    bestFor: "Cadenas de tiendas, franquicias, corporativos, hospitales grandes",
+    photo: "https://d2xsxph8kpxj0f.cloudfront.net/310519663381362445/Tm7GPbTEGgvmgj5v2qy4Z4/tienda_7bbc47df.jpg",
+    photoAlt: "Cadena de tiendas",
+    argument: "Para el cliente grande que necesita un proveedor de pagos confiable con soporte dedicado y precios por volumen.",
   },
 ];
 
-// ─── Simulador de comisiones ──────────────────────────────────────────────────
-function CommissionSimulator() {
-  const [monthlyVolume, setMonthlyVolume] = useState<number>(50000);
-  const [selectedPlan, setSelectedPlan] = useState<string>("connect");
-  const [customAssociateRate, setCustomAssociateRate] = useState<string>("");
-  const plan = PLANS.find(p => p.id === selectedPlan);
-  const kobraPayCommission = plan ? (monthlyVolume * (plan.commission / 100)) : 0;
-  const associateRate = customAssociateRate ? parseFloat(customAssociateRate) : 0.5;
-  const associateEarning = monthlyVolume * (associateRate / 100);
-  const clientPays = kobraPayCommission;
-  const stripeCommission = monthlyVolume * 0.015;
-  const totalClientPays = kobraPayCommission + stripeCommission;
-  const recommendedPlan = PLANS.find(p =>
-    monthlyVolume >= p.minVolume && monthlyVolume < (p.maxVolume === Infinity ? Infinity : p.maxVolume + 1)
-  ) || PLANS[PLANS.length - 1];
+const STATUS_CONFIG: Record<string, { label: string; color: string; icon: React.ComponentType<{ className?: string }> }> = {
+  pending: { label: "Pendiente revisión", color: "bg-yellow-50 text-yellow-700 border-yellow-200", icon: Clock },
+  assistant_approved: { label: "En revisión final", color: "bg-blue-50 text-blue-700 border-blue-200", icon: AlertCircle },
+  active: { label: "Activo ✓", color: "bg-green-50 text-green-700 border-green-200", icon: CheckCircle },
+  rejected: { label: "Rechazado", color: "bg-red-50 text-red-700 border-red-200", icon: XCircle },
+  inactive: { label: "Inactivo", color: "bg-gray-50 text-gray-500 border-gray-200", icon: XCircle },
+};
 
-  return (
-    <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 space-y-6">
-      <div className="flex items-center gap-2">
-        <Calculator className="w-5 h-5 text-emerald-600" />
-        <h2 className="text-lg font-bold text-gray-900">Simulador de Comisiones</h2>
-      </div>
+type Tab = "manual" | "registro" | "comisiones";
 
-       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="space-y-2">
-          <Label className="text-sm font-medium text-gray-700">Volumen mensual estimado del cliente</Label>
-          <div className="relative">
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 font-medium">$</span>
-            <Input
-              type="number"
-              value={monthlyVolume}
-              onChange={(e) => setMonthlyVolume(Number(e.target.value))}
-              className="pl-8"
-              placeholder="50000"
-            />
-          </div>
-          <p className="text-xs text-gray-400">MXN por mes</p>
-        </div>
-        <div className="space-y-2">
-          <Label className="text-sm font-medium text-gray-700">Plan a ofrecer</Label>
-          <Select value={selectedPlan} onValueChange={setSelectedPlan}>
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {PLANS.map(p => (
-                <SelectItem key={p.id} value={p.id}>
-                  {p.name} — {p.commission}% comisión
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          {recommendedPlan.id !== selectedPlan && (
-            <p className="text-xs text-amber-600 flex items-center gap-1">
-              <Star className="w-3 h-3" />
-              Recomendado: <strong>{recommendedPlan.name}</strong>
-            </p>
-          )}
-        </div>
-        <div className="space-y-2">
-          <Label className="text-sm font-medium text-gray-700">Mi % de comisión acordada</Label>
-          <div className="relative">
-            <Input
-              type="number"
-              step="0.1"
-              min="0"
-              max="10"
-              value={customAssociateRate}
-              onChange={(e) => setCustomAssociateRate(e.target.value)}
-              className="pr-8"
-              placeholder="0.5"
-            />
-            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">%</span>
-          </div>
-          <p className="text-xs text-gray-400">Por defecto: 0.5% (deja vacío)</p>
-        </div>
-      </div>
+export default function AssociateDashboard() {
+  const { user } = useAuth();
+  const [activeTab, setActiveTab] = useState<Tab>("manual");
+  const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
+  const [generatingPdf, setGeneratingPdf] = useState(false);
 
-      {/* Resultados */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-emerald-50 rounded-xl p-4 border border-emerald-100">
-          <p className="text-xs text-emerald-600 font-medium uppercase tracking-wide">Tu comisión mensual</p>
-          <p className="text-2xl font-bold text-emerald-700 mt-1">
-            ${associateEarning.toLocaleString("es-MX", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-          </p>
-          <p className="text-xs text-emerald-600 mt-1">{associateRate}% del volumen procesado</p>
-        </div>
-
-        <div className="bg-blue-50 rounded-xl p-4 border border-blue-100">
-          <p className="text-xs text-blue-600 font-medium uppercase tracking-wide">El cliente paga</p>
-          <p className="text-2xl font-bold text-blue-700 mt-1">
-            ${totalClientPays.toLocaleString("es-MX", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-          </p>
-          <p className="text-xs text-blue-600 mt-1">{plan?.commission}% KobraPay + 1.5% Stripe</p>
-        </div>
-
-        <div className="bg-purple-50 rounded-xl p-4 border border-purple-100">
-          <p className="text-xs text-purple-600 font-medium uppercase tracking-wide">Ganancias anuales</p>
-          <p className="text-2xl font-bold text-purple-700 mt-1">
-            ${(associateEarning * 12).toLocaleString("es-MX", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-          </p>
-          <p className="text-xs text-purple-600 mt-1">Si el cliente mantiene el volumen</p>
-        </div>
-      </div>
-
-      <p className="text-xs text-gray-400 text-center">
-        * Las comisiones del asociado se pagan mensualmente por KobraPay. El porcentaje puede variar según acuerdo.
-      </p>
-    </div>
-  );
-}
-
-// ─── Catálogo de planes ───────────────────────────────────────────────────────
-function PlansCatalog() {
-  return (
-    <div className="space-y-4">
-      <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
-        <Building2 className="w-5 h-5 text-gray-600" />
-        Catálogo de Planes KobraPay
-      </h2>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {PLANS.map((plan) => {
-          const Icon = plan.icon;
-          return (
-            <div key={plan.id} className={`rounded-2xl border-2 ${plan.border} bg-white p-5 space-y-3`}>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div className={`p-2 rounded-xl ${plan.bg}`}>
-                    <Icon className={`w-5 h-5 ${plan.color}`} />
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-gray-900">{plan.name}</h3>
-                    <p className="text-xs text-gray-500">{plan.description}</p>
-                  </div>
-                </div>
-                <Badge className={`${plan.bg} ${plan.color} border-0 font-bold text-base px-3 py-1`}>
-                  {plan.commission}%
-                </Badge>
-              </div>
-
-              <div className="space-y-1">
-                {plan.features.map(f => (
-                  <div key={f} className="flex items-center gap-2 text-xs text-gray-600">
-                    <CheckCircle className="w-3.5 h-3.5 text-emerald-500 flex-shrink-0" />
-                    {f}
-                  </div>
-                ))}
-              </div>
-
-              <div className={`text-xs ${plan.color} font-medium flex items-center gap-1`}>
-                <Star className="w-3 h-3" />
-                Ideal para: {plan.bestFor}
-              </div>
-
-              <div className="text-xs text-gray-400">
-                Volumen sugerido: {plan.minVolume === 0 ? "Desde $0" : `$${plan.minVolume.toLocaleString("es-MX")}`}
-                {plan.maxVolume !== Infinity ? ` — $${plan.maxVolume.toLocaleString("es-MX")} MXN/mes` : "+ MXN/mes"}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-// ─── Constructor de plan personalizado ──────────────────────────────────────
-function CustomPlanBuilder() {
-  const [plan, setPlan] = useState({
-    name: "",
-    clientType: "",
-    monthlyVolume: "",
-    commissionRate: "",
-    paymentCycle: "monthly",
-    features: [] as string[],
-    notes: "",
-  });
-  const [newFeature, setNewFeature] = useState("");
-  const [saved, setSaved] = useState(false);
-
-  const BASE_FEATURES = [
-    "Links de pago", "Cobros con tarjeta", "Historial de ventas",
-    "Stripe Connect (CLABE)", "Facturas digitales", "Contratos digitales",
-    "Cobros recurrentes", "Agenda Médica", "Expedientes RH",
-    "Soporte prioritario", "Gestor de cuenta dedicado", "API completa",
-  ];
-
-  const toggleFeature = (f: string) => {
-    setPlan(p => ({
-      ...p,
-      features: p.features.includes(f) ? p.features.filter(x => x !== f) : [...p.features, f],
-    }));
-  };
-
-  const addCustomFeature = () => {
-    if (newFeature.trim()) {
-      setPlan(p => ({ ...p, features: [...p.features, newFeature.trim()] }));
-      setNewFeature("");
-    }
-  };
-
-  const handleSave = () => {
-    if (!plan.name) return;
-    setSaved(true);
-    setTimeout(() => setSaved(false), 3000);
-  };
-
-  const volume = parseFloat(plan.monthlyVolume) || 0;
-  const rate = parseFloat(plan.commissionRate) || 0;
-  const clientPays = volume * (rate / 100);
-  const associateEarning = volume * 0.005;
-  const CYCLE_LABELS: Record<string, string> = {
-    weekly: "Semanal", biweekly: "Quincenal", monthly: "Mensual", custom: "Personalizado"
-  };
-
-  return (
-    <div className="space-y-5">
-      <div className="flex items-center gap-2">
-        <Crown className="w-5 h-5 text-purple-600" />
-        <h2 className="text-lg font-bold text-gray-900">Crear Plan Personalizado</h2>
-        <Badge className="bg-purple-100 text-purple-700 border-purple-200" variant="outline">Para tu cliente</Badge>
-      </div>
-      <p className="text-sm text-gray-500">Diseña un plan a la medida de tu cliente. Selecciona los módulos, define la comisión y el ciclo de pago.</p>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-        {/* Columna izquierda: datos del plan */}
-        <div className="space-y-4">
-          <div className="bg-white rounded-2xl border border-gray-200 p-4 space-y-3">
-            <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Datos del plan</p>
-            <div className="space-y-1.5">
-              <Label className="text-sm">Nombre del plan</Label>
-              <Input value={plan.name} onChange={e => setPlan(p => ({ ...p, name: e.target.value }))} placeholder="Ej: Plan Clínica Premium" />
-            </div>
-            <div className="space-y-1.5">
-              <Label className="text-sm">Tipo de cliente / industria</Label>
-              <Input value={plan.clientType} onChange={e => setPlan(p => ({ ...p, clientType: e.target.value }))} placeholder="Ej: Clínica dental, Gimnasio, E-commerce" />
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label className="text-sm">Volumen mensual estimado</Label>
-                <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">$</span>
-                  <Input type="number" value={plan.monthlyVolume} onChange={e => setPlan(p => ({ ...p, monthlyVolume: e.target.value }))} className="pl-7" placeholder="100000" />
-                </div>
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-sm">Comisión acordada (%)</Label>
-                <div className="relative">
-                  <Input type="number" step="0.1" min="0" max="10" value={plan.commissionRate} onChange={e => setPlan(p => ({ ...p, commissionRate: e.target.value }))} className="pr-8" placeholder="2.5" />
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">%</span>
-                </div>
-              </div>
-            </div>
-            <div className="space-y-1.5">
-              <Label className="text-sm">Ciclo de pago de comisiones</Label>
-              <Select value={plan.paymentCycle} onValueChange={v => setPlan(p => ({ ...p, paymentCycle: v }))}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="weekly">Semanal</SelectItem>
-                  <SelectItem value="biweekly">Quincenal</SelectItem>
-                  <SelectItem value="monthly">Mensual</SelectItem>
-                  <SelectItem value="custom">Personalizado</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1.5">
-              <Label className="text-sm">Notas / condiciones especiales</Label>
-              <Textarea value={plan.notes} onChange={e => setPlan(p => ({ ...p, notes: e.target.value }))} placeholder="Condiciones especiales, descuentos, etc." rows={2} />
-            </div>
-          </div>
-
-          {/* Proyección financiera */}
-          {volume > 0 && rate > 0 && (
-            <div className="bg-gradient-to-br from-emerald-50 to-teal-50 rounded-2xl border border-emerald-100 p-4 space-y-3">
-              <p className="text-xs font-semibold text-emerald-700 uppercase tracking-wide">Proyección financiera</p>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <p className="text-xs text-gray-500">El cliente paga</p>
-                  <p className="text-lg font-bold text-gray-800">${clientPays.toLocaleString("es-MX", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
-                  <p className="text-xs text-gray-400">al mes ({rate}%)</p>
-                </div>
-                <div>
-                  <p className="text-xs text-gray-500">Tu comisión est.</p>
-                  <p className="text-lg font-bold text-emerald-700">${associateEarning.toLocaleString("es-MX", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
-                  <p className="text-xs text-gray-400">al mes (0.5%)</p>
-                </div>
-              </div>
-              <p className="text-xs text-gray-400">Ciclo de pago: {CYCLE_LABELS[plan.paymentCycle]}</p>
-            </div>
-          )}
-        </div>
-
-        {/* Columna derecha: módulos */}
-        <div className="bg-white rounded-2xl border border-gray-200 p-4 space-y-3">
-          <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Módulos incluidos</p>
-          <div className="grid grid-cols-1 gap-2">
-            {BASE_FEATURES.map(f => (
-              <button
-                key={f}
-                type="button"
-                onClick={() => toggleFeature(f)}
-                className={`flex items-center gap-2.5 p-2.5 rounded-lg border text-left transition-all ${
-                  plan.features.includes(f)
-                    ? "bg-emerald-50 border-emerald-200 text-emerald-800"
-                    : "bg-gray-50 border-gray-100 text-gray-600 hover:border-gray-200"
-                }`}
-              >
-                <CheckCircle className={`w-4 h-4 flex-shrink-0 ${plan.features.includes(f) ? "text-emerald-500" : "text-gray-300"}`} />
-                <span className="text-xs font-medium">{f}</span>
-              </button>
-            ))}
-          </div>
-          <div className="flex gap-2 pt-1">
-            <Input
-              value={newFeature}
-              onChange={e => setNewFeature(e.target.value)}
-              onKeyDown={e => e.key === "Enter" && (e.preventDefault(), addCustomFeature())}
-              placeholder="Agregar módulo personalizado..."
-              className="text-sm"
-            />
-            <Button type="button" variant="outline" size="sm" onClick={addCustomFeature}>+</Button>
-          </div>
-        </div>
-      </div>
-
-      {/* Resumen del plan */}
-      {plan.name && (
-        <div className="bg-white rounded-2xl border-2 border-purple-200 p-5 space-y-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Crown className="w-5 h-5 text-purple-600" />
-              <h3 className="font-bold text-gray-900">{plan.name}</h3>
-            </div>
-            {rate > 0 && <Badge className="bg-purple-100 text-purple-700 border-0 font-bold text-base px-3 py-1">{rate}%</Badge>}
-          </div>
-          {plan.clientType && <p className="text-sm text-gray-500">Para: {plan.clientType}</p>}
-          {plan.features.length > 0 && (
-            <div className="space-y-1">
-              {plan.features.map(f => (
-                <div key={f} className="flex items-center gap-2 text-xs text-gray-600">
-                  <CheckCircle className="w-3.5 h-3.5 text-emerald-500 flex-shrink-0" />
-                  {f}
-                </div>
-              ))}
-            </div>
-          )}
-          {plan.notes && <p className="text-xs text-gray-400 italic">{plan.notes}</p>}
-          <div className="flex gap-3 pt-2">
-            <Button
-              type="button"
-              className="bg-purple-600 hover:bg-purple-700 text-white"
-              onClick={handleSave}
-            >
-              {saved ? "✓ Plan guardado" : "Guardar plan"}
-            </Button>
-            <Button type="button" variant="outline" onClick={() => setPlan({ name: "", clientType: "", monthlyVolume: "", commissionRate: "", paymentCycle: "monthly", features: [], notes: "" })}>
-              Limpiar
-            </Button>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-// ─── Formulario de registro de cliente ───────────────────────────────────────
-function RegisterClientModal({ onSuccess }: { onSuccess: () => void }) {
-  const [open, setOpen] = useState(false);
+  // Form state
   const [form, setForm] = useState({
     clientName: "",
     clientEmail: "",
-    clientBusinessName: "",
     clientPhone: "",
-    assignedPlan: "" as "express" | "connect" | "custom" | "enterprise" | "",
-    customPlanName: "",
-    customCommissionRate: "",
-    paymentCycle: "monthly" as "weekly" | "biweekly" | "monthly" | "custom",
+    clientBusinessName: "",
+    assignedPlan: "",
     notes: "",
   });
+  const [submitting, setSubmitting] = useState(false);
 
-  const registerMutation = trpc.associate.registerClient.useMutation({
-    onSuccess: () => {
-      toast.success("¡Cliente registrado exitosamente! Se notificó al equipo KobraPay.");
-      setOpen(false);
-      setForm({ clientName: "", clientEmail: "", clientBusinessName: "", clientPhone: "", assignedPlan: "", customPlanName: "", customCommissionRate: "", paymentCycle: "monthly", notes: "" });
-      onSuccess();
-    },
-    onError: (err) => {
-      toast.error("Error al registrar cliente: " + err.message);
-    },
+  const registerMutation = trpc.associate.registerClient.useMutation();
+  const utils = trpc.useUtils();
+  void utils;
+
+  const { data: myClientsData, isLoading: loadingClients } = trpc.associate.listClients.useQuery(undefined, {
+    enabled: activeTab === "comisiones",
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const myClients = myClientsData ?? [];
+  const totalEarned = myClients.reduce((s: number, c) => s + parseFloat(String(c.totalCommissionEarned || "0")), 0);
+  const activeClients = myClients.filter((c) => c.status === "active").length;
+  const pendingClients = myClients.filter((c) => c.status === "pending" || c.status === "assistant_approved").length;
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.clientName || !form.clientEmail) {
-      toast.error("Nombre y email son obligatorios");
+    if (!form.clientName || !form.clientEmail || !form.assignedPlan) {
+      toast.error("Por favor completa los campos obligatorios");
       return;
     }
-    const customRate = form.customCommissionRate ? parseFloat(form.customCommissionRate) : undefined;
-    registerMutation.mutate({
-      clientName: form.clientName,
-      clientEmail: form.clientEmail,
-      clientBusinessName: form.clientBusinessName || undefined,
-      clientPhone: form.clientPhone || undefined,
-      assignedPlan: (form.assignedPlan as "express" | "connect" | "custom" | "enterprise") || undefined,
-      customPlanName: form.customPlanName || undefined,
-      customCommissionRate: customRate,
-      paymentCycle: form.paymentCycle,
-      notes: form.notes || undefined,
-    });
+    setSubmitting(true);
+    try {
+      await registerMutation.mutateAsync({
+        clientName: form.clientName,
+        clientEmail: form.clientEmail,
+        clientPhone: form.clientPhone || undefined,
+        clientBusinessName: form.clientBusinessName || undefined,
+        assignedPlan: form.assignedPlan as "express" | "connect" | "custom" | "enterprise",
+        customCommissionRate: PLANS.find(p => p.id === form.assignedPlan)?.commission ?? 2.5,
+        notes: form.notes || undefined,
+      });
+      toast.success("¡Cliente registrado exitosamente!", {
+        description: "Recibirás una notificación cuando sea aprobado.",
+      });
+      setForm({ clientName: "", clientEmail: "", clientPhone: "", clientBusinessName: "", assignedPlan: "", notes: "" });
+      setActiveTab("comisiones");
+      utils.associate.listClients.invalidate();
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Error al registrar cliente";
+      toast.error(msg);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
-  const PAYMENT_CYCLES = [
-    { value: "weekly", label: "Semanal" },
-    { value: "biweekly", label: "Quincenal" },
-    { value: "monthly", label: "Mensual" },
-    { value: "custom", label: "Personalizado" },
-  ];
+  const generateBrochurePDF = async () => {
+    setGeneratingPdf(true);
+    try {
+      const html = `<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Manual de Ventas KobraPay</title>
+<style>
+  @media print { body { margin: 0; } .page-break { page-break-before: always; } }
+  body { font-family: Arial, sans-serif; color: #111; margin: 0; padding: 0; }
+  .cover { background: linear-gradient(135deg, #00c853, #1a237e); color: white; padding: 60px 40px; min-height: 200px; }
+  .cover h1 { font-size: 42px; margin: 0 0 8px; font-weight: 900; }
+  .cover p { font-size: 18px; opacity: 0.9; margin: 0; }
+  .cover .subtitle { font-size: 14px; opacity: 0.7; margin-top: 12px; }
+  .section { padding: 32px 40px; }
+  .plan-card { border: 2px solid #e5e7eb; border-radius: 12px; margin-bottom: 32px; overflow: hidden; }
+  .plan-header { padding: 20px 24px; color: white; }
+  .plan-header.express { background: linear-gradient(135deg, #10b981, #0d9488); }
+  .plan-header.connect { background: linear-gradient(135deg, #3b82f6, #4f46e5); }
+  .plan-header.custom { background: linear-gradient(135deg, #8b5cf6, #7c3aed); }
+  .plan-header.enterprise { background: linear-gradient(135deg, #f59e0b, #ea580c); }
+  .plan-header h2 { font-size: 28px; margin: 0 0 4px; font-weight: 900; }
+  .plan-header p { font-size: 13px; opacity: 0.9; margin: 0; }
+  .plan-body { padding: 20px 24px; display: flex; gap: 24px; }
+  .plan-features { flex: 1; }
+  .plan-features h3 { font-size: 13px; font-weight: 700; color: #6b7280; text-transform: uppercase; margin: 0 0 8px; }
+  .plan-features ul { margin: 0; padding-left: 18px; }
+  .plan-features li { font-size: 13px; margin-bottom: 4px; color: #374151; }
+  .plan-pitch { flex: 1; background: #f9fafb; border-radius: 8px; padding: 16px; }
+  .plan-pitch h3 { font-size: 12px; font-weight: 700; color: #6b7280; text-transform: uppercase; margin: 0 0 8px; }
+  .plan-pitch p { font-size: 13px; color: #374151; margin: 0 0 8px; line-height: 1.5; }
+  .plan-pitch .best-for { font-size: 11px; color: #9ca3af; }
+  .commission-badge { display: inline-block; background: rgba(255,255,255,0.2); border-radius: 20px; padding: 4px 12px; font-size: 13px; font-weight: 700; margin-top: 8px; }
+  .footer { text-align: center; padding: 24px; color: #9ca3af; font-size: 12px; border-top: 1px solid #e5e7eb; }
+  .intro { background: #f0fdf4; border-left: 4px solid #10b981; padding: 16px 20px; margin-bottom: 24px; border-radius: 0 8px 8px 0; }
+  .intro h2 { font-size: 18px; color: #065f46; margin: 0 0 6px; }
+  .intro p { font-size: 13px; color: #374151; margin: 0; line-height: 1.5; }
+  .tips { background: #fffbeb; border: 1px solid #fcd34d; border-radius: 8px; padding: 16px 20px; margin-bottom: 24px; }
+  .tips h3 { font-size: 14px; font-weight: 700; color: #92400e; margin: 0 0 8px; }
+  .tips ul { margin: 0; padding-left: 18px; }
+  .tips li { font-size: 13px; color: #78350f; margin-bottom: 4px; }
+</style>
+</head>
+<body>
+<div class="cover">
+  <h1>KobraPay</h1>
+  <p>Manual de Ventas para Asociados</p>
+  <div class="subtitle">kobrapay.mx · Versión ${new Date().getFullYear()}</div>
+</div>
 
-  return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button className="bg-emerald-500 hover:bg-emerald-600 text-white gap-2">
-          <UserPlus className="w-4 h-4" />
-          Registrar Cliente
-        </Button>
-      </DialogTrigger>
-      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <UserPlus className="w-5 h-5 text-emerald-600" />
-            Registrar Nuevo Cliente
-          </DialogTitle>
-        </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4 pt-2">
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <Label>Nombre del contacto *</Label>
-              <Input
-                value={form.clientName}
-                onChange={e => setForm(f => ({ ...f, clientName: e.target.value }))}
-                placeholder="Juan García"
-                required
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label>Email *</Label>
-              <Input
-                type="email"
-                value={form.clientEmail}
-                onChange={e => setForm(f => ({ ...f, clientEmail: e.target.value }))}
-                placeholder="juan@empresa.com"
-                required
-              />
-            </div>
-          </div>
+<div class="section">
+  <div class="intro">
+    <h2>¿Qué es KobraPay?</h2>
+    <p>KobraPay es una plataforma mexicana de procesamiento de pagos que permite a cualquier negocio cobrar con tarjeta de crédito/débito, gestionar clientes, firmar contratos digitales y automatizar cobros recurrentes. Como asociado, tu trabajo es identificar negocios que necesiten estas soluciones y presentarles los planes disponibles.</p>
+  </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <Label>Nombre del negocio</Label>
-              <Input
-                value={form.clientBusinessName}
-                onChange={e => setForm(f => ({ ...f, clientBusinessName: e.target.value }))}
-                placeholder="Restaurante El Buen Sabor"
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label>Teléfono</Label>
-              <Input
-                value={form.clientPhone}
-                onChange={e => setForm(f => ({ ...f, clientPhone: e.target.value }))}
-                placeholder="+52 55 1234 5678"
-              />
-            </div>
-          </div>
+  <div class="tips">
+    <h3>💡 Consejos para cerrar ventas</h3>
+    <ul>
+      <li>Pregunta primero: "¿Cuántas ventas pierdes porque el cliente no trae efectivo?"</li>
+      <li>Muestra el plan según el volumen mensual estimado del negocio</li>
+      <li>Enfatiza que no hay costo fijo mensual — solo pagan cuando cobran</li>
+      <li>Para clínicas y gimnasios, destaca los cobros recurrentes automáticos</li>
+      <li>Cierra con: "Te registro hoy y en 24-48 horas ya puedes estar cobrando"</li>
+    </ul>
+  </div>
 
-          <div className="space-y-1.5">
-            <Label>Plan sugerido</Label>
-            <Select
-              value={form.assignedPlan}
-              onValueChange={v => setForm(f => ({ ...f, assignedPlan: v as "express" | "connect" | "custom" | "enterprise" }))}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Selecciona un plan..." />
-              </SelectTrigger>
-              <SelectContent>
-                {PLANS.map(p => (
-                  <SelectItem key={p.id} value={p.id}>
-                    {p.name} — {p.commission}% comisión
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Plan personalizado */}
-          <div className="border border-dashed border-gray-200 rounded-xl p-3 space-y-3 bg-gray-50">
-            <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Opciones avanzadas</p>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label className="text-xs">Nombre plan personalizado</Label>
-                <Input
-                  value={form.customPlanName}
-                  onChange={e => setForm(f => ({ ...f, customPlanName: e.target.value }))}
-                  placeholder="Ej: Plan Clínica VIP"
-                  className="text-sm"
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-xs">Comisión acordada (%)</Label>
-                <div className="relative">
-                  <Input
-                    type="number"
-                    step="0.1"
-                    min="0"
-                    max="10"
-                    value={form.customCommissionRate}
-                    onChange={e => setForm(f => ({ ...f, customCommissionRate: e.target.value }))}
-                    placeholder="Ej: 2.5"
-                    className="text-sm pr-8"
-                  />
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs">%</span>
-                </div>
-                <p className="text-xs text-gray-400">Deja vacío para usar la comisión del plan</p>
-              </div>
-            </div>
-            <div className="space-y-1.5">
-              <Label className="text-xs">Ciclo de pago de comisiones</Label>
-              <Select
-                value={form.paymentCycle}
-                onValueChange={v => setForm(f => ({ ...f, paymentCycle: v as "weekly" | "biweekly" | "monthly" | "custom" }))}
-              >
-                <SelectTrigger className="text-sm">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {PAYMENT_CYCLES.map(c => (
-                    <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          <div className="space-y-1.5">
-            <Label>Notas adicionales</Label>
-            <Textarea
-              value={form.notes}
-              onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
-              placeholder="Información relevante del cliente, acuerdos previos, etc."
-              rows={2}
-            />
-          </div>
-
-          <div className="flex gap-3 pt-2">
-            <Button type="button" variant="outline" className="flex-1" onClick={() => setOpen(false)}>
-              Cancelar
-            </Button>
-            <Button
-              type="submit"
-              className="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white"
-              disabled={registerMutation.isPending}
-            >
-              {registerMutation.isPending ? "Registrando..." : "Registrar Cliente"}
-            </Button>
-          </div>
-        </form>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
-// ─── Componente: Reportes del Asociado ──────────────────────────────────────
-const MONTH_LABELS: Record<string, string> = {
-  "01": "Ene", "02": "Feb", "03": "Mar", "04": "Abr",
-  "05": "May", "06": "Jun", "07": "Jul", "08": "Ago",
-  "09": "Sep", "10": "Oct", "11": "Nov", "12": "Dic",
-};
-
-function AssociateReportsTab({
-  clients,
-  summary,
-}: {
-  clients: Array<{ id: number; clientName: string; clientEmail: string; clientBusinessName?: string; assignedPlan?: string; status: string; notes?: string; createdAt: number }>;
-  summary: { totalClients: number; activeClients: number; pendingClients: number; totalEarned: number } | undefined;
-}) {
-  // Agrupar clientes por mes de registro
-  const clientsByMonth = useMemo(() => {
-    const map = new Map<string, number>();
-    for (const c of clients) {
-      const d = new Date(c.createdAt);
-      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-      map.set(key, (map.get(key) || 0) + 1);
-    }
-    return Array.from(map.entries())
-      .sort((a, b) => a[0].localeCompare(b[0]))
-      .slice(-12)
-      .map(([month, count]) => {
-        const [year, m] = month.split("-");
-        return { label: `${MONTH_LABELS[m] || m} ${year.slice(2)}`, count };
-      });
-  }, [clients]);
-
-  // Distribución por plan
-  const planDistribution = useMemo(() => {
-    const map = new Map<string, number>();
-    for (const c of clients) {
-      const plan = c.assignedPlan || 'Sin plan';
-      map.set(plan, (map.get(plan) || 0) + 1);
-    }
-    return Array.from(map.entries()).map(([plan, count]) => ({ plan, count }));
-  }, [clients]);
-
-  // Distribución por estado
-  const statusDistribution = useMemo(() => [
-    { label: 'Activos', value: summary?.activeClients ?? 0, color: '#10b981' },
-    { label: 'Pendientes', value: summary?.pendingClients ?? 0, color: '#f59e0b' },
-    { label: 'Rechazados', value: clients.filter(c => c.status === 'rejected').length, color: '#ef4444' },
-    { label: 'Inactivos', value: clients.filter(c => c.status === 'inactive').length, color: '#9ca3af' },
-  ].filter(s => s.value > 0), [clients, summary]);
-
-  const totalClients = summary?.totalClients ?? 0;
-  const totalEarned = summary?.totalEarned ?? 0;
-  const conversionRate = totalClients > 0 ? ((summary?.activeClients ?? 0) / totalClients * 100).toFixed(1) : '0.0';
-
-  return (
-    <div className="space-y-6">
-      {/* KPIs principales */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {[
-          { label: 'Total Clientes', value: totalClients, icon: Users, color: 'text-blue-600 bg-blue-50', sub: 'registrados' },
-          { label: 'Tasa de Conversión', value: `${conversionRate}%`, icon: Target, color: 'text-emerald-600 bg-emerald-50', sub: 'activos vs total' },
-          { label: 'Comisiones Generadas', value: `$${totalEarned.toLocaleString('es-MX', { minimumFractionDigits: 2 })}`, icon: DollarSign, color: 'text-purple-600 bg-purple-50', sub: 'acumulado' },
-          { label: 'Promedio por Cliente', value: totalClients > 0 ? `$${(totalEarned / totalClients).toLocaleString('es-MX', { minimumFractionDigits: 2 })}` : '$0.00', icon: Award, color: 'text-amber-600 bg-amber-50', sub: 'comisión promedio' },
-        ].map(({ label, value, icon: Icon, color, sub }) => (
-          <div key={label} className="bg-white rounded-2xl border border-gray-200 p-4 space-y-2">
-            <div className={`w-9 h-9 rounded-xl ${color} flex items-center justify-center`}>
-              <Icon className="w-4 h-4" />
-            </div>
-            <p className="text-xl font-bold text-gray-900">{value}</p>
-            <div>
-              <p className="text-xs font-medium text-gray-700">{label}</p>
-              <p className="text-xs text-gray-400">{sub}</p>
-            </div>
-          </div>
-        ))}
+  ${PLANS.map(plan => `
+  <div class="plan-card">
+    <div class="plan-header ${plan.id}">
+      <h2>${plan.name}</h2>
+      <p>${plan.description}</p>
+      <div class="commission-badge">Tu comisión: ${plan.commission}% por transacción</div>
+    </div>
+    <div class="plan-body">
+      <div class="plan-features">
+        <h3>Incluye</h3>
+        <ul>
+          ${plan.features.map(f => `<li>${f}</li>`).join("")}
+        </ul>
+        <p style="font-size:12px;color:#6b7280;margin-top:12px;"><strong>Ideal para:</strong> ${plan.bestFor}</p>
+        <p style="font-size:12px;color:#6b7280;"><strong>Precio:</strong> ${plan.price}</p>
       </div>
-
-      {/* Gráfica: Clientes por mes */}
-      <div className="bg-white rounded-2xl border border-gray-200 p-5">
-        <h3 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
-          <BarChart2 className="w-4 h-4 text-emerald-500" />
-          Clientes Registrados por Mes
-        </h3>
-        {clientsByMonth.length === 0 ? (
-          <div className="h-40 flex items-center justify-center text-gray-400 text-sm">
-            Sin datos de clientes aún
-          </div>
-        ) : (
-          <ResponsiveContainer width="100%" height={200}>
-            <BarChart data={clientsByMonth} margin={{ top: 4, right: 4, left: 0, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-              <XAxis dataKey="label" tick={{ fontSize: 11, fill: "#6b7280" }} />
-              <YAxis tick={{ fontSize: 11, fill: "#6b7280" }} allowDecimals={false} />
-              <Tooltip
-                formatter={(v: number) => [v, "Clientes"]}
-                contentStyle={{ fontSize: 12, borderRadius: 8 }}
-              />
-              <Bar dataKey="count" radius={[4, 4, 0, 0]}>
-                {clientsByMonth.map((_, i) => (
-                  <Cell key={i} fill={i === clientsByMonth.length - 1 ? "#10b981" : "#6ee7b7"} />
-                ))}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
-        )}
-      </div>
-
-      {/* Distribución por plan y estado */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* Por plan */}
-        <div className="bg-white rounded-2xl border border-gray-200 p-5">
-          <h3 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
-            <Building2 className="w-4 h-4 text-blue-500" />
-            Distribución por Plan
-          </h3>
-          {planDistribution.length === 0 ? (
-            <p className="text-gray-400 text-sm text-center py-8">Sin datos</p>
-          ) : (
-            <div className="space-y-3">
-              {planDistribution.map(({ plan, count }) => (
-                <div key={plan} className="flex items-center gap-3">
-                  <div className="flex-1">
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-sm font-medium text-gray-700 capitalize">{plan}</span>
-                      <span className="text-sm font-bold text-gray-900">{count}</span>
-                    </div>
-                    <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-                      <div
-                        className="h-full bg-emerald-500 rounded-full"
-                        style={{ width: `${totalClients > 0 ? (count / totalClients * 100) : 0}%` }}
-                      />
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Por estado */}
-        <div className="bg-white rounded-2xl border border-gray-200 p-5">
-          <h3 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
-            <CheckCircle className="w-4 h-4 text-emerald-500" />
-            Estado de Clientes
-          </h3>
-          {statusDistribution.length === 0 ? (
-            <p className="text-gray-400 text-sm text-center py-8">Sin datos</p>
-          ) : (
-            <div className="space-y-3">
-              {statusDistribution.map(({ label, value, color }) => (
-                <div key={label} className="flex items-center gap-3">
-                  <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: color }} />
-                  <div className="flex-1">
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-sm font-medium text-gray-700">{label}</span>
-                      <span className="text-sm font-bold text-gray-900">{value}</span>
-                    </div>
-                    <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-                      <div
-                        className="h-full rounded-full"
-                        style={{ width: `${totalClients > 0 ? (value / totalClients * 100) : 0}%`, backgroundColor: color }}
-                      />
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
+      <div class="plan-pitch">
+        <h3>Argumento de venta</h3>
+        <p>${plan.pitch}</p>
+        <p class="best-for">Negocios objetivo: ${plan.bestFor}</p>
       </div>
     </div>
-  );
-}
+  </div>
+  `).join("")}
 
-// ─── Página principal ─────────────────────────────────────────────────────────
-type TabType = "dashboard" | "clients" | "plans" | "custom_plan" | "simulator" | "ai" | "reports";
+  <div class="tips" style="background:#eff6ff;border-color:#93c5fd;">
+    <h3 style="color:#1e40af;">📋 Proceso de registro</h3>
+    <ul style="color:#1e3a8a;">
+      <li>1. Registra al cliente desde tu panel de asociado en kobrapay.mx</li>
+      <li>2. El equipo de KobraPay revisa la solicitud en 24-48 horas</li>
+      <li>3. El cliente recibe un correo con sus credenciales de acceso</li>
+      <li>4. Una vez activo, empiezas a ganar comisiones por cada transacción</li>
+      <li>5. Tus comisiones se acumulan y se pagan según el ciclo acordado</li>
+    </ul>
+  </div>
+</div>
 
-export default function AssociateDashboard() {
-  const { user, loading: authLoading } = useAuth();
-  const userRole = (user as Record<string, unknown>)?.role as string | undefined;
-  const isSuperAdmin = (user as Record<string, unknown>)?.isSuperAdmin === true;
-  const isAllowed = isSuperAdmin || userRole === "associate";
+<div class="footer">
+  KobraPay · kobrapay.mx · Para soporte: soporte@kobrapay.mx · Manual generado el ${new Date().toLocaleDateString("es-MX", { dateStyle: "full" })}
+</div>
+</body>
+</html>`;
 
-  const [activeTab, setActiveTab] = useState<TabType>("dashboard");
-  const [aiMessages, setAiMessages] = useState<Message[]>([]);
-  const [aiLoading, setAiLoading] = useState(false);
-
-  const { data: summary, refetch: refetchSummary } = trpc.associate.getCommissionSummary.useQuery(undefined, {
-    enabled: isAllowed,
-  });
-  const { data: rawClients = [], refetch: refetchClients } = trpc.associate.listClients.useQuery(undefined, {
-    enabled: isAllowed,
-  });
-  // Normalizar campos de associateCommissions al formato que usa el componente
-  const clients = rawClients.map((c: Record<string, unknown>) => ({
-    id: c.id as number,
-    clientName: (c.clientName as string) || '',
-    clientEmail: (c.clientEmail as string) || '',
-    clientBusinessName: c.clientBusinessName as string | undefined,
-    clientPhone: c.clientPhone as string | undefined,
-    assignedPlan: c.assignedPlan as string | undefined,
-    status: (c.status as string) || 'pending',
-    notes: c.notes as string | undefined,
-    createdAt: c.createdAt as number,
-  }));
-
-  const aiMutation = trpc.associate.chat.useMutation({
-    onSuccess: (data) => {
-      setAiMessages(prev => [...prev, { role: "assistant", content: data.message }]);
-      setAiLoading(false);
-    },
-    onError: () => {
-      setAiMessages(prev => [...prev, { role: "assistant", content: "Error al procesar la consulta. Intenta de nuevo." }]);
-      setAiLoading(false);
-    },
-  });
-
-  const handleAiMessage = (content: string) => {
-    const newMessages: Message[] = [...aiMessages, { role: "user", content }];
-    setAiMessages(newMessages);
-    setAiLoading(true);
-    aiMutation.mutate({ messages: newMessages.map(m => ({ role: m.role as "user" | "assistant", content: m.content })) });
+      const blob = new Blob([html], { type: "text/html;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `Manual_Ventas_KobraPay_${new Date().getFullYear()}.html`;
+      document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+      toast.success("Manual descargado", { description: "Abre el archivo y usa Ctrl+P para imprimir como PDF." });
+    } catch {
+      toast.error("Error al generar el manual");
+    } finally {
+      setGeneratingPdf(false);
+    }
   };
 
-  if (authLoading) {
-    return (
-      <DashboardLayout title="Cuenta de Asociado">
-        <div className="flex items-center justify-center h-64">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-500" />
-        </div>
-      </DashboardLayout>
-    );
-  }
-
-  if (!isAllowed) {
-    return (
-      <DashboardLayout title="Cuenta de Asociado">
-        <div className="flex flex-col items-center justify-center h-64 text-center space-y-3">
-          <div className="w-16 h-16 rounded-2xl bg-gray-100 flex items-center justify-center">
-            <Users className="w-8 h-8 text-gray-400" />
-          </div>
-          <h2 className="text-lg font-semibold text-gray-700">Acceso Restringido</h2>
-          <p className="text-gray-500 max-w-sm">Esta sección es exclusiva para Asociados de KobraPay. Contacta al equipo para obtener acceso.</p>
-        </div>
-      </DashboardLayout>
-    );
-  }
-
-  const STATUS_CONFIG: Record<string, { label: string; color: string; icon: React.ElementType }> = {
-    pending: { label: "Pendiente", color: "text-amber-600 bg-amber-50 border-amber-200", icon: Clock },
-    active: { label: "Activo", color: "text-emerald-600 bg-emerald-50 border-emerald-200", icon: CheckCircle },
-    rejected: { label: "Rechazado", color: "text-red-600 bg-red-50 border-red-200", icon: XCircle },
-    inactive: { label: "Inactivo", color: "text-gray-500 bg-gray-50 border-gray-200", icon: XCircle },
-  };
-
-  const TABS: { id: TabType; label: string; icon: React.ElementType }[] = [
-    { id: "dashboard", label: "Mi Panel", icon: TrendingUp },
-    { id: "clients", label: "Mis Clientes", icon: Users },
-    { id: "reports", label: "Mis Reportes", icon: BarChart2 },
-    { id: "plans", label: "Catálogo de Planes", icon: Building2 },
-    { id: "custom_plan", label: "Crear Plan", icon: Crown },
-    { id: "simulator", label: "Simulador", icon: Calculator },
-    { id: "ai", label: "Sales Coach IA", icon: Bot },
+  const TABS: { id: Tab; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
+    { id: "manual", label: "Manual de Ventas", icon: BookOpen },
+    { id: "registro", label: "Registrar Cliente", icon: UserPlus },
+    { id: "comisiones", label: "Mis Comisiones", icon: DollarSign },
   ];
 
   return (
-    <DashboardLayout title="Cuenta de Asociado">
+    <DashboardLayout title="Portal del Asociado">
       <div className="max-w-5xl mx-auto space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-lg">
-              <Users className="w-6 h-6 text-white" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h1 className="text-2xl font-bold text-gray-900">Cuenta de Asociado</h1>
-                <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200 gap-1" variant="outline">
-                  <Star className="w-3 h-3" />
-                  Asociado KobraPay
-                </Badge>
-              </div>
-              <p className="text-sm text-gray-500 mt-0.5">Registra clientes, simula comisiones y usa el Sales Coach IA</p>
-            </div>
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">Portal del Asociado</h1>
+            <p className="text-sm text-gray-500 mt-1">Bienvenido, {user?.name || "Asociado"}</p>
           </div>
-          <RegisterClientModal onSuccess={() => { refetchClients(); refetchSummary(); }} />
+          <Badge className="bg-amber-100 text-amber-700 border-amber-200 gap-1.5 px-3 py-1.5" variant="outline">
+            <Handshake className="w-4 h-4" />
+            Asociado KobraPay
+          </Badge>
         </div>
 
         {/* Tabs */}
-        <div className="flex gap-1 bg-gray-100 p-1 rounded-xl overflow-x-auto">
+        <div className="flex items-center gap-1 bg-gray-100 rounded-xl p-1">
           {TABS.map(tab => {
             const Icon = tab.icon;
             return (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap ${
+                className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium transition-all flex-1 justify-center ${
                   activeTab === tab.id
                     ? "bg-white text-gray-900 shadow-sm"
                     : "text-gray-500 hover:text-gray-700"
@@ -952,203 +351,431 @@ export default function AssociateDashboard() {
               >
                 <Icon className="w-4 h-4" />
                 {tab.label}
+                {tab.id === "comisiones" && pendingClients > 0 && (
+                  <span className="bg-amber-500 text-white text-xs px-1.5 py-0.5 rounded-full font-bold">
+                    {pendingClients}
+                  </span>
+                )}
               </button>
             );
           })}
         </div>
 
-        {/* Tab: Dashboard */}
-        {activeTab === "dashboard" && (
-          <div className="space-y-5">
-            {/* Métricas */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {[
-                { label: "Total Clientes", value: summary?.totalClients ?? 0, icon: Users, color: "text-blue-600 bg-blue-50" },
-                { label: "Clientes Activos", value: summary?.activeClients ?? 0, icon: CheckCircle, color: "text-emerald-600 bg-emerald-50" },
-                { label: "Pendientes de Aprobación", value: summary?.pendingClients ?? 0, icon: Clock, color: "text-amber-600 bg-amber-50" },
-                {
-                  label: "Mis Comisiones Generadas",
-                  value: `$${(summary?.totalEarned ?? 0).toLocaleString("es-MX", { minimumFractionDigits: 2 })}`,
-                  icon: DollarSign,
-                  color: "text-purple-600 bg-purple-50",
-                },
-              ].map(({ label, value, icon: Icon, color }) => (
-                <div key={label} className="bg-white rounded-2xl border border-gray-200 p-4 space-y-2">
-                  <div className={`w-9 h-9 rounded-xl ${color} flex items-center justify-center`}>
-                    <Icon className="w-4 h-4" />
-                  </div>
-                  <p className="text-2xl font-bold text-gray-900">{value}</p>
-                  <p className="text-xs text-gray-500">{label}</p>
+        {/* ─── TAB: Manual de Ventas ─── */}
+        {activeTab === "manual" && (
+          <div className="space-y-6">
+            {/* Intro banner */}
+            <div className="bg-gradient-to-r from-emerald-600 to-teal-700 rounded-2xl p-6 text-white">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <h2 className="text-xl font-bold mb-2">Tu catálogo de planes KobraPay</h2>
+                  <p className="text-emerald-100 text-sm leading-relaxed max-w-xl">
+                    Aquí tienes todo lo que necesitas para presentarle KobraPay a tus prospectos. 
+                    Cada plan incluye argumentos de venta y los tipos de negocio más adecuados.
+                  </p>
                 </div>
-              ))}
+                <Button
+                  onClick={generateBrochurePDF}
+                  disabled={generatingPdf}
+                  className="bg-white text-emerald-700 hover:bg-emerald-50 font-semibold shrink-0"
+                >
+                  {generatingPdf ? (
+                    <><FileText className="w-4 h-4 mr-2 animate-pulse" />Generando...</>
+                  ) : (
+                    <><Download className="w-4 h-4 mr-2" />Descargar Manual PDF</>
+                  )}
+                </Button>
+              </div>
             </div>
 
-            {/* Cómo funciona */}
-            <div className="bg-gradient-to-br from-emerald-50 to-teal-50 rounded-2xl border border-emerald-100 p-6">
-              <h3 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
-                <Rocket className="w-5 h-5 text-emerald-600" />
-                ¿Cómo funciona tu Cuenta de Asociado?
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            {/* Tips rápidos */}
+            <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <Star className="w-4 h-4 text-amber-600" />
+                <span className="text-sm font-semibold text-amber-800">Consejos para cerrar ventas</span>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                 {[
-                  { step: "1", title: "Prospecta", desc: "Identifica negocios que necesiten cobrar con tarjeta", icon: Users },
-                  { step: "2", title: "Presenta", desc: "Usa el Simulador y el Catálogo para mostrar los beneficios", icon: Building2 },
-                  { step: "3", title: "Registra", desc: "Registra al cliente desde tu panel con sus datos", icon: UserPlus },
-                  { step: "4", title: "Gana", desc: "Recibe 0.5% de cada transacción que procese tu cliente", icon: DollarSign },
-                ].map(({ step, title, desc, icon: Icon }) => (
-                  <div key={step} className="flex gap-3">
-                    <div className="w-8 h-8 rounded-full bg-emerald-500 text-white flex items-center justify-center text-sm font-bold flex-shrink-0">
-                      {step}
-                    </div>
-                    <div>
-                      <p className="font-semibold text-gray-800 text-sm">{title}</p>
-                      <p className="text-xs text-gray-500 mt-0.5">{desc}</p>
-                    </div>
+                  "Pregunta: '¿Cuántas ventas pierdes porque el cliente no trae efectivo?'",
+                  "No hay costo fijo mensual — el cliente solo paga cuando cobra",
+                  "Para clínicas y gimnasios: enfatiza los cobros recurrentes automáticos",
+                  "Cierra con: 'En 24-48 horas ya puedes estar cobrando con tarjeta'",
+                ].map((tip, i) => (
+                  <div key={i} className="flex items-start gap-2 text-xs text-amber-700">
+                    <ChevronRight className="w-3.5 h-3.5 mt-0.5 shrink-0" />
+                    <span>{tip}</span>
                   </div>
                 ))}
               </div>
             </div>
 
-            {/* Últimos clientes */}
-            {clients.length > 0 && (
-              <div className="bg-white rounded-2xl border border-gray-200 p-5">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="font-bold text-gray-900">Últimos Clientes Registrados</h3>
-                  <button
-                    onClick={() => setActiveTab("clients")}
-                    className="text-sm text-emerald-600 hover:text-emerald-700 flex items-center gap-1"
+            {/* Planes */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {PLANS.map(plan => {
+                const Icon = plan.icon;
+                const isSelected = selectedPlan === plan.id;
+                return (
+                  <div
+                    key={plan.id}
+                    className={`rounded-2xl border-2 overflow-hidden cursor-pointer transition-all ${
+                      isSelected ? `${plan.border} shadow-lg scale-[1.01]` : "border-gray-200 hover:border-gray-300 hover:shadow-md"
+                    }`}
+                    onClick={() => setSelectedPlan(isSelected ? null : plan.id)}
                   >
-                    Ver todos <ChevronRight className="w-4 h-4" />
-                  </button>
-                </div>
-                <div className="space-y-2">
-                  {clients.slice(0, 3).map(client => {
-                    const cfg = STATUS_CONFIG[client.status] || STATUS_CONFIG.pending;
-                    const StatusIcon = cfg.icon;
-                    return (
-                      <div key={client.id} className="flex items-center justify-between p-3 rounded-xl bg-gray-50">
-                        <div>
-                          <p className="font-medium text-gray-800 text-sm">{client.clientName}</p>
-                          <p className="text-xs text-gray-500">{client.clientBusinessName || client.clientEmail}</p>
-                        </div>
-                        <Badge variant="outline" className={`text-xs gap-1 ${cfg.color}`}>
-                          <StatusIcon className="w-3 h-3" />
-                          {cfg.label}
-                        </Badge>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Tab: Clientes */}
-        {activeTab === "clients" && (
-          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm">
-            <div className="p-5 border-b border-gray-100 flex items-center justify-between">
-              <h2 className="font-bold text-gray-900 flex items-center gap-2">
-                <Users className="w-5 h-5 text-gray-600" />
-                Mis Clientes Registrados
-              </h2>
-              <RegisterClientModal onSuccess={() => { refetchClients(); refetchSummary(); }} />
-            </div>
-            {clients.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-16 text-center space-y-3">
-                <Users className="w-12 h-12 text-gray-200" />
-                <p className="text-gray-500 font-medium">Aún no has registrado clientes</p>
-                <p className="text-gray-400 text-sm max-w-xs">
-                  Usa el botón "Registrar Cliente" para agregar tus primeros prospectos y empezar a ganar comisiones.
-                </p>
-              </div>
-            ) : (
-              <div className="divide-y divide-gray-50">
-                {clients.map(client => {
-                  const cfg = STATUS_CONFIG[client.status] || STATUS_CONFIG.pending;
-                  const StatusIcon = cfg.icon;
-                  const plan = PLANS.find(p => p.id === client.assignedPlan);
-                  return (
-                    <div key={client.id} className="p-4 hover:bg-gray-50 transition-colors">
-                      <div className="flex items-start justify-between">
-                        <div className="space-y-1">
-                          <div className="flex items-center gap-2">
-                            <p className="font-semibold text-gray-800">{client.clientName}</p>
-                            {plan && (
-                              <Badge variant="outline" className={`text-xs ${plan.bg} ${plan.color} border-0`}>
-                                {plan.name}
-                              </Badge>
-                            )}
+                    {/* Foto del negocio */}
+                    <div className="relative h-40 overflow-hidden">
+                      <img
+                        src={plan.photo}
+                        alt={plan.photoAlt}
+                        className="w-full h-full object-cover"
+                      />
+                      <div className={`absolute inset-0 bg-gradient-to-t ${plan.headerBg} opacity-70`} />
+                      <div className="absolute inset-0 p-4 flex flex-col justify-end">
+                        <div className="flex items-center gap-2 mb-1">
+                          <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center">
+                            <Icon className="w-4 h-4 text-white" />
                           </div>
-                          {client.clientBusinessName && (
-                            <p className="text-sm text-gray-600">{client.clientBusinessName}</p>
-                          )}
-                          <p className="text-xs text-gray-400">{client.clientEmail}</p>
-                          {client.notes && (
-                            <p className="text-xs text-gray-400 italic">"{client.notes}"</p>
-                          )}
+                          <span className="text-white font-bold text-xl">{plan.name}</span>
                         </div>
-                        <div className="flex flex-col items-end gap-2">
-                          <Badge variant="outline" className={`text-xs gap-1 ${cfg.color}`}>
-                            <StatusIcon className="w-3 h-3" />
-                            {cfg.label}
-                          </Badge>
-                          <p className="text-xs text-gray-400">
-                            {new Date(client.createdAt).toLocaleDateString("es-MX", { day: "2-digit", month: "short", year: "numeric" })}
+                        <p className="text-white/90 text-xs">{plan.description}</p>
+                      </div>
+                      <div className="absolute top-3 right-3 bg-white/90 text-gray-800 text-xs font-bold px-2.5 py-1 rounded-full">
+                        Tu comisión: {plan.commission}%
+                      </div>
+                    </div>
+
+                    {/* Contenido */}
+                    <div className="p-4 space-y-3">
+                      {/* Argumento de venta */}
+                      <div className={`${plan.bg} rounded-lg p-3`}>
+                        <p className="text-xs font-semibold text-gray-500 uppercase mb-1">Argumento de venta</p>
+                        <p className="text-sm text-gray-700 leading-relaxed">{plan.argument}</p>
+                      </div>
+
+                      {/* Expandible: características */}
+                      {isSelected && (
+                        <div className="space-y-2">
+                          <p className="text-xs font-semibold text-gray-500 uppercase">Incluye</p>
+                          <ul className="space-y-1.5">
+                            {plan.features.map((f, i) => (
+                              <li key={i} className="flex items-center gap-2 text-sm text-gray-700">
+                                <CheckCircle className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                                {f}
+                              </li>
+                            ))}
+                          </ul>
+                          <p className="text-xs text-gray-500 pt-1">
+                            <span className="font-semibold">Ideal para:</span> {plan.bestFor}
                           </p>
+                        </div>
+                      )}
+
+                      <div className="flex items-center justify-between pt-1">
+                        <span className="text-xs text-gray-400">{plan.bestFor.split(",")[0]}...</span>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setForm(f => ({ ...f, assignedPlan: plan.id }));
+                              setActiveTab("registro");
+                            }}
+                            className={`flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg bg-gradient-to-r ${plan.headerBg} text-white`}
+                          >
+                            <UserPlus className="w-3.5 h-3.5" />
+                            Registrar cliente
+                          </button>
+                          <span className="text-xs text-gray-400">
+                            {isSelected ? "▲ Ocultar" : "▼ Ver más"}
+                          </span>
                         </div>
                       </div>
                     </div>
-                  );
-                })}
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Proceso de registro */}
+            <div className="bg-gray-50 rounded-2xl p-6 border border-gray-200">
+              <h3 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
+                <FileText className="w-5 h-5 text-gray-500" />
+                ¿Cómo funciona el proceso?
+              </h3>
+              <div className="flex items-start gap-0 overflow-x-auto">
+                {[
+                  { step: "1", title: "Tú registras al cliente", desc: "Llenas el formulario con sus datos y el plan que eligió" },
+                  { step: "2", title: "Revisión en 24-48 hrs", desc: "El equipo KobraPay verifica la información" },
+                  { step: "3", title: "Cliente recibe acceso", desc: "Le llega un correo con sus credenciales para entrar" },
+                  { step: "4", title: "Empiezas a ganar", desc: "Cada vez que el cliente cobra, tú ganas tu comisión" },
+                ].map((s, i, arr) => (
+                  <div key={i} className="flex items-center gap-0 min-w-0">
+                    <div className="flex flex-col items-center text-center min-w-[120px]">
+                      <div className="w-10 h-10 rounded-full bg-emerald-100 text-emerald-700 font-bold text-lg flex items-center justify-center mb-2">
+                        {s.step}
+                      </div>
+                      <p className="text-xs font-semibold text-gray-900 mb-1">{s.title}</p>
+                      <p className="text-xs text-gray-500 leading-relaxed">{s.desc}</p>
+                    </div>
+                    {i < arr.length - 1 && (
+                      <ArrowRight className="w-5 h-5 text-gray-300 shrink-0 mx-2 mt-[-20px]" />
+                    )}
+                  </div>
+                ))}
               </div>
-            )}
+            </div>
           </div>
         )}
 
-        {/* Tab: Planes */}
-        {activeTab === "reports" && <AssociateReportsTab clients={clients} summary={summary} />}
-        {activeTab === "plans" && <PlansCatalog />}
-        {/* Tab: Crear Plan Personalizado */}
-        {activeTab === "custom_plan" && <CustomPlanBuilder />}
-        {/* Tab: Simulador */}
-        {activeTab === "simulator" && <CommissionSimulator />}
-
-        {/* Tab: IA Sales Coach */}
-        {activeTab === "ai" && (
-          <div className="space-y-4">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-emerald-500 to-cyan-500 flex items-center justify-center shadow-lg">
-                <Bot className="w-6 h-6 text-white" />
+        {/* ─── TAB: Registrar Cliente ─── */}
+        {activeTab === "registro" && (
+          <div className="max-w-2xl mx-auto">
+            <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+              <div className="bg-gradient-to-r from-emerald-600 to-teal-700 px-6 py-5 text-white">
+                <h2 className="text-lg font-bold">Registrar nuevo cliente</h2>
+                <p className="text-emerald-100 text-sm mt-1">
+                  Completa los datos del negocio que quieres inscribir en KobraPay
+                </p>
               </div>
-              <div>
-                <div className="flex items-center gap-2">
-                  <h2 className="text-xl font-bold text-gray-900">Sales Coach IA</h2>
-                  <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200 gap-1" variant="outline">
-                    <Sparkles className="w-3 h-3" />
-                    Exclusivo Asociados
-                  </Badge>
+
+              <form onSubmit={handleSubmit} className="p-6 space-y-5">
+                {/* Plan */}
+                <div className="space-y-2">
+                  <Label className="text-sm font-semibold text-gray-700">
+                    Plan a contratar <span className="text-red-500">*</span>
+                  </Label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {PLANS.map(plan => {
+                      const Icon = plan.icon;
+                      return (
+                        <button
+                          key={plan.id}
+                          type="button"
+                          onClick={() => setForm(f => ({ ...f, assignedPlan: plan.id }))}
+                          className={`flex items-center gap-2 p-3 rounded-xl border-2 text-left transition-all ${
+                            form.assignedPlan === plan.id
+                              ? `${plan.border} ${plan.bg}`
+                              : "border-gray-200 hover:border-gray-300"
+                          }`}
+                        >
+                          <Icon className={`w-4 h-4 ${plan.color} shrink-0`} />
+                          <div>
+                            <p className="text-sm font-semibold text-gray-900">{plan.name}</p>
+                            <p className="text-xs text-gray-500">{plan.commission}% comisión</p>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
-                <p className="text-sm text-gray-500">Tu coach de ventas personal para cerrar más clientes</p>
+
+                {/* Datos del cliente */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <Label className="text-sm font-semibold text-gray-700">
+                      <User className="w-3.5 h-3.5 inline mr-1" />
+                      Nombre del contacto <span className="text-red-500">*</span>
+                    </Label>
+                    <Input
+                      placeholder="Juan García"
+                      value={form.clientName}
+                      onChange={e => setForm(f => ({ ...f, clientName: e.target.value }))}
+                      required
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-sm font-semibold text-gray-700">
+                      <Building2 className="w-3.5 h-3.5 inline mr-1" />
+                      Nombre del negocio
+                    </Label>
+                    <Input
+                      placeholder="Restaurante El Buen Sabor"
+                      value={form.clientBusinessName}
+                      onChange={e => setForm(f => ({ ...f, clientBusinessName: e.target.value }))}
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-sm font-semibold text-gray-700">
+                      <Mail className="w-3.5 h-3.5 inline mr-1" />
+                      Correo electrónico <span className="text-red-500">*</span>
+                    </Label>
+                    <Input
+                      type="email"
+                      placeholder="juan@negocio.com"
+                      value={form.clientEmail}
+                      onChange={e => setForm(f => ({ ...f, clientEmail: e.target.value }))}
+                      required
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-sm font-semibold text-gray-700">
+                      <Phone className="w-3.5 h-3.5 inline mr-1" />
+                      Teléfono
+                    </Label>
+                    <Input
+                      placeholder="55 1234 5678"
+                      value={form.clientPhone}
+                      onChange={e => setForm(f => ({ ...f, clientPhone: e.target.value }))}
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label className="text-sm font-semibold text-gray-700">Notas adicionales</Label>
+                  <textarea
+                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                    rows={3}
+                    placeholder="Información relevante del cliente, necesidades específicas, acuerdos previos..."
+                    value={form.notes}
+                    onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
+                  />
+                </div>
+
+                {/* Info del proceso */}
+                <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-start gap-3">
+                  <AlertCircle className="w-5 h-5 text-blue-500 shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-sm font-semibold text-blue-800">¿Qué pasa después?</p>
+                    <p className="text-xs text-blue-600 mt-1">
+                      El equipo de KobraPay revisará la solicitud en 24-48 horas. Recibirás una notificación cuando el cliente sea aprobado y empiece a procesar pagos.
+                    </p>
+                  </div>
+                </div>
+
+                <Button
+                  type="submit"
+                  disabled={submitting || !form.clientName || !form.clientEmail || !form.assignedPlan}
+                  className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-3"
+                >
+                  {submitting ? "Registrando..." : "Enviar solicitud de registro"}
+                </Button>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* ─── TAB: Mis Comisiones ─── */}
+        {activeTab === "comisiones" && (
+          <div className="space-y-5">
+            {/* KPIs */}
+            <div className="grid grid-cols-3 gap-4">
+              <div className="bg-white rounded-2xl border border-gray-200 p-5">
+                <div className="w-10 h-10 bg-emerald-100 rounded-xl flex items-center justify-center mb-3">
+                  <DollarSign className="w-5 h-5 text-emerald-600" />
+                </div>
+                <p className="text-2xl font-bold text-gray-900">
+                  {new Intl.NumberFormat("es-MX", { style: "currency", currency: "MXN" }).format(totalEarned)}
+                </p>
+                <p className="text-xs text-gray-500 mt-1">Total comisiones ganadas</p>
+              </div>
+              <div className="bg-white rounded-2xl border border-gray-200 p-5">
+                <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center mb-3">
+                  <CheckCircle className="w-5 h-5 text-blue-600" />
+                </div>
+                <p className="text-2xl font-bold text-gray-900">{activeClients}</p>
+                <p className="text-xs text-gray-500 mt-1">Clientes activos</p>
+              </div>
+              <div className="bg-white rounded-2xl border border-gray-200 p-5">
+                <div className="w-10 h-10 bg-amber-100 rounded-xl flex items-center justify-center mb-3">
+                  <Clock className="w-5 h-5 text-amber-600" />
+                </div>
+                <p className="text-2xl font-bold text-gray-900">{pendingClients}</p>
+                <p className="text-xs text-gray-500 mt-1">En proceso de aprobación</p>
               </div>
             </div>
-            <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-              <AIChatBox
-                messages={aiMessages}
-                onSendMessage={handleAiMessage}
-                isLoading={aiLoading}
-                height={500}
-                placeholder="Pregúntame cómo vender KobraPay, manejar objeciones, calcular comisiones..."
-                emptyStateMessage="¡Hola! Soy tu Sales Coach de KobraPay. Puedo ayudarte a prospectar clientes, manejar objeciones, calcular cuánto ganarás y redactar mensajes de venta efectivos."
-                suggestedPrompts={[
-                  "¿Cómo le presento KobraPay a un dueño de restaurante?",
-                  "Un cliente me dice que ya usa Clip, ¿cómo lo convenzo?",
-                  "¿Cuánto ganaría si tengo 5 clientes que procesan $50K cada uno?",
-                  "Redáctame un mensaje de WhatsApp para prospectar una clínica",
-                  "¿Qué plan le recomiendo a una escuela de idiomas?",
-                  "¿Cómo manejo la objeción de que KobraPay es muy caro?",
-                ]}
-              />
+
+            {/* Tabla de clientes */}
+            <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+              <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+                <h3 className="font-semibold text-gray-900">Mis clientes registrados</h3>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setActiveTab("registro")}
+                  className="gap-1.5"
+                >
+                  <UserPlus className="w-4 h-4" />
+                  Nuevo cliente
+                </Button>
+              </div>
+
+              {loadingClients ? (
+                <div className="space-y-0">
+                  {[1, 2, 3].map(i => (
+                    <div key={i} className="flex items-center gap-4 px-6 py-4 border-b border-gray-50">
+                      <div className="flex-1 h-4 bg-gray-100 animate-pulse rounded" />
+                      <div className="w-24 h-4 bg-gray-100 animate-pulse rounded" />
+                    </div>
+                  ))}
+                </div>
+              ) : myClients.length === 0 ? (
+                <div className="text-center py-16">
+                  <UserPlus className="w-12 h-12 text-gray-200 mx-auto mb-3" />
+                  <p className="text-gray-500 font-medium">Aún no has registrado clientes</p>
+                  <p className="text-sm text-gray-400 mb-4">Registra tu primer cliente para empezar a ganar comisiones</p>
+                  <Button onClick={() => setActiveTab("registro")} className="bg-emerald-600 hover:bg-emerald-700 text-white">
+                    Registrar primer cliente
+                  </Button>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="bg-gray-50/50 border-b border-gray-100">
+                        <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase">Cliente</th>
+                        <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Plan</th>
+                        <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Comisión %</th>
+                        <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Ganado</th>
+                        <th className="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Estado</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-50">
+                      {myClients.map((client) => {
+                        const statusCfg = STATUS_CONFIG[String(client.status)] ?? STATUS_CONFIG.pending;
+                        const StatusIcon = statusCfg.icon;
+                        return (
+                          <tr key={client.id} className="hover:bg-gray-50/50 transition-colors">
+                            <td className="px-6 py-4">
+                              <p className="font-medium text-gray-900">{client.clientBusinessName || client.clientName}</p>
+                              <p className="text-xs text-gray-400">{client.clientEmail}</p>
+                            </td>
+                            <td className="px-4 py-4">
+                              <Badge variant="outline" className="text-xs capitalize">
+                                {client.assignedPlan || "Sin plan"}
+                              </Badge>
+                            </td>
+                            <td className="px-4 py-4 text-right font-semibold text-gray-700">
+                              {client.commissionRate}%
+                            </td>
+                            <td className="px-4 py-4 text-right font-semibold text-emerald-600">
+                              {new Intl.NumberFormat("es-MX", { style: "currency", currency: "MXN" }).format(
+                                parseFloat(String(client.totalCommissionEarned || "0"))
+                              )}
+                            </td>
+                            <td className="px-4 py-4 text-center">
+                              <Badge variant="outline" className={`gap-1 text-xs ${statusCfg.color}`}>
+                                <StatusIcon className="w-3 h-3" />
+                                {statusCfg.label}
+                              </Badge>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+
+            {/* Nota informativa */}
+            <div className="bg-gray-50 rounded-xl p-4 border border-gray-200 flex items-start gap-3">
+              <AlertCircle className="w-5 h-5 text-gray-400 shrink-0 mt-0.5" />
+              <div>
+                <p className="text-sm font-medium text-gray-700">¿Cuándo recibes tus comisiones?</p>
+                <p className="text-xs text-gray-500 mt-1">
+                  Las comisiones se acumulan automáticamente cada vez que un cliente activo procesa un pago. 
+                  El pago de comisiones se realiza según el ciclo acordado con KobraPay (semanal, quincenal o mensual).
+                </p>
+              </div>
             </div>
           </div>
         )}

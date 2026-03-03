@@ -43,9 +43,12 @@ export default function SecurityAudit() {
     enabled: !!isSuperAdmin?.isSuperAdmin,
   });
   const { data: auditLogs } = trpc.security.getAuditLogs.useQuery(
-    { limit: 50 },
+    { limit: 50, severity: 'all' },
     { enabled: !!isSuperAdmin?.isSuperAdmin }
   );
+  const { data: secStats } = trpc.security.getSecurityStats.useQuery(undefined, {
+    enabled: !!isSuperAdmin?.isSuperAdmin,
+  });
   const { data: allUsers } = trpc.security.getAllUsers.useQuery(
     { limit: 50 },
     { enabled: !!isSuperAdmin?.isSuperAdmin }
@@ -98,6 +101,30 @@ export default function SecurityAudit() {
               { label: "Links creados", value: stats.totalLinks, icon: Link2, color: "text-cyan-600", bg: "bg-cyan-50" },
               { label: "Transacciones", value: stats.totalTransactions, icon: CreditCard, color: "text-orange-600", bg: "bg-orange-50" },
               { label: "Ingresos totales", value: formatMXN(stats.totalRevenue), icon: DollarSign, color: "text-emerald-600", bg: "bg-emerald-50" },
+            ].map(({ label, value, icon: Icon, color, bg }) => (
+              <Card key={label} className="border-0 shadow-sm">
+                <CardContent className="p-4 flex items-center gap-3">
+                  <div className={`w-10 h-10 rounded-xl ${bg} flex items-center justify-center flex-shrink-0`}>
+                    <Icon className={`w-5 h-5 ${color}`} />
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500">{label}</p>
+                    <p className={`text-lg font-bold ${color}`}>{value}</p>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
+
+        {/* Security Stats 24h */}
+        {secStats && (
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            {[
+              { label: "Peticiones (24h)", value: secStats.total, icon: Activity, color: "text-blue-600", bg: "bg-blue-50" },
+              { label: "Advertencias (24h)", value: secStats.warnings, icon: AlertTriangle, color: "text-yellow-600", bg: "bg-yellow-50" },
+              { label: "Alertas críticas", value: secStats.critical, icon: AlertTriangle, color: secStats.critical > 0 ? "text-red-600" : "text-gray-400", bg: secStats.critical > 0 ? "bg-red-50" : "bg-gray-50" },
+              { label: "IPs sospechosas", value: secStats.blockedIps, icon: Shield, color: secStats.blockedIps > 0 ? "text-red-600" : "text-emerald-600", bg: secStats.blockedIps > 0 ? "bg-red-50" : "bg-emerald-50" },
             ].map(({ label, value, icon: Icon, color, bg }) => (
               <Card key={label} className="border-0 shadow-sm">
                 <CardContent className="p-4 flex items-center gap-3">
@@ -223,7 +250,7 @@ export default function SecurityAudit() {
                     <tbody className="divide-y divide-gray-50">
                       {auditLogs.map((log, i) => (
                         <tr key={i} className={`hover:bg-gray-50 ${log.statusCode && log.statusCode >= 400 ? "bg-red-50/30" : ""}`}>
-                          <td className="px-4 py-2 text-xs text-gray-500">{formatTime(log.timestamp)}</td>
+                          <td className="px-4 py-2 text-xs text-gray-500">{formatTime((log as any).timestamp || (log as any).createdAt?.toISOString?.() || String((log as any).createdAt))}</td>
                           <td className="px-2 py-2">
                             <span className={`text-xs px-1.5 py-0.5 rounded font-mono font-medium ${METHOD_COLORS[log.action] || "bg-gray-100 text-gray-600"}`}>
                               {log.action}

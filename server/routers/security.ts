@@ -6,19 +6,68 @@ import { z } from "zod";
 import { router, superAdminProcedure, protectedProcedure, isSuperAdmin } from "../_core/trpc";
 import { TRPCError } from "@trpc/server";
 import { getDb } from "../db";
-import { users, paymentLinks, transactions, platformClients } from "../../drizzle/schema";
-import { desc, eq, count, sql } from "drizzle-orm";
+import { users, paymentLinks, transactions, platformClients, auditLogs } from "../../drizzle/schema";
+import { desc, eq, count, sql, gte, and } from "drizzle-orm";
 import { getAuditLog } from "../security";
 
 export const securityRouter = router({
   /**
-   * Get audit log — superadmin only
+   * Get audit log from DB — superadmin only
    */
   getAuditLogs: superAdminProcedure
-    .input(z.object({ limit: z.number().min(1).max(500).default(100) }))
+    .input(z.object({
+      limit: z.number().min(1).max(500).default(100),
+      severity: z.enum(['info', 'warning', 'critical', 'all']).default('all'),
+    }))
     .query(async ({ input }) => {
-      return getAuditLog(input.limit);
+      const db = await getDb();
+      if (!db) return getAuditLog(input.limit);
+      try {
+        const query = db.select().from(auditLogs)
+          .orderBy(desc(auditLogs.createdAt))
+          .limit(input.limit);
+        if (input.severity !== 'all') {
+          return db.select().from(auditLogs)
+            .where(eq(auditLogs.severity, input.severity as any))
+            .orderBy(desc(auditLogs.createdAt))
+            .limit(input.limit);
+        }
+        return query;
+      } catch {
+        return getAuditLog(input.limit);
+      }
     }),
+
+  /**
+   * Get security stats (last 24h) — superadmin only
+   */
+  getSecurityStats: superAdminProcedure.query(async () => {
+    const db = await getDb();
+    if (!db) return { total: 0, warnings: 0, critical: 0, blockedIps: 0, topIps: [] };
+    try {
+      const since24h = new Date(Date.now() - 24 * 60 * 60 * 1000);
+      const [total] = await db.select({ count: count() }).from(auditLogs).where(gte(auditLogs.createdAt, since24h));
+      const [warnings] = await db.select({ count: count() }).from(auditLogs).where(and(eq(auditLogs.severity, 'warning'), gte(auditLogs.createdAt, since24h)));
+      const [critical] = await db.select({ count: count() }).from(auditLogs).where(and(eq(auditLogs.severity, 'critical'), gte(auditLogs.createdAt, since24h)));
+      const topIps = await db.select({
+        ip: auditLogs.ipAddress,
+        count: count(),
+      }).from(auditLogs)
+        .where(gte(auditLogs.createdAt, since24h))
+        .groupBy(auditLogs.ipAddress)
+        .orderBy(desc(count()))
+        .limit(10);
+      return {
+        total: total.count,
+        warnings: warnings.count,
+        critical: critical.count,
+        blockedIps: topIps.filter(r => r.count > 50).length,
+        topIps,
+      };
+    } catch {
+      return { total: 0, warnings: 0, critical: 0, blockedIps: 0, topIps: [] };
+    }
+  }),
 
   /**
    * Get platform-wide stats — superadmin only

@@ -45,7 +45,7 @@ import {
   Bot,
   LifeBuoy,
 } from "lucide-react";
-import { useState, useCallback, useMemo, useEffect } from "react";
+import { useState, useCallback, useMemo, useEffect, useRef } from "react";
 import GlobalSearch from "./GlobalSearch";
 import { NotificationBell } from "./NotificationBell";
 import { Link, useLocation } from "wouter";
@@ -182,6 +182,152 @@ interface DashboardLayoutProps {
   title?: string;
 }
 
+// ─── Logo con dropdown de perfiles (solo SuperAdmin puede cambiar de vista) ─────
+function LogoWithProfileSwitcher({
+  isSuperAdmin,
+  onClose,
+  mobile,
+}: {
+  isSuperAdmin: boolean;
+  onClose: () => void;
+  mobile?: boolean;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  const { data: usersData } = trpc.moduleAccess.listAllUsers.useQuery(undefined, {
+    enabled: isSuperAdmin,
+    staleTime: 60000,
+  });
+  const [, navigate] = useLocation();
+
+  // Cerrar al hacer click fuera
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [open]);
+
+  const profiles = useMemo(() => {
+    if (!usersData) return [];
+    return usersData.filter(u => u.id !== undefined).map(u => ({
+      id: u.id,
+      name: u.name || u.email || `Usuario ${u.id}`,
+      email: u.email || '',
+      role: u.role,
+      initials: (u.name || u.email || 'U').slice(0, 2).toUpperCase(),
+    }));
+  }, [usersData]);
+
+  const roleLabel = (role: string) => {
+    if (role === 'admin') return 'Admin';
+    if (role === 'assistant') return 'Asistente';
+    if (role === 'associate') return 'Asociado';
+    return role;
+  };
+
+  const roleColor = (role: string) => {
+    if (role === 'admin') return 'bg-emerald-500/20 text-emerald-300';
+    if (role === 'assistant') return 'bg-blue-500/20 text-blue-300';
+    if (role === 'associate') return 'bg-amber-500/20 text-amber-300';
+    return 'bg-gray-500/20 text-gray-300';
+  };
+
+  return (
+    <div ref={ref} className="relative flex-shrink-0">
+      <div className="flex items-center gap-3 px-4 py-4 border-b border-white/10">
+        {/* Logo clickeable — abre dropdown si es superadmin */}
+        <button
+          onClick={() => {
+            if (isSuperAdmin) {
+              setOpen(v => !v);
+            } else {
+              navigate('/dashboard');
+              onClose();
+            }
+          }}
+          className="flex items-center gap-3 flex-1 min-w-0 hover:opacity-80 transition-opacity text-left"
+          title={isSuperAdmin ? 'Ver perfiles de usuarios' : 'Ir al Panel Principal'}
+        >
+          <img
+            src={KOBRAPAY_ICON}
+            alt="KobraPay"
+            className="w-9 h-9 object-contain flex-shrink-0"
+          />
+          <div className="flex-1 min-w-0">
+            <p className="font-bold text-sm leading-tight text-white">KobraPay</p>
+            <p className="text-xs text-gray-400">Cobra fácil, cobra global</p>
+          </div>
+          {isSuperAdmin && (
+            <ChevronDown className={cn('w-4 h-4 text-gray-400 transition-transform flex-shrink-0', open && 'rotate-180')} />
+          )}
+        </button>
+        {mobile && (
+          <button onClick={onClose} className="ml-auto text-gray-400 hover:text-white transition-colors">
+            <X className="w-5 h-5" />
+          </button>
+        )}
+      </div>
+
+      {/* Dropdown de perfiles */}
+      {isSuperAdmin && open && (
+        <div
+          className="absolute left-0 right-0 top-full z-50 shadow-2xl border border-white/10 rounded-b-xl overflow-hidden"
+          style={{ background: '#1a1f2e' }}
+        >
+          <div className="px-3 pt-3 pb-1">
+            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider px-1 mb-2">Perfiles de usuarios</p>
+            {profiles.length === 0 ? (
+              <p className="text-xs text-gray-500 px-1 pb-2">Cargando...</p>
+            ) : (
+              <div className="space-y-0.5 max-h-64 overflow-y-auto">
+                {profiles.map(profile => (
+                  <button
+                    key={profile.id}
+                    onClick={() => {
+                      // Navegar al perfil del usuario en la sección de administración
+                      navigate(`/dashboard/clients`);
+                      setOpen(false);
+                      onClose();
+                    }}
+                    className="w-full flex items-center gap-2.5 px-2 py-2 rounded-lg hover:bg-white/5 transition-colors text-left"
+                  >
+                    <div className="w-7 h-7 rounded-full bg-white/10 flex items-center justify-center flex-shrink-0">
+                      <span className="text-xs font-bold text-white">{profile.initials}</span>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-medium text-white truncate">{profile.name}</p>
+                      <p className="text-xs text-gray-500 truncate">{profile.email}</p>
+                    </div>
+                    <span className={cn('text-xs px-1.5 py-0.5 rounded-full font-medium flex-shrink-0', roleColor(profile.role))}>
+                      {roleLabel(profile.role)}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+          <div className="px-3 pb-3 pt-1 border-t border-white/5 mt-1">
+            <button
+              onClick={() => {
+                navigate('/dashboard/registrations');
+                setOpen(false);
+                onClose();
+              }}
+              className="w-full flex items-center gap-2 px-2 py-2 rounded-lg hover:bg-white/5 transition-colors text-left"
+            >
+              <UserPlus className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+              <span className="text-xs text-emerald-400 font-medium">Gestionar registros</span>
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── Sidebar standalone (fuera del DashboardLayout para evitar re-renders) ────
 function Sidebar({
   mobile,
@@ -229,27 +375,12 @@ function Sidebar({
       className={cn("flex flex-col", mobile ? "w-72 h-full" : "w-64 h-screen")}
       style={{ background: "#1a1f2e" }}
     >
-      {/* Logo */}
-      <div className="flex items-center gap-3 px-4 py-4 border-b border-white/10 flex-shrink-0">
-        <Link href="/dashboard" onClick={onClose}>
-          <a className="flex items-center gap-3 flex-1 min-w-0 hover:opacity-80 transition-opacity" title="Ir al Panel Principal">
-            <img
-              src={KOBRAPAY_ICON}
-              alt="KobraPay"
-              className="w-9 h-9 object-contain flex-shrink-0"
-            />
-            <div className="flex-1 min-w-0">
-              <p className="font-bold text-sm leading-tight text-white">KobraPay</p>
-              <p className="text-xs text-gray-400">Cobra fácil, cobra global</p>
-            </div>
-          </a>
-        </Link>
-        {mobile && (
-          <button onClick={onClose} className="ml-auto text-gray-400 hover:text-white transition-colors">
-            <X className="w-5 h-5" />
-          </button>
-        )}
-      </div>
+      {/* Logo con dropdown de perfiles para superadmin */}
+      <LogoWithProfileSwitcher
+        isSuperAdmin={isSuperAdmin}
+        onClose={onClose}
+        mobile={mobile}
+      />
 
       {/* Navigation — scroll interno, nunca empuja el perfil */}
       <nav className="flex-1 px-3 py-3 overflow-y-auto min-h-0">

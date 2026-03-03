@@ -727,3 +727,55 @@
 - [x] Tarjetas de estrategia clickeables en todos los Advisors
 - [x] Bug de registro de clientes del asociado corregido (BIGINT timestamps)
 - [x] Auditoría completa: 61 tests pasando, TypeScript sin errores, servidor estable
+
+## Sprint UI Dashboard Superadmin
+- [ ] Widget de comisiones con pestañas (Mis Comisiones + una por asociado)
+- [ ] Menú de perfiles en logo KobraPay para modo auditoría (ver como asociado/asistente)
+
+## Fase N - IVA en Comisiones KobraPay
+- [ ] Agregar constante IVA_RATE = 0.16 en shared/constants.ts
+- [ ] Actualizar cálculo de comisión en webhook de Stripe para incluir IVA
+- [ ] Mostrar desglose fiscal (comisión + IVA) en Dashboard principal
+- [ ] Mostrar desglose en historial de ventas (columna IVA)
+- [ ] Actualizar exportación CSV para incluir columna IVA
+- [ ] Actualizar KobraPay Advisor con información de IVA
+- [ ] Mostrar desglose en facturas generadas
+
+## IVA Configurable + Seguridad Enterprise (Completado Mar 3, 2026)
+- [x] Campo iva_rate (decimal, default 16.00) en tabla vendor_settings
+- [x] Campo iva_enabled (boolean, default true) en vendor_settings
+- [x] Migración SQL aplicada
+- [x] Procedimiento tRPC: updateSettings acepta ivaRate e ivaEnabled
+- [x] Sección "Configuración Fiscal" en Settings: campo de texto libre para % IVA + toggle on/off
+- [x] Audit log persistente en DB (tabla audit_logs) con severidad info/warning/critical
+- [x] Alertas automáticas al superadmin en eventos críticos de seguridad
+- [x] Página Centro de Seguridad (/dashboard/security) con stats 24h, log de auditoría, gestión de usuarios
+- [x] Procedimiento getSecurityStats: peticiones/advertencias/críticos/IPs sospechosas en 24h
+- [x] Dropdown de perfiles en logo KobraPay (ver como asociado/asistente)
+- [x] Flujo de aprobación de dos pasos para clientes de asociados (asistente pre-aprueba → superadmin aprueba)
+- [x] Dashboard del Asociado simplificado: Manual de Ventas, Registro de Clientes, Mis Comisiones
+
+## Fase N+1 - Seguridad Cibernética Enterprise
+- [ ] Rate limiting avanzado por IP + por usuario autenticado (express-rate-limit)
+- [ ] Headers de seguridad HTTP con Helmet.js (CSP, HSTS, X-Frame-Options, nosniff, referrer)
+- [ ] Content Security Policy estricta para prevenir XSS
+- [ ] Tabla audit_logs en DB: usuario, acción, IP, user_agent, timestamp, resultado
+- [ ] Middleware de audit log para todas las mutaciones críticas (pagos, aprobaciones, cambios de rol)
+- [ ] Detección de IPs sospechosas: bloqueo automático tras 10 intentos fallidos en 15 min
+- [ ] Validación y sanitización de inputs con Zod en todas las rutas (ya parcialmente implementado)
+- [ ] Protección CSRF en formularios críticos
+- [ ] Timeout de sesión automático tras inactividad (30 min)
+- [ ] Página de "Actividad de Seguridad" para el superadmin: ver audit log en tiempo real
+- [ ] Alertas de seguridad: notificar al superadmin si se detecta actividad sospechosa
+- [ ] Enmascarar datos sensibles en logs (no loguear tarjetas, contraseñas, tokens)
+- [ ] Verificación de integridad de webhooks de Stripe (ya implementado)
+- [ ] Política de contraseñas fuertes (gestionado por Manus OAuth)
+
+## IVA Configurable (Estrategia Fiscal)
+- [ ] Agregar campo iva_rate (decimal, default 16.00) en tabla tenant_settings
+- [ ] Agregar campo iva_enabled (boolean, default true) en tenant_settings
+- [ ] Migración SQL para los nuevos campos
+- [ ] Procedimiento tRPC: getIvaConfig / updateIvaConfig (solo superadmin)
+- [ ] Sección "Configuración Fiscal" en página de Settings: slider/input para % IVA + toggle on/off
+- [ ] Usar iva_rate dinámico en todos los cálculos de comisión (webhook, dashboard, CSV)
+- [ ] Mostrar tasa IVA actual en el header del dashboard como recordatorio

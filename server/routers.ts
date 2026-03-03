@@ -159,6 +159,8 @@ export const appRouter = router({
           businessPhone: z.string().max(32).optional().or(z.literal("")),
           currency: z.enum(["MXN", "USD"]).default("MXN"),
           commissionRate: z.number().min(0).max(100).optional(),
+          ivaRate: z.number().min(0).max(100).optional(),
+          ivaEnabled: z.boolean().optional(),
           usdExchangeRate: z.number().min(0).optional(),
           otpEnabled: z.boolean().optional(),
           selfieEnabled: z.boolean().optional(),
@@ -173,6 +175,8 @@ export const appRouter = router({
           businessPhone: input.businessPhone || null,
           currency: input.currency,
           commissionRate: input.commissionRate !== undefined ? String(input.commissionRate) : undefined,
+          ivaRate: input.ivaRate !== undefined ? String(input.ivaRate) : undefined,
+          ivaEnabled: input.ivaEnabled,
           usdExchangeRate: input.usdExchangeRate !== undefined ? String(input.usdExchangeRate) : undefined,
           otpEnabled: input.otpEnabled,
           selfieEnabled: input.selfieEnabled,
@@ -5371,11 +5375,103 @@ Responde SIEMPRE en español mexicano, de forma motivadora, práctica y orientad
       return { totalClients, activeClients, pendingClients, totalEarned };
     }),
 
+    // [Asistente] Pre-aprobar un cliente de asociado (Paso 1 del flujo de dos pasos)
+    assistantPreApprove: protectedProcedure
+      .input(z.object({
+        clientId: z.number(),
+        notes: z.string().optional(),
+        assignedPlan: z.enum(['express', 'connect', 'custom', 'enterprise']).optional(),
+        commissionRate: z.number().min(0).max(10).optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        // Solo asistentes o superadmin pueden pre-aprobar
+        const isAssistant = ctx.user.role === 'assistant' || ctx.isSuperAdmin;
+        if (!isAssistant) throw new TRPCError({ code: 'FORBIDDEN', message: 'Solo asistentes pueden pre-aprobar clientes' });
+        const db = await import('./db').then(m => m.getDb ? m.getDb() : null);
+        if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
+        const { associateCommissions } = await import('../drizzle/schema');
+        const { eq } = await import('drizzle-orm');
+        const now = Date.now();
+        const [clientRecord] = await db.select().from(associateCommissions)
+          .where(eq(associateCommissions.id, input.clientId));
+        if (!clientRecord) throw new TRPCError({ code: 'NOT_FOUND', message: 'Cliente no encontrado' });
+        if (clientRecord.status !== 'pending') throw new TRPCError({ code: 'BAD_REQUEST', message: 'El cliente no está en estado pendiente' });
+        const updateData: Record<string, unknown> = {
+          status: 'assistant_approved',
+          updatedAt: now,
+        };
+        if (input.assignedPlan) updateData.assignedPlan = input.assignedPlan;
+        if (input.commissionRate !== undefined) updateData.commissionRate = String(input.commissionRate);
+        if (input.notes) updateData.notes = `[Pre-aprobado por asistente]: ${input.notes}`;
+        await db.update(associateCommissions).set(updateData).where(eq(associateCommissions.id, input.clientId));
+        // Notificar al superadmin para aprobación final
+        notifyOwner({
+          title: '⏳ Cliente pre-aprobado — Requiere aprobación final',
+          content: `El asistente ${ctx.user.name || ctx.user.email} pre-aprobó un cliente de asociado.\n\nCliente: ${clientRecord.clientName}\nEmail: ${clientRecord.clientEmail}\nNegocio: ${clientRecord.clientBusinessName || 'No especificado'}\nPlan sugerido: ${input.assignedPlan || clientRecord.assignedPlan || 'Por definir'}\nComisión: ${input.commissionRate || clientRecord.commissionRate}%\nNotas: ${input.notes || 'Sin notas'}\n\nAcción requerida: Aprobar o rechazar en el Panel de Comisiones.`,
+        }).catch(() => {});
+        return { success: true };
+      }),
+
+    // [Asistente] Rechazar un cliente de asociado (Paso 1 del flujo)
+    assistantReject: protectedProcedure
+      .input(z.object({
+        clientId: z.number(),
+        notes: z.string().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const isAssistant = ctx.user.role === 'assistant' || ctx.isSuperAdmin;
+        if (!isAssistant) throw new TRPCError({ code: 'FORBIDDEN' });
+        const db = await import('./db').then(m => m.getDb ? m.getDb() : null);
+        if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
+        const { associateCommissions } = await import('../drizzle/schema');
+        const { eq } = await import('drizzle-orm');
+        const now = Date.now();
+        const [clientRecord] = await db.select().from(associateCommissions)
+          .where(eq(associateCommissions.id, input.clientId));
+        if (!clientRecord) throw new TRPCError({ code: 'NOT_FOUND' });
+        await db.update(associateCommissions).set({
+          status: 'rejected',
+          updatedAt: now,
+          notes: input.notes ? `[Rechazado por asistente]: ${input.notes}` : '[Rechazado por asistente]',
+        }).where(eq(associateCommissions.id, input.clientId));
+        // Notificar al superadmin
+        notifyOwner({
+          title: '❌ Cliente rechazado por asistente',
+          content: `El asistente ${ctx.user.name || ctx.user.email} rechazó el cliente ${clientRecord.clientName} (${clientRecord.clientEmail}).\nMotivo: ${input.notes || 'Sin motivo especificado'}`,
+        }).catch(() => {});
+        return { success: true };
+      }),
+
+    // [SuperAdmin] Listar clientes pendientes de pre-aprobación (para el asistente)
+    listPendingForAssistant: protectedProcedure.query(async ({ ctx }) => {
+      const isAssistant = ctx.user.role === 'assistant' || ctx.isSuperAdmin;
+      if (!isAssistant) throw new TRPCError({ code: 'FORBIDDEN' });
+      const db = await import('./db').then(m => m.getDb ? m.getDb() : null);
+      if (!db) return [];
+      const { associateCommissions, users } = await import('../drizzle/schema');
+      const { eq, inArray, desc } = await import('drizzle-orm');
+      const pendingClients = await db.select().from(associateCommissions)
+        .where(inArray(associateCommissions.status, ['pending', 'assistant_approved']))
+        .orderBy(desc(associateCommissions.createdAt));
+      // Enriquecer con datos del asociado
+      const associateIds = Array.from(new Set(pendingClients.map(c => c.associateUserId)));
+      const associates = associateIds.length > 0
+        ? await db.select({ id: users.id, name: users.name, email: users.email }).from(users)
+            .where(inArray(users.id, associateIds))
+        : [];
+      const assocMap = Object.fromEntries(associates.map(a => [a.id, a]));
+      return pendingClients.map(c => ({
+        ...c,
+        associateName: assocMap[c.associateUserId]?.name || assocMap[c.associateUserId]?.email || `Asociado ${c.associateUserId}`,
+        associateEmail: assocMap[c.associateUserId]?.email || '',
+      }));
+    }),
+
     // [SuperAdmin] Actualizar status de un cliente prospecto del asociado
     updateClientStatus: protectedProcedure
       .input(z.object({
         clientId: z.number(),
-        status: z.enum(['pending', 'active', 'rejected', 'inactive']),
+        status: z.enum(['pending', 'assistant_approved', 'active', 'rejected', 'inactive']),
         assignedPlan: z.enum(['express', 'connect', 'custom', 'enterprise']).optional(),
         commissionRate: z.number().min(0).max(10).optional(),
         notes: z.string().optional(),

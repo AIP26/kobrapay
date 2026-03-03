@@ -59,6 +59,9 @@ export const vendorSettings = mysqlTable("vendor_settings", {
   stripeOnboarded: mysqlEnum("stripeOnboarded", ["pending", "complete", "restricted"]).default("pending").notNull(),
   // Comisión que cobra la plataforma a este usuario (% por transacción)
   commissionRate: decimal("commissionRate", { precision: 5, scale: 2 }).default("7.00").notNull(),
+  // IVA configurable sobre la comisión de KobraPay (estrategia fiscal)
+  ivaRate: decimal("ivaRate", { precision: 5, scale: 2 }).default("16.00").notNull(),
+  ivaEnabled: boolean("ivaEnabled").default(true).notNull(),
   // Tipo de cambio USD→MXN configurable (0 = usar tipo de cambio real de Stripe)
   usdExchangeRate: decimal("usdExchangeRate", { precision: 8, scale: 4 }).default("0").notNull(),
   // Opciones de verificación de identidad disponibles para este cliente
@@ -216,6 +219,7 @@ export const auditLogs = mysqlTable("audit_logs", {
   userAgent: text("userAgent"),
   statusCode: int("statusCode"),
   success: boolean("success").default(true).notNull(),
+  severity: mysqlEnum("severity", ["info", "warning", "critical"]).default("info").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 
@@ -1010,7 +1014,7 @@ export const bankAccounts = mysqlTable("bank_accounts", {
 export type BankAccount = typeof bankAccounts.$inferSelect;
 export type InsertBankAccount = typeof bankAccounts.$inferInsert;
 
-// ─── Comisiones de Asociados ──────────────────────────────────────────────────
+/// ─── Comisiones de Asociados ─────────────────────────────────────
 export const associateCommissions = mysqlTable("associate_commissions", {
   id: int("id").primaryKey().autoincrement(),
   associateUserId: int("associateUserId").notNull().references(() => users.id),
@@ -1019,7 +1023,7 @@ export const associateCommissions = mysqlTable("associate_commissions", {
   clientName: varchar("clientName", { length: 255 }).notNull(),
   clientBusinessName: varchar("clientBusinessName", { length: 255 }),
   clientPhone: varchar("clientPhone", { length: 32 }),
-  status: mysqlEnum("status", ["pending", "active", "rejected", "inactive"]).default("pending").notNull(),
+  status: mysqlEnum("status", ["pending", "assistant_approved", "active", "rejected", "inactive"]).default("pending").notNull(),
   assignedPlan: varchar("assignedPlan", { length: 50 }),
   commissionRate: decimal("commissionRate", { precision: 5, scale: 2 }).default("1.00").notNull(),
   totalVolumeProcessed: decimal("totalVolumeProcessed", { precision: 14, scale: 2 }).default("0.00").notNull(),
@@ -1042,8 +1046,15 @@ export const associateClients = mysqlTable("associate_clients", {
   clientBusinessName: varchar("client_business_name", { length: 255 }),
   clientPhone: varchar("client_phone", { length: 50 }),
   assignedPlan: mysqlEnum("assigned_plan", ["express", "connect", "custom", "enterprise"]),
-  status: mysqlEnum("status", ["pending", "active", "rejected", "inactive"]).notNull().default("pending"),
+  status: mysqlEnum("status", ["pending", "pre_approved", "active", "rejected", "inactive"]).notNull().default("pending"),
   notes: text("notes"),
+  // Flujo de aprobación de dos pasos
+  assistantApprovedBy: int("assistant_approved_by"),  // ID del asistente que pre-aprobó
+  assistantApprovedAt: int("assistant_approved_at"),  // Timestamp de pre-aprobación
+  assistantNotes: text("assistant_notes"),             // Notas del asistente
+  superAdminApprovedBy: int("super_admin_approved_by"), // ID del superadmin que aprobó definitivamente
+  superAdminApprovedAt: int("super_admin_approved_at"), // Timestamp de aprobación final
+  superAdminNotes: text("super_admin_notes"),           // Notas del superadmin
   createdAt: int("created_at").notNull(),
   updatedAt: int("updated_at").notNull(),
 });

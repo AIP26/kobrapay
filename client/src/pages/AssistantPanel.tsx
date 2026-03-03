@@ -75,14 +75,27 @@ function AssistantPanelInner() {
   });
   // Asociados
   const { data: allAssociates = [], refetch: refetchAssociates, isLoading: loadingAssociates } = trpc.associate.listAllAssociates.useQuery(undefined, { enabled: !!isSuperAdmin });
+  // Clientes pendientes para el asistente (flujo de dos pasos)
+  const { data: pendingForAssistant = [], refetch: refetchPendingAssistant, isLoading: loadingPendingAssistant } = trpc.associate.listPendingForAssistant.useQuery(undefined, { enabled: isAssistant || !!isSuperAdmin });
+  const assistantPreApproveClient = trpc.associate.assistantPreApprove.useMutation({
+    onSuccess: () => { toast.success("✅ Cliente pre-aprobado — el superadmin recibirá notificación para aprobación final"); refetchPendingAssistant(); refetchAssociates(); setSelectedAssociateClient(null); },
+    onError: (e) => toast.error(e.message),
+  });
+  const assistantRejectClient = trpc.associate.assistantReject.useMutation({
+    onSuccess: () => { toast.success("Cliente rechazado"); refetchPendingAssistant(); refetchAssociates(); setSelectedAssociateClient(null); },
+    onError: (e) => toast.error(e.message),
+  });
   const updateClientStatus = trpc.associate.updateClientStatus.useMutation({
-    onSuccess: () => { toast.success("Estado del cliente actualizado"); refetchAssociates(); setSelectedAssociateClient(null); },
+    onSuccess: () => { toast.success("Estado del cliente actualizado"); refetchAssociates(); refetchPendingAssistant(); setSelectedAssociateClient(null); },
     onError: () => toast.error("Error al actualizar el estado"),
   });
-  const [selectedAssociateClient, setSelectedAssociateClient] = useState<{ id: number; name: string } | null>(null);
+  const [selectedAssociateClient, setSelectedAssociateClient] = useState<{ id: number; name: string; currentStatus?: string; associateName?: string } | null>(null);
   const [associateClientPlan, setAssociateClientPlan] = useState("express");
   const [associateClientCommission, setAssociateClientCommission] = useState(1.5);
+  const [associateClientNotes, setAssociateClientNotes] = useState("");
   const [expandedAssociate, setExpandedAssociate] = useState<number | null>(null);
+  const pendingAssistantClients = (pendingForAssistant as any[]).filter(c => c.status === 'pending');
+  const preApprovedClients = (pendingForAssistant as any[]).filter(c => c.status === 'assistant_approved');
 
   const pendingSurveys = (surveys as any[]).filter((s) => s.survey?.status === "pending_review" || s.survey?.status === "pending");
   const reviewedSurveys = (surveys as any[]).filter((s) => s.survey?.status === "assistant_approved" || s.survey?.status === "pending_info");
@@ -166,20 +179,16 @@ function AssistantPanelInner() {
             Gestión de Usuarios
           </button>
         )}
-        {isSuperAdmin && (
-          <button
-            onClick={() => setActiveTab("associates")}
-            className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors inline-flex items-center gap-1 ${activeTab === "associates" ? "border-amber-600 text-amber-700" : "border-transparent text-gray-500 hover:text-gray-700"}`}
-          >
-            <Handshake className="w-4 h-4" />
-            Asociados
-            {(allAssociates as any[]).reduce((acc: number, a: any) => acc + (a.clients || []).filter((c: any) => c.status === 'pending').length, 0) > 0 && (
-              <span className="ml-1 bg-amber-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold">
-                {(allAssociates as any[]).reduce((acc: number, a: any) => acc + (a.clients || []).filter((c: any) => c.status === 'pending').length, 0)}
-              </span>
-            )}
-          </button>
-        )}
+        <button
+          onClick={() => setActiveTab("associates")}
+          className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors inline-flex items-center gap-1 ${activeTab === "associates" ? "border-amber-600 text-amber-700" : "border-transparent text-gray-500 hover:text-gray-700"}`}
+        >
+          <Handshake className="w-4 h-4" />
+          Clientes de Asociados
+          {pendingAssistantClients.length > 0 && (
+            <span className="ml-1 bg-amber-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold">{pendingAssistantClients.length}</span>
+          )}
+        </button>
       </div>
 
       {/* Tab: Solicitudes */}
@@ -309,90 +318,207 @@ function AssistantPanelInner() {
         </div>
       )}
 
-      {/* Tab: Asociados */}
-      {activeTab === "associates" && isSuperAdmin && (
-        <div className="space-y-4">
-          {loadingAssociates ? (
-            <div className="text-center py-10 text-gray-400">Cargando asociados...</div>
-          ) : (allAssociates as any[]).length === 0 ? (
-            <div className="text-center py-10 text-gray-400">
-              <Handshake className="w-12 h-12 mx-auto mb-3 opacity-30" />
-              <p className="font-medium">No hay asociados registrados</p>
-              <p className="text-sm mt-1">Asigna el rol de Asociado a un usuario desde la pestaña Gestión de Usuarios</p>
+      {/* Tab: Clientes de Asociados */}
+      {activeTab === "associates" && (
+        <div className="space-y-6">
+          {/* Sección para el Asistente: pre-aprobar clientes pendientes */}
+          <div>
+            <h3 className="text-sm font-semibold text-amber-700 mb-3 flex items-center gap-2">
+              <Clock className="w-4 h-4" />
+              Pendientes de tu revisión ({pendingAssistantClients.length})
+              <span className="text-xs font-normal text-gray-500 ml-1">— Pre-aprueba para enviar al superadmin</span>
+            </h3>
+            {loadingPendingAssistant ? (
+              <div className="text-center py-6 text-gray-400 text-sm">Cargando...</div>
+            ) : pendingAssistantClients.length === 0 ? (
+              <div className="text-center py-6 text-gray-400 text-sm bg-gray-50 rounded-xl">
+                <Handshake className="w-8 h-8 mx-auto mb-2 opacity-30" />
+                No hay clientes pendientes de revisión
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {pendingAssistantClients.map((c: any) => (
+                  <div key={c.id} className="bg-white border border-amber-200 rounded-xl px-4 py-3 flex items-center justify-between gap-3">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <p className="text-sm font-semibold text-gray-900">{c.clientName}</p>
+                        <span className="text-xs text-gray-400">·</span>
+                        <p className="text-xs text-gray-500">{c.clientEmail}</p>
+                        {c.clientBusinessName && <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">{c.clientBusinessName}</span>}
+                      </div>
+                      <div className="flex items-center gap-2 mt-1 flex-wrap">
+                        <span className="text-xs text-amber-700 font-medium">Asociado: {c.associateName}</span>
+                        {c.assignedPlan && <span className="text-xs text-emerald-600">Plan sugerido: {c.assignedPlan}</span>}
+                        {c.notes && <span className="text-xs text-gray-400 italic">{c.notes}</span>}
+                      </div>
+                    </div>
+                    <div className="flex gap-2 flex-shrink-0">
+                      <Button size="sm" className="bg-blue-600 hover:bg-blue-700 text-white text-xs h-7"
+                        onClick={() => { setSelectedAssociateClient({ id: c.id, name: c.clientName, currentStatus: 'pending', associateName: c.associateName }); setAssociateClientPlan(c.assignedPlan || 'express'); setAssociateClientCommission(1.5); setAssociateClientNotes(""); }}>
+                        <CheckCircle className="w-3 h-3 mr-1" /> Pre-aprobar
+                      </Button>
+                      <Button size="sm" variant="outline" className="text-red-600 border-red-200 hover:bg-red-50 text-xs h-7"
+                        onClick={() => { if (confirm(`¿Rechazar al cliente ${c.clientName}?`)) assistantRejectClient.mutate({ clientId: c.id }); }}>
+                        <XCircle className="w-3 h-3 mr-1" /> Rechazar
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Sección: Pre-aprobados esperando aprobación final del superadmin */}
+          {preApprovedClients.length > 0 && (
+            <div>
+              <h3 className="text-sm font-semibold text-blue-700 mb-3 flex items-center gap-2">
+                <CheckCircle className="w-4 h-4" />
+                Pre-aprobados — esperando aprobación del superadmin ({preApprovedClients.length})
+              </h3>
+              <div className="space-y-2">
+                {preApprovedClients.map((c: any) => (
+                  <div key={c.id} className="bg-blue-50 border border-blue-200 rounded-xl px-4 py-3 flex items-center justify-between gap-3">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <p className="text-sm font-semibold text-gray-900">{c.clientName}</p>
+                        <span className="text-xs text-gray-400">·</span>
+                        <p className="text-xs text-gray-500">{c.clientEmail}</p>
+                      </div>
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className="text-xs text-amber-700 font-medium">Asociado: {c.associateName}</span>
+                        {c.assignedPlan && <span className="text-xs text-emerald-600">Plan: {c.assignedPlan}</span>}
+                      </div>
+                    </div>
+                    <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-medium flex-shrink-0">⏳ Esperando superadmin</span>
+                    {isSuperAdmin && (
+                      <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs h-7 flex-shrink-0"
+                        onClick={() => { setSelectedAssociateClient({ id: c.id, name: c.clientName, currentStatus: 'assistant_approved', associateName: c.associateName }); setAssociateClientPlan(c.assignedPlan || 'express'); setAssociateClientCommission(1.5); setAssociateClientNotes(""); }}>
+                        Aprobar definitivamente
+                      </Button>
+                    )}
+                  </div>
+                ))}
+              </div>
             </div>
-          ) : (
-            <div className="space-y-4">
-              {(allAssociates as any[]).map((item: any) => {
-                const assoc = item.associate;
-                const clients = item.clients || [];
-                const pendingCount = clients.filter((c: any) => c.status === 'pending').length;
-                const activeCount = clients.filter((c: any) => c.status === 'active').length;
-                const isExpanded = expandedAssociate === assoc.id;
-                return (
-                  <div key={assoc.id} className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
-                    <button className="w-full flex items-center justify-between px-5 py-4 hover:bg-gray-50 transition-colors" onClick={() => setExpandedAssociate(isExpanded ? null : assoc.id)}>
-                      <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-full bg-amber-100 flex items-center justify-center text-amber-700 font-bold text-sm">{(assoc.name || 'A').charAt(0).toUpperCase()}</div>
-                        <div className="text-left">
-                          <p className="font-semibold text-gray-900 text-sm">{assoc.name || 'Sin nombre'}</p>
-                          <p className="text-xs text-gray-500">{assoc.email}</p>
-                        </div>
-                        <div className="flex gap-2 ml-2">
-                          {pendingCount > 0 && <span className="px-2 py-0.5 bg-yellow-100 text-yellow-700 rounded-full text-xs font-medium">{pendingCount} pendiente{pendingCount > 1 ? 's' : ''}</span>}
-                          {activeCount > 0 && <span className="px-2 py-0.5 bg-green-100 text-green-700 rounded-full text-xs font-medium">{activeCount} activo{activeCount > 1 ? 's' : ''}</span>}
-                          <span className="px-2 py-0.5 bg-gray-100 text-gray-600 rounded-full text-xs">{clients.length} cliente{clients.length !== 1 ? 's' : ''} total</span>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <span className="text-sm font-semibold text-emerald-700">${item.totalEarned.toFixed(2)} MXN ganados</span>
-                        {isExpanded ? <ChevronUp className="w-4 h-4 text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-400" />}
-                      </div>
-                    </button>
-                    {isExpanded && (
-                      <div className="border-t border-gray-100 px-5 py-4">
-                        {clients.length === 0 ? (
-                          <p className="text-sm text-gray-400 text-center py-4">Este asociado aún no ha registrado clientes</p>
-                        ) : (
-                          <div className="space-y-2">
-                            {clients.map((c: any) => (
-                              <div key={c.id} className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0">
-                                <div className="flex-1 min-w-0">
-                                  <p className="text-sm font-medium text-gray-900">{c.clientName}</p>
-                                  <p className="text-xs text-gray-500">{c.clientEmail}{c.clientBusinessName ? ` · ${c.clientBusinessName}` : ''}</p>
-                                  {c.assignedPlan && <span className="text-xs text-emerald-600 font-medium">Plan: {c.assignedPlan}</span>}
-                                  {c.notes && <p className="text-xs text-gray-400 italic mt-0.5">{c.notes}</p>}
-                                </div>
-                                <div className="flex items-center gap-2 ml-3">
-                                  <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                                    c.status === 'active' ? 'bg-green-100 text-green-700' :
-                                    c.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
-                                    c.status === 'rejected' ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-600'
-                                  }`}>{c.status === 'active' ? 'Activo' : c.status === 'pending' ? 'Pendiente' : c.status === 'rejected' ? 'Rechazado' : 'Inactivo'}</span>
-                                  {c.status === 'pending' && (
-                                    <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs h-7" onClick={() => { setSelectedAssociateClient({ id: c.id, name: c.clientName }); setAssociateClientPlan(c.assignedPlan || 'express'); setAssociateClientCommission(1.5); }}>
-                                      Revisar
-                                    </Button>
-                                  )}
-                                </div>
+          )}
+
+          {/* Vista expandida de todos los asociados (solo superadmin) */}
+          {isSuperAdmin && (
+            <div>
+              <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                <Users className="w-4 h-4" />
+                Todos los asociados y sus clientes
+              </h3>
+              {loadingAssociates ? (
+                <div className="text-center py-6 text-gray-400 text-sm">Cargando asociados...</div>
+              ) : (allAssociates as any[]).length === 0 ? (
+                <div className="text-center py-6 text-gray-400 text-sm bg-gray-50 rounded-xl">
+                  <p>No hay asociados registrados aún</p>
+                  <p className="text-xs mt-1">Asigna el rol de Asociado desde la pestaña Gestión de Usuarios</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {(allAssociates as any[]).map((item: any) => {
+                    const assoc = item.associate;
+                    const clients = item.clients || [];
+                    const pendingCount = clients.filter((c: any) => c.status === 'pending').length;
+                    const preApprovedCount = clients.filter((c: any) => c.status === 'assistant_approved').length;
+                    const activeCount = clients.filter((c: any) => c.status === 'active').length;
+                    const isExpanded = expandedAssociate === assoc.id;
+                    return (
+                      <div key={assoc.id} className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
+                        <button className="w-full flex items-center justify-between px-5 py-4 hover:bg-gray-50 transition-colors" onClick={() => setExpandedAssociate(isExpanded ? null : assoc.id)}>
+                          <div className="flex items-center gap-3">
+                            <div className="w-9 h-9 rounded-full bg-amber-100 flex items-center justify-center text-amber-700 font-bold text-sm">{(assoc.name || 'A').charAt(0).toUpperCase()}</div>
+                            <div className="text-left">
+                              <p className="font-semibold text-gray-900 text-sm">{assoc.name || 'Sin nombre'}</p>
+                              <p className="text-xs text-gray-500">{assoc.email}</p>
+                            </div>
+                            <div className="flex gap-2 ml-2">
+                              {pendingCount > 0 && <span className="px-2 py-0.5 bg-yellow-100 text-yellow-700 rounded-full text-xs font-medium">{pendingCount} pendiente{pendingCount > 1 ? 's' : ''}</span>}
+                              {preApprovedCount > 0 && <span className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full text-xs font-medium">{preApprovedCount} pre-aprobado{preApprovedCount > 1 ? 's' : ''}</span>}
+                              {activeCount > 0 && <span className="px-2 py-0.5 bg-green-100 text-green-700 rounded-full text-xs font-medium">{activeCount} activo{activeCount > 1 ? 's' : ''}</span>}
+                              <span className="px-2 py-0.5 bg-gray-100 text-gray-600 rounded-full text-xs">{clients.length} total</span>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <span className="text-sm font-semibold text-emerald-700">${item.totalEarned.toFixed(2)} MXN</span>
+                            {isExpanded ? <ChevronUp className="w-4 h-4 text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-400" />}
+                          </div>
+                        </button>
+                        {isExpanded && (
+                          <div className="border-t border-gray-100 px-5 py-4">
+                            {clients.length === 0 ? (
+                              <p className="text-sm text-gray-400 text-center py-4">Este asociado aún no ha registrado clientes</p>
+                            ) : (
+                              <div className="space-y-2">
+                                {clients.map((c: any) => (
+                                  <div key={c.id} className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0">
+                                    <div className="flex-1 min-w-0">
+                                      <p className="text-sm font-medium text-gray-900">{c.clientName}</p>
+                                      <p className="text-xs text-gray-500">{c.clientEmail}{c.clientBusinessName ? ` · ${c.clientBusinessName}` : ''}</p>
+                                      {c.assignedPlan && <span className="text-xs text-emerald-600 font-medium">Plan: {c.assignedPlan}</span>}
+                                      {c.notes && <p className="text-xs text-gray-400 italic mt-0.5 truncate max-w-xs">{c.notes}</p>}
+                                    </div>
+                                    <div className="flex items-center gap-2 ml-3">
+                                      <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                                        c.status === 'active' ? 'bg-green-100 text-green-700' :
+                                        c.status === 'assistant_approved' ? 'bg-blue-100 text-blue-700' :
+                                        c.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
+                                        c.status === 'rejected' ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-600'
+                                      }`}>
+                                        {c.status === 'active' ? 'Activo' : c.status === 'assistant_approved' ? 'Pre-aprobado' : c.status === 'pending' ? 'Pendiente' : c.status === 'rejected' ? 'Rechazado' : 'Inactivo'}
+                                      </span>
+                                      {c.status === 'assistant_approved' && (
+                                        <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs h-7"
+                                          onClick={() => { setSelectedAssociateClient({ id: c.id, name: c.clientName, currentStatus: 'assistant_approved', associateName: assoc.name || assoc.email }); setAssociateClientPlan(c.assignedPlan || 'express'); setAssociateClientCommission(parseFloat(String(c.commissionRate)) || 1.5); setAssociateClientNotes(""); }}>
+                                          Aprobar definitivamente
+                                        </Button>
+                                      )}
+                                      {c.status === 'pending' && (
+                                        <Button size="sm" className="bg-blue-600 hover:bg-blue-700 text-white text-xs h-7"
+                                          onClick={() => { setSelectedAssociateClient({ id: c.id, name: c.clientName, currentStatus: 'pending', associateName: assoc.name || assoc.email }); setAssociateClientPlan(c.assignedPlan || 'express'); setAssociateClientCommission(1.5); setAssociateClientNotes(""); }}>
+                                          Pre-aprobar
+                                        </Button>
+                                      )}
+                                    </div>
+                                  </div>
+                                ))}
                               </div>
-                            ))}
+                            )}
                           </div>
                         )}
                       </div>
-                    )}
-                  </div>
-                );
-              })}
+                    );
+                  })}
+                </div>
+              )}
             </div>
           )}
         </div>
       )}
-      {/* Modal de revisión de cliente del asociado */}
+      {/* Modal de revisión de cliente del asociado (flujo de dos pasos) */}
       {selectedAssociateClient && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
-            <h3 className="text-lg font-bold mb-1">Revisar prospecto</h3>
-            <p className="text-sm text-gray-500 mb-4">{selectedAssociateClient.name}</p>
+            <h3 className="text-lg font-bold mb-1">
+              {selectedAssociateClient.currentStatus === 'assistant_approved' && isSuperAdmin
+                ? '✅ Aprobación final del cliente'
+                : '⏳ Pre-aprobar cliente (Paso 1 de 2)'}
+            </h3>
+            <p className="text-sm text-gray-500 mb-1">{selectedAssociateClient.name}</p>
+            {selectedAssociateClient.associateName && (
+              <p className="text-xs text-amber-600 mb-4">Asociado: {selectedAssociateClient.associateName}</p>
+            )}
+            {selectedAssociateClient.currentStatus === 'assistant_approved' && isSuperAdmin ? (
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
+                <p className="text-xs text-blue-700">Este cliente fue pre-aprobado por el asistente. Tú das la aprobación final para activar la cuenta.</p>
+              </div>
+            ) : (
+              <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-4">
+                <p className="text-xs text-amber-700">Al pre-aprobar, el superadmin recibirá una notificación para dar la aprobación final.</p>
+              </div>
+            )}
             <div className="space-y-3 mb-4">
               <div>
                 <label className="text-sm font-medium text-gray-700 block mb-1">Plan a asignar</label>
@@ -407,15 +533,32 @@ function AssistantPanelInner() {
                 <label className="text-sm font-medium text-gray-700 block mb-1">Comisión del asociado (%)</label>
                 <input type="number" step="0.1" min="0" max="5" value={associateClientCommission} onChange={e => setAssociateClientCommission(parseFloat(e.target.value))} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
               </div>
+              <div>
+                <label className="text-sm font-medium text-gray-700 block mb-1">Notas (opcional)</label>
+                <textarea value={associateClientNotes} onChange={e => setAssociateClientNotes(e.target.value)} placeholder="Notas internas..." className="w-full border border-gray-300 rounded-lg p-2 text-sm resize-none h-16 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              </div>
             </div>
             <div className="flex gap-3">
-              <Button className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white" onClick={() => updateClientStatus.mutate({ clientId: selectedAssociateClient.id, status: 'active', assignedPlan: associateClientPlan as any, commissionRate: associateClientCommission })} disabled={updateClientStatus.isPending}>
-                <CheckCircle className="w-4 h-4 mr-1" /> Activar cliente
-              </Button>
-              <Button variant="outline" className="flex-1 text-red-600 border-red-200 hover:bg-red-50" onClick={() => updateClientStatus.mutate({ clientId: selectedAssociateClient.id, status: 'rejected' })} disabled={updateClientStatus.isPending}>
-                <XCircle className="w-4 h-4 mr-1" /> Rechazar
-              </Button>
-              <Button variant="outline" onClick={() => setSelectedAssociateClient(null)}>Cancelar</Button>
+              {selectedAssociateClient.currentStatus === 'assistant_approved' && isSuperAdmin ? (
+                <>
+                  <Button className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white" onClick={() => updateClientStatus.mutate({ clientId: selectedAssociateClient.id, status: 'active', assignedPlan: associateClientPlan as any, commissionRate: associateClientCommission, notes: associateClientNotes || undefined })} disabled={updateClientStatus.isPending}>
+                    <CheckCircle className="w-4 h-4 mr-1" /> Activar cliente
+                  </Button>
+                  <Button variant="outline" className="flex-1 text-red-600 border-red-200 hover:bg-red-50" onClick={() => updateClientStatus.mutate({ clientId: selectedAssociateClient.id, status: 'rejected', notes: associateClientNotes || undefined })} disabled={updateClientStatus.isPending}>
+                    <XCircle className="w-4 h-4 mr-1" /> Rechazar
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Button className="flex-1 bg-blue-600 hover:bg-blue-700 text-white" onClick={() => assistantPreApproveClient.mutate({ clientId: selectedAssociateClient.id, assignedPlan: associateClientPlan as any, commissionRate: associateClientCommission, notes: associateClientNotes || undefined })} disabled={assistantPreApproveClient.isPending}>
+                    <CheckCircle className="w-4 h-4 mr-1" /> Pre-aprobar
+                  </Button>
+                  <Button variant="outline" className="flex-1 text-red-600 border-red-200 hover:bg-red-50" onClick={() => assistantRejectClient.mutate({ clientId: selectedAssociateClient.id, notes: associateClientNotes || undefined })} disabled={assistantRejectClient.isPending}>
+                    <XCircle className="w-4 h-4 mr-1" /> Rechazar
+                  </Button>
+                </>
+              )}
+              <Button variant="outline" onClick={() => { setSelectedAssociateClient(null); setAssociateClientNotes(""); }}>Cancelar</Button>
             </div>
           </div>
         </div>

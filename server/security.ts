@@ -12,24 +12,60 @@ const failedAttempts = new Map<string, { count: number; blockedUntil?: number }>
 const BLOCK_AFTER_ATTEMPTS = 10;
 const BLOCK_DURATION_MS = 15 * 60 * 1000; // 15 minutes
 
-// ─── Audit log (in-memory for dev; persist to DB in production) ───────────────
+// ─── Audit log (in-memory + DB persistence) ─────────────────────────────────────
 interface AuditEntry {
   timestamp: string;
   ip: string;
   userId?: number;
+  userEmail?: string;
   action: string;
   resource: string;
   statusCode?: number;
   userAgent?: string;
+  severity?: 'info' | 'warning' | 'critical';
+  details?: string;
+  success?: boolean;
 }
 const auditLog: AuditEntry[] = [];
 const MAX_AUDIT_ENTRIES = 10000;
 
 export function logAudit(entry: Omit<AuditEntry, "timestamp">) {
-  if (auditLog.length >= MAX_AUDIT_ENTRIES) {
-    auditLog.shift(); // Remove oldest entry
-  }
-  auditLog.push({ ...entry, timestamp: new Date().toISOString() });
+  const fullEntry = { ...entry, timestamp: new Date().toISOString() };
+  if (auditLog.length >= MAX_AUDIT_ENTRIES) auditLog.shift();
+  auditLog.push(fullEntry);
+
+  // Persist to DB asynchronously (fire and forget)
+  const severity = entry.severity || (
+    entry.action.includes('BLOCKED') || entry.action.includes('CRITICAL') ? 'critical' :
+    entry.action.includes('RATE_LIMITED') || entry.action.includes('FORBIDDEN') ? 'warning' : 'info'
+  );
+  import('./db').then(({ getDb }) => getDb()).then(async (db) => {
+    if (!db) return;
+    try {
+      const { auditLogs } = await import('../drizzle/schema');
+      await (db as any).insert(auditLogs).values({
+        userId: entry.userId ?? null,
+        userEmail: entry.userEmail ?? null,
+        action: entry.action.slice(0, 128),
+        resource: entry.resource.slice(0, 512),
+        details: entry.details ?? null,
+        ipAddress: entry.ip.slice(0, 64),
+        userAgent: entry.userAgent ?? null,
+        statusCode: entry.statusCode ?? null,
+        success: entry.success !== false,
+        severity: severity as 'info' | 'warning' | 'critical',
+      });
+      // Alert superadmin on critical events
+      if (severity === 'critical') {
+        import('./_core/notification').then(({ notifyOwner }) => {
+          notifyOwner({
+            title: `⚠️ Alerta de Seguridad: ${entry.action}`,
+            content: `IP: ${entry.ip}\nRecurso: ${entry.resource}\n${entry.details || ''}`,
+          }).catch(() => {});
+        }).catch(() => {});
+      }
+    } catch (_) { /* silent fail */ }
+  }).catch(() => {});
 }
 
 export function getAuditLog(limit = 100): AuditEntry[] {

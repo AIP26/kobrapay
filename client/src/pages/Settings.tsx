@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import {
   Building2, Percent, DollarSign, Shield, Camera,
-  MessageSquare, Save, Info, CreditCard, ExternalLink,
+  MessageSquare, Save, Info, CreditCard, ExternalLink, Receipt,
 } from "lucide-react";
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
@@ -20,6 +20,8 @@ interface SettingsForm {
   businessEmail: string;
   businessPhone: string;
   commissionRate: number;
+  ivaRate: number;
+  ivaEnabled: boolean;
   usdExchangeRate: number;
   otpEnabled: boolean;
   selfieEnabled: boolean;
@@ -35,13 +37,15 @@ export default function Settings() {
   } = useForm<SettingsForm>({
     defaultValues: {
       businessName: "", businessEmail: "", businessPhone: "",
-      commissionRate: 7, usdExchangeRate: 0,
+      commissionRate: 7, ivaRate: 16, ivaEnabled: true, usdExchangeRate: 0,
       otpEnabled: false, selfieEnabled: false, chargebackText: "",
     },
   });
 
   const otpEnabled = watch("otpEnabled");
   const selfieEnabled = watch("selfieEnabled");
+  const ivaEnabled = watch("ivaEnabled");
+  const ivaRate = watch("ivaRate");
   const usdRate = watch("usdExchangeRate");
   const commRate = watch("commissionRate");
 
@@ -52,6 +56,8 @@ export default function Settings() {
         businessEmail: settings.businessEmail || "",
         businessPhone: settings.businessPhone || "",
         commissionRate: parseFloat(String(settings.commissionRate || 7)),
+        ivaRate: parseFloat(String((settings as any).ivaRate ?? 16)),
+        ivaEnabled: (settings as any).ivaEnabled ?? true,
         usdExchangeRate: parseFloat(String(settings.usdExchangeRate || 0)),
         otpEnabled: settings.otpEnabled ?? false,
         selfieEnabled: settings.selfieEnabled ?? false,
@@ -152,28 +158,91 @@ export default function Settings() {
               </p>
             </div>
             <div className="p-3 bg-gray-50 rounded-xl border border-gray-200">
-              <p className="text-xs text-gray-500 mb-2 font-medium">
-                Ejemplo para un cobro de $1,000 MXN:
-              </p>
+              <p className="text-xs text-gray-500 mb-2 font-medium">Ejemplo para un cobro de $1,000 MXN:</p>
               <div className="space-y-1">
                 <div className="flex justify-between text-xs">
                   <span className="text-gray-600">Monto bruto:</span>
                   <span className="font-medium text-gray-800">$1,000.00 MXN</span>
                 </div>
                 <div className="flex justify-between text-xs">
-                  <span className="text-gray-600">Tu comision ({commRate || 7}%):</span>
-                  <span className="font-medium text-cyan-600">
-                    ${((commRate || 7) * 10).toFixed(2)} MXN
-                  </span>
+                  <span className="text-gray-600">Comisión KobraPay ({commRate || 7}%):</span>
+                  <span className="font-medium text-cyan-600">${((commRate || 7) * 10).toFixed(2)} MXN</span>
+                </div>
+                {ivaEnabled && (ivaRate || 0) > 0 && (
+                  <div className="flex justify-between text-xs">
+                    <span className="text-gray-600">IVA sobre comisión ({ivaRate}%):</span>
+                    <span className="font-medium text-orange-500">${((commRate || 7) * 10 * (ivaRate || 16) / 100).toFixed(2)} MXN</span>
+                  </div>
+                )}
+                <div className="flex justify-between text-xs">
+                  <span className="text-gray-600">Total cobrado por KobraPay:</span>
+                  <span className="font-semibold text-cyan-700">${((commRate || 7) * 10 * (1 + (ivaEnabled ? (ivaRate || 16) / 100 : 0))).toFixed(2)} MXN</span>
                 </div>
                 <div className="flex justify-between text-xs border-t border-gray-200 pt-1 mt-1">
                   <span className="text-gray-600">Neto para el comercio:</span>
-                  <span className="font-bold text-green-600">
-                    ${(1000 - (commRate || 7) * 10).toFixed(2)} MXN
-                  </span>
+                  <span className="font-bold text-green-600">${(1000 - (commRate || 7) * 10 * (1 + (ivaEnabled ? (ivaRate || 16) / 100 : 0))).toFixed(2)} MXN</span>
                 </div>
               </div>
             </div>
+          </CardContent>
+        </Card>
+
+        {/* Configuración Fiscal - IVA */}
+        <Card className="border-orange-200 shadow-sm">
+          <CardHeader className="pb-3 border-b border-orange-100">
+            <CardTitle className="text-base font-semibold text-gray-800 flex items-center gap-2">
+              <Receipt className="w-4 h-4 text-orange-500" />
+              Configuración Fiscal — IVA
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-5 space-y-4">
+            <div className="flex items-center justify-between p-3 bg-orange-50 rounded-xl border border-orange-200">
+              <div>
+                <p className="text-sm font-medium text-gray-800">Cobrar IVA sobre la comisión</p>
+                <p className="text-xs text-gray-500 mt-0.5">Activa para sumar IVA a tu comisión de plataforma</p>
+              </div>
+              <Switch
+                checked={ivaEnabled}
+                onCheckedChange={(v) => setValue("ivaEnabled", v, { shouldDirty: true })}
+              />
+            </div>
+            {ivaEnabled && (
+              <div className="space-y-1.5">
+                <Label className="text-sm text-gray-700">Tasa de IVA (%)</Label>
+                <div className="relative">
+                  <Input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    max="100"
+                    placeholder="16"
+                    {...register("ivaRate", { valueAsNumber: true })}
+                    className="pr-8 text-lg font-semibold"
+                  />
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">%</span>
+                </div>
+                <div className="grid grid-cols-3 gap-2 mt-2">
+                  {[0, 8, 16].map((rate) => (
+                    <button
+                      key={rate}
+                      type="button"
+                      onClick={() => setValue("ivaRate", rate, { shouldDirty: true })}
+                      className={`text-xs py-1.5 rounded-lg border font-medium transition-colors ${
+                        ivaRate === rate
+                          ? "bg-orange-500 text-white border-orange-500"
+                          : "bg-white text-gray-600 border-gray-200 hover:border-orange-300"
+                      }`}
+                    >
+                      {rate === 0 ? "0% (Exento)" : rate === 8 ? "8% (Frontera)" : "16% (Estándar)"}
+                    </button>
+                  ))}
+                </div>
+                <p className="text-xs text-orange-600 bg-orange-50 p-2 rounded-lg border border-orange-100 mt-2">
+                  💡 <strong>Estrategia fiscal:</strong> Zona fronteriza = 8% · Exento/RESICO = 0% · Estándar = 16%.
+                  Escribe el porcentaje exacto que necesites.
+                </p>
+              </div>
+            )}
           </CardContent>
         </Card>
 

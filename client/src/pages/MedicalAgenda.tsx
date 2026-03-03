@@ -323,13 +323,24 @@ function AppointmentForm({
         <Button variant="outline" onClick={onCancel}>Cancelar</Button>
         <Button
           className="bg-[#FF6B00] hover:bg-[#e55f00] text-white"
-          onClick={() => onSave({
-            patientId: parseInt(form.patientId),
-            title: form.title,
-            appointmentDate: form.appointmentDate,
-            durationMinutes: parseInt(form.durationMinutes),
-            notes: form.notes,
-          })}
+          onClick={() => {
+            // Convertir datetime-local (sin TZ) a ISO con offset local para evitar desfase UTC
+            let isoDate = form.appointmentDate;
+            if (form.appointmentDate && !form.appointmentDate.includes('Z') && !form.appointmentDate.includes('+')) {
+              const d = new Date(form.appointmentDate);
+              const offset = -d.getTimezoneOffset();
+              const sign = offset >= 0 ? '+' : '-';
+              const pad = (n: number) => String(Math.floor(Math.abs(n))).padStart(2, '0');
+              isoDate = form.appointmentDate + ':00' + sign + pad(offset / 60) + ':' + pad(offset % 60);
+            }
+            onSave({
+              patientId: parseInt(form.patientId),
+              title: form.title,
+              appointmentDate: isoDate,
+              durationMinutes: parseInt(form.durationMinutes),
+              notes: form.notes,
+            });
+          }}
           disabled={!form.patientId || !form.title || !form.appointmentDate}
         >
           Guardar cita

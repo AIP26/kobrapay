@@ -128,6 +128,13 @@ export default function CommissionsPanel() {
 
   const top5 = [...clients].sort((a, b) => b.totalCommission - a.totalCommission).slice(0, 5);
   const [generatingPdf, setGeneratingPdf] = useState(false);
+  // ─── Pestañas de comisiones ───────────────────────────────────────────────────
+  const [activeCommTab, setActiveCommTab] = useState<string>("mine");
+  const { data: associatesData } = trpc.associate.listAllAssociates.useQuery(undefined, {
+    enabled: isSuperAdmin,
+  });
+  const associates = associatesData ?? [];
+  const selectedAssociate = associates.find(a => String(a.associate.id) === activeCommTab) ?? null;
 
   const generateCommissionReport = async () => {
     setGeneratingPdf(true);
@@ -492,6 +499,67 @@ export default function CommissionsPanel() {
           </div>
         </div>
 
+        {/* ─── Pestañas de Comisiones ─── */}
+        {isSuperAdmin && (
+          <div className="flex items-center gap-1 bg-gray-100 rounded-xl p-1 overflow-x-auto">
+            {/* Pestaña: Mis Comisiones */}
+            <button
+              onClick={() => setActiveCommTab("mine")}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all ${
+                activeCommTab === "mine"
+                  ? "bg-white text-emerald-700 shadow-sm border border-emerald-200"
+                  : "text-gray-500 hover:text-gray-700 hover:bg-gray-50"
+              }`}
+            >
+              <DollarSign className="w-4 h-4" />
+              Mis Comisiones
+              {activeCommTab === "mine" && (
+                <span className="bg-emerald-100 text-emerald-700 text-xs px-1.5 py-0.5 rounded-full font-semibold">
+                  {fmtShort(totalEarned)}
+                </span>
+              )}
+            </button>
+            {/* Pestañas por asociado */}
+            {associates.map(assoc => {
+              const tabId = String(assoc.associate.id);
+              const isActive = activeCommTab === tabId;
+              const assocEarned = assoc.totalEarned;
+              return (
+                <button
+                  key={tabId}
+                  onClick={() => setActiveCommTab(tabId)}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all ${
+                    isActive
+                      ? "bg-white text-amber-700 shadow-sm border border-amber-200"
+                      : "text-gray-500 hover:text-gray-700 hover:bg-gray-50"
+                  }`}
+                >
+                  <Handshake className="w-4 h-4" />
+                  {assoc.associate.name || assoc.associate.email || `Asociado ${assoc.associate.id}`}
+                  {isActive && (
+                    <span className="bg-amber-100 text-amber-700 text-xs px-1.5 py-0.5 rounded-full font-semibold">
+                      {fmtShort(assocEarned)}
+                    </span>
+                  )}
+                  {!isActive && assoc.clients.filter((c: Record<string, unknown>) => c.status === 'pending').length > 0 && (
+                    <span className="bg-red-100 text-red-600 text-xs px-1.5 py-0.5 rounded-full font-semibold">
+                      {assoc.clients.filter((c: Record<string, unknown>) => c.status === 'pending').length} pend.
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        )}
+
+        {/* ─── Contenido de pestaña de Asociado ─── */}
+        {isSuperAdmin && activeCommTab !== "mine" && selectedAssociate && (
+          <AssociateTabContent assoc={selectedAssociate} />
+        )}
+
+        {/* ─── Contenido de Mis Comisiones ─── */}
+        {(!isSuperAdmin || activeCommTab === "mine") && (
+        <>
         {/* KPI Cards — clickeables */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {/* Total comisiones */}
@@ -754,21 +822,19 @@ export default function CommissionsPanel() {
                 </table>
               </div>
             )}
-          </CardContent>
+           </CardContent>
         </Card>
+        </>
+        )}
       </div>
-
-      {/* ─── Sección: Comisiones de Asociados ─── */}
-      {isSuperAdmin && <AssociateCommissionsSection />}
-
       {/* Drill-down panel */}
       <DrillDownPanel />
-
       {/* Modal desglose individual de transacción */}
       <TxDetailModal />
     </DashboardLayout>
   );
 }
+
 
 // ─── Componente: Comisiones de Asociados (solo SuperAdmin) ────────────────────
 function AssociateCommissionsSection() {
@@ -945,6 +1011,135 @@ function AssociateCommissionsSection() {
             </Card>
           ))}
         </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Componente: Pestaña de un Asociado específico ───────────────────────────
+function AssociateTabContent({ assoc }: { assoc: { associate: { id: number; name: string | null; email: string | null }; clients: Record<string, unknown>[]; totalEarned: number } }) {
+  const updateStatusMutation = trpc.associate.updateClientStatus.useMutation();
+  const utils = trpc.useUtils();
+  const fmt = (n: number) => new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(n);
+
+  const handleApprove = async (clientId: number) => {
+    await updateStatusMutation.mutateAsync({ clientId, status: 'active' });
+    utils.associate.listAllAssociates.invalidate();
+    const { toast } = await import('sonner');
+    toast.success('Cliente aprobado y asociado notificado');
+  };
+  const handleReject = async (clientId: number) => {
+    await updateStatusMutation.mutateAsync({ clientId, status: 'rejected' });
+    utils.associate.listAllAssociates.invalidate();
+    const { toast } = await import('sonner');
+    toast.success('Cliente rechazado');
+  };
+
+  const pendingCount = assoc.clients.filter((c) => c.status === 'pending').length;
+  const preApprovedCount = assoc.clients.filter((c) => c.status === 'assistant_approved').length;
+  const activeCount = assoc.clients.filter((c) => c.status === 'active').length;
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center gap-4 p-4 bg-amber-50 border border-amber-200 rounded-xl">
+        <div className="w-12 h-12 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-white font-bold text-lg">
+          {(assoc.associate.name || assoc.associate.email || 'A')[0].toUpperCase()}
+        </div>
+        <div className="flex-1">
+          <p className="font-bold text-gray-900 text-lg">{assoc.associate.name || assoc.associate.email}</p>
+          <p className="text-sm text-gray-500">{assoc.associate.email}</p>
+        </div>
+        <div className="text-right">
+          <p className="text-2xl font-bold text-emerald-600">{fmt(assoc.totalEarned)}</p>
+          <p className="text-xs text-gray-400">Total comisiones ganadas</p>
+        </div>
+        <div className="flex flex-col gap-1">
+          {pendingCount > 0 && (
+            <div className="bg-amber-500 text-white text-xs font-bold px-2.5 py-1 rounded-full text-center">
+              {pendingCount} pendiente{pendingCount > 1 ? 's' : ''}
+            </div>
+          )}
+          {preApprovedCount > 0 && (
+            <div className="bg-blue-500 text-white text-xs font-bold px-2.5 py-1 rounded-full text-center">
+              {preApprovedCount} pre-aprobado{preApprovedCount > 1 ? 's' : ''}
+            </div>
+          )}
+          {activeCount > 0 && (
+            <div className="bg-emerald-500 text-white text-xs font-bold px-2.5 py-1 rounded-full text-center">
+              {activeCount} activo{activeCount > 1 ? 's' : ''}
+            </div>
+          )}
+        </div>
+      </div>
+      {assoc.clients.length === 0 ? (
+        <Card>
+          <CardContent className="py-10 text-center text-gray-400">
+            <Users className="w-10 h-10 mx-auto mb-2 opacity-30" />
+            <p>Este asociado aún no ha captado clientes</p>
+          </CardContent>
+        </Card>
+      ) : (
+        <Card>
+          <CardContent className="p-0">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-gray-100 bg-gray-50/50">
+                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Cliente</th>
+                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Plan</th>
+                    <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Comisión %</th>
+                    <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Ganado</th>
+                    <th className="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Estado</th>
+                    <th className="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-50">
+                  {assoc.clients.map((client) => (
+                    <tr key={client.id as number} className="hover:bg-gray-50/50">
+                      <td className="px-4 py-3">
+                        <p className="font-medium text-gray-900">{client.clientName as string}</p>
+                        <p className="text-xs text-gray-400">{client.clientEmail as string}</p>
+                      </td>
+                      <td className="px-4 py-3">
+                        <Badge variant="outline" className="text-xs">{(client.assignedPlan as string) || 'Sin plan'}</Badge>
+                      </td>
+                      <td className="px-4 py-3 text-right font-semibold text-gray-700">{client.commissionRate as string}%</td>
+                      <td className="px-4 py-3 text-right font-semibold text-emerald-600">
+                        {fmt(parseFloat(String(client.totalCommissionEarned || '0')))}
+                      </td>
+                      <td className="px-4 py-3 text-center">
+                        <Badge variant="outline" className={
+                          client.status === 'active' ? 'bg-green-50 text-green-700 border-green-200' :
+                          client.status === 'assistant_approved' ? 'bg-blue-50 text-blue-700 border-blue-200' :
+                          client.status === 'rejected' ? 'bg-red-50 text-red-700 border-red-200' :
+                          client.status === 'inactive' ? 'bg-gray-50 text-gray-500 border-gray-200' :
+                          'bg-amber-50 text-amber-700 border-amber-200'
+                        }>
+                          {client.status === 'active' ? 'Activo' :
+                           client.status === 'assistant_approved' ? 'Pre-aprobado' :
+                           client.status === 'rejected' ? 'Rechazado' :
+                           client.status === 'inactive' ? 'Inactivo' : 'Pendiente'}
+                        </Badge>
+                      </td>
+                      <td className="px-4 py-3 text-center">
+                        {client.status === 'assistant_approved' ? (
+                          <div className="flex items-center justify-center gap-2">
+                            <button onClick={() => handleApprove(client.id as number)} className="text-xs bg-emerald-500 text-white px-2.5 py-1 rounded-lg hover:bg-emerald-600 font-medium">✅ Aprobar</button>
+                            <button onClick={() => handleReject(client.id as number)} className="text-xs bg-red-100 text-red-600 px-2.5 py-1 rounded-lg hover:bg-red-200 font-medium">Rechazar</button>
+                          </div>
+                        ) : client.status === 'pending' ? (
+                          <span className="text-xs text-amber-600 font-medium">⏳ En revisión del asistente</span>
+                        ) : (
+                          <span className="text-xs text-gray-400">—</span>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+        </Card>
       )}
     </div>
   );
