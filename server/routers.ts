@@ -6577,6 +6577,311 @@ Responde SIEMPRE en español mexicano, de forma amigable, clara y práctica. Si 
       return scores;
     }),
   }),
+  deposits: router({
+    // Listar depósitos del usuario autenticado
+    list: protectedProcedure
+      .input(z.object({ limit: z.number().min(1).max(100).default(50) }).optional())
+      .query(async ({ ctx, input }) => {
+        const { getDb } = await import('./db');
+        const db = await getDb();
+        if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
+        const { deposits } = await import('../drizzle/schema');
+        const { eq, desc } = await import('drizzle-orm');
+        const limit = input?.limit ?? 50;
+        const rows = await db.select().from(deposits)
+          .where(eq(deposits.userId, ctx.user.id))
+          .orderBy(desc(deposits.createdAt))
+          .limit(limit);
+        return rows;
+      }),
+
+    // Listar todos los depósitos (solo superadmin/admin)
+    listAll: protectedProcedure
+      .input(z.object({ userId: z.number().optional(), limit: z.number().min(1).max(200).default(100) }).optional())
+      .query(async ({ ctx, input }) => {
+        if (ctx.user.role !== 'superadmin' && ctx.user.role !== 'admin') {
+          throw new TRPCError({ code: 'FORBIDDEN' });
+        }
+        const { getDb } = await import('./db');
+        const db = await getDb();
+        if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
+        const { deposits } = await import('../drizzle/schema');
+        const { eq, desc } = await import('drizzle-orm');
+        const limit = input?.limit ?? 100;
+        let query = db.select().from(deposits).orderBy(desc(deposits.createdAt)).limit(limit);
+        if (input?.userId) {
+          const rows = await db.select().from(deposits)
+            .where(eq(deposits.userId, input.userId))
+            .orderBy(desc(deposits.createdAt))
+            .limit(limit);
+          return rows;
+        }
+        return await query;
+      }),
+
+    // Crear solicitud de depósito
+    create: protectedProcedure
+      .input(z.object({
+        amount: z.number().positive(),
+        destinationClabe: z.string().length(18).optional(),
+        destinationBank: z.string().max(128).optional(),
+        beneficiaryName: z.string().max(255).optional(),
+        reference: z.string().max(128).optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const { getDb } = await import('./db');
+        const db = await getDb();
+        if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
+        const { deposits } = await import('../drizzle/schema');
+        const fee = parseFloat((input.amount * 0.005).toFixed(2)); // 0.5% fee
+        const netAmount = parseFloat((input.amount - fee).toFixed(2));
+        const now = Date.now();
+        const estimatedDate = now + (2 * 24 * 60 * 60 * 1000); // +2 días hábiles
+        await db.insert(deposits).values({
+          userId: ctx.user.id,
+          amount: String(input.amount),
+          fee: String(fee),
+          netAmount: String(netAmount),
+          currency: 'MXN',
+          depositStatus: 'pending',
+          destinationClabe: input.destinationClabe || null,
+          destinationBank: input.destinationBank || null,
+          beneficiaryName: input.beneficiaryName || null,
+          reference: input.reference || null,
+          estimatedDate,
+          createdAt: now,
+          updatedAt: now,
+        } as any);
+        return { success: true, netAmount, fee };
+      }),
+
+    // Actualizar estado de depósito (solo superadmin)
+    updateStatus: protectedProcedure
+      .input(z.object({
+        id: z.number(),
+        status: z.enum(['pending', 'completed', 'failed', 'cancelled']),
+        trackingNumber: z.string().max(64).optional(),
+        failureReason: z.string().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        if (ctx.user.role !== 'superadmin') throw new TRPCError({ code: 'FORBIDDEN' });
+        const { getDb } = await import('./db');
+        const db = await getDb();
+        if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
+        const { deposits } = await import('../drizzle/schema');
+        const { eq } = await import('drizzle-orm');
+        const now = Date.now();
+        await db.update(deposits).set({
+          depositStatus: input.status as any,
+          trackingNumber: input.trackingNumber || null,
+          failureReason: input.failureReason || null,
+          completedAt: input.status === 'completed' ? now : null,
+          updatedAt: now,
+        } as any).where(eq(deposits.id, input.id));
+        return { success: true };
+      }),
+  }),
+
+  transferRecords: router({
+    list: protectedProcedure
+      .input(z.object({ limit: z.number().min(1).max(100).default(50) }).optional())
+      .query(async ({ ctx, input }) => {
+        const { getDb } = await import('./db');
+        const db = await getDb();
+        if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
+        const { transferRecords } = await import('../drizzle/schema');
+        const { eq, desc } = await import('drizzle-orm');
+        const limit = input?.limit ?? 50;
+        return db.select().from(transferRecords)
+          .where(eq(transferRecords.userId, ctx.user.id))
+          .orderBy(desc(transferRecords.createdAt))
+          .limit(limit);
+      }),
+
+    // Superadmin puede cargar transferencias manualmente para cualquier usuario
+    create: protectedProcedure
+      .input(z.object({
+        userId: z.number().optional(), // si no se pasa, se usa el usuario autenticado
+        type: z.enum(['sent', 'received']),
+        transferType: z.enum(['spei', 'wire', 'zelle', 'crypto', 'other']),
+        amount: z.number().positive(),
+        currency: z.string().max(8).default('MXN'),
+        status: z.enum(['pending', 'completed', 'failed', 'cancelled']).default('pending'),
+        trackingNumber: z.string().max(128).optional(),
+        senderName: z.string().max(255).optional(),
+        senderBank: z.string().max(128).optional(),
+        senderClabe: z.string().max(18).optional(),
+        recipientName: z.string().max(255).optional(),
+        recipientBank: z.string().max(128).optional(),
+        recipientClabe: z.string().max(18).optional(),
+        recipientAccount: z.string().max(64).optional(),
+        concept: z.string().max(255).optional(),
+        notes: z.string().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const targetUserId = (ctx.user.role === 'superadmin' && input.userId) ? input.userId : ctx.user.id;
+        const { getDb } = await import('./db');
+        const db = await getDb();
+        if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
+        const { transferRecords } = await import('../drizzle/schema');
+        const now = Date.now();
+        await db.insert(transferRecords).values({
+          userId: targetUserId,
+          type: input.type,
+          transferType: input.transferType,
+          amount: String(input.amount),
+          currency: input.currency,
+          status: input.status,
+          trackingNumber: input.trackingNumber || null,
+          senderName: input.senderName || null,
+          senderBank: input.senderBank || null,
+          senderClabe: input.senderClabe || null,
+          recipientName: input.recipientName || null,
+          recipientBank: input.recipientBank || null,
+          recipientClabe: input.recipientClabe || null,
+          recipientAccount: input.recipientAccount || null,
+          concept: input.concept || null,
+          notes: input.notes || null,
+          completedAt: input.status === 'completed' ? now : null,
+          createdAt: now,
+          updatedAt: now,
+        } as any);
+        return { success: true };
+      }),
+
+    updateStatus: protectedProcedure
+      .input(z.object({
+        id: z.number(),
+        status: z.enum(['pending', 'completed', 'failed', 'cancelled']),
+        trackingNumber: z.string().max(128).optional(),
+        failureReason: z.string().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        if (ctx.user.role !== 'superadmin') throw new TRPCError({ code: 'FORBIDDEN' });
+        const { getDb } = await import('./db');
+        const db = await getDb();
+        if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
+        const { transferRecords } = await import('../drizzle/schema');
+        const { eq } = await import('drizzle-orm');
+        const now = Date.now();
+        await db.update(transferRecords).set({
+          status: input.status as any,
+          trackingNumber: input.trackingNumber || null,
+          failureReason: input.failureReason || null,
+          completedAt: input.status === 'completed' ? now : null,
+          updatedAt: now,
+        } as any).where(eq(transferRecords.id, input.id));
+        return { success: true };
+      }),
+  }),
+
+
+  metrics: router({
+    getDashboard: protectedProcedure.query(async ({ ctx }) => {
+      if (ctx.user.role !== 'superadmin' && ctx.user.role !== 'admin') {
+        throw new TRPCError({ code: 'FORBIDDEN' });
+      }
+      const { getDb } = await import('./db');
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
+      const { users, transactions, chargebacks, paymentLinks } = await import('../drizzle/schema');
+      const { gte, eq, and, sql } = await import('drizzle-orm');
+
+      const now = Date.now();
+      const todayStart = new Date();
+      todayStart.setHours(0, 0, 0, 0);
+      const weekAgoDate = new Date(now - 7 * 24 * 60 * 60 * 1000);
+      const monthAgoDate = new Date(now - 30 * 24 * 60 * 60 * 1000);
+
+      // Ventas del día
+      const todaySales = await db.select({
+        total: sql<string>`COALESCE(SUM(CAST(amount AS DECIMAL(10,2))), 0)`,
+        count: sql<number>`COUNT(*)`,
+      }).from(transactions).where(
+        and(gte(transactions.createdAt, todayStart), sql`${transactions.status} = 'completed'`)
+      );
+
+      // Ventas de la semana
+      const weekSales = await db.select({
+        total: sql<string>`COALESCE(SUM(CAST(amount AS DECIMAL(10,2))), 0)`,
+        count: sql<number>`COUNT(*)`,
+      }).from(transactions).where(
+        and(gte(transactions.createdAt, weekAgoDate), sql`${transactions.status} = 'completed'`)
+      );
+
+      // Nuevos registros hoy
+      const newUsersToday = await db.select({ count: sql<number>`COUNT(*)` })
+        .from(users).where(gte(users.createdAt, todayStart));
+
+      // Nuevos registros este mes
+      const newUsersMonth = await db.select({ count: sql<number>`COUNT(*)` })
+        .from(users).where(gte(users.createdAt, monthAgoDate));
+
+      // Total usuarios activos (con al menos 1 transacción)
+      const activeUsers = await db.select({
+        count: sql<number>`COUNT(DISTINCT user_id)`,
+      }).from(transactions).where(gte(transactions.createdAt, monthAgoDate));
+
+      // Chargebacks pendientes
+      const pendingChargebacks = await db.select({ count: sql<number>`COUNT(*)` })
+        .from(chargebacks).where(sql`${chargebacks.status} = 'pending'`);
+
+      // Links de pago activos
+      const activeLinks = await db.select({ count: sql<number>`COUNT(*)` })
+        .from(paymentLinks).where(sql`${paymentLinks.status} = 'active'`);
+
+      // Top 5 usuarios por ventas este mes
+      const topUsers = await db.select({
+        userId: transactions.userId,
+        total: sql<string>`SUM(CAST(amount AS DECIMAL(10,2)))`,
+        count: sql<number>`COUNT(*)`,
+      }).from(transactions)
+        .where(and(gte(transactions.createdAt, monthAgoDate), sql`${transactions.status} = 'completed'`))
+        .groupBy(transactions.userId)
+        .orderBy(sql`SUM(CAST(amount AS DECIMAL(10,2))) DESC`)
+        .limit(5);
+
+      // Obtener nombres de los top usuarios
+      const topUserIds = topUsers.map(u => u.userId).filter(Boolean) as number[];
+      let topUsersWithNames: Array<{ userId: number; name: string; email: string; total: string; count: number }> = [];
+      if (topUserIds.length > 0) {
+        const usersInfo = await db.select({ id: users.id, name: users.name, email: users.email })
+          .from(users).where(sql`id IN (${sql.join(topUserIds.map(id => sql`${id}`), sql`, `)})`);
+        topUsersWithNames = topUsers.map(u => {
+          const info = usersInfo.find(ui => ui.id === u.userId);
+          return {
+            userId: u.userId as number,
+            name: info?.name || 'Sin nombre',
+            email: info?.email || '',
+            total: u.total || '0',
+            count: u.count || 0,
+          };
+        });
+      }
+
+      return {
+        today: {
+          salesTotal: parseFloat(todaySales[0]?.total || '0'),
+          salesCount: Number(todaySales[0]?.count || 0),
+          newUsers: Number(newUsersToday[0]?.count || 0),
+        },
+        week: {
+          salesTotal: parseFloat(weekSales[0]?.total || '0'),
+          salesCount: Number(weekSales[0]?.count || 0),
+        },
+        month: {
+          newUsers: Number(newUsersMonth[0]?.count || 0),
+          activeUsers: Number(activeUsers[0]?.count || 0),
+        },
+        alerts: {
+          pendingChargebacks: Number(pendingChargebacks[0]?.count || 0),
+          activeLinks: Number(activeLinks[0]?.count || 0),
+        },
+        topUsers: topUsersWithNames,
+        generatedAt: now,
+      };
+    }),
+  }),
 });
 export type AppRouter = typeof appRouter;
 

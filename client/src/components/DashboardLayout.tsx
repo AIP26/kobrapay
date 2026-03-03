@@ -48,6 +48,8 @@ import {
   Brain,
   Mail,
   Star,
+  Banknote,
+  Activity,
 } from "lucide-react";
 import { useState, useCallback, useMemo, useEffect, useRef } from "react";
 import GlobalSearch from "./GlobalSearch";
@@ -87,6 +89,7 @@ const USER_ESSENTIAL_ROUTES = new Set([
   "/dashboard/links",
   "/dashboard/sales",
   "/dashboard/transfers",
+  "/dashboard/my-deposits",
   "/dashboard/support",
   "/dashboard/settings",
   "/dashboard/help",
@@ -123,6 +126,7 @@ const NAV_GROUPS = [
       { href: "/dashboard/expedientes", icon: FolderOpen, label: "Expedientes" },
       { href: "/dashboard/connect", icon: Wallet, label: "Cuenta de Cobros" },
       { href: "/dashboard/transfers", icon: ArrowLeftRight, label: "Transferencias" },
+      { href: "/dashboard/my-deposits", icon: Banknote, label: "Mis Depósitos" },
     ],
   },
   {
@@ -175,6 +179,7 @@ const NAV_GROUPS = [
     color: "text-amber-500/70",
     adminOnly: true,
     items: [
+      { href: "/dashboard/metrics", icon: Activity, label: "Panel de Métricas" },
       { href: "/dashboard/clients", icon: Users, label: "Mis Clientes" },
       { href: "/dashboard/registrations", icon: UserCog, label: "Registros" },
       { href: "/dashboard/ai-scoring", icon: Brain, label: "Scoring IA" },

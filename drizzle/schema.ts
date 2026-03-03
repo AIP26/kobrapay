@@ -1175,3 +1175,54 @@ export const associateCommissionTiers = mysqlTable("associate_commission_tiers",
 
 export type AssociateCommissionTier = typeof associateCommissionTiers.$inferSelect;
 export type InsertAssociateCommissionTier = typeof associateCommissionTiers.$inferInsert;
+
+// ─── Tabla de depósitos / retiros ─────────────────────────────────────────────
+// Registra cada retiro/depósito que el admin solicita o que se procesa automáticamente
+export const deposits = mysqlTable("deposits", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("user_id").notNull(),
+  amount: decimal("amount", { precision: 12, scale: 2 }).notNull(),
+  fee: decimal("fee", { precision: 12, scale: 2 }).notNull().default("0"),
+  netAmount: decimal("net_amount", { precision: 12, scale: 2 }).notNull(),
+  currency: varchar("currency", { length: 8 }).notNull().default("MXN"),
+  status: mysqlEnum("deposit_status", ["pending", "completed", "failed", "cancelled"]).notNull().default("pending"),
+  trackingNumber: varchar("tracking_number", { length: 64 }),
+  destinationClabe: varchar("destination_clabe", { length: 18 }),
+  destinationBank: varchar("destination_bank", { length: 128 }),
+  beneficiaryName: varchar("beneficiary_name", { length: 255 }),
+  reference: varchar("reference", { length: 128 }),
+  failureReason: text("failure_reason"),
+  estimatedDate: bigint("estimated_date", { mode: "number" }),
+  completedAt: bigint("completed_at", { mode: "number" }),
+  createdAt: bigint("created_at", { mode: "number" }).notNull(),
+  updatedAt: bigint("updated_at", { mode: "number" }).notNull(),
+});
+export type Deposit = typeof deposits.$inferSelect;
+export type InsertDeposit = typeof deposits.$inferInsert;
+
+// ─── Tabla de registros de transferencias enviadas/recibidas ──────────────────
+export const transferRecords = mysqlTable("transfer_records", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("user_id").notNull(),
+  type: mysqlEnum("type", ["sent", "received"]).notNull().default("sent"),
+  transferType: mysqlEnum("transfer_type", ["spei", "wire", "zelle", "crypto", "other"]).notNull().default("spei"),
+  amount: decimal("amount", { precision: 12, scale: 2 }).notNull(),
+  currency: varchar("currency", { length: 8 }).notNull().default("MXN"),
+  status: mysqlEnum("transfer_status", ["pending", "completed", "failed", "cancelled"]).notNull().default("pending"),
+  trackingNumber: varchar("tracking_number", { length: 128 }),
+  senderName: varchar("sender_name", { length: 255 }),
+  senderBank: varchar("sender_bank", { length: 128 }),
+  senderClabe: varchar("sender_clabe", { length: 18 }),
+  recipientName: varchar("recipient_name", { length: 255 }),
+  recipientBank: varchar("recipient_bank", { length: 128 }),
+  recipientClabe: varchar("recipient_clabe", { length: 18 }),
+  recipientAccount: varchar("recipient_account", { length: 64 }),
+  concept: varchar("concept", { length: 255 }),
+  notes: text("notes"),
+  failureReason: text("failure_reason"),
+  completedAt: bigint("completed_at", { mode: "number" }),
+  createdAt: bigint("created_at", { mode: "number" }).notNull(),
+  updatedAt: bigint("updated_at", { mode: "number" }).notNull(),
+});
+export type TransferRecord = typeof transferRecords.$inferSelect;
+export type InsertTransferRecord = typeof transferRecords.$inferInsert;
