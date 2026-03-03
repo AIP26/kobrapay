@@ -16,7 +16,7 @@ import {
   ChevronDown, ChevronUp, ShieldCheck, HelpCircle, Store
 } from "lucide-react";
 
-// ─── Planes disponibles ───────────────────────────────────────────────────────
+// --- Planes disponibles -------------------------------------------------------
 const PLANS = [
   {
     id: "express",
@@ -119,7 +119,7 @@ const PLANS = [
   },
 ];
 
-// ─── Simulador de Cotización (para el asociado, con % editables) ─────────────────────────────────
+// --- Simulador de Cotización (para el asociado, con % editables) ---------------------------------
 function AssociateQuoteSimulator() {
   const [mode, setMode] = useState<"online" | "terminal">("online");
   const [amount, setAmount] = useState("10000");
@@ -250,7 +250,7 @@ function AssociateQuoteSimulator() {
   );
 }
 
-// ─── FAQ de Ventas ────────────────────────────────────────────────────────────
+// --- FAQ de Ventas ------------------------------------------------------------
 const FAQ_ITEMS = [
   {
     q: "¿Puedo usar mi terminal física actual con KobraPay?",
@@ -568,7 +568,7 @@ export default function AssociateDashboard() {
           })}
         </div>
 
-        {/* ─── TAB: Manual de Ventas ─── */}
+        {/* --- TAB: Manual de Ventas --- */}
         {activeTab === "manual" && (
           <div className="space-y-6">
             {/* Intro banner */}
@@ -731,6 +731,84 @@ export default function AssociateDashboard() {
               </div>
             </div>
 
+            {/* Catalogo de Terminales Stripe */}
+            <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+              <div className="bg-gradient-to-r from-violet-600 to-purple-700 px-6 py-4 text-white">
+                <div className="flex items-center gap-3">
+                  <CreditCard className="w-5 h-5" />
+                  <div>
+                    <h3 className="font-bold">Terminales Físicas Stripe</h3>
+                    <p className="text-violet-100 text-xs">Hardware certificado que se integra directamente con KobraPay</p>
+                  </div>
+                </div>
+              </div>
+              <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-5">
+                {/* Stripe Reader S700 */}
+                <div className="border border-gray-200 rounded-xl overflow-hidden">
+                  <div className="bg-gray-900 p-5 flex items-center justify-center" style={{minHeight:"140px"}}>
+                    <div className="text-center">
+                      <div className="w-16 h-24 bg-gray-700 rounded-xl mx-auto mb-2 flex items-center justify-center border-2 border-gray-600">
+                        <div className="w-10 h-6 bg-gray-500 rounded-sm" />
+                      </div>
+                      <span className="text-white text-xs font-bold">Stripe Reader S700</span>
+                    </div>
+                  </div>
+                  <div className="p-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <h4 className="font-bold text-gray-900">Stripe Reader S700</h4>
+                      <span className="text-lg font-black text-violet-600">~$299 USD</span>
+                    </div>
+                    <p className="text-xs text-gray-500 mb-3">Terminal inteligente con pantalla táctil. Acepta chip, banda magnética y NFC (Apple Pay, Google Pay). Conexión WiFi y Ethernet.</p>
+                    <div className="space-y-1.5">
+                      {["Pantalla táctil de 5\"","WiFi + Ethernet","Chip + NFC + Banda","Impresora opcional","Batería recargable"].map(f => (
+                        <div key={f} className="flex items-center gap-2 text-xs text-gray-600">
+                          <CheckCircle className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                          {f}
+                        </div>
+                      ))}
+                    </div>
+                    <div className="mt-3 bg-violet-50 rounded-lg p-2.5 text-xs text-violet-800">
+                      <strong>Ideal para:</strong> Restaurantes, tiendas, spas, clínicas con mostrador.
+                    </div>
+                  </div>
+                </div>
+                {/* BBPOS WisePOS E */}
+                <div className="border border-gray-200 rounded-xl overflow-hidden">
+                  <div className="bg-gray-800 p-5 flex items-center justify-center" style={{minHeight:"140px"}}>
+                    <div className="text-center">
+                      <div className="w-12 h-20 bg-gray-600 rounded-lg mx-auto mb-2 flex items-center justify-center border-2 border-gray-500">
+                        <div className="w-8 h-5 bg-gray-400 rounded-sm" />
+                      </div>
+                      <span className="text-white text-xs font-bold">BBPOS WisePOS E</span>
+                    </div>
+                  </div>
+                  <div className="p-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <h4 className="font-bold text-gray-900">BBPOS WisePOS E</h4>
+                      <span className="text-lg font-black text-violet-600">~$249 USD</span>
+                    </div>
+                    <p className="text-xs text-gray-500 mb-3">Terminal compacta y portátil. Perfecta para negocios móviles o con espacio reducido. Batería de larga duración.</p>
+                    <div className="space-y-1.5">
+                      {["Pantalla táctil de 3.5\"","WiFi + Bluetooth","Chip + NFC","Batería 8+ horas","Diseño compacto"].map(f => (
+                        <div key={f} className="flex items-center gap-2 text-xs text-gray-600">
+                          <CheckCircle className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                          {f}
+                        </div>
+                      ))}
+                    </div>
+                    <div className="mt-3 bg-violet-50 rounded-lg p-2.5 text-xs text-violet-800">
+                      <strong>Ideal para:</strong> Servicios a domicilio, ferias, eventos, food trucks.
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div className="px-6 pb-5">
+                <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-sm text-amber-800">
+                  <strong>Argumento de venta:</strong> "Con KobraPay tienes cobros online Y presenciales en un solo panel, un solo reporte y una sola comisión. No necesitas dos sistemas separados."
+                </div>
+              </div>
+            </div>
+
             {/* Simulador de Cotizacion */}
             <AssociateQuoteSimulator />
 
@@ -739,7 +817,7 @@ export default function AssociateDashboard() {
           </div>
         )}
 
-        {/* ─── TAB: Registrar Cliente ─── */}
+        {/* --- TAB: Registrar Cliente --- */}
         {activeTab === "registro" && (
           <div className="max-w-2xl mx-auto">
             <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
@@ -866,7 +944,7 @@ export default function AssociateDashboard() {
           </div>
         )}
 
-        {/* ─── TAB: Mis Comisiones ─── */}
+        {/* --- TAB: Mis Comisiones --- */}
         {activeTab === "comisiones" && (
           <div className="space-y-5">
             {/* KPIs */}

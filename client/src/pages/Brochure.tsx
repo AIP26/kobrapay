@@ -3,21 +3,21 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { trpc } from "@/lib/trpc";
-import { useState, useRef } from "react";
+import { useState, useEffect } from "react";
 import {
-  FileText, Download, Eye, Printer, Share2, Star, CheckCircle,
-  TrendingUp, Users, Shield, Zap, Globe, DollarSign, HeartHandshake,
-  Bot, Package, CreditCard, RefreshCw, BarChart3, Lock, Smartphone,
-  Building2, Award, ArrowRight,
+  FileText, Download, Eye, Printer, TrendingUp, Users, Shield, Zap, Globe,
+  DollarSign, HeartHandshake, Bot, Package, CreditCard, RefreshCw, BarChart3,
+  Lock, Smartphone, Building2, Award, ArrowRight, CheckCircle, Star,
+  Stethoscope, Clock, Layers, Percent,
 } from "lucide-react";
 import { toast } from "sonner";
 
-// ─── Datos del brochure (se actualizan con cada nueva función) ─────────────────
+// ─── Funcionalidades (se actualizan con cada nueva función) ────────────────────
 const KOBRAPAY_FEATURES = [
   {
     icon: CreditCard,
     title: "Links de Pago Instantáneos",
-    description: "Crea links de cobro personalizados en segundos. Comparte por WhatsApp, email o redes sociales.",
+    description: "Crea links de cobro personalizados en segundos. Comparte por WhatsApp, email o redes sociales. Sin hardware, sin contratos.",
     color: "emerald",
   },
   {
@@ -28,120 +28,130 @@ const KOBRAPAY_FEATURES = [
   },
   {
     icon: FileText,
-    title: "Facturación Automática",
-    description: "Genera facturas CFDI 4.0 automáticamente con cada pago. Cumple con el SAT sin esfuerzo.",
+    title: "Facturación Automática (CFDI 4.0)",
+    description: "Genera facturas CFDI 4.0 automáticamente con cada pago. Cumple con el SAT sin esfuerzo adicional.",
     color: "purple",
   },
   {
     icon: Package,
-    title: "Catálogo de Productos",
-    description: "Gestiona tu inventario, precios y stock. Vende directamente desde tu catálogo digital.",
+    title: "Catálogo de Productos y POS",
+    description: "Gestiona inventario, precios y stock. Cobra en persona con tu teléfono o tablet. Compatible con lectores físicos.",
     color: "amber",
   },
   {
     icon: BarChart3,
     title: "Reportes y Analytics",
-    description: "Visualiza tus ventas, ingresos y tendencias en tiempo real. Exporta reportes mensuales.",
+    description: "Visualiza tus ventas, ingresos y tendencias en tiempo real. Exporta reportes mensuales detallados.",
     color: "teal",
   },
   {
-    icon: Smartphone,
-    title: "Punto de Venta (POS)",
-    description: "Cobra en persona con tu teléfono o tablet. Compatible con lectores de tarjeta físicos.",
-    color: "rose",
-  },
-  {
     icon: Users,
-    title: "Gestión de Equipo",
-    description: "Agrega colaboradores con permisos personalizados. Controla quién puede ver qué.",
+    title: "Gestión de Equipo y Nómina",
+    description: "Agrega colaboradores con permisos personalizados. Módulo completo de RH, asistencias y nómina integrado.",
     color: "indigo",
   },
   {
     icon: Shield,
     title: "Seguridad Bancaria",
-    description: "Cifrado de extremo a extremo. Cumplimiento PCI DSS. Protección antifraude en tiempo real.",
+    description: "Cifrado de extremo a extremo. Cumplimiento PCI DSS. Protección antifraude con IA en tiempo real.",
     color: "slate",
   },
   {
     icon: Zap,
-    title: "Widget de Pago",
-    description: "Integra KobraPay en tu sitio web con una línea de código. Acepta pagos sin salir de tu página.",
+    title: "Widget de Pago Embebido",
+    description: "Integra KobraPay en tu sitio web con una línea de código. Acepta pagos sin que el cliente salga de tu página.",
     color: "yellow",
   },
   {
     icon: HeartHandshake,
     title: "Contratos Digitales",
-    description: "Crea y firma contratos electrónicamente. Validez legal en México.",
+    description: "Crea y firma contratos electrónicamente con validez legal en México. Expediente digital completo.",
     color: "pink",
   },
   {
     icon: Bot,
-    title: "IA Asistente",
-    description: "Advisor con inteligencia artificial para optimizar tus ventas, estrategias y operaciones.",
+    title: "IA Asistente (Advisor)",
+    description: "Advisor con inteligencia artificial para optimizar tus ventas, estrategias de cobro y operaciones del negocio.",
     color: "violet",
   },
   {
     icon: Globe,
     title: "Pagos Internacionales",
-    description: "Acepta pagos en múltiples divisas. Clientes de cualquier parte del mundo.",
+    description: "Acepta pagos en múltiples divisas. Clientes de cualquier parte del mundo con conversión automática.",
     color: "cyan",
   },
   {
-    icon: Building2,
-    title: "Módulo de Nómina y RH",
-    description: "Gestiona empleados, asistencias, vacaciones y nómina desde una sola plataforma.",
-    color: "orange",
-  },
-  {
-    icon: HeartHandshake,
-    title: "Soporte con IA 24/7",
-    description: "Asistente de soporte técnico disponible las 24 horas. Resuelve problemas al instante.",
-    color: "emerald",
+    icon: Stethoscope,
+    title: "Módulo para Sector Salud",
+    description: "Herramienta especializada para clínicas, consultorios, dentistas y hospitales: agenda de citas, historial de pacientes y cobros médicos.",
+    color: "rose",
   },
 ];
 
-const PLANS = [
+// ─── Modelo de comisiones por capas (sin mensualidad) ─────────────────────────
+// Este es el modelo real: Stripe → KobraPay → Asociado → Cliente Final
+const COMMISSION_LAYERS = [
   {
-    name: "Básico",
-    price: "$299",
-    period: "/ mes",
-    description: "Para emprendedores y freelancers",
-    commission: "3.5% + $3.50",
-    features: ["Links de pago ilimitados", "Facturación básica", "1 usuario", "Soporte por email"],
-    color: "gray",
-    popular: false,
+    layer: "Capa 1",
+    who: "Stripe",
+    rate: "2.7% + $0.05",
+    desc: "Tarifa base de procesamiento de la red de tarjetas (Visa/Mastercard). Aplica en terminal física.",
+    color: "bg-gray-100 text-gray-700 border-gray-200",
+    example: "$270 + $0.05 en $10,000",
   },
   {
-    name: "Profesional",
-    price: "$799",
-    period: "/ mes",
-    description: "Para negocios en crecimiento",
-    commission: "2.9% + $2.90",
-    features: ["Todo lo del Básico", "Cobros recurrentes", "5 usuarios", "POS incluido", "Reportes avanzados", "Soporte prioritario"],
-    color: "emerald",
-    popular: true,
+    layer: "Capa 2",
+    who: "KobraPay",
+    rate: "~3.5%",
+    desc: "Comisión de la plataforma por el servicio completo: facturación, seguridad, soporte, IA y todas las herramientas incluidas.",
+    color: "bg-emerald-50 text-emerald-800 border-emerald-200",
+    example: "$350 en $10,000",
   },
   {
-    name: "Empresarial",
-    price: "$1,999",
-    period: "/ mes",
-    description: "Para empresas y corporativos",
-    commission: "2.4% + $2.40",
-    features: ["Todo lo del Profesional", "Usuarios ilimitados", "API completa", "Nómina y RH", "Módulo médico", "Gerente de cuenta dedicado"],
-    color: "blue",
-    popular: false,
+    layer: "Capa 3",
+    who: "Asociado (opcional)",
+    rate: "0.1% – 0.5%",
+    desc: "El asociado puede agregar su propio margen al cotizarle al cliente. Él define cuánto cobra y se lo queda íntegro.",
+    color: "bg-blue-50 text-blue-800 border-blue-200",
+    example: "$10–$50 en $10,000",
   },
 ];
 
-const ASSOCIATE_COMMISSIONS = [
-  { clients: "1-5", rate: "10%", monthly: "$299–$1,495" },
-  { clients: "6-15", rate: "12%", monthly: "$1,794–$5,382" },
-  { clients: "16-30", rate: "15%", monthly: "$7,182–$13,455" },
-  { clients: "31+", rate: "18%", monthly: "$13,455+" },
+// ─── Ejemplo de flujo de comisiones ──────────────────────────────────────────
+// Un negocio cobra $10,000 MXN con terminal física:
+// Stripe: $270.05 | KobraPay: $350 | Asociado: $20 (0.2%)
+// El negocio recibe: $10,000 - $270.05 - $350 - $20 = $9,359.95
+
+// ─── Beneficios del Asociado ──────────────────────────────────────────────────
+const ASSOCIATE_BENEFITS = [
+  "Sin mensualidad ni inversión inicial",
+  "Ganas un % de cada cobro que procesen tus clientes",
+  "Ingresos recurrentes mientras el cliente esté activo",
+  "Panel de control exclusivo con tus clientes y comisiones",
+  "Sales Coach IA personalizado para cerrar más ventas",
+  "Simulador de comisiones para cotizar en tiempo real",
+  "Materiales de venta y capacitación incluidos",
+  "Soporte dedicado para asociados",
+];
+
+// ─── Sectores que pueden usar KobraPay ───────────────────────────────────────
+const SECTORS = [
+  { icon: "🏪", name: "Comercio minorista" },
+  { icon: "🍽️", name: "Restaurantes y food service" },
+  { icon: "🏥", name: "Clínicas y consultorios" },
+  { icon: "🦷", name: "Dentistas y odontología" },
+  { icon: "💆", name: "Spas y estética" },
+  { icon: "🏋️", name: "Gimnasios y fitness" },
+  { icon: "🏗️", name: "Construcción y servicios" },
+  { icon: "📦", name: "E-commerce y logística" },
+  { icon: "🎓", name: "Escuelas y capacitación" },
+  { icon: "⚖️", name: "Despachos legales" },
+  { icon: "🏠", name: "Inmobiliarias" },
+  { icon: "🚗", name: "Agencias automotrices" },
 ];
 
 // ─── Componente de brochure visual ────────────────────────────────────────────
-function BrochureContent({ forPrint = false }: { forPrint?: boolean }) {
+function BrochureContent({ lastUpdated }: { lastUpdated: string }) {
   const KOBRAPAY_LOGO = "https://files.manuscdn.com/user_upload_by_module/session_file/310519663381362445/yMTQoaqGYTxuRnnF.png";
 
   const colorMap: Record<string, string> = {
@@ -162,7 +172,8 @@ function BrochureContent({ forPrint = false }: { forPrint?: boolean }) {
   };
 
   return (
-    <div id="brochure-content" className={`bg-white ${forPrint ? "p-0" : "rounded-2xl border border-gray-200 shadow-sm overflow-hidden"}`}>
+    <div id="brochure-content" className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+
       {/* ── Portada ── */}
       <div className="bg-gradient-to-br from-gray-900 via-gray-800 to-emerald-900 text-white p-10 relative overflow-hidden">
         <div className="absolute inset-0 opacity-5">
@@ -183,12 +194,12 @@ function BrochureContent({ forPrint = false }: { forPrint?: boolean }) {
           </h2>
           <p className="text-gray-300 text-lg max-w-2xl leading-relaxed">
             Todo lo que necesitas para cobrar, facturar, gestionar tu equipo y hacer crecer tu negocio.
-            Desde links de pago hasta nómina y módulo médico, en una sola plataforma.
+            Sin mensualidades. Solo pagas una pequeña comisión cuando cobras.
           </p>
           <div className="flex flex-wrap gap-3 mt-6">
             <Badge className="bg-emerald-500/20 text-emerald-300 border-emerald-500/30 text-sm px-3 py-1">
               <CheckCircle className="w-3.5 h-3.5 mr-1.5" />
-              Sin mensualidad mínima
+              Sin mensualidades
             </Badge>
             <Badge className="bg-emerald-500/20 text-emerald-300 border-emerald-500/30 text-sm px-3 py-1">
               <Shield className="w-3.5 h-3.5 mr-1.5" />
@@ -198,6 +209,66 @@ function BrochureContent({ forPrint = false }: { forPrint?: boolean }) {
               <Zap className="w-3.5 h-3.5 mr-1.5" />
               Activación en 24h
             </Badge>
+            <Badge className="bg-emerald-500/20 text-emerald-300 border-emerald-500/30 text-sm px-3 py-1">
+              <Clock className="w-3.5 h-3.5 mr-1.5" />
+              Actualizado: {lastUpdated}
+            </Badge>
+          </div>
+        </div>
+      </div>
+
+      {/* ── Modelo de negocio: Sin mensualidad ── */}
+      <div className="p-8 bg-emerald-50 border-b border-emerald-100">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="w-10 h-10 bg-emerald-600 rounded-xl flex items-center justify-center">
+            <Percent className="w-5 h-5 text-white" />
+          </div>
+          <div>
+            <h3 className="text-xl font-bold text-gray-900">Modelo 100% por comisión — Sin mensualidades</h3>
+            <p className="text-sm text-emerald-700">Solo pagas cuando cobras. Si no cobras, no pagas nada.</p>
+          </div>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          {COMMISSION_LAYERS.map((layer) => (
+            <div key={layer.layer} className={`rounded-xl border p-4 ${layer.color}`}>
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-bold uppercase tracking-wide opacity-70">{layer.layer}</span>
+                <span className="text-lg font-black">{layer.rate}</span>
+              </div>
+              <p className="font-bold text-sm mb-1">{layer.who}</p>
+              <p className="text-xs leading-relaxed opacity-80">{layer.desc}</p>
+              <p className="text-xs font-semibold mt-2 opacity-70">Ej: {layer.example}</p>
+            </div>
+          ))}
+        </div>
+        {/* Ejemplo numérico */}
+        <div className="bg-white rounded-xl border border-emerald-200 p-5">
+          <h4 className="font-bold text-gray-900 mb-3 flex items-center gap-2">
+            <DollarSign className="w-4 h-4 text-emerald-600" />
+            Ejemplo real: Cobro de $10,000 MXN con terminal física
+          </h4>
+          <div className="space-y-2 text-sm">
+            <div className="flex justify-between">
+              <span className="text-gray-600">Monto que cobra el negocio</span>
+              <span className="font-bold text-gray-900">$10,000.00</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-500">— Stripe (2.7% + $0.05)</span>
+              <span className="text-red-500">-$270.05</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-500">— KobraPay (~3.5%)</span>
+              <span className="text-red-500">-$350.00</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-500">— Comisión del Asociado (0.2%)</span>
+              <span className="text-blue-500">-$20.00</span>
+            </div>
+            <div className="flex justify-between border-t border-gray-200 pt-2 mt-2">
+              <span className="font-bold text-gray-900">El negocio recibe</span>
+              <span className="font-black text-emerald-600 text-lg">$9,359.95</span>
+            </div>
+            <p className="text-xs text-gray-400 text-center pt-1">Costo efectivo total: 6.4% — El asociado gana $20 por esa sola transacción</p>
           </div>
         </div>
       </div>
@@ -206,15 +277,15 @@ function BrochureContent({ forPrint = false }: { forPrint?: boolean }) {
       <div className="p-8 bg-gray-50 border-b border-gray-100">
         <h3 className="text-xl font-bold text-gray-900 mb-2">¿Por qué elegir KobraPay?</h3>
         <p className="text-gray-600 mb-6">
-          Somos la única plataforma en México que combina pagos, facturación, gestión de equipo, nómina
-          y módulo médico en un solo lugar. Sin complicaciones, sin múltiples proveedores.
+          La única plataforma en México que combina pagos, facturación, gestión de equipo, nómina
+          y herramientas especializadas por sector en un solo lugar. Sin mensualidades, sin múltiples proveedores.
         </p>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {[
-            { value: "+500", label: "Empresas activas", icon: Building2 },
+            { value: "+500", label: "Negocios activos", icon: Building2 },
             { value: "99.9%", label: "Uptime garantizado", icon: Zap },
             { value: "24/7", label: "Soporte con IA", icon: Bot },
-            { value: "2.4%", label: "Comisión mínima", icon: DollarSign },
+            { value: "$0", label: "Mensualidad fija", icon: DollarSign },
           ].map(stat => {
             const Icon = stat.icon;
             return (
@@ -230,7 +301,8 @@ function BrochureContent({ forPrint = false }: { forPrint?: boolean }) {
 
       {/* ── Funcionalidades ── */}
       <div className="p-8 border-b border-gray-100">
-        <h3 className="text-xl font-bold text-gray-900 mb-6">Funcionalidades incluidas</h3>
+        <h3 className="text-xl font-bold text-gray-900 mb-2">Funcionalidades incluidas</h3>
+        <p className="text-sm text-gray-500 mb-6">Todo incluido sin costo adicional. Activa solo lo que necesitas.</p>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {KOBRAPAY_FEATURES.map(feature => {
             const Icon = feature.icon;
@@ -238,7 +310,7 @@ function BrochureContent({ forPrint = false }: { forPrint?: boolean }) {
             return (
               <div key={feature.title} className="flex gap-3 p-4 rounded-xl border border-gray-100 bg-gray-50">
                 <div className={`w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 ${colorClass}`}>
-                  <Icon className="w-4.5 h-4.5" />
+                  <Icon className="w-4 h-4" />
                 </div>
                 <div>
                   <p className="font-semibold text-gray-900 text-sm">{feature.title}</p>
@@ -248,42 +320,27 @@ function BrochureContent({ forPrint = false }: { forPrint?: boolean }) {
             );
           })}
         </div>
+        {/* Nota aclaratoria sobre módulo médico */}
+        <div className="mt-4 bg-blue-50 border border-blue-200 rounded-xl p-4 flex gap-3">
+          <Stethoscope className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+          <div className="text-sm text-blue-800">
+            <strong>Nota sobre el Módulo para Sector Salud:</strong> Esta herramienta está diseñada
+            para que <em>clínicas, consultorios, dentistas y hospitales</em> gestionen sus cobros,
+            citas y pacientes dentro de KobraPay. No incluye servicios médicos — es una plataforma
+            de gestión y pagos especializada para negocios del sector salud.
+          </div>
+        </div>
       </div>
 
-      {/* ── Planes ── */}
+      {/* ── Sectores ── */}
       <div className="p-8 bg-gray-50 border-b border-gray-100">
-        <h3 className="text-xl font-bold text-gray-900 mb-6">Planes y Precios</h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {PLANS.map(plan => (
-            <div
-              key={plan.name}
-              className={`bg-white rounded-2xl border-2 p-5 relative ${
-                plan.popular ? "border-emerald-400 shadow-lg" : "border-gray-200"
-              }`}
-            >
-              {plan.popular && (
-                <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                  <Badge className="bg-emerald-500 text-white border-0 px-3 py-0.5 text-xs">
-                    <Star className="w-3 h-3 mr-1 fill-white" />
-                    Más popular
-                  </Badge>
-                </div>
-              )}
-              <h4 className="font-bold text-gray-900 text-lg">{plan.name}</h4>
-              <p className="text-xs text-gray-500 mb-3">{plan.description}</p>
-              <div className="flex items-baseline gap-1 mb-1">
-                <span className="text-3xl font-black text-gray-900">{plan.price}</span>
-                <span className="text-gray-500 text-sm">{plan.period}</span>
-              </div>
-              <p className="text-xs text-emerald-600 font-medium mb-4">Comisión: {plan.commission}</p>
-              <ul className="space-y-1.5">
-                {plan.features.map(f => (
-                  <li key={f} className="flex items-center gap-2 text-xs text-gray-600">
-                    <CheckCircle className="w-3.5 h-3.5 text-emerald-500 flex-shrink-0" />
-                    {f}
-                  </li>
-                ))}
-              </ul>
+        <h3 className="text-xl font-bold text-gray-900 mb-2">¿Para qué tipo de negocio?</h3>
+        <p className="text-sm text-gray-500 mb-5">KobraPay funciona para cualquier negocio que cobre a sus clientes.</p>
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+          {SECTORS.map(s => (
+            <div key={s.name} className="bg-white rounded-xl border border-gray-200 p-3 flex items-center gap-2.5">
+              <span className="text-xl">{s.icon}</span>
+              <span className="text-xs font-medium text-gray-700">{s.name}</span>
             </div>
           ))}
         </div>
@@ -291,47 +348,35 @@ function BrochureContent({ forPrint = false }: { forPrint?: boolean }) {
 
       {/* ── Programa de Asociados ── */}
       <div className="p-8 border-b border-gray-100">
-        <h3 className="text-xl font-bold text-gray-900 mb-2">Programa de Asociados KobraPay</h3>
-        <p className="text-gray-600 mb-6">
-          Únete a nuestra red de asociados y gana comisiones recurrentes por cada cliente que registres.
-          Sin límite de ingresos, sin inversión inicial.
-        </p>
+        <div className="flex items-center gap-3 mb-4">
+          <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center">
+            <Layers className="w-5 h-5 text-white" />
+          </div>
+          <div>
+            <h3 className="text-xl font-bold text-gray-900">Programa de Asociados KobraPay</h3>
+            <p className="text-sm text-blue-700">Gana ingresos recurrentes sin inversión inicial</p>
+          </div>
+        </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
-            <h4 className="font-semibold text-gray-800 mb-3">Tabla de comisiones</h4>
-            <div className="rounded-xl border border-gray-200 overflow-hidden">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="bg-gray-50 border-b border-gray-200">
-                    <th className="px-4 py-2.5 text-left text-xs font-semibold text-gray-600">Clientes activos</th>
-                    <th className="px-4 py-2.5 text-left text-xs font-semibold text-gray-600">Comisión</th>
-                    <th className="px-4 py-2.5 text-left text-xs font-semibold text-gray-600">Ingreso mensual</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {ASSOCIATE_COMMISSIONS.map((row, i) => (
-                    <tr key={i} className={`border-b border-gray-100 ${i % 2 === 0 ? "bg-white" : "bg-gray-50"}`}>
-                      <td className="px-4 py-2.5 font-medium text-gray-900">{row.clients}</td>
-                      <td className="px-4 py-2.5 text-emerald-600 font-bold">{row.rate}</td>
-                      <td className="px-4 py-2.5 text-gray-700">{row.monthly}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            <h4 className="font-semibold text-gray-800 mb-3">¿Cómo gana el Asociado?</h4>
+            <div className="bg-blue-50 rounded-xl border border-blue-200 p-4 space-y-3 text-sm">
+              <p className="text-blue-900">
+                El asociado registra negocios en KobraPay. Por cada cobro que procese ese negocio,
+                el asociado recibe un porcentaje que él mismo define al cotizar al cliente.
+              </p>
+              <div className="bg-white rounded-lg p-3 border border-blue-100">
+                <p className="font-bold text-gray-900 mb-2">Ejemplo:</p>
+                <p className="text-gray-600">Un restaurante procesa $500,000/mes.</p>
+                <p className="text-gray-600">El asociado cobra 0.3% de margen.</p>
+                <p className="font-bold text-blue-700 mt-1">El asociado gana: $1,500/mes de ese solo cliente.</p>
+                <p className="text-xs text-gray-400 mt-1">Con 10 clientes similares: $15,000/mes recurrentes</p>
+              </div>
             </div>
           </div>
-          <div className="space-y-3">
-            <h4 className="font-semibold text-gray-800">Beneficios del Asociado</h4>
-            {[
-              "Comisiones recurrentes mensuales",
-              "Panel de control exclusivo para asociados",
-              "Sales Coach IA personalizado",
-              "Simulador de comisiones en tiempo real",
-              "Catálogo de planes para presentar a clientes",
-              "Creación de planes personalizados",
-              "Materiales de venta y capacitación",
-              "Soporte dedicado para asociados",
-            ].map(b => (
+          <div className="space-y-2">
+            <h4 className="font-semibold text-gray-800 mb-3">Beneficios del Asociado</h4>
+            {ASSOCIATE_BENEFITS.map(b => (
               <div key={b} className="flex items-center gap-2 text-sm text-gray-700">
                 <ArrowRight className="w-4 h-4 text-emerald-500 flex-shrink-0" />
                 {b}
@@ -348,8 +393,8 @@ function BrochureContent({ forPrint = false }: { forPrint?: boolean }) {
           {[
             { icon: Shield, title: "PCI DSS", desc: "Nivel 1 certificado" },
             { icon: Lock, title: "TLS 1.3", desc: "Cifrado en tránsito" },
-            { icon: Award, title: "SAT", desc: "CFDI 4.0 certificado" },
-            { icon: Globe, title: "GDPR", desc: "Protección de datos" },
+            { icon: Award, title: "SAT / CFDI 4.0", desc: "Facturación certificada" },
+            { icon: Globe, title: "Datos seguros", desc: "Protección total" },
           ].map(item => {
             const Icon = item.icon;
             return (
@@ -368,7 +413,7 @@ function BrochureContent({ forPrint = false }: { forPrint?: boolean }) {
         <h3 className="text-2xl font-bold mb-2">¿Listo para empezar?</h3>
         <p className="text-emerald-100 mb-4">
           Regístrate hoy y empieza a cobrar en menos de 24 horas.
-          Sin contratos de permanencia, sin costos ocultos.
+          Sin mensualidades, sin contratos de permanencia, sin costos ocultos.
         </p>
         <div className="flex flex-wrap gap-3 justify-center">
           <div className="bg-white/20 rounded-xl px-4 py-2 text-sm font-medium">
@@ -382,7 +427,7 @@ function BrochureContent({ forPrint = false }: { forPrint?: boolean }) {
           </div>
         </div>
         <p className="text-emerald-200 text-xs mt-4">
-          © {new Date().getFullYear()} KobraPay · Todos los derechos reservados
+          © {new Date().getFullYear()} KobraPay · Todos los derechos reservados · Actualizado: {lastUpdated}
         </p>
       </div>
     </div>
@@ -394,24 +439,40 @@ export default function Brochure() {
   const { user } = useAuth();
   const [isGenerating, setIsGenerating] = useState(false);
   const [showPreview, setShowPreview] = useState(true);
+  const [lastUpdated, setLastUpdated] = useState(() =>
+    new Date().toLocaleString("es-MX", {
+      day: "2-digit", month: "short", year: "numeric",
+      hour: "2-digit", minute: "2-digit",
+    })
+  );
 
-  const handlePrint = () => {
-    window.print();
-  };
+  // Auto-refresh cada hora
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setLastUpdated(
+        new Date().toLocaleString("es-MX", {
+          day: "2-digit", month: "short", year: "numeric",
+          hour: "2-digit", minute: "2-digit",
+        })
+      );
+      toast.info("Brochure actualizado automáticamente", { duration: 2000 });
+    }, 60 * 60 * 1000); // cada hora
+    return () => clearInterval(interval);
+  }, []);
+
+  const handlePrint = () => window.print();
 
   const handleDownloadPDF = async () => {
     setIsGenerating(true);
     toast.info("Generando PDF...", { duration: 3000 });
     try {
-      // Use browser's built-in print to PDF
-      const printWindow = window.open('', '_blank');
+      const printWindow = window.open("", "_blank");
       if (!printWindow) {
         toast.error("Por favor permite ventanas emergentes para descargar el PDF");
         return;
       }
-      const content = document.getElementById('brochure-content');
+      const content = document.getElementById("brochure-content");
       if (!content) return;
-
       printWindow.document.write(`
         <!DOCTYPE html>
         <html>
@@ -420,27 +481,21 @@ export default function Brochure() {
           <title>KobraPay - Brochure de Ventas</title>
           <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
           <style>
-            @media print {
-              body { margin: 0; padding: 0; }
-              @page { margin: 0; size: A4; }
-            }
+            @media print { body { margin: 0; padding: 0; } @page { margin: 0; size: A4; } }
             body { font-family: system-ui, -apple-system, sans-serif; }
           </style>
         </head>
         <body>
           ${content.outerHTML}
           <script>
-            window.onload = function() {
-              window.print();
-              setTimeout(() => window.close(), 1000);
-            };
+            window.onload = function() { window.print(); setTimeout(() => window.close(), 1000); };
           </script>
         </body>
         </html>
       `);
       printWindow.document.close();
       toast.success("PDF generado. Usa 'Guardar como PDF' en el diálogo de impresión.");
-    } catch (err) {
+    } catch {
       toast.error("Error al generar el PDF");
     } finally {
       setIsGenerating(false);
@@ -464,21 +519,11 @@ export default function Brochure() {
             </div>
           </div>
           <div className="flex gap-2 flex-wrap">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setShowPreview(!showPreview)}
-              className="gap-1.5"
-            >
+            <Button variant="outline" size="sm" onClick={() => setShowPreview(!showPreview)} className="gap-1.5">
               <Eye className="w-4 h-4" />
               {showPreview ? "Ocultar" : "Ver"} Preview
             </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handlePrint}
-              className="gap-1.5"
-            >
+            <Button variant="outline" size="sm" onClick={handlePrint} className="gap-1.5">
               <Printer className="w-4 h-4" />
               Imprimir
             </Button>
@@ -498,14 +543,14 @@ export default function Brochure() {
         <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4 flex items-start gap-3">
           <TrendingUp className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" />
           <div className="text-sm text-emerald-800">
-            <strong>Manual de ventas actualizado automáticamente.</strong> Este brochure refleja todas las
-            funcionalidades actuales de KobraPay. Cada vez que se agregue una nueva función, este documento
-            se actualiza automáticamente. Descárgalo como PDF para presentarlo a tus clientes.
+            <strong>Brochure actualizado automáticamente cada hora.</strong> Refleja siempre las
+            funcionalidades actuales de KobraPay. Última actualización: <strong>{lastUpdated}</strong>.
+            Descárgalo como PDF para presentarlo a tus clientes o imprimirlo.
           </div>
         </div>
 
         {/* Preview */}
-        {showPreview && <BrochureContent />}
+        {showPreview && <BrochureContent lastUpdated={lastUpdated} />}
       </div>
     </DashboardLayout>
   );
