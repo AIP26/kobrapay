@@ -1687,11 +1687,16 @@ export const appRouter = router({
         bankName: z.string().max(128).optional().or(z.literal("")),
         clabe: z.string().length(18).optional().or(z.literal("")),
         bankAccountHolder: z.string().max(255).optional().or(z.literal("")),
-        paymentCycle: z.enum(["weekly", "biweekly"]).default("biweekly"),
+        paymentCycle: z.enum(["weekly", "biweekly", "monthly", "manual", "custom_day"]).default("biweekly"),
+        paymentDay: z.number().min(1).max(28).optional(),
       }))
       .mutation(async ({ ctx, input }) => {
         if (!ctx.isSuperAdmin) throw new TRPCError({ code: "FORBIDDEN" });
         const referralCode = nanoid(8).toUpperCase();
+        // Si es custom_day, guardamos como "day_N"
+        const paymentCycle = input.paymentCycle === "custom_day"
+          ? `day_${input.paymentDay ?? 1}`
+          : input.paymentCycle;
         return createSalesAgent({
           createdByUserId: ctx.user.id,
           name: input.name,
@@ -1701,7 +1706,7 @@ export const appRouter = router({
           bankName: input.bankName || null,
           clabe: input.clabe || null,
           bankAccountHolder: input.bankAccountHolder || null,
-          paymentCycle: input.paymentCycle,
+          paymentCycle,
           referralCode,
           isActive: true,
         });
@@ -5301,6 +5306,9 @@ Responde SIEMPRE en español mexicano, de forma motivadora, práctica y orientad
         clientBusinessName: z.string().max(255).optional(),
         clientPhone: z.string().max(32).optional(),
         assignedPlan: z.enum(['express', 'connect', 'custom', 'enterprise']).optional(),
+        customPlanName: z.string().max(100).optional(),
+        customCommissionRate: z.number().min(0).max(10).optional(),
+        paymentCycle: z.enum(['weekly', 'biweekly', 'monthly', 'custom']).optional(),
         notes: z.string().optional(),
       }))
       .mutation(async ({ ctx, input }) => {
@@ -5310,6 +5318,12 @@ Responde SIEMPRE en español mexicano, de forma motivadora, práctica y orientad
         if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
         const { associateCommissions } = await import('../drizzle/schema');
         const now = Date.now();
+        const commissionToSave = input.customCommissionRate !== undefined
+          ? String(input.customCommissionRate)
+          : '1.00';
+        const notesWithCustomPlan = input.customPlanName
+          ? `[Plan personalizado: ${input.customPlanName}]${input.notes ? ' ' + input.notes : ''}`
+          : (input.notes || null);
         const result = await db.insert(associateCommissions).values({
           associateUserId: ctx.user.id,
           clientEmail: input.clientEmail,
@@ -5317,9 +5331,10 @@ Responde SIEMPRE en español mexicano, de forma motivadora, práctica y orientad
           clientBusinessName: input.clientBusinessName || null,
           clientPhone: input.clientPhone || null,
           assignedPlan: input.assignedPlan || null,
-          notes: input.notes || null,
+          notes: notesWithCustomPlan,
           status: 'pending',
-          commissionRate: '1.00',
+          commissionRate: commissionToSave,
+          paymentCycle: input.paymentCycle || 'monthly',
           totalVolumeProcessed: '0.00',
           totalCommissionEarned: '0.00',
           createdAt: now,
@@ -5328,7 +5343,7 @@ Responde SIEMPRE en español mexicano, de forma motivadora, práctica y orientad
         // Notificar al superadmin
         notifyOwner({
           title: '🤝 Nuevo cliente registrado por Asociado',
-          content: `El asociado ${ctx.user.name || ctx.user.email} registró un nuevo cliente.\n\nCliente: ${input.clientName}\nEmail: ${input.clientEmail}\nNegocio: ${input.clientBusinessName || 'No especificado'}\nPlan sugerido: ${input.assignedPlan || 'Por definir'}\nNotas: ${input.notes || 'Sin notas'}`,
+          content: `El asociado ${ctx.user.name || ctx.user.email} registró un nuevo cliente.\n\nCliente: ${input.clientName}\nEmail: ${input.clientEmail}\nNegocio: ${input.clientBusinessName || 'No especificado'}\nPlan sugerido: ${input.assignedPlan || 'Por definir'}\nComisión: ${commissionToSave}%\nCiclo de pago: ${input.paymentCycle || 'monthly'}\nNotas: ${input.notes || 'Sin notas'}`,
         }).catch(() => {});
         return { success: true, id: Number((result as any).insertId) };
       }),
@@ -5459,6 +5474,212 @@ Responde SIEMPRE en español mexicano, de forma directa, práctica y como si fue
         const content = response?.choices?.[0]?.message?.content;
         if (!content) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Sin respuesta del modelo' });
         return { message: typeof content === 'string' ? content : JSON.stringify(content) };
+      }),
+  }),
+
+  // ─── Soporte técnico y buzón de sugerencias ──────────────────────────────
+  support: router({
+    // Crear ticket de soporte
+    createTicket: protectedProcedure
+      .input(z.object({
+        category: z.enum(['technical', 'billing', 'feature', 'bug', 'other']),
+        subject: z.string().min(5).max(255),
+        description: z.string().min(10),
+        priority: z.enum(['low', 'medium', 'high']).default('medium'),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const db = await import('./db').then(m => m.getDb());
+        if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
+        const { supportTickets } = await import('../drizzle/schema');
+        const now = Date.now();
+        await db.insert(supportTickets).values({
+          userId: ctx.user.id,
+          userEmail: ctx.user.email ?? '',
+          userName: ctx.user.name ?? ctx.user.email ?? undefined,
+          category: input.category,
+          subject: input.subject,
+          description: input.description,
+          status: 'open',
+          priority: input.priority,
+          createdAt: now,
+          updatedAt: now,
+        });
+        const { notifyOwner } = await import('./_core/notification');
+        await notifyOwner({
+          title: `Nuevo ticket de soporte: ${input.subject}`,
+          content: `Usuario: ${ctx.user.email}\nCategoría: ${input.category}\nPrioridad: ${input.priority}\n\n${input.description}`,
+        });
+        return { success: true };
+      }),
+
+    // Obtener tickets del usuario
+    getMyTickets: protectedProcedure.query(async ({ ctx }) => {
+      const db = await import('./db').then(m => m.getDb());
+      if (!db) return [];
+      const { eq, desc } = await import('drizzle-orm');
+      const { supportTickets } = await import('../drizzle/schema');
+      return db.select().from(supportTickets)
+        .where(eq(supportTickets.userId, ctx.user.id))
+        .orderBy(desc(supportTickets.createdAt));
+    }),
+
+    // Obtener todos los tickets (admin)
+    getAllTickets: protectedProcedure.query(async ({ ctx }) => {
+      const db = await import('./db').then(m => m.getDb());
+      if (!db) return [];
+      const { desc } = await import('drizzle-orm');
+      const { supportTickets } = await import('../drizzle/schema');
+      const isSuperAdmin = (ctx.user as Record<string, unknown>)?.isSuperAdmin === true;
+      const isAdmin = ctx.user.role === 'admin';
+      if (!isSuperAdmin && !isAdmin) throw new TRPCError({ code: 'FORBIDDEN' });
+      return db.select().from(supportTickets).orderBy(desc(supportTickets.createdAt));
+    }),
+
+    // Responder/resolver ticket (admin)
+    resolveTicket: protectedProcedure
+      .input(z.object({
+        ticketId: z.number(),
+        resolution: z.string(),
+        status: z.enum(['open', 'in_progress', 'resolved', 'closed']),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const db = await import('./db').then(m => m.getDb());
+        if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
+        const { supportTickets } = await import('../drizzle/schema');
+        const isSuperAdmin = (ctx.user as Record<string, unknown>)?.isSuperAdmin === true;
+        const isAdmin = ctx.user.role === 'admin';
+        if (!isSuperAdmin && !isAdmin) throw new TRPCError({ code: 'FORBIDDEN' });
+        const { eq } = await import('drizzle-orm');
+        const now = Date.now();
+        await db.update(supportTickets)
+          .set({
+            resolution: input.resolution,
+            status: input.status,
+            resolvedAt: input.status === 'resolved' || input.status === 'closed' ? now : undefined,
+            updatedAt: now,
+          })
+          .where(eq(supportTickets.id, input.ticketId));
+        return { success: true };
+      }),
+
+    // IA de soporte técnico
+    aiSupport: protectedProcedure
+      .input(z.object({
+        messages: z.array(z.object({
+          role: z.enum(['user', 'assistant']),
+          content: z.string(),
+        })),
+      }))
+      .mutation(async ({ input }) => {
+        const { invokeLLM } = await import('./_core/llm');
+        const systemPrompt = `Eres el asistente de soporte técnico de KobraPay, una plataforma de pagos mexicana.
+
+Tu función es ayudar a los usuarios a resolver problemas técnicos con la plataforma KobraPay.
+
+Módulos disponibles en KobraPay:
+- Cobros / Links de pago: crear enlaces, compartir por WhatsApp o QR
+- Mis Ventas: historial de transacciones, filtros, exportar
+- Clientes: base de datos de pagadores
+- Facturación: facturas CFDI
+- Contratos digitales: crear y firmar contratos
+- Cobros recurrentes: suscripciones automáticas
+- Agenda Médica: citas y expedientes
+- Recursos Humanos: empleados, nómina, checador
+- Catálogo / POS: productos y punto de venta
+- Stripe Connect: para recibir transferencias a CLABE
+- Reportes mensuales
+- Configuración: datos fiscales, notificaciones, seguridad
+
+Problemas comunes y soluciones:
+- "No puedo iniciar sesión": verificar correo y contraseña, usar el botón de Manus OAuth
+- "El pago no aparece": verificar en Mis Ventas, puede tardar 5 min en actualizarse
+- "Error al crear enlace": verificar que todos los campos obligatorios estén llenos
+- "No recibo notificaciones": verificar configuración en Ajustes > Notificaciones
+- "El cliente no puede pagar": verificar que el enlace no haya expirado, que la tarjeta sea válida
+- "¿Cuándo recibo mi dinero?": Stripe transfiere en 2-7 días hábiles según el plan
+- "Error de Stripe": verificar en Configuración > Pagos que las llaves estén correctas
+
+Responde SIEMPRE en español mexicano, de forma amable, clara y paso a paso. Si el problema es muy complejo o requiere intervención humana, sugiere crear un ticket de soporte.`;
+
+        const response = await invokeLLM({
+          messages: [
+            { role: 'system', content: systemPrompt },
+            ...input.messages,
+          ],
+        });
+        const content = response?.choices?.[0]?.message?.content;
+        if (!content) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Sin respuesta' });
+        return { message: typeof content === 'string' ? content : JSON.stringify(content) };
+      }),
+  }),
+
+  // ─── Buzón de sugerencias / feedback ─────────────────────────────────────
+  feedback: router({
+    // Enviar sugerencia o reporte
+    send: protectedProcedure
+      .input(z.object({
+        type: z.enum(['suggestion', 'bug', 'feature_request', 'compliment', 'other']),
+        subject: z.string().min(3).max(255),
+        message: z.string().min(10),
+        rating: z.number().min(1).max(5).optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const db = await import('./db').then(m => m.getDb());
+        if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
+        const { feedbackMessages } = await import('../drizzle/schema');
+        const now = Date.now();
+        await db.insert(feedbackMessages).values({
+          userId: ctx.user.id,
+          userEmail: ctx.user.email ?? '',
+          userName: ctx.user.name ?? ctx.user.email ?? undefined,
+          type: input.type,
+          subject: input.subject,
+          message: input.message,
+          rating: input.rating ?? undefined,
+          status: 'new',
+          createdAt: now,
+        });
+        const { notifyOwner } = await import('./_core/notification');
+        const typeLabels: Record<string, string> = {
+          suggestion: 'Sugerencia', bug: 'Reporte de bug',
+          feature_request: 'Solicitud de función', compliment: 'Felicitación', other: 'Otro',
+        };
+        await notifyOwner({
+          title: `${typeLabels[input.type] || 'Feedback'}: ${input.subject}`,
+          content: `De: ${ctx.user.email}\n${input.rating ? `Calificación: ${input.rating}/5\n` : ''}\n${input.message}`,
+        });
+        return { success: true };
+      }),
+
+    // Obtener feedback (admin)
+    getAll: protectedProcedure.query(async ({ ctx }) => {
+      const db = await import('./db').then(m => m.getDb());
+      if (!db) return [];
+      const { desc } = await import('drizzle-orm');
+      const { feedbackMessages } = await import('../drizzle/schema');
+      const isSuperAdmin = (ctx.user as Record<string, unknown>)?.isSuperAdmin === true;
+      const isAdmin = ctx.user.role === 'admin';
+      if (!isSuperAdmin && !isAdmin) throw new TRPCError({ code: 'FORBIDDEN' });
+      return db.select().from(feedbackMessages).orderBy(desc(feedbackMessages.createdAt));
+    }),
+    // Responder feedback (admin)
+    reply: protectedProcedure
+      .input(z.object({
+        feedbackId: z.number(),
+        adminReply: z.string(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const db = await import('./db').then(m => m.getDb());
+        if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
+        const { eq } = await import('drizzle-orm');
+        const { feedbackMessages } = await import('../drizzle/schema');
+        const isSuperAdmin = (ctx.user as Record<string, unknown>)?.isSuperAdmin === true;
+        const isAdmin = ctx.user.role === 'admin';
+        if (!isSuperAdmin && !isAdmin) throw new TRPCError({ code: 'FORBIDDEN' });
+        await db.update(feedbackMessages)
+          .set({ adminReply: input.adminReply, status: 'replied', repliedAt: Date.now() })
+          .where(eq(feedbackMessages.id, input.feedbackId));
+        return { success: true };
       }),
   }),
 });

@@ -15,6 +15,33 @@ const SUGGESTED_PROMPTS = [
   "Dame consejos para fidelizar a mis clientes y que regresen a comprar",
 ];
 
+const QUICK_ACTIONS = [
+  {
+    icon: TrendingUp,
+    label: "Estrategias de crecimiento",
+    color: "text-blue-600 bg-blue-50",
+    prompt: "¿Qué estrategias de crecimiento me recomiendas para aumentar mis ventas y volumen de transacciones con KobraPay este mes?",
+  },
+  {
+    icon: BarChart3,
+    label: "Análisis financiero",
+    color: "text-indigo-600 bg-indigo-50",
+    prompt: "Ayúdame a analizar mis finanzas: ¿cómo puedo mejorar el flujo de caja y reducir costos operativos en mi negocio?",
+  },
+  {
+    icon: Shield,
+    label: "Reducir contracargos",
+    color: "text-emerald-600 bg-emerald-50",
+    prompt: "¿Cómo puedo reducir los contracargos en mi negocio? Dame estrategias prácticas y mejores prácticas.",
+  },
+  {
+    icon: Lightbulb,
+    label: "Optimizar operaciones",
+    color: "text-amber-600 bg-amber-50",
+    prompt: "¿Cómo puedo optimizar las operaciones de mi negocio usando los módulos de KobraPay? ¿Qué funcionalidades debería aprovechar más?",
+  },
+];
+
 export default function AdminAdvisor() {
   const { user, loading: authLoading } = useAuth();
   const userRole = (user as Record<string, unknown>)?.role as string | undefined;
@@ -92,18 +119,19 @@ export default function AdminAdvisor() {
 
         {/* Capacidades rápidas */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          {[
-            { icon: TrendingUp, label: "Estrategias de crecimiento", color: "text-blue-600 bg-blue-50" },
-            { icon: BarChart3, label: "Análisis financiero", color: "text-indigo-600 bg-indigo-50" },
-            { icon: Shield, label: "Reducir contracargos", color: "text-emerald-600 bg-emerald-50" },
-            { icon: Lightbulb, label: "Optimizar operaciones", color: "text-amber-600 bg-amber-50" },
-          ].map(({ icon: Icon, label, color }) => (
-            <div key={label} className="flex items-center gap-2.5 p-3 rounded-xl border border-gray-100 bg-white">
-              <div className={`p-1.5 rounded-lg ${color}`}>
+          {QUICK_ACTIONS.map(({ icon: Icon, label, color, prompt }) => (
+            <button
+              key={label}
+              type="button"
+              className="flex items-center gap-2.5 p-3 rounded-xl border border-gray-100 bg-white cursor-pointer hover:bg-gray-50 hover:border-blue-200 hover:shadow-sm transition-all text-left w-full"
+              onClick={() => handleSendMessage(prompt)}
+              disabled={isLoading}
+            >
+              <div className={`p-1.5 rounded-lg ${color} flex-shrink-0`}>
                 <Icon className="w-4 h-4" />
               </div>
               <span className="text-xs font-medium text-gray-700">{label}</span>
-            </div>
+            </button>
           ))}
         </div>
 

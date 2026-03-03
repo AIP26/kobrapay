@@ -1,4 +1,5 @@
 import {
+  bigint,
   boolean,
   decimal,
   int,
@@ -1024,9 +1025,10 @@ export const associateCommissions = mysqlTable("associate_commissions", {
   totalVolumeProcessed: decimal("totalVolumeProcessed", { precision: 14, scale: 2 }).default("0.00").notNull(),
   totalCommissionEarned: decimal("totalCommissionEarned", { precision: 14, scale: 2 }).default("0.00").notNull(),
   notes: text("notes"),
-  approvedAt: int("approvedAt"),
-  createdAt: int("createdAt").notNull(),
-  updatedAt: int("updatedAt").notNull(),
+  paymentCycle: varchar("paymentCycle", { length: 20 }).default("monthly").notNull(),
+  approvedAt: bigint("approvedAt", { mode: "number" }),
+  createdAt: bigint("createdAt", { mode: "number" }).notNull(),
+  updatedAt: bigint("updatedAt", { mode: "number" }).notNull(),
 });
 export type AssociateCommission = typeof associateCommissions.$inferSelect;
 export type InsertAssociateCommission = typeof associateCommissions.$inferInsert;
@@ -1048,3 +1050,40 @@ export const associateClients = mysqlTable("associate_clients", {
 
 export type AssociateClient = typeof associateClients.$inferSelect;
 export type InsertAssociateClient = typeof associateClients.$inferInsert;
+
+// ─── Tickets de soporte técnico ───────────────────────────────────────────────
+export const supportTickets = mysqlTable("support_tickets", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  userEmail: varchar("userEmail", { length: 255 }).notNull(),
+  userName: varchar("userName", { length: 255 }),
+  category: varchar("category", { length: 50 }).notNull().default("technical"),
+  subject: varchar("subject", { length: 255 }).notNull(),
+  description: text("description").notNull(),
+  status: varchar("status", { length: 20 }).notNull().default("open"),
+  priority: varchar("priority", { length: 20 }).notNull().default("medium"),
+  resolution: text("resolution"),
+  resolvedAt: bigint("resolvedAt", { mode: "number" }),
+  createdAt: bigint("createdAt", { mode: "number" }).notNull(),
+  updatedAt: bigint("updatedAt", { mode: "number" }).notNull(),
+});
+export type SupportTicket = typeof supportTickets.$inferSelect;
+export type InsertSupportTicket = typeof supportTickets.$inferInsert;
+
+// ─── Buzón de sugerencias / feedback ─────────────────────────────────────────
+export const feedbackMessages = mysqlTable("feedback_messages", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  userEmail: varchar("userEmail", { length: 255 }).notNull(),
+  userName: varchar("userName", { length: 255 }),
+  type: varchar("type", { length: 30 }).notNull().default("suggestion"),
+  subject: varchar("subject", { length: 255 }).notNull(),
+  message: text("message").notNull(),
+  rating: int("rating"),
+  status: varchar("status", { length: 20 }).notNull().default("new"),
+  adminReply: text("adminReply"),
+  repliedAt: bigint("repliedAt", { mode: "number" }),
+  createdAt: bigint("createdAt", { mode: "number" }).notNull(),
+});
+export type FeedbackMessage = typeof feedbackMessages.$inferSelect;
+export type InsertFeedbackMessage = typeof feedbackMessages.$inferInsert;

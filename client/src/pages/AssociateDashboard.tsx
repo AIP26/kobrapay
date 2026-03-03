@@ -81,14 +81,14 @@ const PLANS = [
 function CommissionSimulator() {
   const [monthlyVolume, setMonthlyVolume] = useState<number>(50000);
   const [selectedPlan, setSelectedPlan] = useState<string>("connect");
-
+  const [customAssociateRate, setCustomAssociateRate] = useState<string>("");
   const plan = PLANS.find(p => p.id === selectedPlan);
   const kobraPayCommission = plan ? (monthlyVolume * (plan.commission / 100)) : 0;
-  const associateEarning = monthlyVolume * 0.005; // 0.5% para el asociado
+  const associateRate = customAssociateRate ? parseFloat(customAssociateRate) : 0.5;
+  const associateEarning = monthlyVolume * (associateRate / 100);
   const clientPays = kobraPayCommission;
   const stripeCommission = monthlyVolume * 0.015;
   const totalClientPays = kobraPayCommission + stripeCommission;
-
   const recommendedPlan = PLANS.find(p =>
     monthlyVolume >= p.minVolume && monthlyVolume < (p.maxVolume === Infinity ? Infinity : p.maxVolume + 1)
   ) || PLANS[PLANS.length - 1];
@@ -100,7 +100,7 @@ function CommissionSimulator() {
         <h2 className="text-lg font-bold text-gray-900">Simulador de Comisiones</h2>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="space-y-2">
           <Label className="text-sm font-medium text-gray-700">Volumen mensual estimado del cliente</Label>
           <div className="relative">
@@ -115,7 +115,6 @@ function CommissionSimulator() {
           </div>
           <p className="text-xs text-gray-400">MXN por mes</p>
         </div>
-
         <div className="space-y-2">
           <Label className="text-sm font-medium text-gray-700">Plan a ofrecer</Label>
           <Select value={selectedPlan} onValueChange={setSelectedPlan}>
@@ -133,9 +132,26 @@ function CommissionSimulator() {
           {recommendedPlan.id !== selectedPlan && (
             <p className="text-xs text-amber-600 flex items-center gap-1">
               <Star className="w-3 h-3" />
-              Recomendado para este volumen: <strong>{recommendedPlan.name}</strong>
+              Recomendado: <strong>{recommendedPlan.name}</strong>
             </p>
           )}
+        </div>
+        <div className="space-y-2">
+          <Label className="text-sm font-medium text-gray-700">Mi % de comisión acordada</Label>
+          <div className="relative">
+            <Input
+              type="number"
+              step="0.1"
+              min="0"
+              max="10"
+              value={customAssociateRate}
+              onChange={(e) => setCustomAssociateRate(e.target.value)}
+              className="pr-8"
+              placeholder="0.5"
+            />
+            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">%</span>
+          </div>
+          <p className="text-xs text-gray-400">Por defecto: 0.5% (deja vacío)</p>
         </div>
       </div>
 
@@ -146,7 +162,7 @@ function CommissionSimulator() {
           <p className="text-2xl font-bold text-emerald-700 mt-1">
             ${associateEarning.toLocaleString("es-MX", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </p>
-          <p className="text-xs text-emerald-600 mt-1">0.5% del volumen procesado</p>
+          <p className="text-xs text-emerald-600 mt-1">{associateRate}% del volumen procesado</p>
         </div>
 
         <div className="bg-blue-50 rounded-xl p-4 border border-blue-100">
@@ -227,6 +243,204 @@ function PlansCatalog() {
   );
 }
 
+// ─── Constructor de plan personalizado ──────────────────────────────────────
+function CustomPlanBuilder() {
+  const [plan, setPlan] = useState({
+    name: "",
+    clientType: "",
+    monthlyVolume: "",
+    commissionRate: "",
+    paymentCycle: "monthly",
+    features: [] as string[],
+    notes: "",
+  });
+  const [newFeature, setNewFeature] = useState("");
+  const [saved, setSaved] = useState(false);
+
+  const BASE_FEATURES = [
+    "Links de pago", "Cobros con tarjeta", "Historial de ventas",
+    "Stripe Connect (CLABE)", "Facturas digitales", "Contratos digitales",
+    "Cobros recurrentes", "Agenda Médica", "Expedientes RH",
+    "Soporte prioritario", "Gestor de cuenta dedicado", "API completa",
+  ];
+
+  const toggleFeature = (f: string) => {
+    setPlan(p => ({
+      ...p,
+      features: p.features.includes(f) ? p.features.filter(x => x !== f) : [...p.features, f],
+    }));
+  };
+
+  const addCustomFeature = () => {
+    if (newFeature.trim()) {
+      setPlan(p => ({ ...p, features: [...p.features, newFeature.trim()] }));
+      setNewFeature("");
+    }
+  };
+
+  const handleSave = () => {
+    if (!plan.name) return;
+    setSaved(true);
+    setTimeout(() => setSaved(false), 3000);
+  };
+
+  const volume = parseFloat(plan.monthlyVolume) || 0;
+  const rate = parseFloat(plan.commissionRate) || 0;
+  const clientPays = volume * (rate / 100);
+  const associateEarning = volume * 0.005;
+  const CYCLE_LABELS: Record<string, string> = {
+    weekly: "Semanal", biweekly: "Quincenal", monthly: "Mensual", custom: "Personalizado"
+  };
+
+  return (
+    <div className="space-y-5">
+      <div className="flex items-center gap-2">
+        <Crown className="w-5 h-5 text-purple-600" />
+        <h2 className="text-lg font-bold text-gray-900">Crear Plan Personalizado</h2>
+        <Badge className="bg-purple-100 text-purple-700 border-purple-200" variant="outline">Para tu cliente</Badge>
+      </div>
+      <p className="text-sm text-gray-500">Diseña un plan a la medida de tu cliente. Selecciona los módulos, define la comisión y el ciclo de pago.</p>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+        {/* Columna izquierda: datos del plan */}
+        <div className="space-y-4">
+          <div className="bg-white rounded-2xl border border-gray-200 p-4 space-y-3">
+            <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Datos del plan</p>
+            <div className="space-y-1.5">
+              <Label className="text-sm">Nombre del plan</Label>
+              <Input value={plan.name} onChange={e => setPlan(p => ({ ...p, name: e.target.value }))} placeholder="Ej: Plan Clínica Premium" />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-sm">Tipo de cliente / industria</Label>
+              <Input value={plan.clientType} onChange={e => setPlan(p => ({ ...p, clientType: e.target.value }))} placeholder="Ej: Clínica dental, Gimnasio, E-commerce" />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label className="text-sm">Volumen mensual estimado</Label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">$</span>
+                  <Input type="number" value={plan.monthlyVolume} onChange={e => setPlan(p => ({ ...p, monthlyVolume: e.target.value }))} className="pl-7" placeholder="100000" />
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-sm">Comisión acordada (%)</Label>
+                <div className="relative">
+                  <Input type="number" step="0.1" min="0" max="10" value={plan.commissionRate} onChange={e => setPlan(p => ({ ...p, commissionRate: e.target.value }))} className="pr-8" placeholder="2.5" />
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">%</span>
+                </div>
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-sm">Ciclo de pago de comisiones</Label>
+              <Select value={plan.paymentCycle} onValueChange={v => setPlan(p => ({ ...p, paymentCycle: v }))}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="weekly">Semanal</SelectItem>
+                  <SelectItem value="biweekly">Quincenal</SelectItem>
+                  <SelectItem value="monthly">Mensual</SelectItem>
+                  <SelectItem value="custom">Personalizado</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-sm">Notas / condiciones especiales</Label>
+              <Textarea value={plan.notes} onChange={e => setPlan(p => ({ ...p, notes: e.target.value }))} placeholder="Condiciones especiales, descuentos, etc." rows={2} />
+            </div>
+          </div>
+
+          {/* Proyección financiera */}
+          {volume > 0 && rate > 0 && (
+            <div className="bg-gradient-to-br from-emerald-50 to-teal-50 rounded-2xl border border-emerald-100 p-4 space-y-3">
+              <p className="text-xs font-semibold text-emerald-700 uppercase tracking-wide">Proyección financiera</p>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <p className="text-xs text-gray-500">El cliente paga</p>
+                  <p className="text-lg font-bold text-gray-800">${clientPays.toLocaleString("es-MX", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                  <p className="text-xs text-gray-400">al mes ({rate}%)</p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500">Tu comisión est.</p>
+                  <p className="text-lg font-bold text-emerald-700">${associateEarning.toLocaleString("es-MX", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                  <p className="text-xs text-gray-400">al mes (0.5%)</p>
+                </div>
+              </div>
+              <p className="text-xs text-gray-400">Ciclo de pago: {CYCLE_LABELS[plan.paymentCycle]}</p>
+            </div>
+          )}
+        </div>
+
+        {/* Columna derecha: módulos */}
+        <div className="bg-white rounded-2xl border border-gray-200 p-4 space-y-3">
+          <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Módulos incluidos</p>
+          <div className="grid grid-cols-1 gap-2">
+            {BASE_FEATURES.map(f => (
+              <button
+                key={f}
+                type="button"
+                onClick={() => toggleFeature(f)}
+                className={`flex items-center gap-2.5 p-2.5 rounded-lg border text-left transition-all ${
+                  plan.features.includes(f)
+                    ? "bg-emerald-50 border-emerald-200 text-emerald-800"
+                    : "bg-gray-50 border-gray-100 text-gray-600 hover:border-gray-200"
+                }`}
+              >
+                <CheckCircle className={`w-4 h-4 flex-shrink-0 ${plan.features.includes(f) ? "text-emerald-500" : "text-gray-300"}`} />
+                <span className="text-xs font-medium">{f}</span>
+              </button>
+            ))}
+          </div>
+          <div className="flex gap-2 pt-1">
+            <Input
+              value={newFeature}
+              onChange={e => setNewFeature(e.target.value)}
+              onKeyDown={e => e.key === "Enter" && (e.preventDefault(), addCustomFeature())}
+              placeholder="Agregar módulo personalizado..."
+              className="text-sm"
+            />
+            <Button type="button" variant="outline" size="sm" onClick={addCustomFeature}>+</Button>
+          </div>
+        </div>
+      </div>
+
+      {/* Resumen del plan */}
+      {plan.name && (
+        <div className="bg-white rounded-2xl border-2 border-purple-200 p-5 space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Crown className="w-5 h-5 text-purple-600" />
+              <h3 className="font-bold text-gray-900">{plan.name}</h3>
+            </div>
+            {rate > 0 && <Badge className="bg-purple-100 text-purple-700 border-0 font-bold text-base px-3 py-1">{rate}%</Badge>}
+          </div>
+          {plan.clientType && <p className="text-sm text-gray-500">Para: {plan.clientType}</p>}
+          {plan.features.length > 0 && (
+            <div className="space-y-1">
+              {plan.features.map(f => (
+                <div key={f} className="flex items-center gap-2 text-xs text-gray-600">
+                  <CheckCircle className="w-3.5 h-3.5 text-emerald-500 flex-shrink-0" />
+                  {f}
+                </div>
+              ))}
+            </div>
+          )}
+          {plan.notes && <p className="text-xs text-gray-400 italic">{plan.notes}</p>}
+          <div className="flex gap-3 pt-2">
+            <Button
+              type="button"
+              className="bg-purple-600 hover:bg-purple-700 text-white"
+              onClick={handleSave}
+            >
+              {saved ? "✓ Plan guardado" : "Guardar plan"}
+            </Button>
+            <Button type="button" variant="outline" onClick={() => setPlan({ name: "", clientType: "", monthlyVolume: "", commissionRate: "", paymentCycle: "monthly", features: [], notes: "" })}>
+              Limpiar
+            </Button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 // ─── Formulario de registro de cliente ───────────────────────────────────────
 function RegisterClientModal({ onSuccess }: { onSuccess: () => void }) {
   const [open, setOpen] = useState(false);
@@ -236,6 +450,9 @@ function RegisterClientModal({ onSuccess }: { onSuccess: () => void }) {
     clientBusinessName: "",
     clientPhone: "",
     assignedPlan: "" as "express" | "connect" | "custom" | "enterprise" | "",
+    customPlanName: "",
+    customCommissionRate: "",
+    paymentCycle: "monthly" as "weekly" | "biweekly" | "monthly" | "custom",
     notes: "",
   });
 
@@ -243,7 +460,7 @@ function RegisterClientModal({ onSuccess }: { onSuccess: () => void }) {
     onSuccess: () => {
       toast.success("¡Cliente registrado exitosamente! Se notificó al equipo KobraPay.");
       setOpen(false);
-      setForm({ clientName: "", clientEmail: "", clientBusinessName: "", clientPhone: "", assignedPlan: "", notes: "" });
+      setForm({ clientName: "", clientEmail: "", clientBusinessName: "", clientPhone: "", assignedPlan: "", customPlanName: "", customCommissionRate: "", paymentCycle: "monthly", notes: "" });
       onSuccess();
     },
     onError: (err) => {
@@ -257,15 +474,26 @@ function RegisterClientModal({ onSuccess }: { onSuccess: () => void }) {
       toast.error("Nombre y email son obligatorios");
       return;
     }
+    const customRate = form.customCommissionRate ? parseFloat(form.customCommissionRate) : undefined;
     registerMutation.mutate({
       clientName: form.clientName,
       clientEmail: form.clientEmail,
       clientBusinessName: form.clientBusinessName || undefined,
       clientPhone: form.clientPhone || undefined,
       assignedPlan: (form.assignedPlan as "express" | "connect" | "custom" | "enterprise") || undefined,
+      customPlanName: form.customPlanName || undefined,
+      customCommissionRate: customRate,
+      paymentCycle: form.paymentCycle,
       notes: form.notes || undefined,
     });
   };
+
+  const PAYMENT_CYCLES = [
+    { value: "weekly", label: "Semanal" },
+    { value: "biweekly", label: "Quincenal" },
+    { value: "monthly", label: "Mensual" },
+    { value: "custom", label: "Personalizado" },
+  ];
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -275,7 +503,7 @@ function RegisterClientModal({ onSuccess }: { onSuccess: () => void }) {
           Registrar Cliente
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <UserPlus className="w-5 h-5 text-emerald-600" />
@@ -343,13 +571,62 @@ function RegisterClientModal({ onSuccess }: { onSuccess: () => void }) {
             </Select>
           </div>
 
+          {/* Plan personalizado */}
+          <div className="border border-dashed border-gray-200 rounded-xl p-3 space-y-3 bg-gray-50">
+            <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Opciones avanzadas</p>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label className="text-xs">Nombre plan personalizado</Label>
+                <Input
+                  value={form.customPlanName}
+                  onChange={e => setForm(f => ({ ...f, customPlanName: e.target.value }))}
+                  placeholder="Ej: Plan Clínica VIP"
+                  className="text-sm"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs">Comisión acordada (%)</Label>
+                <div className="relative">
+                  <Input
+                    type="number"
+                    step="0.1"
+                    min="0"
+                    max="10"
+                    value={form.customCommissionRate}
+                    onChange={e => setForm(f => ({ ...f, customCommissionRate: e.target.value }))}
+                    placeholder="Ej: 2.5"
+                    className="text-sm pr-8"
+                  />
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs">%</span>
+                </div>
+                <p className="text-xs text-gray-400">Deja vacío para usar la comisión del plan</p>
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs">Ciclo de pago de comisiones</Label>
+              <Select
+                value={form.paymentCycle}
+                onValueChange={v => setForm(f => ({ ...f, paymentCycle: v as "weekly" | "biweekly" | "monthly" | "custom" }))}
+              >
+                <SelectTrigger className="text-sm">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {PAYMENT_CYCLES.map(c => (
+                    <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
           <div className="space-y-1.5">
             <Label>Notas adicionales</Label>
             <Textarea
               value={form.notes}
               onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
               placeholder="Información relevante del cliente, acuerdos previos, etc."
-              rows={3}
+              rows={2}
             />
           </div>
 
@@ -372,7 +649,7 @@ function RegisterClientModal({ onSuccess }: { onSuccess: () => void }) {
 }
 
 // ─── Página principal ─────────────────────────────────────────────────────────
-type TabType = "dashboard" | "clients" | "plans" | "simulator" | "ai";
+type TabType = "dashboard" | "clients" | "plans" | "custom_plan" | "simulator" | "ai";
 
 export default function AssociateDashboard() {
   const { user, loading: authLoading } = useAuth();
@@ -456,6 +733,7 @@ export default function AssociateDashboard() {
     { id: "dashboard", label: "Mi Panel", icon: TrendingUp },
     { id: "clients", label: "Mis Clientes", icon: Users },
     { id: "plans", label: "Catálogo de Planes", icon: Building2 },
+    { id: "custom_plan", label: "Crear Plan", icon: Crown },
     { id: "simulator", label: "Simulador", icon: Calculator },
     { id: "ai", label: "Sales Coach IA", icon: Bot },
   ];
@@ -655,7 +933,8 @@ export default function AssociateDashboard() {
 
         {/* Tab: Planes */}
         {activeTab === "plans" && <PlansCatalog />}
-
+        {/* Tab: Crear Plan Personalizado */}
+        {activeTab === "custom_plan" && <CustomPlanBuilder />}
         {/* Tab: Simulador */}
         {activeTab === "simulator" && <CommissionSimulator />}
 

@@ -691,3 +691,13 @@
 - [ ] Procedimientos tRPC para Cuenta de Asociado (registro de clientes, simulador, comisiones)
 - [ ] Página AssociateDashboard con simulador de planes, registro de clientes y comisiones
 - [ ] Ruta y acceso /associate en App.tsx
+
+## Fase 11 - Mejoras Cuenta de Asociado y Nuevas Funciones
+- [ ] Fix error al registrar cliente en Cuenta de Asociado (columna clientUserId falla)
+- [ ] Botones de sugerencias rápidas en IA (Estrategias, Análisis, etc.) deben ser clickeables
+- [ ] % manual de comisión en simulador y catálogo de planes
+- [ ] Sección "Crear Plan Personalizado" en catálogo de planes del asociado
+- [ ] Ciclo de pago del asociado (semanal, quincenal, mensual, días específicos)
+- [ ] Buzón de sugerencias/reportes para clientes
+- [ ] IA de soporte técnico para clientes
+- [ ] PDF/manual de ventas auto-actualizable para asociados, asistente y superadmin

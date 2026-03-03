@@ -37,7 +37,9 @@ export default function SalesAgents() {
 
   const [form, setForm] = useState({
     name: "", email: "", phone: "", commissionRate: 0.5,
-    bankName: "", clabe: "", bankAccountHolder: "", paymentCycle: "biweekly" as "weekly" | "biweekly",
+    bankName: "", clabe: "", bankAccountHolder: "",
+    paymentCycle: "biweekly" as "weekly" | "biweekly" | "monthly" | "manual" | "custom_day",
+    paymentDay: 1,
   });
 
   const copyReferralLink = (code: string) => {
@@ -82,15 +84,29 @@ export default function SalesAgents() {
                 <Label>Comisión que le pagas (%)</Label>
                 <Input type="number" min={0} max={10} step={0.1} value={form.commissionRate} onChange={e => setForm(f => ({ ...f, commissionRate: parseFloat(e.target.value) || 0.5 }))} />
               </div>
-              <div>
+              <div className="col-span-2">
                 <Label>Ciclo de pago</Label>
-                <Select value={form.paymentCycle} onValueChange={v => setForm(f => ({ ...f, paymentCycle: v as "weekly" | "biweekly" }))}>
+                <Select value={form.paymentCycle} onValueChange={v => setForm(f => ({ ...f, paymentCycle: v as "weekly" | "biweekly" | "monthly" | "manual" | "custom_day" }))}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="weekly">Semanal (cada viernes)</SelectItem>
                     <SelectItem value="biweekly">Quincenal (1 y 15)</SelectItem>
+                    <SelectItem value="monthly">Mensual (último día del mes)</SelectItem>
+                    <SelectItem value="manual">Manual (yo decido cuándo pagar)</SelectItem>
+                    <SelectItem value="custom_day">Día específico del mes</SelectItem>
                   </SelectContent>
                 </Select>
+                {form.paymentCycle === "custom_day" && (
+                  <div className="mt-2">
+                    <Label className="text-xs text-gray-500">Día del mes (1-28)</Label>
+                    <Input
+                      type="number" min={1} max={28}
+                      value={form.paymentDay}
+                      onChange={e => setForm(f => ({ ...f, paymentDay: parseInt(e.target.value) || 1 }))}
+                      placeholder="Ej: 10 = cada día 10 del mes"
+                    />
+                  </div>
+                )}
               </div>
               <div className="col-span-2 border-t pt-3">
                 <p className="text-xs font-semibold text-gray-500 uppercase mb-2">Datos bancarios para pago</p>
@@ -166,7 +182,12 @@ export default function SalesAgents() {
                     <p className="text-xs text-gray-500">{agent.email}</p>
                   </td>
                   <td className="px-4 py-3 text-sm font-semibold text-cyan-700">{agent.commissionRate}%</td>
-                  <td className="px-4 py-3 text-sm text-gray-600">{agent.paymentCycle === "weekly" ? "Semanal" : "Quincenal"}</td>
+                  <td className="px-4 py-3 text-sm text-gray-600">{{
+                    weekly: "Semanal",
+                    biweekly: "Quincenal",
+                    monthly: "Mensual",
+                    manual: "Manual",
+                  }[agent.paymentCycle] || (agent.paymentCycle?.startsWith("day_") ? `Día ${agent.paymentCycle.split("_")[1]}` : agent.paymentCycle)}</td>
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-1">
                       <code className="text-xs bg-gray-100 px-2 py-0.5 rounded font-mono">{agent.referralCode}</code>

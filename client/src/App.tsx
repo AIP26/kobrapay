@@ -54,6 +54,8 @@ import AssistantAdvisor from "./pages/AssistantAdvisor";
 import AdminAdvisor from "./pages/AdminAdvisor";
 import AssociateDashboard from "./pages/AssociateDashboard";
 import OnboardingSurvey from "./pages/OnboardingSurvey";
+import Support from "./pages/Support";
+import Brochure from "./pages/Brochure";
 
 function Router() {
   return (
@@ -103,6 +105,8 @@ function Router() {
       <Route path="/dashboard/assistant-advisor" component={AssistantAdvisor} />
       <Route path="/dashboard/business-advisor" component={AdminAdvisor} />
       <Route path="/dashboard/associate" component={AssociateDashboard} />
+      <Route path="/dashboard/support" component={Support} />
+      <Route path="/dashboard/brochure" component={Brochure} />
       <Route path="/sign-contract/:token" component={SignContract} />
       <Route path="/complete-profile" component={CompleteProfile} />
       <Route path="/dashboard/profile" component={MyProfile} />

@@ -15,6 +15,33 @@ const SUGGESTED_PROMPTS = [
   "¿Qué ventajas tiene Stripe Connect para mis clientes?",
 ];
 
+const QUICK_ACTIONS = [
+  {
+    icon: DollarSign,
+    label: "Calcular comisiones",
+    color: "text-emerald-600 bg-emerald-50",
+    prompt: "Tengo un cliente que procesa $80,000 MXN al mes, ¿qué porcentaje le ofrezco y cuánto gana KobraPay?",
+  },
+  {
+    icon: TrendingUp,
+    label: "Estrategia de precios",
+    color: "text-cyan-600 bg-cyan-50",
+    prompt: "¿Cómo le explico a un cliente por qué KobraPay es mejor que Clip o Mercado Pago en términos de precio y valor?",
+  },
+  {
+    icon: Users,
+    label: "Negociar con clientes",
+    color: "text-violet-600 bg-violet-50",
+    prompt: "Un cliente me dice que Mercado Pago le cobra menos, ¿cómo negocio y qué argumentos uso para convencerlo?",
+  },
+  {
+    icon: Lightbulb,
+    label: "Ideas de ventas",
+    color: "text-amber-600 bg-amber-50",
+    prompt: "Dame 5 ideas creativas y accionables para conseguir nuevos clientes para KobraPay esta semana",
+  },
+];
+
 export default function Advisor() {
   const { user, loading: authLoading } = useAuth();
   const isSuperAdmin = (user as Record<string, unknown>)?.isSuperAdmin === true;
@@ -98,18 +125,19 @@ export default function Advisor() {
 
         {/* Capacidades rápidas */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          {[
-            { icon: DollarSign, label: "Calcular comisiones", color: "text-emerald-600 bg-emerald-50" },
-            { icon: TrendingUp, label: "Estrategia de precios", color: "text-cyan-600 bg-cyan-50" },
-            { icon: Users, label: "Negociar con clientes", color: "text-violet-600 bg-violet-50" },
-            { icon: Lightbulb, label: "Ideas de ventas", color: "text-amber-600 bg-amber-50" },
-          ].map(({ icon: Icon, label, color }) => (
-            <div key={label} className="flex items-center gap-2.5 p-3 rounded-xl border border-gray-100 bg-white">
-              <div className={`p-1.5 rounded-lg ${color}`}>
+          {QUICK_ACTIONS.map(({ icon: Icon, label, color, prompt }) => (
+            <button
+              key={label}
+              type="button"
+              className="flex items-center gap-2.5 p-3 rounded-xl border border-gray-100 bg-white cursor-pointer hover:bg-gray-50 hover:border-emerald-200 hover:shadow-sm transition-all text-left w-full"
+              onClick={() => handleSendMessage(prompt)}
+              disabled={isLoading}
+            >
+              <div className={`p-1.5 rounded-lg ${color} flex-shrink-0`}>
                 <Icon className="w-4 h-4" />
               </div>
               <span className="text-xs font-medium text-gray-700">{label}</span>
-            </div>
+            </button>
           ))}
         </div>
 

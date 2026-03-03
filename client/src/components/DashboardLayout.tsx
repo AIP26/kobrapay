@@ -169,6 +169,8 @@ const NAV_GROUPS = [
     color: "text-gray-500",
     items: [
       { href: "/dashboard/help", icon: HelpCircle, label: "Ayuda" },
+      { href: "/dashboard/support", icon: Handshake, label: "Soporte" },
+      { href: "/dashboard/brochure", icon: FileText, label: "Brochure de Ventas" },
       { href: "/dashboard/settings", icon: Settings, label: "Configuración" },
     ],
   },

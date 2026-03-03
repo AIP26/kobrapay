@@ -15,6 +15,33 @@ const SUGGESTED_PROMPTS = [
   "¿Cómo funciona Stripe Connect y qué necesita el cliente para configurarlo?",
 ];
 
+const QUICK_ACTIONS = [
+  {
+    icon: Users,
+    label: "Gestión de clientes",
+    color: "text-violet-600 bg-violet-50",
+    prompt: "¿Cómo gestiono eficientemente a los clientes en KobraPay? Dame un flujo de trabajo recomendado para el equipo de asistentes.",
+  },
+  {
+    icon: ClipboardList,
+    label: "Revisar encuestas",
+    color: "text-emerald-600 bg-emerald-50",
+    prompt: "¿Qué criterios debo usar para revisar y pre-aprobar las encuestas de onboarding de nuevos clientes? ¿Qué señales de alerta debo buscar?",
+  },
+  {
+    icon: MessageSquare,
+    label: "Redactar comunicados",
+    color: "text-blue-600 bg-blue-50",
+    prompt: "Redáctame un email de bienvenida profesional para un nuevo cliente que acaba de ser aprobado en KobraPay.",
+  },
+  {
+    icon: FileCheck,
+    label: "Asignar planes",
+    color: "text-amber-600 bg-amber-50",
+    prompt: "¿Cómo decido qué plan de KobraPay asignar a un cliente? Explícame las diferencias entre los planes Express, Connect, Custom y Enterprise.",
+  },
+];
+
 export default function AssistantAdvisor() {
   const { user, loading: authLoading } = useAuth();
   const userRole = (user as Record<string, unknown>)?.role as string | undefined;
@@ -92,18 +119,19 @@ export default function AssistantAdvisor() {
 
         {/* Capacidades rápidas */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          {[
-            { icon: Users, label: "Gestión de clientes", color: "text-violet-600 bg-violet-50" },
-            { icon: ClipboardList, label: "Revisar encuestas", color: "text-emerald-600 bg-emerald-50" },
-            { icon: MessageSquare, label: "Redactar comunicados", color: "text-blue-600 bg-blue-50" },
-            { icon: FileCheck, label: "Asignar planes", color: "text-amber-600 bg-amber-50" },
-          ].map(({ icon: Icon, label, color }) => (
-            <div key={label} className="flex items-center gap-2.5 p-3 rounded-xl border border-gray-100 bg-white">
-              <div className={`p-1.5 rounded-lg ${color}`}>
+          {QUICK_ACTIONS.map(({ icon: Icon, label, color, prompt }) => (
+            <button
+              key={label}
+              type="button"
+              className="flex items-center gap-2.5 p-3 rounded-xl border border-gray-100 bg-white cursor-pointer hover:bg-gray-50 hover:border-violet-200 hover:shadow-sm transition-all text-left w-full"
+              onClick={() => handleSendMessage(prompt)}
+              disabled={isLoading}
+            >
+              <div className={`p-1.5 rounded-lg ${color} flex-shrink-0`}>
                 <Icon className="w-4 h-4" />
               </div>
               <span className="text-xs font-medium text-gray-700">{label}</span>
-            </div>
+            </button>
           ))}
         </div>
 
