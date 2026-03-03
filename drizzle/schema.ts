@@ -112,6 +112,7 @@ export const paymentLinks = mysqlTable("payment_links", {
   token: varchar("token", { length: 64 }).notNull().unique(),
   clientName: varchar("clientName", { length: 255 }).notNull(),
   clientEmail: varchar("clientEmail", { length: 320 }),
+  clientPhone: varchar("clientPhone", { length: 32 }),
   amount: decimal("amount", { precision: 12, scale: 2 }).notNull(),
   currency: varchar("currency", { length: 8 }).default("MXN").notNull(),
   description: text("description").notNull(),

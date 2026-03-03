@@ -880,3 +880,6 @@
 - [ ] Botón de WhatsApp en notificaciones de pago recibido
 - [ ] Página de Perfil del Negocio con logo, nombre y datos fiscales
 - [ ] Selector de lada internacional en formulario de pago público
+- [x] Agregar tab "Programa de Referidos" en AssociateDashboard con código único, estadísticas y tabla de clientes
+- [x] Procedimiento getMyReferralInfo en router associate para código de referido y stats
+- [x] Botón de compartir por WhatsApp en tab de referidos

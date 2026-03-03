@@ -727,7 +727,7 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; icon: React.
   inactive: { label: "Inactivo", color: "bg-gray-50 text-gray-500 border-gray-200", icon: XCircle },
 };
 
-type Tab = "manual" | "registro" | "comisiones";
+type Tab = "manual" | "registro" | "comisiones" | "referidos";
 
 export default function AssociateDashboard() {
   const { user } = useAuth();
@@ -752,6 +752,10 @@ export default function AssociateDashboard() {
 
   const { data: myClientsData, isLoading: loadingClients } = trpc.associate.listClients.useQuery(undefined, {
     enabled: activeTab === "comisiones",
+  });
+
+  const { data: referralInfo, isLoading: loadingReferral } = trpc.associate.getMyReferralInfo.useQuery(undefined, {
+    enabled: activeTab === "referidos",
   });
 
   const myClients = myClientsData ?? [];
@@ -919,6 +923,7 @@ export default function AssociateDashboard() {
     { id: "manual", label: "Manual de Ventas", icon: BookOpen },
     { id: "registro", label: "Registrar Cliente", icon: UserPlus },
     { id: "comisiones", label: "Mis Comisiones", icon: DollarSign },
+    { id: "referidos", label: "Programa de Referidos", icon: Handshake },
   ];
 
   return (
@@ -1464,6 +1469,171 @@ export default function AssociateDashboard() {
                   El pago de comisiones se realiza según el ciclo acordado con KobraPay (semanal, quincenal o mensual).
                 </p>
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* ─── TAB: PROGRAMA DE REFERIDOS ─── */}
+        {activeTab === "referidos" && (
+          <div className="space-y-6">
+            {/* Header del programa */}
+            <div className="bg-gradient-to-r from-emerald-600 to-teal-600 rounded-2xl p-6 text-white">
+              <div className="flex items-center gap-3 mb-3">
+                <Handshake className="w-8 h-8" />
+                <div>
+                  <h2 className="text-xl font-bold">Programa de Referidos KobraPay</h2>
+                  <p className="text-emerald-100 text-sm">Gana comisiones recurrentes por cada cliente que actives</p>
+                </div>
+              </div>
+              <div className="bg-white/20 rounded-xl p-4 mt-4">
+                <p className="text-xs text-emerald-100 mb-1">Tu código de referido</p>
+                <div className="flex items-center gap-3">
+                  <span className="text-2xl font-mono font-bold tracking-widest">
+                    {loadingReferral ? "..." : referralInfo?.referralCode || `KP-${String(user?.id || "0000").padStart(4, "0")}`}
+                  </span>
+                  <button
+                    onClick={() => {
+                      const code = referralInfo?.referralCode || `KP-${String(user?.id || "0000").padStart(4, "0")}`;
+                      navigator.clipboard.writeText(code);
+                      toast.success("Código copiado al portapapeles");
+                    }}
+                    className="bg-white/20 hover:bg-white/30 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors"
+                  >
+                    Copiar
+                  </button>
+                  <button
+                    onClick={() => {
+                      const code = referralInfo?.referralCode || `KP-${String(user?.id || "0000").padStart(4, "0")}`;
+                      const msg = `¡Únete a KobraPay y acepta pagos con tarjeta sin hardware! Usa mi código ${code} al registrarte. 👉 https://kobrapay.mx`;
+                      window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, "_blank");
+                    }}
+                    className="bg-green-500 hover:bg-green-400 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors flex items-center gap-1.5"
+                  >
+                    <Smartphone className="w-4 h-4" /> WhatsApp
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Estadísticas de referidos */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="bg-white rounded-xl p-4 border border-gray-200 text-center">
+                <p className="text-2xl font-bold text-gray-900">{loadingReferral ? "..." : referralInfo?.totalReferrals ?? 0}</p>
+                <p className="text-xs text-gray-500 mt-1">Total Referidos</p>
+              </div>
+              <div className="bg-white rounded-xl p-4 border border-gray-200 text-center">
+                <p className="text-2xl font-bold text-emerald-600">{loadingReferral ? "..." : referralInfo?.activeReferrals ?? 0}</p>
+                <p className="text-xs text-gray-500 mt-1">Activos</p>
+              </div>
+              <div className="bg-white rounded-xl p-4 border border-gray-200 text-center">
+                <p className="text-2xl font-bold text-amber-600">{loadingReferral ? "..." : referralInfo?.pendingReferrals ?? 0}</p>
+                <p className="text-xs text-gray-500 mt-1">En Revisión</p>
+              </div>
+              <div className="bg-white rounded-xl p-4 border border-gray-200 text-center">
+                <p className="text-2xl font-bold text-blue-600">
+                  {loadingReferral ? "..." : `$${(referralInfo?.totalEarned ?? 0).toLocaleString("es-MX", { minimumFractionDigits: 2 })}`}
+                </p>
+                <p className="text-xs text-gray-500 mt-1">Total Ganado</p>
+              </div>
+            </div>
+
+            {/* Cómo funciona */}
+            <div className="bg-white rounded-xl border border-gray-200 p-5">
+              <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                <HelpCircle className="w-5 h-5 text-emerald-600" />
+                ¿Cómo funciona el programa?
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="flex items-start gap-3">
+                  <div className="w-8 h-8 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold text-sm shrink-0">1</div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-800">Comparte tu código</p>
+                    <p className="text-xs text-gray-500 mt-0.5">Envía tu código a negocios que quieran aceptar pagos con tarjeta</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <div className="w-8 h-8 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold text-sm shrink-0">2</div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-800">Registra al cliente</p>
+                    <p className="text-xs text-gray-500 mt-0.5">Ve a "Registrar Cliente" y llena sus datos para que KobraPay los active</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <div className="w-8 h-8 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold text-sm shrink-0">3</div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-800">Gana comisión mensual</p>
+                    <p className="text-xs text-gray-500 mt-0.5">Recibes tu % de comisión cada mes mientras el cliente siga activo</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Tabla de clientes referidos */}
+            <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+              <div className="px-5 py-4 border-b border-gray-100">
+                <h3 className="font-semibold text-gray-900">Mis Clientes Referidos</h3>
+              </div>
+              {loadingReferral ? (
+                <div className="p-8 text-center text-gray-400">Cargando...</div>
+              ) : !referralInfo?.clients?.length ? (
+                <div className="p-8 text-center">
+                  <Handshake className="w-10 h-10 text-gray-300 mx-auto mb-2" />
+                  <p className="text-gray-500 text-sm">Aún no tienes clientes referidos.</p>
+                  <button
+                    onClick={() => setActiveTab("registro")}
+                    className="mt-3 text-emerald-600 text-sm font-medium hover:underline"
+                  >
+                    Registrar mi primer cliente →
+                  </button>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase">Cliente</th>
+                        <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase">Plan</th>
+                        <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase">Estado</th>
+                        <th className="text-right px-4 py-3 text-xs font-medium text-gray-500 uppercase">Comisión</th>
+                        <th className="text-right px-4 py-3 text-xs font-medium text-gray-500 uppercase">Ganado</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                      {referralInfo.clients.map((c) => {
+                        const statusMap: Record<string, { label: string; color: string }> = {
+                          pending: { label: "Pendiente", color: "bg-amber-50 text-amber-700" },
+                          assistant_approved: { label: "Pre-aprobado", color: "bg-blue-50 text-blue-700" },
+                          active: { label: "Activo", color: "bg-emerald-50 text-emerald-700" },
+                          rejected: { label: "Rechazado", color: "bg-red-50 text-red-700" },
+                          inactive: { label: "Inactivo", color: "bg-gray-50 text-gray-500" },
+                        };
+                        const st = statusMap[c.status] || { label: c.status, color: "bg-gray-50 text-gray-500" };
+                        return (
+                          <tr key={c.id} className="hover:bg-gray-50">
+                            <td className="px-4 py-3">
+                              <p className="font-medium text-gray-900">{c.clientName}</p>
+                              <p className="text-xs text-gray-400">{c.clientEmail}</p>
+                              {c.clientBusinessName && <p className="text-xs text-gray-400">{c.clientBusinessName}</p>}
+                            </td>
+                            <td className="px-4 py-3">
+                              <span className="capitalize text-gray-600">{c.assignedPlan || "—"}</span>
+                            </td>
+                            <td className="px-4 py-3">
+                              <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${st.color}`}>
+                                {st.label}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3 text-right text-gray-600">{c.commissionRate}%</td>
+                            <td className="px-4 py-3 text-right font-medium text-emerald-600">
+                              ${c.totalCommissionEarned.toLocaleString("es-MX", { minimumFractionDigits: 2 })}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </div>
           </div>
         )}

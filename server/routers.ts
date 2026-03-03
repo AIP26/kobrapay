@@ -5709,8 +5709,47 @@ Responde SIEMPRE en español mexicano, de forma motivadora, práctica y orientad
       }));
       return result;
     }),
+    // Obtener código de referido e información del programa de referidos
+    getMyReferralInfo: protectedProcedure.query(async ({ ctx }) => {
+      const isAssociate = ctx.user.role === 'associate' || ctx.isSuperAdmin;
+      if (!isAssociate) throw new TRPCError({ code: 'FORBIDDEN' });
+      const db = await import('./db').then(m => m.getDb ? m.getDb() : null);
+      if (!db) return { referralCode: null, totalReferrals: 0, activeReferrals: 0, pendingReferrals: 0, totalEarned: 0, monthlyEarned: 0, clients: [] };
+      const { associateCommissions } = await import('../drizzle/schema');
+      const { eq } = await import('drizzle-orm');
+      const referralCode = `KP-${String(ctx.user.id).padStart(4, '0').toUpperCase()}`;
+      const clients = await db.select().from(associateCommissions)
+        .where(eq(associateCommissions.associateUserId, ctx.user.id));
+      const totalReferrals = clients.length;
+      const activeReferrals = clients.filter(c => c.status === 'active').length;
+      const pendingReferrals = clients.filter(c => c.status === 'pending' || c.status === 'assistant_approved').length;
+      const totalEarned = clients.reduce((acc, c) => acc + parseFloat(String(c.totalCommissionEarned) || '0'), 0);
+      const now = new Date();
+      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
+      const monthlyEarned = clients
+        .filter(c => c.updatedAt >= startOfMonth)
+        .reduce((acc, c) => acc + parseFloat(String(c.totalCommissionEarned) || '0'), 0);
+      return {
+        referralCode,
+        totalReferrals,
+        activeReferrals,
+        pendingReferrals,
+        totalEarned,
+        monthlyEarned,
+        clients: clients.map(c => ({
+          id: c.id,
+          clientName: c.clientName,
+          clientEmail: c.clientEmail,
+          clientBusinessName: c.clientBusinessName,
+          status: c.status,
+          assignedPlan: c.assignedPlan,
+          commissionRate: parseFloat(String(c.commissionRate)),
+          totalCommissionEarned: parseFloat(String(c.totalCommissionEarned) || '0'),
+          createdAt: c.createdAt,
+        })),
+      };
+    }),
   }),
-
   advisor: router({
     chat: protectedProcedure
       .input(z.object({
