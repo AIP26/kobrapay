@@ -1721,14 +1721,18 @@ export const appRouter = router({
         bankName: z.string().max(128).optional().or(z.literal("")),
         clabe: z.string().length(18).optional().or(z.literal("")),
         bankAccountHolder: z.string().max(255).optional().or(z.literal("")),
-        paymentCycle: z.enum(["weekly", "biweekly"]).optional(),
+        paymentCycle: z.enum(["weekly", "biweekly", "monthly", "manual", "custom_day"]).optional(),
+        paymentDay: z.number().min(1).max(28).optional(),
         isActive: z.boolean().optional(),
       }))
       .mutation(async ({ ctx, input }) => {
         if (!ctx.isSuperAdmin) throw new TRPCError({ code: "FORBIDDEN" });
-        const { id, commissionRate, ...rest } = input;
+        const { id, commissionRate, paymentCycle, paymentDay, ...rest } = input;
         const data: Record<string, unknown> = { ...rest };
         if (commissionRate !== undefined) data.commissionRate = String(commissionRate);
+        if (paymentCycle !== undefined) {
+          data.paymentCycle = paymentCycle === 'custom_day' ? `day_${paymentDay ?? 1}` : paymentCycle;
+        }
         return updateSalesAgent(id, data);
       }),
 
@@ -5361,9 +5365,10 @@ Responde SIEMPRE en español mexicano, de forma motivadora, práctica y orientad
       const totalClients = clients.length;
       const activeClients = clients.filter(c => c.status === 'active').length;
       const pendingClients = clients.filter(c => c.status === 'pending').length;
-      const totalVolume = clients.reduce((acc, c) => acc + parseFloat(String(c.totalVolumeProcessed) || '0'), 0);
+      // PRIVACIDAD: El asociado NO puede ver el volumen de ingresos de sus clientes
+      // Solo puede ver sus propias comisiones generadas
       const totalEarned = clients.reduce((acc, c) => acc + parseFloat(String(c.totalCommissionEarned) || '0'), 0);
-      return { totalClients, activeClients, pendingClients, totalVolume, totalEarned };
+      return { totalClients, activeClients, pendingClients, totalEarned };
     }),
 
     // [SuperAdmin] Actualizar status de un cliente prospecto del asociado
@@ -5387,7 +5392,25 @@ Responde SIEMPRE en español mexicano, de forma motivadora, práctica y orientad
         if (input.commissionRate !== undefined) updateData.commissionRate = String(input.commissionRate);
         if (input.notes) updateData.notes = input.notes;
         if (input.status === 'active') updateData.approvedAt = now;
+        // Obtener el registro del cliente antes de actualizar para notificar al asociado
+        const [clientRecord] = await db.select().from(associateCommissions)
+          .where(eq(associateCommissions.id, input.clientId));
         await db.update(associateCommissions).set(updateData).where(eq(associateCommissions.id, input.clientId));
+        // Notificar al asociado sobre el cambio de estado
+        if (clientRecord && (input.status === 'active' || input.status === 'rejected')) {
+          const { users } = await import('../drizzle/schema');
+          const [associateUser] = await db.select().from(users)
+            .where(eq(users.id, clientRecord.associateUserId));
+          if (associateUser) {
+            const statusMsg = input.status === 'active'
+              ? `✅ ¡Tu cliente fue APROBADO! Ya puede usar KobraPay.`
+              : `❌ Tu cliente fue rechazado. Contacta al equipo para más información.`;
+            notifyOwner({
+              title: `🤝 Actualización de cliente - Asociado: ${associateUser.name || associateUser.email}`,
+              content: `${statusMsg}\n\nCliente: ${clientRecord.clientName}\nEmail: ${clientRecord.clientEmail}\nNegocio: ${clientRecord.clientBusinessName || 'No especificado'}\nPlan: ${clientRecord.assignedPlan || 'Por definir'}\nComisión asignada: ${clientRecord.commissionRate}%\nCiclo de pago: ${clientRecord.paymentCycle}`,
+            }).catch(() => {});
+          }
+        }
         return { success: true };
       }),
     // [SuperAdmin] Listar todos los asociados y sus clientes

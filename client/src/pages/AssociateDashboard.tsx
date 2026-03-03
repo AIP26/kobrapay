@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from "recharts";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import DashboardLayout from "@/components/DashboardLayout";
@@ -14,7 +15,7 @@ import { toast } from "sonner";
 import {
   Bot, Sparkles, Users, DollarSign, TrendingUp, UserPlus,
   CheckCircle, Clock, XCircle, Calculator, ChevronRight, Star,
-  Building2, Zap, Crown, Rocket
+  Building2, Zap, Crown, Rocket, BarChart2, Award, Target
 } from "lucide-react";
 
 // ─── Planes disponibles ───────────────────────────────────────────────────────
@@ -648,8 +649,181 @@ function RegisterClientModal({ onSuccess }: { onSuccess: () => void }) {
   );
 }
 
+// ─── Componente: Reportes del Asociado ──────────────────────────────────────
+const MONTH_LABELS: Record<string, string> = {
+  "01": "Ene", "02": "Feb", "03": "Mar", "04": "Abr",
+  "05": "May", "06": "Jun", "07": "Jul", "08": "Ago",
+  "09": "Sep", "10": "Oct", "11": "Nov", "12": "Dic",
+};
+
+function AssociateReportsTab({
+  clients,
+  summary,
+}: {
+  clients: Array<{ id: number; clientName: string; clientEmail: string; clientBusinessName?: string; assignedPlan?: string; status: string; notes?: string; createdAt: number }>;
+  summary: { totalClients: number; activeClients: number; pendingClients: number; totalEarned: number } | undefined;
+}) {
+  // Agrupar clientes por mes de registro
+  const clientsByMonth = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const c of clients) {
+      const d = new Date(c.createdAt);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      map.set(key, (map.get(key) || 0) + 1);
+    }
+    return Array.from(map.entries())
+      .sort((a, b) => a[0].localeCompare(b[0]))
+      .slice(-12)
+      .map(([month, count]) => {
+        const [year, m] = month.split("-");
+        return { label: `${MONTH_LABELS[m] || m} ${year.slice(2)}`, count };
+      });
+  }, [clients]);
+
+  // Distribución por plan
+  const planDistribution = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const c of clients) {
+      const plan = c.assignedPlan || 'Sin plan';
+      map.set(plan, (map.get(plan) || 0) + 1);
+    }
+    return Array.from(map.entries()).map(([plan, count]) => ({ plan, count }));
+  }, [clients]);
+
+  // Distribución por estado
+  const statusDistribution = useMemo(() => [
+    { label: 'Activos', value: summary?.activeClients ?? 0, color: '#10b981' },
+    { label: 'Pendientes', value: summary?.pendingClients ?? 0, color: '#f59e0b' },
+    { label: 'Rechazados', value: clients.filter(c => c.status === 'rejected').length, color: '#ef4444' },
+    { label: 'Inactivos', value: clients.filter(c => c.status === 'inactive').length, color: '#9ca3af' },
+  ].filter(s => s.value > 0), [clients, summary]);
+
+  const totalClients = summary?.totalClients ?? 0;
+  const totalEarned = summary?.totalEarned ?? 0;
+  const conversionRate = totalClients > 0 ? ((summary?.activeClients ?? 0) / totalClients * 100).toFixed(1) : '0.0';
+
+  return (
+    <div className="space-y-6">
+      {/* KPIs principales */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        {[
+          { label: 'Total Clientes', value: totalClients, icon: Users, color: 'text-blue-600 bg-blue-50', sub: 'registrados' },
+          { label: 'Tasa de Conversión', value: `${conversionRate}%`, icon: Target, color: 'text-emerald-600 bg-emerald-50', sub: 'activos vs total' },
+          { label: 'Comisiones Generadas', value: `$${totalEarned.toLocaleString('es-MX', { minimumFractionDigits: 2 })}`, icon: DollarSign, color: 'text-purple-600 bg-purple-50', sub: 'acumulado' },
+          { label: 'Promedio por Cliente', value: totalClients > 0 ? `$${(totalEarned / totalClients).toLocaleString('es-MX', { minimumFractionDigits: 2 })}` : '$0.00', icon: Award, color: 'text-amber-600 bg-amber-50', sub: 'comisión promedio' },
+        ].map(({ label, value, icon: Icon, color, sub }) => (
+          <div key={label} className="bg-white rounded-2xl border border-gray-200 p-4 space-y-2">
+            <div className={`w-9 h-9 rounded-xl ${color} flex items-center justify-center`}>
+              <Icon className="w-4 h-4" />
+            </div>
+            <p className="text-xl font-bold text-gray-900">{value}</p>
+            <div>
+              <p className="text-xs font-medium text-gray-700">{label}</p>
+              <p className="text-xs text-gray-400">{sub}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Gráfica: Clientes por mes */}
+      <div className="bg-white rounded-2xl border border-gray-200 p-5">
+        <h3 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
+          <BarChart2 className="w-4 h-4 text-emerald-500" />
+          Clientes Registrados por Mes
+        </h3>
+        {clientsByMonth.length === 0 ? (
+          <div className="h-40 flex items-center justify-center text-gray-400 text-sm">
+            Sin datos de clientes aún
+          </div>
+        ) : (
+          <ResponsiveContainer width="100%" height={200}>
+            <BarChart data={clientsByMonth} margin={{ top: 4, right: 4, left: 0, bottom: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+              <XAxis dataKey="label" tick={{ fontSize: 11, fill: "#6b7280" }} />
+              <YAxis tick={{ fontSize: 11, fill: "#6b7280" }} allowDecimals={false} />
+              <Tooltip
+                formatter={(v: number) => [v, "Clientes"]}
+                contentStyle={{ fontSize: 12, borderRadius: 8 }}
+              />
+              <Bar dataKey="count" radius={[4, 4, 0, 0]}>
+                {clientsByMonth.map((_, i) => (
+                  <Cell key={i} fill={i === clientsByMonth.length - 1 ? "#10b981" : "#6ee7b7"} />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        )}
+      </div>
+
+      {/* Distribución por plan y estado */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Por plan */}
+        <div className="bg-white rounded-2xl border border-gray-200 p-5">
+          <h3 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
+            <Building2 className="w-4 h-4 text-blue-500" />
+            Distribución por Plan
+          </h3>
+          {planDistribution.length === 0 ? (
+            <p className="text-gray-400 text-sm text-center py-8">Sin datos</p>
+          ) : (
+            <div className="space-y-3">
+              {planDistribution.map(({ plan, count }) => (
+                <div key={plan} className="flex items-center gap-3">
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-sm font-medium text-gray-700 capitalize">{plan}</span>
+                      <span className="text-sm font-bold text-gray-900">{count}</span>
+                    </div>
+                    <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-emerald-500 rounded-full"
+                        style={{ width: `${totalClients > 0 ? (count / totalClients * 100) : 0}%` }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Por estado */}
+        <div className="bg-white rounded-2xl border border-gray-200 p-5">
+          <h3 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
+            <CheckCircle className="w-4 h-4 text-emerald-500" />
+            Estado de Clientes
+          </h3>
+          {statusDistribution.length === 0 ? (
+            <p className="text-gray-400 text-sm text-center py-8">Sin datos</p>
+          ) : (
+            <div className="space-y-3">
+              {statusDistribution.map(({ label, value, color }) => (
+                <div key={label} className="flex items-center gap-3">
+                  <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: color }} />
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-sm font-medium text-gray-700">{label}</span>
+                      <span className="text-sm font-bold text-gray-900">{value}</span>
+                    </div>
+                    <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                      <div
+                        className="h-full rounded-full"
+                        style={{ width: `${totalClients > 0 ? (value / totalClients * 100) : 0}%`, backgroundColor: color }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Página principal ─────────────────────────────────────────────────────────
-type TabType = "dashboard" | "clients" | "plans" | "custom_plan" | "simulator" | "ai";
+type TabType = "dashboard" | "clients" | "plans" | "custom_plan" | "simulator" | "ai" | "reports";
 
 export default function AssociateDashboard() {
   const { user, loading: authLoading } = useAuth();
@@ -732,6 +906,7 @@ export default function AssociateDashboard() {
   const TABS: { id: TabType; label: string; icon: React.ElementType }[] = [
     { id: "dashboard", label: "Mi Panel", icon: TrendingUp },
     { id: "clients", label: "Mis Clientes", icon: Users },
+    { id: "reports", label: "Mis Reportes", icon: BarChart2 },
     { id: "plans", label: "Catálogo de Planes", icon: Building2 },
     { id: "custom_plan", label: "Crear Plan", icon: Crown },
     { id: "simulator", label: "Simulador", icon: Calculator },
@@ -790,9 +965,9 @@ export default function AssociateDashboard() {
               {[
                 { label: "Total Clientes", value: summary?.totalClients ?? 0, icon: Users, color: "text-blue-600 bg-blue-50" },
                 { label: "Clientes Activos", value: summary?.activeClients ?? 0, icon: CheckCircle, color: "text-emerald-600 bg-emerald-50" },
-                { label: "Pendientes", value: summary?.pendingClients ?? 0, icon: Clock, color: "text-amber-600 bg-amber-50" },
+                { label: "Pendientes de Aprobación", value: summary?.pendingClients ?? 0, icon: Clock, color: "text-amber-600 bg-amber-50" },
                 {
-                  label: "Comisiones Ganadas",
+                  label: "Mis Comisiones Generadas",
                   value: `$${(summary?.totalEarned ?? 0).toLocaleString("es-MX", { minimumFractionDigits: 2 })}`,
                   icon: DollarSign,
                   color: "text-purple-600 bg-purple-50",
@@ -932,6 +1107,7 @@ export default function AssociateDashboard() {
         )}
 
         {/* Tab: Planes */}
+        {activeTab === "reports" && <AssociateReportsTab clients={clients} summary={summary} />}
         {activeTab === "plans" && <PlansCatalog />}
         {/* Tab: Crear Plan Personalizado */}
         {activeTab === "custom_plan" && <CustomPlanBuilder />}

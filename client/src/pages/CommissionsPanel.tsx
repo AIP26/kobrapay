@@ -22,6 +22,8 @@ import {
   Mail,
   CheckCircle2,
   Clock,
+  Handshake,
+  Star,
 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -756,11 +758,194 @@ export default function CommissionsPanel() {
         </Card>
       </div>
 
+      {/* ─── Sección: Comisiones de Asociados ─── */}
+      {isSuperAdmin && <AssociateCommissionsSection />}
+
       {/* Drill-down panel */}
       <DrillDownPanel />
 
       {/* Modal desglose individual de transacción */}
       <TxDetailModal />
     </DashboardLayout>
+  );
+}
+
+// ─── Componente: Comisiones de Asociados (solo SuperAdmin) ────────────────────
+function AssociateCommissionsSection() {
+  const { data: associatesData, isLoading } = trpc.associate.listAllAssociates.useQuery();
+  const updateStatusMutation = trpc.associate.updateClientStatus.useMutation();
+  const utils = trpc.useUtils();
+
+  const associates = associatesData ?? [];
+  const totalAssociates = associates.length;
+  const totalClients = associates.reduce((s, a) => s + a.clients.length, 0);
+  const totalEarned = associates.reduce((s, a) => s + a.totalEarned, 0);
+  const activeClients = associates.reduce((s, a) => s + a.clients.filter((c: Record<string, unknown>) => c.status === 'active').length, 0);
+
+  const handleApprove = async (clientId: number) => {
+    await updateStatusMutation.mutateAsync({ clientId, status: 'active' });
+    utils.associate.listAllAssociates.invalidate();
+    const { toast } = await import('sonner');
+    toast.success('Cliente aprobado y asociado notificado');
+  };
+
+  const handleReject = async (clientId: number) => {
+    await updateStatusMutation.mutateAsync({ clientId, status: 'rejected' });
+    utils.associate.listAllAssociates.invalidate();
+    const { toast } = await import('sonner');
+    toast.success('Cliente rechazado');
+  };
+
+  return (
+    <div className="space-y-6 mt-8">
+      {/* Header */}
+      <div className="flex items-center gap-3 pb-2 border-b border-gray-200">
+        <div className="p-2 bg-amber-100 rounded-lg">
+          <Handshake className="w-5 h-5 text-amber-600" />
+        </div>
+        <div>
+          <h2 className="text-lg font-bold text-gray-900">Comisiones de Asociados</h2>
+          <p className="text-xs text-gray-500">Gestiona y aprueba los clientes captados por tus asociados</p>
+        </div>
+      </div>
+
+      {/* KPIs de asociados */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        {[
+          { label: 'Total Asociados', value: totalAssociates, icon: Star, color: 'text-amber-600 bg-amber-50' },
+          { label: 'Clientes Captados', value: totalClients, icon: Users, color: 'text-blue-600 bg-blue-50' },
+          { label: 'Clientes Activos', value: activeClients, icon: CheckCircle2, color: 'text-emerald-600 bg-emerald-50' },
+          { label: 'Comisiones Pagadas', value: new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(totalEarned), icon: DollarSign, color: 'text-purple-600 bg-purple-50' },
+        ].map(({ label, value, icon: Icon, color }) => (
+          <Card key={label}>
+            <CardContent className="p-4 space-y-2">
+              <div className={`w-9 h-9 rounded-xl ${color} flex items-center justify-center`}>
+                <Icon className="w-4 h-4" />
+              </div>
+              <p className="text-2xl font-bold text-gray-900">{isLoading ? '...' : value}</p>
+              <p className="text-xs text-gray-500">{label}</p>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {/* Lista de asociados con sus clientes */}
+      {isLoading ? (
+        <div className="space-y-3">
+          {[1,2].map(i => <div key={i} className="h-24 bg-gray-100 animate-pulse rounded-xl" />)}
+        </div>
+      ) : associates.length === 0 ? (
+        <Card>
+          <CardContent className="py-12 text-center">
+            <Handshake className="w-12 h-12 text-gray-200 mx-auto mb-3" />
+            <p className="text-gray-500 font-medium">No hay asociados registrados aún</p>
+            <p className="text-sm text-gray-400">Los asociados aparecerán aquí cuando se registren en la plataforma</p>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="space-y-4">
+          {associates.map((assoc) => (
+            <Card key={assoc.associate.id}>
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-white font-bold text-sm">
+                      {(assoc.associate.name || assoc.associate.email || 'A')[0].toUpperCase()}
+                    </div>
+                    <div>
+                      <p className="font-semibold text-gray-900">{assoc.associate.name || assoc.associate.email}</p>
+                      <p className="text-xs text-gray-400">{assoc.associate.email}</p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-sm font-bold text-emerald-600">
+                      {new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(assoc.totalEarned)}
+                    </p>
+                    <p className="text-xs text-gray-400">{assoc.clients.length} clientes</p>
+                  </div>
+                </div>
+              </CardHeader>
+              {assoc.clients.length > 0 && (
+                <CardContent className="p-0">
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-t border-b border-gray-100 bg-gray-50/50">
+                          <th className="text-left px-4 py-2.5 text-xs font-semibold text-gray-500 uppercase">Cliente</th>
+                          <th className="text-left px-4 py-2.5 text-xs font-semibold text-gray-500 uppercase">Plan</th>
+                          <th className="text-right px-4 py-2.5 text-xs font-semibold text-gray-500 uppercase">Comisión %</th>
+                          <th className="text-right px-4 py-2.5 text-xs font-semibold text-gray-500 uppercase">Ganado</th>
+                          <th className="text-center px-4 py-2.5 text-xs font-semibold text-gray-500 uppercase">Estado</th>
+                          <th className="text-center px-4 py-2.5 text-xs font-semibold text-gray-500 uppercase">Acciones</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-50">
+                        {assoc.clients.map((client: Record<string, unknown>) => (
+                          <tr key={client.id as number} className="hover:bg-gray-50/50">
+                            <td className="px-4 py-3">
+                              <p className="font-medium text-gray-900">{client.clientName as string}</p>
+                              <p className="text-xs text-gray-400">{client.clientEmail as string}</p>
+                            </td>
+                            <td className="px-4 py-3">
+                              <Badge variant="outline" className="text-xs">
+                                {(client.assignedPlan as string) || 'Sin plan'}
+                              </Badge>
+                            </td>
+                            <td className="px-4 py-3 text-right">
+                              <span className="font-semibold text-gray-700">{client.commissionRate as string}%</span>
+                            </td>
+                            <td className="px-4 py-3 text-right">
+                              <span className="font-semibold text-emerald-600">
+                                {new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(parseFloat(String(client.totalCommissionEarned || '0')))}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3 text-center">
+                              <Badge
+                                variant="outline"
+                                className={
+                                  client.status === 'active' ? 'bg-green-50 text-green-700 border-green-200' :
+                                  client.status === 'rejected' ? 'bg-red-50 text-red-700 border-red-200' :
+                                  client.status === 'inactive' ? 'bg-gray-50 text-gray-500 border-gray-200' :
+                                  'bg-amber-50 text-amber-700 border-amber-200'
+                                }
+                              >
+                                {client.status === 'active' ? 'Activo' :
+                                 client.status === 'rejected' ? 'Rechazado' :
+                                 client.status === 'inactive' ? 'Inactivo' : 'Pendiente'}
+                              </Badge>
+                            </td>
+                            <td className="px-4 py-3 text-center">
+                              {client.status === 'pending' && (
+                                <div className="flex items-center justify-center gap-2">
+                                  <button
+                                    onClick={() => handleApprove(client.id as number)}
+                                    className="text-xs bg-emerald-500 text-white px-2.5 py-1 rounded-lg hover:bg-emerald-600 font-medium"
+                                  >
+                                    Aprobar
+                                  </button>
+                                  <button
+                                    onClick={() => handleReject(client.id as number)}
+                                    className="text-xs bg-red-100 text-red-600 px-2.5 py-1 rounded-lg hover:bg-red-200 font-medium"
+                                  >
+                                    Rechazar
+                                  </button>
+                                </div>
+                              )}
+                              {client.status !== 'pending' && (
+                                <span className="text-xs text-gray-400">—</span>
+                              )}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </CardContent>
+              )}
+            </Card>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }

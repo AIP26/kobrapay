@@ -43,6 +43,7 @@ import {
   ShieldCheck,
   Wallet,
   Bot,
+  LifeBuoy,
 } from "lucide-react";
 import { useState, useCallback, useMemo, useEffect } from "react";
 import GlobalSearch from "./GlobalSearch";
@@ -169,7 +170,7 @@ const NAV_GROUPS = [
     color: "text-gray-500",
     items: [
       { href: "/dashboard/help", icon: HelpCircle, label: "Ayuda" },
-      { href: "/dashboard/support", icon: Handshake, label: "Soporte" },
+      { href: "/dashboard/support", icon: LifeBuoy, label: "Soporte Técnico" },
       { href: "/dashboard/brochure", icon: FileText, label: "Brochure de Ventas" },
       { href: "/dashboard/settings", icon: Settings, label: "Configuración" },
     ],

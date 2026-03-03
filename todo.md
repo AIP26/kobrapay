@@ -701,3 +701,29 @@
 - [ ] Buzón de sugerencias/reportes para clientes
 - [ ] IA de soporte técnico para clientes
 - [ ] PDF/manual de ventas auto-actualizable para asociados, asistente y superadmin
+
+## Sprint actual - Privacidad, Comisiones y Auditoría
+- [ ] Restringir vista del asociado: no puede ver ingresos/transacciones de clientes
+- [ ] Panel de comisiones del asociado: solo ver sus comisiones generadas + notificaciones
+- [ ] Panel de comisiones del superadmin: ver sus propias comisiones por cliente
+- [ ] Panel de comisiones del superadmin: ver comisiones de todos sus asociados
+- [ ] Notificaciones automáticas de comisiones para asociados
+- [ ] Panel de reportes del asociado con gráficas de rendimiento mensual
+- [ ] Auditoría completa de todos los flujos y funcionalidades
+
+## Sprint Privacidad y Comisiones (Completado)
+- [x] Restricción de privacidad: asociado NO puede ver ingresos/volumen de clientes
+- [x] Panel de comisiones del superadmin: ver sus propias comisiones + comisiones de todos sus asociados
+- [x] Notificaciones automáticas al superadmin cuando asociado registra un cliente
+- [x] Notificaciones automáticas al superadmin cuando se aprueba/rechaza un cliente de asociado
+- [x] Panel de reportes del asociado con gráficas de rendimiento mensual
+- [x] Ciclo de pagos flexible para vendedores: Semanal, Quincenal, Mensual, Manual, Día específico
+- [x] Comisión manual en simulador del asociado (campo personalizable)
+- [x] Tab "Crear Plan" en el dashboard del asociado
+- [x] Centro de Soporte con IA 24/7 para clientes
+- [x] Sistema de tickets de soporte técnico
+- [x] Buzón de sugerencias y peticiones de clientes
+- [x] Brochure de ventas PDF descargable
+- [x] Tarjetas de estrategia clickeables en todos los Advisors
+- [x] Bug de registro de clientes del asociado corregido (BIGINT timestamps)
+- [x] Auditoría completa: 61 tests pasando, TypeScript sin errores, servidor estable
