@@ -28,6 +28,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { useMemo, useState } from "react";
+import { toast } from "sonner";
 
 function formatCurrency(amount: number | string, currency = "MXN") {
   return new Intl.NumberFormat("es-MX", { style: "currency", currency }).format(Number(amount));
@@ -429,6 +430,18 @@ function ClientQuoteSimulator() {
   const [amount, setAmount] = useState(50000);
   const [mode, setMode] = useState<"online" | "terminal">("online");
   const [showRates, setShowRates] = useState(false);
+  const [showEmailForm, setShowEmailForm] = useState(false);
+  const [prospectEmail, setProspectEmail] = useState("");
+  const [prospectName, setProspectName] = useState("");
+  const sendQuote = trpc.quote.sendByEmail.useMutation({
+    onSuccess: () => {
+      toast.success("Cotización enviada", { description: `Email enviado a ${prospectEmail}` });
+      setShowEmailForm(false);
+      setProspectEmail("");
+      setProspectName("");
+    },
+    onError: (e) => toast.error("Error al enviar", { description: e.message }),
+  });
 
   // Tasas editables — se inicializan desde la configuración del usuario
   const defaultKp = parseFloat(String(settings?.commissionRate ?? "7"));
@@ -644,6 +657,61 @@ function ClientQuoteSimulator() {
           <span className="font-bold text-emerald-600 text-lg">{formatCurrency(netAmount)}</span>
         </div>
         <p className="text-xs text-gray-400 text-center">Costo efectivo total: {effectiveRate.toFixed(2)}%</p>
+      </div>
+
+      {/* Botón enviar cotización */}
+      <div className="mt-4 pt-4 border-t border-gray-100">
+        {!showEmailForm ? (
+          <button
+            onClick={() => setShowEmailForm(true)}
+            className="w-full flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-2.5 rounded-xl text-sm"
+          >
+            ✉️ Enviar cotización por email
+          </button>
+        ) : (
+          <div className="space-y-2">
+            <p className="text-xs font-semibold text-gray-600">Ingresa los datos del prospecto:</p>
+            <input
+              type="text"
+              value={prospectName}
+              onChange={e => setProspectName(e.target.value)}
+              placeholder="Nombre del prospecto"
+              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400"
+            />
+            <input
+              type="email"
+              value={prospectEmail}
+              onChange={e => setProspectEmail(e.target.value)}
+              placeholder="Email del prospecto"
+              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400"
+            />
+            <div className="flex gap-2">
+              <button
+                onClick={() => setShowEmailForm(false)}
+                className="flex-1 py-2 border border-gray-200 rounded-xl text-sm text-gray-500 hover:text-gray-700"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={() => {
+                  if (!prospectName || !prospectEmail) { toast.error("Ingresa nombre y email"); return; }
+                  sendQuote.mutate({
+                    prospectEmail,
+                    prospectName,
+                    mode,
+                    amount,
+                    kobrapayRate: kpRate * 100,
+                    ivaRate: ivaRate * 100,
+                  });
+                }}
+                disabled={sendQuote.isPending}
+                className="flex-1 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-sm font-semibold disabled:opacity-60"
+              >
+                {sendQuote.isPending ? "Enviando..." : "Enviar"}
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
