@@ -1148,3 +1148,28 @@ export const quoteLogs = mysqlTable("quote_logs", {
 });
 export type QuoteLog = typeof quoteLogs.$inferSelect;
 export type InsertQuoteLog = typeof quoteLogs.$inferInsert;
+
+// ─── Tabla de tiers de comisión para asociados ────────────────────────────────
+// El superadmin define rangos de clientes activos → % de comisión que recibe el asociado
+// Ejemplo: 1-5 clientes = 0.3%, 6-15 = 0.5%, 16-30 = 1%, 31-50 = 2%, 51+ = 5%
+export const associateCommissionTiers = mysqlTable("associate_commission_tiers", {
+  id: int("id").autoincrement().primaryKey(),
+  // Rango de clientes activos (minClients <= clientes_activos <= maxClients)
+  // maxClients = null significa "sin límite superior" (ej: 51+)
+  minClients: int("min_clients").notNull(),
+  maxClients: int("max_clients"),
+  // Porcentaje de comisión que recibe el asociado sobre el volumen de sus clientes
+  commissionPct: decimal("commission_pct", { precision: 5, scale: 2 }).notNull(),
+  // Etiqueta descriptiva del tier (ej: "Starter", "Silver", "Gold", "Platinum", "Elite")
+  label: varchar("label", { length: 64 }).notNull(),
+  // Descripción opcional del tier
+  description: text("description"),
+  // Orden de visualización
+  sortOrder: int("sort_order").notNull().default(0),
+  isActive: boolean("is_active").default(true).notNull(),
+  createdAt: bigint("created_at", { mode: "number" }).notNull(),
+  updatedAt: bigint("updated_at", { mode: "number" }).notNull(),
+});
+
+export type AssociateCommissionTier = typeof associateCommissionTiers.$inferSelect;
+export type InsertAssociateCommissionTier = typeof associateCommissionTiers.$inferInsert;

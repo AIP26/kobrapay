@@ -13,8 +13,229 @@ import {
   Download, Zap, TrendingUp, Crown, Rocket, ChevronRight,
   Phone, Mail, Building2, User, FileText, Star, AlertCircle,
   Handshake, ArrowRight, Calculator, CreditCard, Smartphone,
-  ChevronDown, ChevronUp, ShieldCheck, HelpCircle, Store
+  ChevronDown, ChevronUp, ShieldCheck, HelpCircle, Store,
+  Award, Edit2, Save, X, Plus, Trash2
 } from "lucide-react";
+import { useState as useStateLocal } from "react";
+
+// ─── Componente: Tabla de tiers de comisión escalonada ───────────────────────
+function CommissionTiersTable({ activeClients }: { activeClients: number }) {
+  const { data: tiers, isLoading, refetch } = trpc.associate.listCommissionTiers.useQuery();
+  const updateTier = trpc.associate.updateCommissionTier.useMutation({ onSuccess: () => refetch() });
+  const createTier = trpc.associate.createCommissionTier.useMutation({ onSuccess: () => refetch() });
+  const deleteTier = trpc.associate.deleteCommissionTier.useMutation({ onSuccess: () => refetch() });
+  const { user } = useAuth();
+  const isSuperAdmin = (user as { isSuperAdmin?: boolean })?.isSuperAdmin;
+
+  const [editingId, setEditingId] = useStateLocal<number | null>(null);
+  const [editForm, setEditForm] = useStateLocal<{ minClients: string; maxClients: string; commissionPct: string; label: string; description: string }>({ minClients: "", maxClients: "", commissionPct: "", label: "", description: "" });
+  const [showCreate, setShowCreate] = useStateLocal(false);
+  const [createForm, setCreateForm] = useStateLocal({ minClients: "", maxClients: "", commissionPct: "", label: "", description: "" });
+
+  const TIER_COLORS = [
+    { bg: "bg-slate-50", border: "border-slate-200", badge: "bg-slate-100 text-slate-700", bar: "bg-slate-400" },
+    { bg: "bg-blue-50", border: "border-blue-200", badge: "bg-blue-100 text-blue-700", bar: "bg-blue-400" },
+    { bg: "bg-amber-50", border: "border-amber-200", badge: "bg-amber-100 text-amber-700", bar: "bg-amber-400" },
+    { bg: "bg-violet-50", border: "border-violet-200", badge: "bg-violet-100 text-violet-700", bar: "bg-violet-500" },
+    { bg: "bg-emerald-50", border: "border-emerald-200", badge: "bg-emerald-100 text-emerald-700", bar: "bg-emerald-500" },
+  ];
+
+  const currentTier = tiers?.find(t => {
+    const min = t.minClients;
+    const max = t.maxClients;
+    return activeClients >= min && (max === null || activeClients <= max);
+  });
+
+  type TierItem = NonNullable<typeof tiers>[number];
+  const startEdit = (tier: TierItem) => {
+    setEditingId(tier.id);
+    setEditForm({
+      minClients: String(tier.minClients),
+      maxClients: tier.maxClients !== null ? String(tier.maxClients) : "",
+      commissionPct: String(tier.commissionPct),
+      label: tier.label,
+      description: tier.description || "",
+    });
+  };
+
+  const saveEdit = async (tier: TierItem) => {
+    await updateTier.mutateAsync({
+      id: tier.id,
+      minClients: parseInt(editForm.minClients) || tier.minClients,
+      maxClients: editForm.maxClients ? parseInt(editForm.maxClients) : null,
+      commissionPct: parseFloat(editForm.commissionPct) || parseFloat(String(tier.commissionPct)),
+      label: editForm.label || tier.label,
+      description: editForm.description,
+    });
+    setEditingId(null);
+    toast.success("Tier actualizado");
+  };
+
+  const handleCreate = async () => {
+    if (!createForm.label || !createForm.commissionPct || !createForm.minClients) {
+      toast.error("Completa los campos obligatorios");
+      return;
+    }
+    await createTier.mutateAsync({
+      minClients: parseInt(createForm.minClients),
+      maxClients: createForm.maxClients ? parseInt(createForm.maxClients) : null,
+      commissionPct: parseFloat(createForm.commissionPct),
+      label: createForm.label,
+      description: createForm.description,
+    });
+    setShowCreate(false);
+    setCreateForm({ minClients: "", maxClients: "", commissionPct: "", label: "", description: "" });
+    toast.success("Tier creado");
+  };
+
+  if (isLoading) return <div className="h-24 bg-gray-50 rounded-2xl animate-pulse" />;
+
+  return (
+    <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+      <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Award className="w-5 h-5 text-amber-500" />
+          <h3 className="font-semibold text-gray-900">Niveles de comisión escalonada</h3>
+        </div>
+        {isSuperAdmin && (
+          <Button size="sm" variant="outline" onClick={() => setShowCreate(!showCreate)} className="gap-1.5">
+            <Plus className="w-4 h-4" />
+            Nuevo nivel
+          </Button>
+        )}
+      </div>
+
+      {/* Banner nivel actual */}
+      {currentTier && (
+        <div className="mx-6 mt-4 bg-gradient-to-r from-emerald-500 to-teal-600 rounded-xl p-4 text-white flex items-center justify-between">
+          <div>
+            <p className="text-xs text-emerald-100 font-medium">Tu nivel actual</p>
+            <p className="text-xl font-bold">{currentTier.label}</p>
+            <p className="text-xs text-emerald-100 mt-0.5">{activeClients} clientes activos</p>
+          </div>
+          <div className="text-right">
+            <p className="text-3xl font-black">{parseFloat(String(currentTier.commissionPct)).toFixed(2)}%</p>
+            <p className="text-xs text-emerald-100">comisión sobre volumen</p>
+          </div>
+        </div>
+      )}
+
+      {/* Formulario crear nuevo tier (solo superadmin) */}
+      {isSuperAdmin && showCreate && (
+        <div className="mx-6 mt-4 p-4 border border-dashed border-emerald-300 rounded-xl bg-emerald-50 space-y-3">
+          <p className="text-sm font-semibold text-emerald-800">Nuevo nivel de comisión</p>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-xs text-gray-500">Etiqueta *</label>
+              <Input value={createForm.label} onChange={e => setCreateForm(f => ({ ...f, label: e.target.value }))} placeholder="Ej: Diamond" className="mt-1" />
+            </div>
+            <div>
+              <label className="text-xs text-gray-500">Comisión % *</label>
+              <Input type="number" step="0.1" value={createForm.commissionPct} onChange={e => setCreateForm(f => ({ ...f, commissionPct: e.target.value }))} placeholder="0.5" className="mt-1" />
+            </div>
+            <div>
+              <label className="text-xs text-gray-500">Mín. clientes *</label>
+              <Input type="number" value={createForm.minClients} onChange={e => setCreateForm(f => ({ ...f, minClients: e.target.value }))} placeholder="1" className="mt-1" />
+            </div>
+            <div>
+              <label className="text-xs text-gray-500">Máx. clientes (vacío = sin límite)</label>
+              <Input type="number" value={createForm.maxClients} onChange={e => setCreateForm(f => ({ ...f, maxClients: e.target.value }))} placeholder="50" className="mt-1" />
+            </div>
+          </div>
+          <Input value={createForm.description} onChange={e => setCreateForm(f => ({ ...f, description: e.target.value }))} placeholder="Descripción del nivel" />
+          <div className="flex gap-2">
+            <Button size="sm" onClick={handleCreate} className="bg-emerald-600 hover:bg-emerald-700 text-white gap-1.5">
+              <Save className="w-3.5 h-3.5" /> Guardar
+            </Button>
+            <Button size="sm" variant="outline" onClick={() => setShowCreate(false)}>
+              <X className="w-3.5 h-3.5" /> Cancelar
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* Tabla de tiers */}
+      <div className="p-6 space-y-3 pt-4">
+        {(tiers ?? []).map((tier, idx) => {
+          const colors = TIER_COLORS[idx % TIER_COLORS.length];
+          const isCurrentTier = currentTier?.id === tier.id;
+          const isEditing = editingId === tier.id;
+          const pct = parseFloat(String(tier.commissionPct));
+          const barWidth = Math.min((pct / 5) * 100, 100);
+
+          return (
+            <div key={tier.id} className={`rounded-xl border-2 p-4 ${isCurrentTier ? "border-emerald-400 shadow-md" : colors.border} ${colors.bg}`}>
+              {isEditing && isSuperAdmin ? (
+                <div className="space-y-3">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-xs text-gray-500">Etiqueta</label>
+                      <Input value={editForm.label} onChange={e => setEditForm(f => ({ ...f, label: e.target.value }))} className="mt-1" />
+                    </div>
+                    <div>
+                      <label className="text-xs text-gray-500">Comisión %</label>
+                      <Input type="number" step="0.1" value={editForm.commissionPct} onChange={e => setEditForm(f => ({ ...f, commissionPct: e.target.value }))} className="mt-1" />
+                    </div>
+                    <div>
+                      <label className="text-xs text-gray-500">Mín. clientes</label>
+                      <Input type="number" value={editForm.minClients} onChange={e => setEditForm(f => ({ ...f, minClients: e.target.value }))} className="mt-1" />
+                    </div>
+                    <div>
+                      <label className="text-xs text-gray-500">Máx. clientes</label>
+                      <Input type="number" value={editForm.maxClients} onChange={e => setEditForm(f => ({ ...f, maxClients: e.target.value }))} placeholder="Sin límite" className="mt-1" />
+                    </div>
+                  </div>
+                  <Input value={editForm.description} onChange={e => setEditForm(f => ({ ...f, description: e.target.value }))} placeholder="Descripción" />
+                  <div className="flex gap-2">
+                    <Button size="sm" onClick={() => saveEdit(tier)} className="bg-emerald-600 hover:bg-emerald-700 text-white gap-1.5">
+                      <Save className="w-3.5 h-3.5" /> Guardar
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={() => setEditingId(null)}>
+                      <X className="w-3.5 h-3.5" /> Cancelar
+                    </Button>
+                    <Button size="sm" variant="outline" className="text-red-500 border-red-200 hover:bg-red-50 ml-auto gap-1.5" onClick={async () => { await deleteTier.mutateAsync({ id: tier.id }); toast.success("Tier eliminado"); }}>
+                      <Trash2 className="w-3.5 h-3.5" /> Eliminar
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex items-center gap-4">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${colors.badge}`}>{tier.label}</span>
+                      {isCurrentTier && <span className="text-xs bg-emerald-500 text-white px-2 py-0.5 rounded-full font-bold">Tu nivel actual</span>}
+                    </div>
+                    <p className="text-xs text-gray-500 mb-2">
+                      {tier.minClients}{tier.maxClients ? `–${tier.maxClients}` : "+"} clientes activos
+                      {tier.description ? ` · ${tier.description}` : ""}
+                    </p>
+                    <div className="flex items-center gap-2">
+                      <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
+                        <div className={`h-full ${colors.bar} rounded-full`} style={{ width: `${barWidth}%` }} />
+                      </div>
+                      <span className="text-sm font-bold text-gray-700 w-12 text-right">{pct.toFixed(2)}%</span>
+                    </div>
+                  </div>
+                  {isSuperAdmin && (
+                    <button onClick={() => startEdit(tier)} className="p-2 rounded-lg hover:bg-white/80 text-gray-400 hover:text-gray-600">
+                      <Edit2 className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="px-6 pb-5">
+        <p className="text-xs text-gray-400 text-center">
+          Los niveles se calculan automáticamente según tus clientes activos. A mayor cartera, mayor comisión.
+        </p>
+      </div>
+    </div>
+  );
+}
 
 // --- Planes disponibles -------------------------------------------------------
 const PLANS = [
@@ -1229,6 +1450,9 @@ export default function AssociateDashboard() {
                 </div>
               )}
             </div>
+
+            {/* Tabla de tiers de comisión escalonada */}
+            <CommissionTiersTable activeClients={activeClients} />
 
             {/* Nota informativa */}
             <div className="bg-gray-50 rounded-xl p-4 border border-gray-200 flex items-start gap-3">

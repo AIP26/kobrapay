@@ -5594,6 +5594,93 @@ Responde SIEMPRE en español mexicano, de forma motivadora, práctica y orientad
         }
         return { success: true };
       }),
+    // ─── Tiers de comisión escalonada para asociados ─────────────────────────────
+    // [Todos] Listar los tiers de comisión (público para que el asociado vea su nivel)
+    listCommissionTiers: protectedProcedure.query(async ({ ctx }) => {
+      const db = await import('./db').then(m => m.getDb ? m.getDb() : null);
+      if (!db) return [];
+      const { associateCommissionTiers } = await import('../drizzle/schema');
+      const { asc } = await import('drizzle-orm');
+      return db.select().from(associateCommissionTiers)
+        .where((await import('drizzle-orm')).eq(associateCommissionTiers.isActive, true))
+        .orderBy(asc(associateCommissionTiers.sortOrder));
+    }),
+
+    // [SuperAdmin] Actualizar un tier de comisión
+    updateCommissionTier: protectedProcedure
+      .input(z.object({
+        id: z.number(),
+        minClients: z.number().min(1),
+        maxClients: z.number().nullable(),
+        commissionPct: z.number().min(0.1).max(10),
+        label: z.string().min(1).max(64),
+        description: z.string().optional(),
+        sortOrder: z.number().optional(),
+        isActive: z.boolean().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        if (!ctx.isSuperAdmin) throw new TRPCError({ code: 'FORBIDDEN' });
+        const db = await import('./db').then(m => m.getDb ? m.getDb() : null);
+        if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
+        const { associateCommissionTiers } = await import('../drizzle/schema');
+        const { eq } = await import('drizzle-orm');
+        const now = Date.now();
+        await db.update(associateCommissionTiers).set({
+          minClients: input.minClients,
+          maxClients: input.maxClients,
+          commissionPct: String(input.commissionPct),
+          label: input.label,
+          description: input.description,
+          sortOrder: input.sortOrder,
+          isActive: input.isActive !== undefined ? input.isActive : true,
+          updatedAt: now,
+        }).where(eq(associateCommissionTiers.id, input.id));
+        return { success: true };
+      }),
+
+    // [SuperAdmin] Crear un nuevo tier de comisión
+    createCommissionTier: protectedProcedure
+      .input(z.object({
+        minClients: z.number().min(1),
+        maxClients: z.number().nullable(),
+        commissionPct: z.number().min(0.1).max(10),
+        label: z.string().min(1).max(64),
+        description: z.string().optional(),
+        sortOrder: z.number().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        if (!ctx.isSuperAdmin) throw new TRPCError({ code: 'FORBIDDEN' });
+        const db = await import('./db').then(m => m.getDb ? m.getDb() : null);
+        if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
+        const { associateCommissionTiers } = await import('../drizzle/schema');
+        const now = Date.now();
+        await db.insert(associateCommissionTiers).values({
+          minClients: input.minClients,
+          maxClients: input.maxClients,
+          commissionPct: String(input.commissionPct),
+          label: input.label,
+          description: input.description || '',
+          sortOrder: input.sortOrder || 0,
+          isActive: true,
+          createdAt: now,
+          updatedAt: now,
+        });
+        return { success: true };
+      }),
+
+    // [SuperAdmin] Eliminar un tier de comisión
+    deleteCommissionTier: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        if (!ctx.isSuperAdmin) throw new TRPCError({ code: 'FORBIDDEN' });
+        const db = await import('./db').then(m => m.getDb ? m.getDb() : null);
+        if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
+        const { associateCommissionTiers } = await import('../drizzle/schema');
+        const { eq } = await import('drizzle-orm');
+        await db.delete(associateCommissionTiers).where(eq(associateCommissionTiers.id, input.id));
+        return { success: true };
+      }),
+
     // [SuperAdmin] Listar todos los asociados y sus clientes
     listAllAssociates: protectedProcedure.query(async ({ ctx }) => {
       if (!ctx.isSuperAdmin) throw new TRPCError({ code: 'FORBIDDEN' });
@@ -6300,6 +6387,69 @@ Responde SOLO con JSON válido:
           avgRate: Number(r?.avgRate ?? 0),
           totalVolumeQuoted: Number(r?.totalVolume ?? 0),
         };
+      }),
+  }),
+
+  // ─── Asistente IA de ayuda contextual (para todos los roles) ──────────────────
+  help: router({
+    chat: protectedProcedure
+      .input(z.object({
+        messages: z.array(z.object({
+          role: z.enum(['user', 'assistant']),
+          content: z.string(),
+        })),
+        userRole: z.string().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const { invokeLLM } = await import('./_core/llm');
+        const role = ctx.user.role || input.userRole || 'user';
+
+        const roleContext: Record<string, string> = {
+          superadmin: 'Eres el asistente personal del dueño y superadministrador de KobraPay. Tienes acceso a toda la información de la plataforma. Puedes ayudar con configuraciones avanzadas, estrategia de negocio, gestión de usuarios y cualquier aspecto de la plataforma.',
+          admin: 'Eres el asistente del administrador de KobraPay. Ayudas a gestionar clientes, revisar transacciones, configurar la plataforma y resolver dudas operativas del día a día.',
+          assistant: 'Eres el asistente del asistente de KobraPay. Ayudas a revisar solicitudes de clientes, aprobar o rechazar prospectos, y gestionar el flujo de trabajo del equipo.',
+          associate: 'Eres el asistente del asociado de KobraPay. Ayudas a entender cómo registrar clientes, cómo funciona el sistema de comisiones escalonadas (0.3% a 5% según cartera), cómo presentar los planes a prospectos y cómo maximizar sus ingresos.',
+          employee: 'Eres el asistente del empleado de KobraPay. Ayudas a usar la plataforma: crear enlaces de pago, ver transacciones, hacer transferencias, entender los reportes y resolver dudas del día a día.',
+          user: 'Eres el asistente del usuario de KobraPay. Ayudas a crear enlaces de pago, entender las comisiones, ver el historial de ventas, hacer transferencias y usar todas las funciones de la plataforma de forma sencilla.',
+        };
+
+        const systemPrompt = `Eres KobraBot, el asistente inteligente de KobraPay. ${roleContext[role] || roleContext['user']}
+
+KobraPay es una plataforma mexicana de cobros y pagos digitales:
+- Cobra con tarjeta (Visa, Mastercard, Amex) desde cualquier dispositivo
+- Crea enlaces de pago y compártelos por WhatsApp, correo o redes sociales
+- Cobra recurrente: mensualidades, suscripciones, colegiaturas
+- Facturas digitales (CFDI) integradas
+- Contratos digitales con firma electrónica
+- Transferencias nacionales (SPEI/CLABE) e internacionales (próximamente: Zelle, Wise)
+- Agenda médica y expedientes para clínicas
+- Gestión de personal (RH básico)
+- Comisión: 3% total (1.5% KobraPay + 1.5% Stripe), sin mensualidad
+
+Cómo crear un enlace de pago:
+1. Ve a "Links de Pago" en el menú lateral
+2. Haz clic en "Nuevo link"
+3. Ingresa el nombre del producto/servicio y el monto
+4. Copia el link y compártelo con tu cliente
+5. Cuando el cliente pague, recibes una notificación y el dinero se deposita en tu cuenta
+
+Cómo hacer una transferencia:
+1. Ve a "Transferencias" en el menú lateral
+2. Selecciona el tipo: nacional (SPEI) o internacional
+3. Ingresa la CLABE o datos del destinatario
+4. Confirma el monto y envía
+
+Responde SIEMPRE en español mexicano, de forma amigable, clara y práctica. Si no sabes algo, sugiere contactar al soporte. Máximo 3 párrafos por respuesta, a menos que sea una guía paso a paso.`;
+
+        const response = await invokeLLM({
+          messages: [
+            { role: 'system', content: systemPrompt },
+            ...input.messages,
+          ],
+        });
+        const content = response?.choices?.[0]?.message?.content;
+        if (!content) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Sin respuesta del modelo' });
+        return { message: typeof content === 'string' ? content : JSON.stringify(content) };
       }),
   }),
 });

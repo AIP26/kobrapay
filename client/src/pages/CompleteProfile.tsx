@@ -9,7 +9,7 @@ import { toast } from "sonner";
 import { CheckCircle2, User, Building2, Phone, Calendar, FileText, Shield, Bot } from "lucide-react";
 import { Turnstile } from "@marsidev/react-turnstile";
 
-const KOBRAPAY_ICON = "https://files.manuscdn.com/user_upload_by_module/session_file/310519663381362445/yMTQoaqGYTxuRnnF.png";
+const KOBRAPAY_ICON = "https://d2xsxph8kpxj0f.cloudfront.net/310519663381362445/Tm7GPbTEGgvmgj5v2qy4Z4/kobrapay_logo_navy_27dde1ac.png";
 const KOBRAPAY_LOGO = "https://files.manuscdn.com/user_upload_by_module/session_file/310519663381362445/BlaEgmymroahADGF.png";
 
 // Cloudflare Turnstile site key

@@ -869,3 +869,8 @@
 - [ ] Cumplimiento fiscal por pais (IVA diferente en cada pais)
 - [ ] Asociado internacional: amigo en Suecia como primer asociado europeo
 - [ ] Interfaz multi-idioma (espanol, ingles, sueco)
+
+## Fase UX - Simplificación y Comisiones Escalonadas
+- [ ] Simplificar sidebar del cliente (rol user): mostrar solo Panel, Nuevo Cobro, Mis Links, Mis Ventas, Transferencias, Soporte, Configuración
+- [ ] Agregar slide Q&A a presentación Bansí con preguntas frecuentes y respuestas preparadas
+- [ ] Sistema de comisión escalonada para asociados: tabla 0.3%-5% según cantidad de clientes, editable por superadmin en tabla de comisiones

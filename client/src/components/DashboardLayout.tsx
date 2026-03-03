@@ -56,7 +56,7 @@ import { Button } from "./ui/button";
 import { Avatar, AvatarFallback } from "./ui/avatar";
 import PendingApproval from "@/pages/PendingApproval";
 
-const KOBRAPAY_ICON = "https://files.manuscdn.com/user_upload_by_module/session_file/310519663381362445/yMTQoaqGYTxuRnnF.png";
+const KOBRAPAY_ICON = "https://d2xsxph8kpxj0f.cloudfront.net/310519663381362445/Tm7GPbTEGgvmgj5v2qy4Z4/kobrapay_logo_navy_27dde1ac.png";
 
 // ─── Mapa de permisos por ítem del sidebar ────────────────────────────────────
 const ITEM_PERMISSION_MAP: Record<string, string> = {
@@ -79,6 +79,18 @@ const ITEM_PERMISSION_MAP: Record<string, string> = {
 };
 
 // ─── Grupos del sidebar ───────────────────────────────────────────────────────
+// Rutas esenciales para clientes normales (rol user sin permisos especiales)
+const USER_ESSENTIAL_ROUTES = new Set([
+  "/dashboard",
+  "/dashboard/create",
+  "/dashboard/links",
+  "/dashboard/sales",
+  "/dashboard/transfers",
+  "/dashboard/support",
+  "/dashboard/settings",
+  "/dashboard/help",
+]);
+
 const NAV_GROUPS = [
   {
     id: "principal",
@@ -365,12 +377,28 @@ function Sidebar({
     return group?.items.some(i => location === i.href) ?? false;
   };
 
+  // Un usuario es "cliente básico" si no es superadmin, admin, asistente ni asociado
+  const isBasicUser = !isSuperAdmin && !isAdmin &&
+    permissions['__isAssistant'] !== true &&
+    permissions['__isAssociate'] !== true;
+
   const isItemVisible = (href: string, superAdminOnly?: boolean, assistantOnly?: boolean, adminOnly?: boolean, associateOnly?: boolean) => {
     if (superAdminOnly && !isSuperAdmin) return false;
     if (assistantOnly) return isSuperAdmin || permissions['__isAssistant'] === true;
     if (adminOnly) return isSuperAdmin || isAdmin;
     if (associateOnly) return isSuperAdmin || permissions['__isAssociate'] === true;
     if (isSuperAdmin) return true;
+
+    if (isBasicUser) {
+      // Siempre visible para clientes básicos (rutas esenciales)
+      if (USER_ESSENTIAL_ROUTES.has(href)) return true;
+      // Módulos avanzados: solo si el admin los habilitó explicitamente en permisos
+      const permKey = ITEM_PERMISSION_MAP[href];
+      if (!permKey) return false; // sin permiso mapeado = oculto para clientes básicos
+      return permissions[permKey] === true;
+    }
+
+    // Para admin y roles especiales: usar permisos normales
     const permKey = ITEM_PERMISSION_MAP[href];
     if (!permKey) return true; // sin restricción = siempre visible
     return permissions[permKey] !== false;

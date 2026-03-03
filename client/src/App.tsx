@@ -59,6 +59,16 @@ import Brochure from "./pages/Brochure";
 import Transfers from "./pages/Transfers";
 import AIScoring from "./pages/AIScoring";
 import QuoteLogs from "./pages/QuoteLogs";
+import KobraBot from "./components/KobraBot";
+import { useLocation } from "wouter";
+
+// Wrapper que muestra KobraBot solo en páginas del dashboard (usuarios autenticados)
+function KobraBotWrapper() {
+  const [location] = useLocation();
+  const showBot = location.startsWith("/dashboard") || location.startsWith("/onboarding");
+  if (!showBot) return null;
+  return <KobraBot />;
+}
 
 function Router() {
   return (
@@ -133,6 +143,7 @@ function App() {
         <TooltipProvider>
           <Toaster />
           <Router />
+          <KobraBotWrapper />
         </TooltipProvider>
       </ThemeProvider>
     </ErrorBoundary>
