@@ -4,7 +4,7 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import DashboardLayout from "@/components/DashboardLayout";
-import { ShieldCheck, Clock, CheckCircle, XCircle, Users, Settings, ClipboardList, Star } from "lucide-react";
+import { ShieldCheck, Clock, CheckCircle, XCircle, Users, Settings, ClipboardList, Star, Handshake, ChevronDown, ChevronUp } from "lucide-react";
 
 const MODULE_LABELS: Record<string, string> = {
   prescriptions: "Prescripciones Médicas",
@@ -38,7 +38,7 @@ const STATUS_LABELS: Record<string, { label: string; color: string }> = {
 
 function AssistantPanelInner() {
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState<"requests" | "surveys" | "users">("requests");
+  const [activeTab, setActiveTab] = useState<"requests" | "surveys" | "users" | "associates">("requests");
   const [selectedRequest, setSelectedRequest] = useState<number | null>(null);
   const [notes, setNotes] = useState("");
   const [showNotesFor, setShowNotesFor] = useState<{ id: number; action: "approve" | "reject" } | null>(null);
@@ -73,6 +73,17 @@ function AssistantPanelInner() {
     onSuccess: () => { toast.success("Plan asignado y cuenta activada"); refetchSurveys(); setSelectedSurvey(null); setSurveyNotes(""); setSurveyAction(null); },
     onError: (e) => toast.error(e.message),
   });
+  // Asociados
+  const { data: allAssociates = [], refetch: refetchAssociates, isLoading: loadingAssociates } = trpc.associate.listAllAssociates.useQuery(undefined, { enabled: !!isSuperAdmin });
+  const updateClientStatus = trpc.associate.updateClientStatus.useMutation({
+    onSuccess: () => { toast.success("Estado del cliente actualizado"); refetchAssociates(); setSelectedAssociateClient(null); },
+    onError: () => toast.error("Error al actualizar el estado"),
+  });
+  const [selectedAssociateClient, setSelectedAssociateClient] = useState<{ id: number; name: string } | null>(null);
+  const [associateClientPlan, setAssociateClientPlan] = useState("express");
+  const [associateClientCommission, setAssociateClientCommission] = useState(1.5);
+  const [expandedAssociate, setExpandedAssociate] = useState<number | null>(null);
+
   const pendingSurveys = (surveys as any[]).filter((s) => s.survey?.status === "pending_review" || s.survey?.status === "pending");
   const reviewedSurveys = (surveys as any[]).filter((s) => s.survey?.status === "assistant_approved" || s.survey?.status === "pending_info");
   const doneSurveys = (surveys as any[]).filter((s) => s.survey?.status === "approved" || s.survey?.status === "rejected");
@@ -87,6 +98,10 @@ function AssistantPanelInner() {
   });
   const setAssistant = trpc.moduleAccess.setAssistantRole.useMutation({
     onSuccess: () => { toast.success("Rol de asistente asignado"); },
+    onError: (e) => toast.error(e.message),
+  });
+  const setAssociate = trpc.moduleAccess.setAssociateRole.useMutation({
+    onSuccess: () => { toast.success("Rol de Asociado asignado"); },
     onError: (e) => toast.error(e.message),
   });
 
@@ -149,6 +164,20 @@ function AssistantPanelInner() {
           >
             <Users className="w-4 h-4 inline mr-1" />
             Gestión de Usuarios
+          </button>
+        )}
+        {isSuperAdmin && (
+          <button
+            onClick={() => setActiveTab("associates")}
+            className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors inline-flex items-center gap-1 ${activeTab === "associates" ? "border-amber-600 text-amber-700" : "border-transparent text-gray-500 hover:text-gray-700"}`}
+          >
+            <Handshake className="w-4 h-4" />
+            Asociados
+            {(allAssociates as any[]).reduce((acc: number, a: any) => acc + (a.clients || []).filter((c: any) => c.status === 'pending').length, 0) > 0 && (
+              <span className="ml-1 bg-amber-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold">
+                {(allAssociates as any[]).reduce((acc: number, a: any) => acc + (a.clients || []).filter((c: any) => c.status === 'pending').length, 0)}
+              </span>
+            )}
           </button>
         )}
       </div>
@@ -246,31 +275,30 @@ function AssistantPanelInner() {
                           u.role === "admin" ? "bg-blue-100 text-blue-700" :
                           u.role === "superadmin" ? "bg-purple-100 text-purple-700" :
                           u.role === "assistant" ? "bg-green-100 text-green-700" :
+                          u.role === "associate" ? "bg-amber-100 text-amber-700" :
                           "bg-gray-100 text-gray-600"
                         }`}>
                           {u.role === "admin" ? "Administrador" :
                            u.role === "superadmin" ? "SuperAdmin" :
-                           u.role === "assistant" ? "Asistente" : "Usuario"}
+                           u.role === "assistant" ? "Asistente" :
+                           u.role === "associate" ? "Asociado" : "Usuario"}
                         </span>
                       </td>
                       <td className="px-4 py-3">
-                        {u.role !== "superadmin" && u.role !== "assistant" && (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => {
-                              if (confirm(`¿Asignar rol de Asistente a ${u.name || u.email}?`)) {
-                                setAssistant.mutate({ userId: u.id });
-                              }
-                            }}
-                            className="text-xs"
-                          >
-                            Hacer Asistente
-                          </Button>
-                        )}
-                        {u.role === "assistant" && (
-                          <span className="text-xs text-green-600 font-medium">✓ Es asistente</span>
-                        )}
+                        <div className="flex gap-2 flex-wrap">
+                          {u.role !== "superadmin" && u.role !== "assistant" && u.role !== "associate" && (
+                            <Button size="sm" variant="outline" onClick={() => { if (confirm(`¿Asignar rol de Asistente a ${u.name || u.email}?`)) { setAssistant.mutate({ userId: u.id }); } }} className="text-xs">
+                              Hacer Asistente
+                            </Button>
+                          )}
+                          {u.role !== "superadmin" && u.role !== "assistant" && u.role !== "associate" && (
+                            <Button size="sm" variant="outline" onClick={() => { if (confirm(`¿Asignar rol de Asociado a ${u.name || u.email}?`)) { setAssociate.mutate({ userId: u.id }); } }} className="text-xs text-amber-700 border-amber-200 hover:bg-amber-50">
+                              Hacer Asociado
+                            </Button>
+                          )}
+                          {u.role === "assistant" && <span className="text-xs text-green-600 font-medium">✓ Es asistente</span>}
+                          {u.role === "associate" && <span className="text-xs text-amber-600 font-medium">✓ Es asociado</span>}
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -281,6 +309,117 @@ function AssistantPanelInner() {
         </div>
       )}
 
+      {/* Tab: Asociados */}
+      {activeTab === "associates" && isSuperAdmin && (
+        <div className="space-y-4">
+          {loadingAssociates ? (
+            <div className="text-center py-10 text-gray-400">Cargando asociados...</div>
+          ) : (allAssociates as any[]).length === 0 ? (
+            <div className="text-center py-10 text-gray-400">
+              <Handshake className="w-12 h-12 mx-auto mb-3 opacity-30" />
+              <p className="font-medium">No hay asociados registrados</p>
+              <p className="text-sm mt-1">Asigna el rol de Asociado a un usuario desde la pestaña Gestión de Usuarios</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {(allAssociates as any[]).map((item: any) => {
+                const assoc = item.associate;
+                const clients = item.clients || [];
+                const pendingCount = clients.filter((c: any) => c.status === 'pending').length;
+                const activeCount = clients.filter((c: any) => c.status === 'active').length;
+                const isExpanded = expandedAssociate === assoc.id;
+                return (
+                  <div key={assoc.id} className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
+                    <button className="w-full flex items-center justify-between px-5 py-4 hover:bg-gray-50 transition-colors" onClick={() => setExpandedAssociate(isExpanded ? null : assoc.id)}>
+                      <div className="flex items-center gap-3">
+                        <div className="w-9 h-9 rounded-full bg-amber-100 flex items-center justify-center text-amber-700 font-bold text-sm">{(assoc.name || 'A').charAt(0).toUpperCase()}</div>
+                        <div className="text-left">
+                          <p className="font-semibold text-gray-900 text-sm">{assoc.name || 'Sin nombre'}</p>
+                          <p className="text-xs text-gray-500">{assoc.email}</p>
+                        </div>
+                        <div className="flex gap-2 ml-2">
+                          {pendingCount > 0 && <span className="px-2 py-0.5 bg-yellow-100 text-yellow-700 rounded-full text-xs font-medium">{pendingCount} pendiente{pendingCount > 1 ? 's' : ''}</span>}
+                          {activeCount > 0 && <span className="px-2 py-0.5 bg-green-100 text-green-700 rounded-full text-xs font-medium">{activeCount} activo{activeCount > 1 ? 's' : ''}</span>}
+                          <span className="px-2 py-0.5 bg-gray-100 text-gray-600 rounded-full text-xs">{clients.length} cliente{clients.length !== 1 ? 's' : ''} total</span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <span className="text-sm font-semibold text-emerald-700">${item.totalEarned.toFixed(2)} MXN ganados</span>
+                        {isExpanded ? <ChevronUp className="w-4 h-4 text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-400" />}
+                      </div>
+                    </button>
+                    {isExpanded && (
+                      <div className="border-t border-gray-100 px-5 py-4">
+                        {clients.length === 0 ? (
+                          <p className="text-sm text-gray-400 text-center py-4">Este asociado aún no ha registrado clientes</p>
+                        ) : (
+                          <div className="space-y-2">
+                            {clients.map((c: any) => (
+                              <div key={c.id} className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0">
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-sm font-medium text-gray-900">{c.clientName}</p>
+                                  <p className="text-xs text-gray-500">{c.clientEmail}{c.clientBusinessName ? ` · ${c.clientBusinessName}` : ''}</p>
+                                  {c.assignedPlan && <span className="text-xs text-emerald-600 font-medium">Plan: {c.assignedPlan}</span>}
+                                  {c.notes && <p className="text-xs text-gray-400 italic mt-0.5">{c.notes}</p>}
+                                </div>
+                                <div className="flex items-center gap-2 ml-3">
+                                  <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                                    c.status === 'active' ? 'bg-green-100 text-green-700' :
+                                    c.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
+                                    c.status === 'rejected' ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-600'
+                                  }`}>{c.status === 'active' ? 'Activo' : c.status === 'pending' ? 'Pendiente' : c.status === 'rejected' ? 'Rechazado' : 'Inactivo'}</span>
+                                  {c.status === 'pending' && (
+                                    <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs h-7" onClick={() => { setSelectedAssociateClient({ id: c.id, name: c.clientName }); setAssociateClientPlan(c.assignedPlan || 'express'); setAssociateClientCommission(1.5); }}>
+                                      Revisar
+                                    </Button>
+                                  )}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+      {/* Modal de revisión de cliente del asociado */}
+      {selectedAssociateClient && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
+            <h3 className="text-lg font-bold mb-1">Revisar prospecto</h3>
+            <p className="text-sm text-gray-500 mb-4">{selectedAssociateClient.name}</p>
+            <div className="space-y-3 mb-4">
+              <div>
+                <label className="text-sm font-medium text-gray-700 block mb-1">Plan a asignar</label>
+                <select value={associateClientPlan} onChange={e => setAssociateClientPlan(e.target.value)} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm">
+                  <option value="express">Express - Básico</option>
+                  <option value="connect">Connect - Estándar</option>
+                  <option value="custom">Custom - Avanzado</option>
+                  <option value="enterprise">Enterprise - Corporativo</option>
+                </select>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-gray-700 block mb-1">Comisión del asociado (%)</label>
+                <input type="number" step="0.1" min="0" max="5" value={associateClientCommission} onChange={e => setAssociateClientCommission(parseFloat(e.target.value))} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
+              </div>
+            </div>
+            <div className="flex gap-3">
+              <Button className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white" onClick={() => updateClientStatus.mutate({ clientId: selectedAssociateClient.id, status: 'active', assignedPlan: associateClientPlan as any, commissionRate: associateClientCommission })} disabled={updateClientStatus.isPending}>
+                <CheckCircle className="w-4 h-4 mr-1" /> Activar cliente
+              </Button>
+              <Button variant="outline" className="flex-1 text-red-600 border-red-200 hover:bg-red-50" onClick={() => updateClientStatus.mutate({ clientId: selectedAssociateClient.id, status: 'rejected' })} disabled={updateClientStatus.isPending}>
+                <XCircle className="w-4 h-4 mr-1" /> Rechazar
+              </Button>
+              <Button variant="outline" onClick={() => setSelectedAssociateClient(null)}>Cancelar</Button>
+            </div>
+          </div>
+        </div>
+      )}
       {/* Tab: Encuestas de Onboarding */}
       {activeTab === "surveys" && (
         <div className="space-y-4">

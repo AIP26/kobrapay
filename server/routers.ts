@@ -4634,6 +4634,18 @@ export const appRouter = router({
         return { success: true };
       }),
 
+    // [SUPERADMIN] Asignar rol de Asociado a un usuario
+    setAssociateRole: protectedProcedure
+      .input(z.object({ userId: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        if (!ctx.isSuperAdmin) throw new TRPCError({ code: 'FORBIDDEN' });
+        const db = await import('./db').then(m => m.getDb ? m.getDb() : null);
+        if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
+        const { users } = await import('../drizzle/schema');
+        const { eq } = await import('drizzle-orm');
+        await db.update(users).set({ role: 'associate' as any }).where(eq(users.id, input.userId));
+        return { success: true };
+      }),
     // [SUPERADMIN] Listar todos los usuarios para gestión de roles
     listAllUsers: protectedProcedure.query(async ({ ctx }) => {
       if (!ctx.isSuperAdmin) throw new TRPCError({ code: 'FORBIDDEN' });
@@ -5339,6 +5351,30 @@ Responde SIEMPRE en español mexicano, de forma motivadora, práctica y orientad
       return { totalClients, activeClients, pendingClients, totalVolume, totalEarned };
     }),
 
+    // [SuperAdmin] Actualizar status de un cliente prospecto del asociado
+    updateClientStatus: protectedProcedure
+      .input(z.object({
+        clientId: z.number(),
+        status: z.enum(['pending', 'active', 'rejected', 'inactive']),
+        assignedPlan: z.enum(['express', 'connect', 'custom', 'enterprise']).optional(),
+        commissionRate: z.number().min(0).max(10).optional(),
+        notes: z.string().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        if (!ctx.isSuperAdmin) throw new TRPCError({ code: 'FORBIDDEN' });
+        const db = await import('./db').then(m => m.getDb ? m.getDb() : null);
+        if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
+        const { associateCommissions } = await import('../drizzle/schema');
+        const { eq } = await import('drizzle-orm');
+        const now = Date.now();
+        const updateData: Record<string, unknown> = { status: input.status, updatedAt: now };
+        if (input.assignedPlan) updateData.assignedPlan = input.assignedPlan;
+        if (input.commissionRate !== undefined) updateData.commissionRate = String(input.commissionRate);
+        if (input.notes) updateData.notes = input.notes;
+        if (input.status === 'active') updateData.approvedAt = now;
+        await db.update(associateCommissions).set(updateData).where(eq(associateCommissions.id, input.clientId));
+        return { success: true };
+      }),
     // [SuperAdmin] Listar todos los asociados y sus clientes
     listAllAssociates: protectedProcedure.query(async ({ ctx }) => {
       if (!ctx.isSuperAdmin) throw new TRPCError({ code: 'FORBIDDEN' });
