@@ -125,17 +125,39 @@ function AssociateQuoteSimulator() {
   const [amount, setAmount] = useState("10000");
   const [kobrapayRate, setKobrapayRate] = useState("1.5");
   const [ivaRate, setIvaRate] = useState("16");
+  const [monthlyVolume, setMonthlyVolume] = useState("");
+  const [showEmailModal, setShowEmailModal] = useState(false);
+  const [prospectEmail, setProspectEmail] = useState("");
+  const [prospectName, setProspectName] = useState("");
+  const [emailSent, setEmailSent] = useState(false);
+  const [aiPreview, setAiPreview] = useState("");
+
+  const sendQuoteMutation = trpc.quote.sendByEmail.useMutation({
+    onSuccess: (data) => {
+      setEmailSent(true);
+      if (data.aiExplanation) setAiPreview(data.aiExplanation);
+      toast.success(`Cotización enviada a ${prospectEmail}`);
+    },
+    onError: () => toast.error("Error al enviar la cotización. Verifica el email."),
+  });
 
   const monto = parseFloat(amount) || 0;
   const kpRate = parseFloat(kobrapayRate) / 100 || 0;
   const iva = parseFloat(ivaRate) / 100 || 0;
-  const stripeFee = mode === "online" ? monto * 0.029 + 0.30 : monto * 0.027 + 0.05;
+  const stripeRate = mode === "online" ? 0.029 : 0.027;
+  const stripeFixed = mode === "online" ? 0.30 : 0.05;
+  const stripeFee = monto * stripeRate + stripeFixed;
   const kpFee = monto * kpRate;
   const kpIva = kpFee * iva;
-  const totalKp = kpFee + kpIva;
-  const totalDeducted = stripeFee + totalKp;
+  const totalDeducted = stripeFee + kpFee + kpIva;
   const netForBusiness = monto - totalDeducted;
   const effectiveRate = monto > 0 ? (totalDeducted / monto) * 100 : 0;
+
+  const monthly = parseFloat(monthlyVolume) || 0;
+  const monthlyStripe = monthly > 0 ? monthly * stripeRate + stripeFixed * (monthly / Math.max(monto, 1)) : 0;
+  const monthlyKp = monthly * kpRate;
+  const monthlyIva = monthlyKp * iva;
+  const monthlyNet = monthly > 0 ? monthly - monthlyStripe - monthlyKp - monthlyIva : 0;
 
   const competitors = mode === "online" ? [
     { name: "Mercado Pago", rate: 3.29, fixed: 0 },
@@ -149,18 +171,42 @@ function AssociateQuoteSimulator() {
     { name: "Stripe solo", rate: 2.7, fixed: 0.05 },
   ];
 
+  const handleSendEmail = () => {
+    if (!prospectEmail || !prospectName) { toast.error("Ingresa nombre y email del prospecto"); return; }
+    sendQuoteMutation.mutate({
+      prospectEmail,
+      prospectName,
+      mode,
+      amount: monto,
+      kobrapayRate: parseFloat(kobrapayRate) || 1.5,
+      ivaRate: parseFloat(ivaRate) || 16,
+      monthlyVolume: monthly > 0 ? monthly : undefined,
+    });
+  };
+
   return (
     <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
       <div className="bg-gradient-to-r from-indigo-600 to-violet-700 px-6 py-5 text-white">
-        <div className="flex items-center gap-3">
-          <Calculator className="w-6 h-6" />
-          <div>
-            <h3 className="text-lg font-bold">Simulador de Cotización</h3>
-            <p className="text-indigo-100 text-sm">Muéstrale a tu cliente exactamente cuánto paga y cuánto recibe</p>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Calculator className="w-6 h-6" />
+            <div>
+              <h3 className="text-lg font-bold">Simulador de Cotización</h3>
+              <p className="text-indigo-100 text-sm">Muéstrale a tu cliente exactamente cuánto paga y cuánto recibe</p>
+            </div>
           </div>
+          {monto > 0 && (
+            <button
+              onClick={() => { setShowEmailModal(true); setEmailSent(false); }}
+              className="flex items-center gap-2 bg-white text-indigo-700 font-semibold text-sm px-4 py-2 rounded-xl hover:bg-indigo-50"
+            >
+              <Mail className="w-4 h-4" /> Enviar cotización
+            </button>
+          )}
         </div>
       </div>
       <div className="p-6 space-y-5">
+        {/* Modo */}
         <div className="flex gap-2">
           <button onClick={() => setMode("online")} className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold border transition-all ${mode === "online" ? "bg-indigo-600 text-white border-indigo-600" : "bg-gray-50 text-gray-600 border-gray-200 hover:border-indigo-300"}`}>
             <Smartphone className="w-4 h-4" /> Cobro Online
@@ -175,13 +221,22 @@ function AssociateQuoteSimulator() {
             <p>Lector físico que se conecta directamente a KobraPay. Cobros presenciales y online en un solo panel. Precio del lector: ~$299 USD (pago único).</p>
           </div>
         )}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        {/* Campos */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           <div>
-            <label className="text-xs font-semibold text-gray-500 uppercase mb-1.5 block">Monto del cobro (MXN)</label>
+            <label className="text-xs font-semibold text-gray-500 uppercase mb-1.5 block">Monto por cobro (MXN)</label>
             <div className="relative">
               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">$</span>
               <input type="number" value={amount} onChange={e => setAmount(e.target.value)} className="w-full pl-7 pr-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300" placeholder="10000" min="0" />
             </div>
+          </div>
+          <div>
+            <label className="text-xs font-semibold text-gray-500 uppercase mb-1.5 block">Volumen mensual (MXN)</label>
+            <div className="relative">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">$</span>
+              <input type="number" value={monthlyVolume} onChange={e => setMonthlyVolume(e.target.value)} className="w-full pl-7 pr-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300" placeholder="500000" min="0" />
+            </div>
+            <p className="text-xs text-gray-400 mt-1">Opcional: proyección mensual</p>
           </div>
           <div>
             <label className="text-xs font-semibold text-gray-500 uppercase mb-1.5 block">% Comisión KobraPay</label>
@@ -189,7 +244,7 @@ function AssociateQuoteSimulator() {
               <input type="number" value={kobrapayRate} onChange={e => setKobrapayRate(e.target.value)} className="w-full pl-3 pr-8 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300" placeholder="1.5" step="0.1" min="0" />
               <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">%</span>
             </div>
-            <p className="text-xs text-gray-400 mt-1">Sugerido: 1.5% online / 0.8% terminal</p>
+            <p className="text-xs text-gray-400 mt-1">Sugerido: 1.5% / 0.8% terminal</p>
           </div>
           <div>
             <label className="text-xs font-semibold text-gray-500 uppercase mb-1.5 block">% IVA sobre comisión</label>
@@ -201,25 +256,54 @@ function AssociateQuoteSimulator() {
         </div>
         {monto > 0 && (
           <div className="space-y-3">
+            {/* Desglose por transacción */}
             <div className="bg-gray-50 rounded-xl p-4 space-y-2">
-              <p className="text-xs font-semibold text-gray-400 uppercase mb-3">Desglose del cobro</p>
+              <p className="text-xs font-semibold text-gray-400 uppercase mb-3">Desglose por cobro</p>
               <div className="flex justify-between text-sm"><span className="text-gray-600">Monto bruto</span><span className="font-semibold">${monto.toLocaleString("es-MX", {minimumFractionDigits:2})} MXN</span></div>
               <div className="flex justify-between text-sm"><span className="text-gray-600">Comisión Stripe ({mode === "online" ? "2.9% + $0.30" : "2.7% + $0.05"})</span><span className="text-red-500">-${stripeFee.toFixed(2)}</span></div>
               <div className="flex justify-between text-sm"><span className="text-gray-600">Comisión KobraPay ({kobrapayRate}%)</span><span className="text-red-500">-${kpFee.toFixed(2)}</span></div>
-              {iva > 0 && <div className="flex justify-between text-sm"><span className="text-gray-600">IVA sobre comisión KobraPay ({ivaRate}%)</span><span className="text-orange-500">-${kpIva.toFixed(2)}</span></div>}
+              {iva > 0 && <div className="flex justify-between text-sm"><span className="text-gray-600">IVA sobre comisión ({ivaRate}%)</span><span className="text-orange-500">-${kpIva.toFixed(2)}</span></div>}
               <div className="border-t border-gray-200 pt-2 mt-2 space-y-1">
                 <div className="flex justify-between text-sm"><span className="text-gray-600 font-medium">Total deducido</span><span className="font-semibold text-red-600">-${totalDeducted.toFixed(2)}</span></div>
                 <div className="flex justify-between"><span className="font-bold text-gray-900">Neto para el negocio</span><span className="font-black text-emerald-600 text-lg">${netForBusiness.toLocaleString("es-MX", {minimumFractionDigits:2})}</span></div>
                 <div className="flex justify-between text-xs"><span className="text-gray-400">Tasa efectiva total</span><span className="text-gray-500">{effectiveRate.toFixed(2)}%</span></div>
               </div>
             </div>
-            <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4">
-              <p className="text-xs font-semibold text-emerald-600 uppercase mb-2">Tu comisión como asociado (ejemplo 10%)</p>
-              <div className="flex items-center gap-2">
-                <span className="text-emerald-800 text-sm">Ganas por este cobro:</span>
-                <span className="font-bold text-emerald-700 text-base">${(kpFee * 0.10).toFixed(2)} MXN</span>
+            {/* Proyección mensual */}
+            {monthly > 0 && (
+              <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4">
+                <p className="text-xs font-semibold text-emerald-600 uppercase mb-3">📊 Proyección Mensual — ${monthly.toLocaleString("es-MX")} MXN/mes</p>
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="text-center">
+                    <p className="text-xs text-gray-500 mb-1">Volumen bruto</p>
+                    <p className="font-bold text-gray-900">${monthly.toLocaleString("es-MX", {minimumFractionDigits:0})} MXN</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-xs text-gray-500 mb-1">Total comisiones</p>
+                    <p className="font-bold text-red-600">-${(monthly - monthlyNet).toLocaleString("es-MX", {minimumFractionDigits:0})} MXN</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-xs text-gray-500 mb-1">Neto mensual</p>
+                    <p className="font-black text-emerald-700 text-lg">${monthlyNet.toLocaleString("es-MX", {minimumFractionDigits:0})} MXN</p>
+                  </div>
+                </div>
               </div>
+            )}
+            {/* Comisión del asociado */}
+            <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-4">
+              <p className="text-xs font-semibold text-indigo-600 uppercase mb-2">Tu ganancia como asociado (ejemplo 10% de la comisión KobraPay)</p>
+              <div className="flex items-center justify-between">
+                <span className="text-indigo-800 text-sm">Por este cobro:</span>
+                <span className="font-bold text-indigo-700 text-base">${(kpFee * 0.10).toFixed(2)} MXN</span>
+              </div>
+              {monthly > 0 && (
+                <div className="flex items-center justify-between mt-1">
+                  <span className="text-indigo-800 text-sm">Ganancia mensual estimada:</span>
+                  <span className="font-bold text-indigo-700 text-base">${(monthlyKp * 0.10).toLocaleString("es-MX", {minimumFractionDigits:2})} MXN</span>
+                </div>
+              )}
             </div>
+            {/* Comparativa */}
             <div>
               <p className="text-xs font-semibold text-gray-400 uppercase mb-2">Comparativa vs competencia</p>
               <div className="space-y-1.5">
@@ -227,25 +311,90 @@ function AssociateQuoteSimulator() {
                   const cFee = monto * (c.rate / 100) + c.fixed;
                   const cNet = monto - cFee;
                   const isBetter = netForBusiness > cNet;
+                  const diff = netForBusiness - cNet;
                   return (
                     <div key={c.name} className="flex items-center justify-between bg-gray-50 rounded-lg px-3 py-2">
                       <span className="text-sm text-gray-600">{c.name} ({c.rate}%{c.fixed > 0 ? ` + $${c.fixed}` : ""})</span>
                       <div className="flex items-center gap-2">
                         <span className="text-sm font-medium text-gray-700">Neto: ${cNet.toLocaleString("es-MX", {minimumFractionDigits:2})}</span>
-                        {isBetter && <span className="text-xs bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full font-semibold">KobraPay gana</span>}
+                        {isBetter && <span className="text-xs bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full font-semibold">+${diff.toFixed(2)} más</span>}
                       </div>
                     </div>
                   );
                 })}
                 <div className="flex items-center justify-between bg-indigo-50 border border-indigo-200 rounded-lg px-3 py-2">
-                  <span className="text-sm font-bold text-indigo-800">KobraPay (tu cotización)</span>
+                  <span className="text-sm font-bold text-indigo-800">⭐ KobraPay (tu cotización)</span>
                   <span className="text-sm font-black text-indigo-700">Neto: ${netForBusiness.toLocaleString("es-MX", {minimumFractionDigits:2})}</span>
                 </div>
               </div>
             </div>
+            {/* Botón enviar cotización */}
+            <button
+              onClick={() => { setShowEmailModal(true); setEmailSent(false); }}
+              className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-indigo-600 to-violet-700 text-white font-semibold py-3 rounded-xl hover:opacity-90"
+            >
+              <Mail className="w-5 h-5" /> Enviar cotización por email al prospecto
+            </button>
           </div>
         )}
       </div>
+      {/* Modal de email */}
+      {showEmailModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-bold text-gray-900 text-lg">Enviar Cotización por Email</h3>
+              <button onClick={() => setShowEmailModal(false)} className="text-gray-400 hover:text-gray-600 text-xl">×</button>
+            </div>
+            {emailSent ? (
+              <div className="text-center py-6">
+                <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <CheckCircle className="w-8 h-8 text-emerald-600" />
+                </div>
+                <p className="font-bold text-gray-900 mb-2">¡Cotización enviada!</p>
+                <p className="text-gray-500 text-sm mb-4">Se envió a <strong>{prospectEmail}</strong> con el desglose completo y la comparativa vs competencia.</p>
+                {aiPreview && (
+                  <div className="bg-indigo-50 rounded-xl p-3 text-left mb-4">
+                    <p className="text-xs font-semibold text-indigo-600 uppercase mb-1">✨ Explicación IA incluida:</p>
+                    <p className="text-sm text-gray-700">{aiPreview}</p>
+                  </div>
+                )}
+                <button onClick={() => setShowEmailModal(false)} className="bg-indigo-600 text-white px-6 py-2 rounded-xl font-semibold">Cerrar</button>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div className="bg-indigo-50 rounded-xl p-3 text-sm text-indigo-800">
+                  <p className="font-semibold mb-1">✨ La IA generará una explicación personalizada</p>
+                  <p className="text-xs">El email incluirá: desglose de comisiones, proyección mensual (si aplica), comparativa vs competencia y análisis IA.</p>
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-gray-500 uppercase mb-1.5 block">Nombre del prospecto</label>
+                  <input type="text" value={prospectName} onChange={e => setProspectName(e.target.value)} className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300" placeholder="Ej: Carlos Martínez" />
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-gray-500 uppercase mb-1.5 block">Email del prospecto</label>
+                  <input type="email" value={prospectEmail} onChange={e => setProspectEmail(e.target.value)} className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300" placeholder="prospecto@email.com" />
+                </div>
+                <div className="bg-gray-50 rounded-xl p-3 text-xs text-gray-500">
+                  <p className="font-semibold text-gray-700 mb-1">Resumen de la cotización:</p>
+                  <p>Monto: ${monto.toLocaleString("es-MX")} MXN · Modo: {mode === "online" ? "Online" : "Terminal"} · Neto: ${netForBusiness.toLocaleString("es-MX", {minimumFractionDigits:2})} MXN · Tasa: {effectiveRate.toFixed(2)}%</p>
+                  {monthly > 0 && <p className="mt-1">Proyección mensual: ${monthlyNet.toLocaleString("es-MX", {minimumFractionDigits:0})} MXN neto/mes</p>}
+                </div>
+                <div className="flex gap-3">
+                  <button onClick={() => setShowEmailModal(false)} className="flex-1 py-2.5 border border-gray-200 rounded-xl text-sm font-semibold text-gray-600 hover:bg-gray-50">Cancelar</button>
+                  <button
+                    onClick={handleSendEmail}
+                    disabled={sendQuoteMutation.isPending}
+                    className="flex-1 py-2.5 bg-gradient-to-r from-indigo-600 to-violet-700 text-white rounded-xl text-sm font-semibold hover:opacity-90 disabled:opacity-60"
+                  >
+                    {sendQuoteMutation.isPending ? "Enviando..." : "Enviar cotización"}
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

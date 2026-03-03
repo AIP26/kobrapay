@@ -658,3 +658,172 @@ export async function sendBirthdayEmail(data: {
     return false;
   }
 }
+
+// ─── Cotización KobraPay por Email ────────────────────────────────────────────
+
+export interface QuoteEmailData {
+  prospectEmail: string;
+  prospectName: string;
+  associateName: string;
+  mode: "online" | "terminal";
+  amount: number;
+  kobrapayRate: number;
+  ivaRate: number;
+  netForBusiness: number;
+  totalDeducted: number;
+  effectiveRate: number;
+  competitors: Array<{ name: string; rate: number; fixed: number; net: number }>;
+  aiExplanation: string;
+  monthlyVolume?: number;
+  monthlyNet?: number;
+}
+
+export async function sendQuoteEmail(data: QuoteEmailData): Promise<boolean> {
+  const resend = getResend();
+  console.log(`[Quote] Enviando cotización a ${data.prospectEmail} de parte de ${data.associateName}`);
+
+  const fmt = (n: number) => n.toLocaleString("es-MX", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const modeLabel = data.mode === "online" ? "Cobro Online" : "Terminal Física";
+  const stripeLabel = data.mode === "online" ? "2.9% + $0.30" : "2.7% + $0.05";
+
+  const competitorRows = data.competitors
+    .map(c => {
+      const isBetter = data.netForBusiness > c.net;
+      const diff = data.netForBusiness - c.net;
+      return `<tr>
+        <td style="padding:10px 16px;color:#374151;font-size:14px;border-bottom:1px solid #f3f4f6;">${c.name} (${c.rate}%${c.fixed > 0 ? ` + $${c.fixed}` : ""})</td>
+        <td style="padding:10px 16px;text-align:right;color:#374151;font-size:14px;border-bottom:1px solid #f3f4f6;">$${fmt(c.net)} MXN</td>
+        <td style="padding:10px 16px;text-align:right;font-size:13px;border-bottom:1px solid #f3f4f6;">
+          ${isBetter ? `<span style="color:#059669;font-weight:600;">+$${fmt(diff)} más</span>` : `<span style="color:#dc2626;">-$${fmt(Math.abs(diff))}</span>`}
+        </td>
+      </tr>`;
+    })
+    .join("");
+
+  const monthlySection = data.monthlyVolume && data.monthlyNet
+    ? `<div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:12px;padding:20px;margin:24px 0;">
+        <h3 style="margin:0 0 12px;color:#065f46;font-size:16px;">📊 Proyección Mensual</h3>
+        <p style="margin:0;color:#374151;font-size:14px;">Si procesas <strong>$${fmt(data.monthlyVolume)} MXN/mes</strong>, recibirías:</p>
+        <p style="margin:8px 0 0;color:#059669;font-size:28px;font-weight:800;">$${fmt(data.monthlyNet)} MXN/mes</p>
+        <p style="margin:4px 0 0;color:#6b7280;font-size:12px;">Neto estimado después de todas las comisiones</p>
+      </div>`
+    : "";
+
+  const html = `<!DOCTYPE html>
+<html lang="es">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>Tu Cotización KobraPay</title></head>
+<body style="margin:0;padding:0;background:#f4f4f5;font-family:'Helvetica Neue',Arial,sans-serif;">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f4f5;padding:40px 0;">
+  <tr><td align="center">
+    <table width="600" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 4px 16px rgba(0,0,0,0.1);">
+      <!-- Header -->
+      <tr><td style="background:linear-gradient(135deg,#4f46e5,#7c3aed);padding:36px 40px;text-align:center;">
+        <h1 style="margin:0;color:#ffffff;font-size:28px;font-weight:800;letter-spacing:-0.5px;">KobraPay</h1>
+        <p style="margin:4px 0 0;color:rgba(255,255,255,0.85);font-size:13px;">Cobra fácil, cobra global</p>
+        <div style="margin-top:16px;background:rgba(255,255,255,0.15);border-radius:8px;padding:10px 20px;display:inline-block;">
+          <p style="margin:0;color:#fff;font-size:14px;font-weight:600;">Cotización Personalizada · ${modeLabel}</p>
+        </div>
+      </td></tr>
+      <!-- Greeting -->
+      <tr><td style="padding:32px 40px 0;">
+        <p style="margin:0;color:#374151;font-size:16px;">Hola <strong>${data.prospectName}</strong>,</p>
+        <p style="margin:12px 0 0;color:#6b7280;font-size:14px;line-height:1.7;">
+          <strong>${data.associateName}</strong> te envía esta cotización personalizada de KobraPay. 
+          A continuación encontrarás el desglose exacto de comisiones para un cobro de <strong>$${fmt(data.amount)} MXN</strong>.
+        </p>
+      </td></tr>
+      <!-- AI Explanation -->
+      <tr><td style="padding:20px 40px 0;">
+        <div style="background:#eef2ff;border-left:4px solid #4f46e5;border-radius:0 8px 8px 0;padding:16px 20px;">
+          <p style="margin:0 0 6px;color:#4338ca;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;">✨ Análisis IA</p>
+          <p style="margin:0;color:#374151;font-size:14px;line-height:1.7;">${data.aiExplanation}</p>
+        </div>
+      </td></tr>
+      <!-- Desglose -->
+      <tr><td style="padding:24px 40px 0;">
+        <h3 style="margin:0 0 16px;color:#111827;font-size:16px;font-weight:700;">Desglose del Cobro</h3>
+        <table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #e5e7eb;border-radius:12px;overflow:hidden;">
+          <tr style="background:#f9fafb;">
+            <td style="padding:10px 16px;color:#6b7280;font-size:13px;font-weight:600;">Concepto</td>
+            <td style="padding:10px 16px;text-align:right;color:#6b7280;font-size:13px;font-weight:600;">Monto</td>
+          </tr>
+          <tr>
+            <td style="padding:12px 16px;color:#374151;font-size:14px;border-top:1px solid #f3f4f6;">Monto bruto</td>
+            <td style="padding:12px 16px;text-align:right;color:#111827;font-size:14px;font-weight:700;border-top:1px solid #f3f4f6;">$${fmt(data.amount)} MXN</td>
+          </tr>
+          <tr>
+            <td style="padding:10px 16px;color:#374151;font-size:14px;border-top:1px solid #f3f4f6;">Comisión Stripe (${stripeLabel})</td>
+            <td style="padding:10px 16px;text-align:right;color:#dc2626;font-size:14px;border-top:1px solid #f3f4f6;">-$${fmt(data.amount * (data.mode === "online" ? 0.029 : 0.027) + (data.mode === "online" ? 0.30 : 0.05))} MXN</td>
+          </tr>
+          <tr>
+            <td style="padding:10px 16px;color:#374151;font-size:14px;border-top:1px solid #f3f4f6;">Comisión KobraPay (${data.kobrapayRate}%)</td>
+            <td style="padding:10px 16px;text-align:right;color:#dc2626;font-size:14px;border-top:1px solid #f3f4f6;">-$${fmt(data.amount * data.kobrapayRate / 100)} MXN</td>
+          </tr>
+          ${data.ivaRate > 0 ? `<tr>
+            <td style="padding:10px 16px;color:#374151;font-size:14px;border-top:1px solid #f3f4f6;">IVA sobre comisión (${data.ivaRate}%)</td>
+            <td style="padding:10px 16px;text-align:right;color:#f59e0b;font-size:14px;border-top:1px solid #f3f4f6;">-$${fmt(data.amount * data.kobrapayRate / 100 * data.ivaRate / 100)} MXN</td>
+          </tr>` : ""}
+          <tr style="background:#f0fdf4;">
+            <td style="padding:14px 16px;color:#065f46;font-size:15px;font-weight:800;border-top:2px solid #bbf7d0;">🎯 Tú recibes</td>
+            <td style="padding:14px 16px;text-align:right;color:#059669;font-size:20px;font-weight:900;border-top:2px solid #bbf7d0;">$${fmt(data.netForBusiness)} MXN</td>
+          </tr>
+        </table>
+        <p style="margin:8px 0 0;color:#9ca3af;font-size:12px;text-align:right;">Tasa efectiva total: ${data.effectiveRate.toFixed(2)}%</p>
+      </td></tr>
+      <!-- Monthly projection -->
+      ${monthlySection ? `<tr><td style="padding:0 40px;">${monthlySection}</td></tr>` : ""}
+      <!-- Comparativa -->
+      <tr><td style="padding:24px 40px 0;">
+        <h3 style="margin:0 0 16px;color:#111827;font-size:16px;font-weight:700;">Comparativa vs Competencia</h3>
+        <table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #e5e7eb;border-radius:12px;overflow:hidden;">
+          <tr style="background:#f9fafb;">
+            <td style="padding:10px 16px;color:#6b7280;font-size:13px;font-weight:600;">Procesador</td>
+            <td style="padding:10px 16px;text-align:right;color:#6b7280;font-size:13px;font-weight:600;">Neto que recibes</td>
+            <td style="padding:10px 16px;text-align:right;color:#6b7280;font-size:13px;font-weight:600;">Diferencia</td>
+          </tr>
+          ${competitorRows}
+          <tr style="background:#eef2ff;">
+            <td style="padding:12px 16px;color:#4338ca;font-size:14px;font-weight:800;border-top:2px solid #c7d2fe;">⭐ KobraPay (tu cotización)</td>
+            <td style="padding:12px 16px;text-align:right;color:#4338ca;font-size:16px;font-weight:900;border-top:2px solid #c7d2fe;">$${fmt(data.netForBusiness)} MXN</td>
+            <td style="padding:12px 16px;text-align:right;border-top:2px solid #c7d2fe;"></td>
+          </tr>
+        </table>
+      </td></tr>
+      <!-- CTA -->
+      <tr><td style="padding:32px 40px;">
+        <div style="background:linear-gradient(135deg,#4f46e5,#7c3aed);border-radius:12px;padding:24px;text-align:center;">
+          <p style="margin:0 0 8px;color:#fff;font-size:16px;font-weight:700;">¿Listo para empezar a cobrar?</p>
+          <p style="margin:0 0 16px;color:rgba(255,255,255,0.85);font-size:13px;">Sin mensualidades · Sin contratos · Solo pagas cuando cobras</p>
+          <a href="https://kobrapay.mx" style="display:inline-block;background:#ffffff;color:#4f46e5;font-size:15px;font-weight:800;padding:12px 32px;border-radius:8px;text-decoration:none;">Registrarme gratis →</a>
+        </div>
+      </td></tr>
+      <!-- Footer -->
+      <tr><td style="background:#f9fafb;padding:20px 40px;text-align:center;border-top:1px solid #e5e7eb;">
+        <p style="margin:0;color:#9ca3af;font-size:12px;">Esta cotización fue generada por <strong style="color:#4f46e5;">KobraPay</strong> · kobrapay.mx</p>
+        <p style="margin:4px 0 0;color:#d1d5db;font-size:11px;">Cotización enviada por ${data.associateName} · Los porcentajes pueden variar según el plan contratado</p>
+      </td></tr>
+    </table>
+  </td></tr>
+</table>
+</body></html>`;
+
+  if (!resend) {
+    console.warn("[Quote] RESEND_API_KEY no configurada. Cotización no enviada.");
+    return false;
+  }
+
+  try {
+    const { error } = await resend.emails.send({
+      from: `${data.associateName} via KobraPay <${ENV.fromEmail}>`,
+      to: data.prospectEmail,
+      subject: `Tu cotización KobraPay — $${fmt(data.netForBusiness)} MXN neto por cada $${fmt(data.amount)} MXN cobrado`,
+      html,
+    });
+    if (error) { console.error("[Quote] Error enviando cotización:", error); return false; }
+    console.log(`[Quote] Cotización enviada exitosamente a ${data.prospectEmail}`);
+    return true;
+  } catch (err) {
+    console.error("[Quote] Excepción:", err);
+    return false;
+  }
+}

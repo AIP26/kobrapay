@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { Link } from "wouter";
 import { useState } from "react";
+import { trpc } from "@/lib/trpc";
 
 const FEATURES = [
   { id: "links", icon: Link2, title: "Enlace en segundos", shortDesc: "Genera un enlace único y compártelo por WhatsApp o email.", color: "emerald", fullDesc: "Ingresa el nombre del cliente, monto y descripción. Obtén un enlace único listo para compartir por WhatsApp, email o código QR. El cliente paga desde cualquier dispositivo sin necesidad de instalar nada.", bullets: ["Enlace personalizado con nombre del cliente", "Código QR descargable incluido", "Expira automáticamente si no se paga", "Comparte en 1 clic por WhatsApp o email"], mockContent: "links" },
@@ -183,6 +184,14 @@ const VOLUME_TIERS = [
 function PublicQuoteCalculator() {
   const [monthlyVolume, setMonthlyVolume] = useState(50000);
   const [singleAmount, setSingleAmount] = useState(5000);
+  const [showEmailForm, setShowEmailForm] = useState(false);
+  const [prospectName, setProspectName] = useState("");
+  const [prospectEmail, setProspectEmail] = useState("");
+  const [quoteSent, setQuoteSent] = useState(false);
+  const sendPublicQuote = trpc.quote.sendPublicQuote.useMutation({
+    onSuccess: () => { setQuoteSent(true); },
+    onError: () => alert("Error al enviar. Verifica el email."),
+  });
   const iva = 0.16;
 
   const tier = VOLUME_TIERS.find(t => monthlyVolume >= t.min && monthlyVolume <= t.max) || VOLUME_TIERS[0];
@@ -323,6 +332,66 @@ function PublicQuoteCalculator() {
                 <span className="text-sm font-black text-emerald-400">${netReceived.toLocaleString("es-MX", { minimumFractionDigits: 2 })}</span>
               </div>
             </div>
+          </div>
+
+          {/* Botón enviar cotización */}
+          <div className="mt-6 pt-6 border-t border-white/10">
+            {!showEmailForm && !quoteSent && (
+              <button
+                onClick={() => setShowEmailForm(true)}
+                className="w-full flex items-center justify-center gap-2 bg-emerald-500 hover:bg-emerald-400 text-white font-semibold py-3 rounded-2xl"
+              >
+                ✉️ Recibir esta cotización por email
+              </button>
+            )}
+            {showEmailForm && !quoteSent && (
+              <div className="space-y-3">
+                <p className="text-sm text-gray-300 font-semibold">Ingresa tus datos y te enviamos la cotización con análisis IA:</p>
+                <div className="grid grid-cols-2 gap-3">
+                  <input
+                    type="text"
+                    value={prospectName}
+                    onChange={e => setProspectName(e.target.value)}
+                    placeholder="Tu nombre"
+                    className="bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-white text-sm placeholder-gray-500 focus:outline-none focus:border-emerald-500"
+                  />
+                  <input
+                    type="email"
+                    value={prospectEmail}
+                    onChange={e => setProspectEmail(e.target.value)}
+                    placeholder="tu@email.com"
+                    className="bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-white text-sm placeholder-gray-500 focus:outline-none focus:border-emerald-500"
+                  />
+                </div>
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setShowEmailForm(false)}
+                    className="flex-1 py-2.5 border border-white/10 rounded-xl text-sm text-gray-400 hover:text-white"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    onClick={() => {
+                      if (!prospectName || !prospectEmail) { alert("Ingresa tu nombre y email"); return; }
+                      sendPublicQuote.mutate({ prospectEmail, prospectName, monthlyVolume, singleAmount, kpRate: tier.kpRate });
+                    }}
+                    disabled={sendPublicQuote.isPending}
+                    className="flex-1 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-white rounded-xl text-sm font-semibold disabled:opacity-60"
+                  >
+                    {sendPublicQuote.isPending ? "Enviando..." : "Enviar cotización"}
+                  </button>
+                </div>
+              </div>
+            )}
+            {quoteSent && (
+              <div className="text-center py-4">
+                <div className="w-12 h-12 bg-emerald-500/20 rounded-full flex items-center justify-center mx-auto mb-3">
+                  <CheckCircle2 className="w-6 h-6 text-emerald-400" />
+                </div>
+                <p className="text-white font-semibold">¡Cotización enviada!</p>
+                <p className="text-gray-400 text-sm mt-1">Revisa tu bandeja de entrada. Incluye desglose completo, comparativa vs competencia y análisis IA.</p>
+              </div>
+            )}
           </div>
         </div>
       </div>

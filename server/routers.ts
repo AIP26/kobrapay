@@ -5029,12 +5029,97 @@ export const appRouter = router({
           '100k-500k': '$100,000 - $500,000 MXN',
           '500k+': 'Más de $500,000 MXN',
         };
+
+        // ─── Scoring IA automático al completar el onboarding ───
+        let aiScore = 50;
+        let aiDecision: 'auto_approved' | 'manual_review' | 'auto_rejected' = 'manual_review';
+        let aiReasoning = 'Revisión manual requerida';
+        let riskFlags: string[] = [];
+        let scoreFactors = {};
+        let scoringId: number | undefined;
+
+        try {
+          const { registrationScores } = await import('../drizzle/schema');
+          const { invokeLLM } = await import('./_core/llm');
+
+          // Verificar duplicados
+          const { eq: eqScore } = await import('drizzle-orm');
+          const userEmail = ctx.user.email || '';
+          const existingScore = userEmail ? await db.select().from(registrationScores)
+            .where(eqScore(registrationScores.applicantEmail, userEmail)) : [];
+          const isDuplicate = existingScore.length > 0;
+
+          const scoringPrompt = `Eres un motor de scoring para KobraPay, una plataforma de pagos mexicana.
+Evalúa esta solicitud de registro y asigna un score del 0 al 100.
+
+Datos del solicitante:
+- Email: ${ctx.user.email}
+- Nombre: ${ctx.user.name || 'No proporcionado'}
+- Tipo de negocio: ${input.businessType}
+- Tamaño del negocio: ${input.businessSize}
+- Ingresos mensuales: ${revenueLabels[input.monthlyRevenueEstimate] || input.monthlyRevenueEstimate}
+- Necesita cobros con tarjeta: ${input.needsCardPayments ? 'Sí' : 'No'}
+- Necesita facturación: ${input.needsInvoicing ? 'Sí' : 'No'}
+- Procesador actual: ${input.currentPaymentProcessor || 'Ninguno'}
+- ¿Email ya registrado antes?: ${isDuplicate ? 'SÍ - POSIBLE DUPLICADO' : 'No'}
+- Plan recomendado: ${recommendedPlan} al ${recommendedCommission}%
+
+Criterios:
+- 80-100: Auto-aprobar (negocio legítimo, datos completos)
+- 50-79: Revisión manual (datos incompletos o señales menores)
+- 0-49: Auto-rechazar (fraude, duplicado, datos falsos)
+
+Responde SOLO con JSON válido:
+{
+  "score": <número 0-100>,
+  "decision": "auto_approved" | "manual_review" | "auto_rejected",
+  "reasoning": "<explicación breve en español>",
+  "riskFlags": ["<señal1>"],
+  "scoreFactors": { "emailQuality": <0-20>, "businessInfo": <0-20>, "rfcProvided": <0-20>, "revenueEstimate": <0-20>, "noDuplicates": <0-20> }
+}`;
+
+          const aiResponse = await invokeLLM({
+            messages: [
+              { role: 'system', content: 'Eres un motor de scoring de riesgo para una plataforma de pagos. Responde SOLO con JSON válido, sin markdown.' },
+              { role: 'user', content: scoringPrompt },
+            ],
+          });
+          const rawContent = aiResponse.choices[0]?.message?.content;
+          const content = typeof rawContent === 'string' ? rawContent : '{}';
+          const parsed = JSON.parse(content);
+          aiScore = Math.min(100, Math.max(0, parsed.score || 50));
+          aiDecision = parsed.decision || 'manual_review';
+          aiReasoning = parsed.reasoning || 'Sin razonamiento';
+          riskFlags = parsed.riskFlags || [];
+          scoreFactors = parsed.scoreFactors || {};
+
+          // Guardar el score en la BD
+          const [scoreRecord] = await db.insert(registrationScores).values({
+            applicantEmail: userEmail,
+            applicantName: ctx.user.name || undefined,
+            businessName: input.businessType,
+            aiScore,
+            decision: aiDecision,
+            scoreFactors: JSON.stringify(scoreFactors),
+            riskFlags: JSON.stringify(riskFlags),
+            aiReasoning,
+            createdAt: now,
+            updatedAt: now,
+          });
+          scoringId = scoreRecord?.insertId;
+        } catch (e) {
+          console.warn('[Onboarding] Scoring IA falló, usando manual_review por defecto', e);
+        }
+
+        // Notificación al superadmin con resultado del scoring
+        const scoreEmoji = aiScore >= 80 ? '✅' : aiScore >= 50 ? '⚠️' : '❌';
+        const decisionLabel = aiDecision === 'auto_approved' ? 'AUTO-APROBADO' : aiDecision === 'manual_review' ? 'REVISIÓN MANUAL' : 'AUTO-RECHAZADO';
         await notifyOwner({
-          title: '🎯 Nueva encuesta de onboarding',
-          content: `Usuario: ${ctx.user.name || ctx.user.email}\nNegocio: ${input.businessType} (${input.businessSize})\nIngreso mensual: ${revenueLabels[input.monthlyRevenueEstimate] || input.monthlyRevenueEstimate}\nPlan recomendado: ${recommendedPlan.toUpperCase()} al ${recommendedCommission}%\nRazón: ${planReasoning}`,
+          title: `${scoreEmoji} Onboarding: ${ctx.user.name || ctx.user.email} — Score ${aiScore}/100 (${decisionLabel})`,
+          content: `Usuario: ${ctx.user.name || ctx.user.email}\nEmail: ${ctx.user.email}\nNegocio: ${input.businessType} (${input.businessSize})\nIngreso mensual: ${revenueLabels[input.monthlyRevenueEstimate] || input.monthlyRevenueEstimate}\nPlan recomendado: ${recommendedPlan.toUpperCase()} al ${recommendedCommission}%\n\n🤖 SCORING IA:\n- Score: ${aiScore}/100\n- Decisión: ${decisionLabel}\n- Razón: ${aiReasoning}\n- Flags de riesgo: ${riskFlags.length > 0 ? riskFlags.join(', ') : 'Ninguno'}\n\n${aiDecision === 'manual_review' ? '⚠️ REQUIERE REVISIÓN MANUAL en /dashboard/ai-scoring' : ''}`,
         });
 
-        return { success: true, recommendedPlan, recommendedCommission, planReasoning };
+        return { success: true, recommendedPlan, recommendedCommission, planReasoning, aiScore, aiDecision, aiReasoning };
       }),
 
     // [ASSISTANT/SUPERADMIN] Listar todas las encuestas pendientes
@@ -5949,6 +6034,170 @@ Responde SOLO con JSON válido:
           })
           .where(eq(registrationScores.id, input.scoreId));
         return { success: true };
+      }),
+  }),
+
+  // --- Cotización por Email ---───────────────────────────────────────────────
+  quote: router({
+    sendByEmail: protectedProcedure
+      .input(z.object({
+        prospectEmail: z.string().email(),
+        prospectName: z.string(),
+        mode: z.enum(["online", "terminal"]),
+        amount: z.number().positive(),
+        kobrapayRate: z.number().min(0).max(100),
+        ivaRate: z.number().min(0).max(100),
+        monthlyVolume: z.number().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const { invokeLLM } = await import("./_core/llm");
+        const { sendQuoteEmail } = await import("./_core/email");
+
+        const stripeFixed = input.mode === "online" ? 0.30 : 0.05;
+        const stripeRate = input.mode === "online" ? 0.029 : 0.027;
+        const stripeFee = input.amount * stripeRate + stripeFixed;
+        const kpFee = input.amount * (input.kobrapayRate / 100);
+        const kpIva = kpFee * (input.ivaRate / 100);
+        const totalDeducted = stripeFee + kpFee + kpIva;
+        const netForBusiness = input.amount - totalDeducted;
+        const effectiveRate = (totalDeducted / input.amount) * 100;
+
+        const competitors = input.mode === "online" ? [
+          { name: "Mercado Pago", rate: 3.29, fixed: 0 },
+          { name: "PayPal", rate: 3.5, fixed: 0 },
+          { name: "Clip (online)", rate: 3.6, fixed: 0 },
+          { name: "Conekta", rate: 2.9, fixed: 0.30 },
+        ] : [
+          { name: "Clip (presencial)", rate: 3.6, fixed: 0 },
+          { name: "Mercado Pago Point", rate: 3.29, fixed: 0 },
+          { name: "BBVA Terminal", rate: 3.2, fixed: 0 },
+          { name: "Stripe solo", rate: 2.7, fixed: 0.05 },
+        ];
+
+        const competitorsWithNet = competitors.map(c => ({
+          ...c,
+          net: input.amount - (input.amount * (c.rate / 100) + c.fixed),
+        }));
+
+        const bestCompetitorNet = Math.max(...competitorsWithNet.map(c => c.net));
+        const savings = netForBusiness - bestCompetitorNet;
+        const savingsText = savings > 0
+          ? `Con KobraPay recibes $${savings.toFixed(2)} MXN más que con la mejor alternativa disponible.`
+          : `KobraPay ofrece una tasa competitiva de ${effectiveRate.toFixed(2)}% efectivo.`;
+
+        // Generar explicación con IA
+        let aiExplanation = `Tu tasa efectiva con KobraPay es de ${effectiveRate.toFixed(2)}%, que incluye la comisión de procesamiento Stripe y la comisión KobraPay. ${savingsText} Sin mensualidades ni contratos.`;
+        try {
+          const llmRes = await invokeLLM({
+            messages: [
+              { role: "system", content: "Eres un asesor financiero de KobraPay. Escribe una explicación breve (2-3 oraciones, máximo 60 palabras) en español para un prospecto de negocio, explicando por qué KobraPay es una buena opción para procesar sus pagos. Sé directo, profesional y enfocado en el ahorro. No uses emojis." },
+              { role: "user", content: `El prospecto cobra $${input.amount} MXN por transacción. Con KobraPay recibe $${netForBusiness.toFixed(2)} MXN neto (tasa efectiva ${effectiveRate.toFixed(2)}%). La mejor competencia le daría $${bestCompetitorNet.toFixed(2)} MXN. Ahorro vs competencia: $${savings.toFixed(2)} MXN. Modo: ${input.mode === "online" ? "cobro online" : "terminal física"}.` },
+            ],
+          });
+          const content = llmRes?.choices?.[0]?.message?.content;
+          if (typeof content === "string" && content.length > 10) {
+            aiExplanation = content;
+          }
+        } catch (e) {
+          console.warn("[Quote] LLM falló, usando explicación default", e);
+        }
+
+        // Proyección mensual
+        let monthlyNet: number | undefined;
+        if (input.monthlyVolume && input.monthlyVolume > 0) {
+          const mStripe = input.monthlyVolume * stripeRate + stripeFixed * (input.monthlyVolume / input.amount);
+          const mKp = input.monthlyVolume * (input.kobrapayRate / 100);
+          const mIva = mKp * (input.ivaRate / 100);
+          monthlyNet = input.monthlyVolume - mStripe - mKp - mIva;
+        }
+
+        const associateName = ctx.user.name || ctx.user.email || "Tu Asesor KobraPay";
+
+        const sent = await sendQuoteEmail({
+          prospectEmail: input.prospectEmail,
+          prospectName: input.prospectName,
+          associateName,
+          mode: input.mode,
+          amount: input.amount,
+          kobrapayRate: input.kobrapayRate,
+          ivaRate: input.ivaRate,
+          netForBusiness,
+          totalDeducted,
+          effectiveRate,
+          competitors: competitorsWithNet,
+          aiExplanation,
+          monthlyVolume: input.monthlyVolume,
+          monthlyNet,
+        });
+
+        return { success: sent, aiExplanation, netForBusiness, effectiveRate };
+      }),
+
+    // Cotización pública (desde landing page, sin login)
+    sendPublicQuote: publicProcedure
+      .input(z.object({
+        prospectEmail: z.string().email(),
+        prospectName: z.string(),
+        monthlyVolume: z.number().positive(),
+        singleAmount: z.number().positive(),
+        kpRate: z.number().min(0).max(100),
+      }))
+      .mutation(async ({ input }) => {
+        const { invokeLLM } = await import("./_core/llm");
+        const { sendQuoteEmail } = await import("./_core/email");
+        const iva = 0.16;
+        const stripeRate = 0.029;
+        const stripeFixed = 0.30;
+        const stripeFee = input.singleAmount * stripeRate + stripeFixed;
+        const kpFee = input.singleAmount * (input.kpRate / 100);
+        const kpIva = kpFee * iva;
+        const totalDeducted = stripeFee + kpFee + kpIva;
+        const netForBusiness = input.singleAmount - totalDeducted;
+        const effectiveRate = (totalDeducted / input.singleAmount) * 100;
+        const competitors = [
+          { name: "Mercado Pago", rate: 3.29, fixed: 0 },
+          { name: "PayPal", rate: 3.5, fixed: 0 },
+          { name: "Clip", rate: 3.6, fixed: 0 },
+          { name: "Conekta", rate: 2.9, fixed: 0.30 },
+        ];
+        const competitorsWithNet = competitors.map(c => ({
+          ...c,
+          net: input.singleAmount - (input.singleAmount * (c.rate / 100) + c.fixed),
+        }));
+        const bestCompetitorNet = Math.max(...competitorsWithNet.map(c => c.net));
+        const savings = netForBusiness - bestCompetitorNet;
+        let aiExplanation = `Con KobraPay recibes $${netForBusiness.toFixed(2)} MXN por cada $${input.singleAmount} MXN cobrado (tasa efectiva ${effectiveRate.toFixed(2)}%). ${savings > 0 ? `Eso es $${savings.toFixed(2)} MXN más que con la mejor alternativa del mercado.` : ""} Sin mensualidades, sin contratos.`;
+        try {
+          const llmRes = await invokeLLM({
+            messages: [
+              { role: "system", content: "Eres un asesor financiero de KobraPay. Escribe una explicación breve (2-3 oraciones, máximo 60 palabras) en español para un prospecto de negocio, explicando por qué KobraPay es una buena opción. Sé directo y enfocado en el ahorro. No uses emojis." },
+              { role: "user", content: `Prospecto con volumen mensual de $${input.monthlyVolume} MXN. Por cobro de $${input.singleAmount} MXN recibe $${netForBusiness.toFixed(2)} MXN neto. Ahorro vs competencia: $${savings.toFixed(2)} MXN. Plan KobraPay: ${input.kpRate}%.` },
+            ],
+          });
+          const content = llmRes?.choices?.[0]?.message?.content;
+          if (typeof content === "string" && content.length > 10) aiExplanation = content;
+        } catch (e) { /* usa default */ }
+        const monthlyStripe = input.monthlyVolume * stripeRate;
+        const monthlyKp = input.monthlyVolume * (input.kpRate / 100);
+        const monthlyIva = monthlyKp * iva;
+        const monthlyNet = input.monthlyVolume - monthlyStripe - monthlyKp - monthlyIva;
+        const sent = await sendQuoteEmail({
+          prospectEmail: input.prospectEmail,
+          prospectName: input.prospectName,
+          associateName: "El equipo KobraPay",
+          mode: "online",
+          amount: input.singleAmount,
+          kobrapayRate: input.kpRate,
+          ivaRate: 16,
+          netForBusiness,
+          totalDeducted,
+          effectiveRate,
+          competitors: competitorsWithNet,
+          aiExplanation,
+          monthlyVolume: input.monthlyVolume,
+          monthlyNet,
+        });
+        return { success: sent };
       }),
   }),
 });
