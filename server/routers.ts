@@ -6502,6 +6502,81 @@ Responde SIEMPRE en español mexicano, de forma amigable, clara y práctica. Si 
         return { message: typeof content === 'string' ? content : JSON.stringify(content) };
       }),
   }),
+
+  // ─── KobraScore ────────────────────────────────────────────────────────────
+  kobraScore: router({
+    getScore: protectedProcedure
+      .input(z.object({ targetUserId: z.number() }))
+      .query(async ({ input }) => {
+        const { getDb } = await import('./db');
+        const { transactions: txT, chargebacks: cbT, users: usersT } = await import('../drizzle/schema');
+        const { eq, and, gte } = await import('drizzle-orm');
+        const db2 = await getDb();
+        if (!db2) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
+        const { targetUserId } = input;
+        const now = Date.now();
+        const thirtyDaysAgo = new Date(now - 30 * 24 * 60 * 60 * 1000);
+        const ninetyDaysAgo = new Date(now - 90 * 24 * 60 * 60 * 1000);
+        const recentTxs = await db2.select().from(txT).where(and(eq(txT.userId, targetUserId), eq(txT.status, 'succeeded'), gte(txT.createdAt, thirtyDaysAgo)));
+        const totalVolume30d = recentTxs.reduce((s: number, t: { amount: string | null }) => s + parseFloat(String(t.amount || '0')), 0);
+        const txs90d = await db2.select().from(txT).where(and(eq(txT.userId, targetUserId), eq(txT.status, 'succeeded'), gte(txT.createdAt, ninetyDaysAgo)));
+        const txCount90d = txs90d.length;
+        const cbs = await db2.select().from(cbT).where(and(eq(cbT.userId, targetUserId), gte(cbT.createdAt, ninetyDaysAgo)));
+        const chargebackCount = cbs.length;
+        const chargebackRate = txCount90d > 0 ? (chargebackCount / txCount90d) * 100 : 0;
+        const userRows = await db2.select({ createdAt: usersT.createdAt }).from(usersT).where(eq(usersT.id, targetUserId)).limit(1);
+        const accountAgeDays = userRows[0]?.createdAt
+          ? Math.floor((now - new Date(userRows[0].createdAt).getTime()) / (1000 * 60 * 60 * 24))
+          : 0;
+        let volumeScore = totalVolume30d >= 50000 ? 30 : totalVolume30d >= 20000 ? 20 : totalVolume30d >= 5000 ? 10 : totalVolume30d > 0 ? 5 : 0;
+        let freqScore = txCount90d >= 50 ? 25 : txCount90d >= 20 ? 18 : txCount90d >= 5 ? 10 : txCount90d > 0 ? 5 : 0;
+        let cbScore = chargebackRate === 0 ? 25 : chargebackRate < 1 ? 18 : chargebackRate < 3 ? 10 : 0;
+        let ageScore = accountAgeDays >= 365 ? 20 : accountAgeDays >= 180 ? 15 : accountAgeDays >= 90 ? 10 : accountAgeDays >= 30 ? 5 : 0;
+        const totalScore = volumeScore + freqScore + cbScore + ageScore;
+        let level: string; let color: string; let description: string;
+        if (totalScore >= 85) { level = 'Excelente'; color = '#10b981'; description = 'Cliente de alto valor, riesgo mínimo'; }
+        else if (totalScore >= 65) { level = 'Bueno'; color = '#3b82f6'; description = 'Cliente confiable con buen historial'; }
+        else if (totalScore >= 45) { level = 'Regular'; color = '#f59e0b'; description = 'Cliente en desarrollo, monitorear actividad'; }
+        else if (totalScore >= 25) { level = 'Bajo'; color = '#f97316'; description = 'Actividad limitada, requiere seguimiento'; }
+        else { level = 'Nuevo'; color = '#6b7280'; description = 'Sin historial suficiente para evaluar'; }
+        return {
+          score: totalScore, level, color, description,
+          breakdown: {
+            volume: { score: volumeScore, max: 30, label: 'Volumen de Ventas', detail: `$${totalVolume30d.toLocaleString('es-MX', { minimumFractionDigits: 2 })} en 30 días` },
+            frequency: { score: freqScore, max: 25, label: 'Frecuencia de Cobros', detail: `${txCount90d} transacciones en 90 días` },
+            chargebacks: { score: cbScore, max: 25, label: 'Historial de Contracargos', detail: chargebackCount === 0 ? 'Sin contracargos' : `${chargebackCount} contracargo(s) — ${chargebackRate.toFixed(1)}%` },
+            age: { score: ageScore, max: 20, label: 'Antigüedad de Cuenta', detail: `${accountAgeDays} días en la plataforma` },
+          },
+        };
+      }),
+    getAllScores: protectedProcedure.query(async ({ ctx }) => {
+      const { getDb } = await import('./db');
+      const { transactions: txT, chargebacks: cbT, users: usersT } = await import('../drizzle/schema');
+      const { eq, and, gte } = await import('drizzle-orm');
+      const db2 = await getDb();
+      if (!db2) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
+      const vendorUsers = await db2.select({ id: usersT.id, name: usersT.name, email: usersT.email, createdAt: usersT.createdAt }).from(usersT).where(eq(usersT.createdByUserId, ctx.user.id));
+      const now30 = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+      const now90 = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000);
+      const scores = await Promise.all(vendorUsers.map(async (u) => {
+        const txs30d = await db2.select({ amount: txT.amount }).from(txT).where(and(eq(txT.userId, u.id), eq(txT.status, 'succeeded'), gte(txT.createdAt, now30)));
+        const txs90d = await db2.select({ id: txT.id }).from(txT).where(and(eq(txT.userId, u.id), eq(txT.status, 'succeeded'), gte(txT.createdAt, now90)));
+        const cbs = await db2.select({ id: cbT.id }).from(cbT).where(eq(cbT.userId, u.id));
+        const vol = txs30d.reduce((s: number, t: { amount: string | null }) => s + parseFloat(String(t.amount || '0')), 0);
+        const cbRate = txs90d.length > 0 ? (cbs.length / txs90d.length) * 100 : 0;
+        const ageDays = Math.floor((Date.now() - new Date(u.createdAt).getTime()) / (1000 * 60 * 60 * 24));
+        const vs = vol >= 50000 ? 30 : vol >= 20000 ? 20 : vol >= 5000 ? 10 : vol > 0 ? 5 : 0;
+        const fs = txs90d.length >= 50 ? 25 : txs90d.length >= 20 ? 18 : txs90d.length >= 5 ? 10 : txs90d.length > 0 ? 5 : 0;
+        const cs = cbRate === 0 ? 25 : cbRate < 1 ? 18 : cbRate < 3 ? 10 : 0;
+        const as2 = ageDays >= 365 ? 20 : ageDays >= 180 ? 15 : ageDays >= 90 ? 10 : ageDays >= 30 ? 5 : 0;
+        const total = vs + fs + cs + as2;
+        const level = total >= 85 ? 'Excelente' : total >= 65 ? 'Bueno' : total >= 45 ? 'Regular' : total >= 25 ? 'Bajo' : 'Nuevo';
+        const color = total >= 85 ? '#10b981' : total >= 65 ? '#3b82f6' : total >= 45 ? '#f59e0b' : total >= 25 ? '#f97316' : '#6b7280';
+        return { userId: u.id, name: u.name ?? '', email: u.email, score: total, level, color, volume30d: vol, txCount90d: txs90d.length, chargebackCount: cbs.length };
+      }));
+      return scores;
+    }),
+  }),
 });
 export type AppRouter = typeof appRouter;
 

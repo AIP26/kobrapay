@@ -58,6 +58,7 @@ import Support from "./pages/Support";
 import Brochure from "./pages/Brochure";
 import Transfers from "./pages/Transfers";
 import AIScoring from "./pages/AIScoring";
+import KobraScore from "./pages/KobraScore";
 import QuoteLogs from "./pages/QuoteLogs";
 import KobraBot from "./components/KobraBot";
 import WelcomeOnboarding from "./components/WelcomeOnboarding";
@@ -137,6 +138,7 @@ function Router() {
       <Route path="/dashboard/brochure" component={Brochure} />
       <Route path="/dashboard/transfers" component={Transfers} />
       <Route path="/dashboard/ai-scoring" component={AIScoring} />
+      <Route path="/dashboard/kobra-score" component={KobraScore} />
       <Route path="/dashboard/quote-logs" component={QuoteLogs} />
       <Route path="/sign-contract/:token" component={SignContract} />
       <Route path="/complete-profile" component={CompleteProfile} />

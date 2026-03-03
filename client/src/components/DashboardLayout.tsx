@@ -47,6 +47,7 @@ import {
   ArrowLeftRight,
   Brain,
   Mail,
+  Star,
 } from "lucide-react";
 import { useState, useCallback, useMemo, useEffect, useRef } from "react";
 import GlobalSearch from "./GlobalSearch";
@@ -177,6 +178,7 @@ const NAV_GROUPS = [
       { href: "/dashboard/clients", icon: Users, label: "Mis Clientes" },
       { href: "/dashboard/registrations", icon: UserCog, label: "Registros" },
       { href: "/dashboard/ai-scoring", icon: Brain, label: "Scoring IA" },
+      { href: "/dashboard/kobra-score", icon: Star, label: "KobraScore" },
       { href: "/dashboard/quote-logs", icon: Mail, label: "Cotizaciones" },
       { href: "/dashboard/security", icon: Shield, label: "Seguridad" },
     ],
