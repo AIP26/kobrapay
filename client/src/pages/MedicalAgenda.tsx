@@ -341,7 +341,7 @@ function AppointmentForm({
 
 // ─── Panel de Detalle del Paciente ────────────────────────────────────────────
 function PatientDetailPanel({
-  patient,
+  patient: initialPatient,
   onClose,
 }: {
   patient: Patient;
@@ -349,10 +349,22 @@ function PatientDetailPanel({
 }) {
   const utils = trpc.useUtils();
   const fileRef = useRef<HTMLInputElement>(null);
+  const [patient, setPatient] = useState<Patient>(initialPatient);
   const [activeTab, setActiveTab] = useState("info");
   const [showRecordForm, setShowRecordForm] = useState(false);
   const [showApptForm, setShowApptForm] = useState(false);
   const [editingAppt, setEditingAppt] = useState<Appointment | null>(null);
+  const [showEditPatient, setShowEditPatient] = useState(false);
+  const updatePatient = trpc.medical.patients.update.useMutation({
+    onSuccess: (_data, variables) => {
+      // Actualizar el estado local del paciente con los nuevos datos
+      setPatient(prev => ({ ...prev, ...variables }));
+      utils.medical.patients.list.invalidate();
+      setShowEditPatient(false);
+      toast.success("Datos del paciente actualizados correctamente");
+    },
+    onError: (e) => toast.error(`Error al actualizar paciente: ${e.message}`),
+  });
   const [uploadCategory, setUploadCategory] = useState("general");
   const [recordForm, setRecordForm] = useState({
     diagnosis: "", treatment: "", prescription: "", clinicalNotes: "", attachments: "",
@@ -465,7 +477,16 @@ function PatientDetailPanel({
                 </div>
               </div>
             </div>
-            <button onClick={onClose} className="text-gray-400 hover:text-white text-2xl leading-none mt-1">×</button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setShowEditPatient(true)}
+                className="text-gray-400 hover:text-[#FF6B00] transition-colors p-1 rounded-lg hover:bg-[#FF6B00]/10 text-sm font-medium flex items-center gap-1"
+                title="Editar datos del paciente"
+              >
+                ✏ Editar
+              </button>
+              <button onClick={onClose} className="text-gray-400 hover:text-white text-2xl leading-none mt-1">×</button>
+            </div>
           </div>
           <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-4">
             <TabsList className="bg-gray-800 border border-gray-700">
@@ -818,6 +839,26 @@ function PatientDetailPanel({
             </DialogFooter>
           </DialogContent>
         </Dialog>
+        {/* Modal: Editar datos del paciente */}
+        <Dialog open={showEditPatient} onOpenChange={setShowEditPatient}>
+          <DialogContent className="bg-[#1a2035] border-gray-700 text-white max-w-lg max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="text-white">✏ Editar datos del paciente</DialogTitle>
+            </DialogHeader>
+            <PatientForm
+              initial={patient}
+              onSave={(data) => {
+                // Convertir null a undefined para compatibilidad con el tipo del procedimiento
+                const { id: _id, createdAt: _ca, ...rest } = data as any;
+                const cleanData = Object.fromEntries(
+                  Object.entries(rest).map(([k, v]) => [k, v === null ? undefined : v])
+                );
+                updatePatient.mutate({ id: patient.id, ...cleanData });
+              }}
+              onCancel={() => setShowEditPatient(false)}
+            />
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );
@@ -884,9 +925,54 @@ export default function MedicalAgenda() {
     setDismissedAlerts(updated);
     localStorage.setItem('dismissed_appt_alerts', JSON.stringify(updated));
   };
+  // ――― Sonido de timbre al enviar recordatorio ―――
+  const playBellSound = () => {
+    try {
+      const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+      // Nota 1: Do5 (523 Hz)
+      const osc1 = ctx.createOscillator();
+      const gain1 = ctx.createGain();
+      osc1.connect(gain1);
+      gain1.connect(ctx.destination);
+      osc1.type = 'sine';
+      osc1.frequency.setValueAtTime(523, ctx.currentTime);
+      gain1.gain.setValueAtTime(0.4, ctx.currentTime);
+      gain1.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.8);
+      osc1.start(ctx.currentTime);
+      osc1.stop(ctx.currentTime + 0.8);
+      // Nota 2: Mi5 (659 Hz) con retraso
+      const osc2 = ctx.createOscillator();
+      const gain2 = ctx.createGain();
+      osc2.connect(gain2);
+      gain2.connect(ctx.destination);
+      osc2.type = 'sine';
+      osc2.frequency.setValueAtTime(659, ctx.currentTime + 0.15);
+      gain2.gain.setValueAtTime(0, ctx.currentTime);
+      gain2.gain.setValueAtTime(0.35, ctx.currentTime + 0.15);
+      gain2.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 1.0);
+      osc2.start(ctx.currentTime + 0.15);
+      osc2.stop(ctx.currentTime + 1.0);
+      // Nota 3: Sol5 (784 Hz) con más retraso
+      const osc3 = ctx.createOscillator();
+      const gain3 = ctx.createGain();
+      osc3.connect(gain3);
+      gain3.connect(ctx.destination);
+      osc3.type = 'sine';
+      osc3.frequency.setValueAtTime(784, ctx.currentTime + 0.30);
+      gain3.gain.setValueAtTime(0, ctx.currentTime);
+      gain3.gain.setValueAtTime(0.3, ctx.currentTime + 0.30);
+      gain3.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 1.2);
+      osc3.start(ctx.currentTime + 0.30);
+      osc3.stop(ctx.currentTime + 1.2);
+    } catch (e) {
+      // Silenciar error si el navegador no soporta AudioContext
+    }
+  };
+
   const sendReminder = trpc.medical.sendAppointmentReminder.useMutation({
     onSuccess: (r) => {
-      toast.success('Recordatorio enviado por email al paciente');
+      playBellSound();
+      toast.success('🔔 Recordatorio enviado al paciente');
       if (r.whatsappLink && reminderAppt) {
         // No abrir WhatsApp automáticamente, el usuario elige
       }
@@ -907,6 +993,7 @@ export default function MedicalAgenda() {
     // Obtener el link de WhatsApp del servidor
     sendReminder.mutate({ appointmentId: reminderAppt.id }, {
       onSuccess: (r) => {
+        playBellSound();
         if (r.whatsappLink) window.open(r.whatsappLink, '_blank');
         setShowReminderModal(false);
       },
