@@ -175,10 +175,10 @@ const KOBRAPAY_ICON = "https://d2xsxph8kpxj0f.cloudfront.net/310519663381362445/
 
 // Planes con tasas por volumen mensual
 const VOLUME_TIERS = [
-  { label: "Express", min: 0, max: 50000, kpRate: 3.0, stripe: 1.5, stripeFixed: 3, color: "emerald" },
-  { label: "Connect", min: 50001, max: 150000, kpRate: 2.5, stripe: 1.5, stripeFixed: 3, color: "cyan" },
-  { label: "Custom", min: 150001, max: 500000, kpRate: 2.0, stripe: 1.5, stripeFixed: 3, color: "violet" },
-  { label: "Enterprise", min: 500001, max: 9999999, kpRate: 1.5, stripe: 1.5, stripeFixed: 3, color: "amber" },
+  { label: "Express", min: 0, max: 50000, kpRate: 2.8, stripe: 1.5, stripeFixed: 3, color: "emerald" },
+  { label: "Connect", min: 50001, max: 150000, kpRate: 2.3, stripe: 1.5, stripeFixed: 3, color: "cyan" },
+  { label: "Custom", min: 150001, max: 500000, kpRate: 1.8, stripe: 1.5, stripeFixed: 3, color: "violet" },
+  { label: "Enterprise", min: 500001, max: 9999999, kpRate: 1.3, stripe: 1.5, stripeFixed: 3, color: "amber" },
 ];
 
 const FAQ_ITEMS = [
