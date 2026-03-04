@@ -263,10 +263,9 @@ function PublicQuoteCalculator() {
   // Competencia: tasa base + cargo fijo + IVA (calculado correctamente)
   // El IVA se aplica sobre (tasa% * monto + cargo fijo)
   const competitors = [
-    { name: "Mercado Pago", baseRate: 3.29, fixedBase: 0,  note: "3.29% + IVA" },
-    { name: "Conekta",      baseRate: 2.9,  fixedBase: 3,  note: "2.9% + $3 + IVA" },
-    { name: "PayPal",       baseRate: 3.5,  fixedBase: 4,  note: "3.5% + $4 + IVA" },
-    { name: "Clip",         baseRate: 3.6,  fixedBase: 0,  note: "3.6% + IVA" },
+    { name: "Mercado Pago", baseRate: 3.29, fixedBase: 0, note: "3.29% + IVA" },
+    { name: "PayPal",       baseRate: 3.5,  fixedBase: 4, note: "3.5% + $4 + IVA" },
+    { name: "Clip",         baseRate: 3.6,  fixedBase: 0, note: "3.6% + IVA" },
   ];
 
   return (
@@ -384,7 +383,7 @@ function PublicQuoteCalculator() {
                     </div>
                     <div className="flex items-center gap-2">
                       <span className="text-xs text-gray-300">${cNet.toLocaleString("es-MX", { minimumFractionDigits: 2 })}</span>
-                      {!isWinner && <span className="text-xs text-red-400">↓ menos</span>}
+
                     </div>
                   </div>
                 );
