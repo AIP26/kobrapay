@@ -897,3 +897,8 @@
 - [ ] Cambiar simulador a modelo todo incluido: Express 3.5%, Connect 3.0%, Custom 2.5%, Enterprise 2.0% — sin $3 fijo visible, absorber costo Stripe en el porcentaje
 - [ ] Selector de moneda USD/MXN en CreateLink y PayPage — cobros internacionales con tarjetas de EUA y otros países
 - [ ] Cláusula legal de firma electrónica en contratos digitales (Art. 89 Código de Comercio México)
+
+## Fase actual - Correcciones al simulador multi-país
+- [x] Comparativa de competencia solo visible cuando país = México
+- [x] Texto del plan "MXN/mes" usar moneda del país seleccionado
+- [x] Ocultar comparativa o mostrar mensaje genérico para países fuera de México

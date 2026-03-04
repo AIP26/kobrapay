@@ -321,7 +321,7 @@ function PublicQuoteCalculator() {
             {nextTier && (
               <div className="mt-3 pt-3 border-t border-white/10">
                 <p className="text-xs text-gray-500">
-                  💡 Procesando <span className="text-white font-semibold">${nextTier.min.toLocaleString("es-MX")} MXN/mes</span> o más, tu tasa baja a{" "}
+                  💡 Procesando <span className="text-white font-semibold">{simSymbol}{nextTier.min.toLocaleString("es-MX")} {simCurrency}/mes</span> o más, tu tasa baja a{" "}
                   <span className={`font-bold ${
                     tier.color === "cyan" ? "text-violet-400" : "text-amber-400"
                   }`}>{nextTier.totalRate}%</span> — Plan {nextTier.label}
@@ -385,44 +385,61 @@ function PublicQuoteCalculator() {
             <p className="text-xs text-emerald-400/70 text-center font-medium">{kpNote} — sin costos ocultos, sin sorpresas</p>
           </div>
 
-          {/* Comparativa */}
-          <div className="bg-black/30 rounded-2xl p-5">
-            <h4 className="text-sm font-bold text-white mb-3">vs. Competencia (mismo cobro)</h4>
-            <div className="space-y-2">
-              <p className="text-xs text-gray-500 mb-3">Tasas reales todo incluido (comisión + procesador + IVA)</p>
-              {competitors.map(c => {
-                // Calcular costo real con IVA: (tasa% * monto + cargo fijo) * 1.16
-                const baseFee = (singleAmount * c.baseRate / 100) + c.fixedBase;
-                const cFee = baseFee * 1.16;
-                const cNet = singleAmount - cFee;
-                const isWinner = netReceived >= cNet;
-                return (
-                  <div key={c.name} className={`flex items-center justify-between rounded-lg px-3 py-2 ${
-                    isWinner ? "bg-white/5" : "bg-red-500/5 border border-red-500/10"
-                  }`}>
-                    <div>
-                      <span className="text-xs text-gray-400">{c.name}</span>
-                      <span className="text-xs text-gray-600 ml-1">({c.note})</span>
-                    </div>
-                    <div className="flex items-center gap-2">
+          {/* Comparativa: solo para México */}
+          {simCountry === "MX" ? (
+            <div className="bg-black/30 rounded-2xl p-5">
+              <h4 className="text-sm font-bold text-white mb-3">vs. Competencia (mismo cobro)</h4>
+              <div className="space-y-2">
+                <p className="text-xs text-gray-500 mb-3">Tasas reales todo incluido (comisión + procesador + IVA)</p>
+                {competitors.map(c => {
+                  const baseFee = (singleAmount * c.baseRate / 100) + c.fixedBase;
+                  const cFee = baseFee * 1.16;
+                  const cNet = singleAmount - cFee;
+                  const isWinner = netReceived >= cNet;
+                  return (
+                    <div key={c.name} className={`flex items-center justify-between rounded-lg px-3 py-2 ${
+                      isWinner ? "bg-white/5" : "bg-red-500/5 border border-red-500/10"
+                    }`}>
+                      <div>
+                        <span className="text-xs text-gray-400">{c.name}</span>
+                        <span className="text-xs text-gray-600 ml-1">({c.note})</span>
+                      </div>
                       <span className="text-xs text-gray-300">{fmtAmt(cNet)}</span>
-
                     </div>
+                  );
+                })}
+                <div className="flex items-center justify-between rounded-lg px-3 py-2 bg-emerald-500/20 border border-emerald-500/40">
+                  <div>
+                    <span className="text-xs font-bold text-emerald-300">KobraPay (Plan {tier.label})</span>
+                    <span className="text-xs text-emerald-500/70 ml-1">({kpNote})</span>
                   </div>
-                );
-              })}
-              <div className="flex items-center justify-between rounded-lg px-3 py-2 bg-emerald-500/20 border border-emerald-500/40">
-                <div>
-                  <span className="text-xs font-bold text-emerald-300">KobraPay (Plan {tier.label})</span>
-                  <span className="text-xs text-emerald-500/70 ml-1">({kpNote})</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-black text-emerald-400">{fmtAmt(netReceived)}</span>
-                  <span className="text-xs text-emerald-400 font-bold">✔ mejor</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-black text-emerald-400">{fmtAmt(netReceived)}</span>
+                    <span className="text-xs text-emerald-400 font-bold">✔ mejor</span>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
+          ) : (
+            <div className="bg-black/30 rounded-2xl p-5">
+              <h4 className="text-sm font-bold text-white mb-3">🌍 Cobro Internacional</h4>
+              <div className="space-y-3">
+                <p className="text-xs text-gray-400">
+                  Con KobraPay puedes cobrar en{" "}
+                  <span className="text-emerald-400 font-semibold">{countryData?.currencyName || "moneda local"} ({simCurrency})</span>{" "}
+                  a clientes en {countryData?.name || "cualquier país"}.
+                </p>
+                <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-4">
+                  <p className="text-xs text-gray-400 mb-1">Tú recibes en este cobro:</p>
+                  <p className="text-2xl font-black text-emerald-400">{fmtAmt(netReceived)}</p>
+                  <p className="text-xs text-gray-500 mt-1">Comisión KobraPay: {kpNote} — sin cargos fijos</p>
+                </div>
+                <p className="text-xs text-gray-500">
+                  El pago se procesa vía Stripe con cifrado SSL. El cliente puede pagar con Visa, Mastercard o Amex de cualquier banco del mundo.
+                </p>
+              </div>
+            </div>
+          )}
 
           {/* Botón enviar cotización */}
           <div className="mt-6 pt-6 border-t border-white/10">
