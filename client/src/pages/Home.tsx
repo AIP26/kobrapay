@@ -264,12 +264,21 @@ function PublicQuoteCalculator() {
   const netReceived = singleAmount - totalFees;
   const effectiveRate = (totalFees / singleAmount) * 100;
 
-  // Comparativa con competencia
+  // Tasa todo incluido de KobraPay (KobraPay % + Stripe % + Stripe fijo + IVA sobre KobraPay)
+  // Expresada como tasa efectiva real para comparar manzanas con manzanas
+  const totalFeeKP = stripeFee + kpFee + kpIva;
+  const kpEffectiveRate = (totalFeeKP / singleAmount) * 100;
+
+  // Competencia: tasas reales todo incluido (su comisión + su procesador + IVA implícito)
+  // Mercado Pago: 3.29% + IVA = 3.82% efectivo
+  // PayPal: 3.5% + $4 fijo + IVA = ~4.2% efectivo en cobros medianos
+  // Clip: 3.6% + IVA = 4.18% efectivo
+  // Conekta: 2.9% + $3 fijo + IVA = ~3.7% efectivo
   const competitors = [
-    { name: "Mercado Pago", rate: 3.29, fixed: 0 },
-    { name: "PayPal", rate: 3.5, fixed: 0 },
-    { name: "Clip", rate: 3.6, fixed: 0 },
-    { name: "Conekta", rate: 2.9, fixed: 3 },
+    { name: "Mercado Pago", rate: 3.82, fixed: 0, note: "3.29% + IVA" },
+    { name: "PayPal", rate: 4.06, fixed: 4, note: "3.5% + $4 + IVA" },
+    { name: "Clip", rate: 4.18, fixed: 0, note: "3.6% + IVA" },
+    { name: "Conekta", rate: 3.36, fixed: 3, note: "2.9% + $3 + IVA" },
   ];
 
   return (
@@ -348,9 +357,9 @@ function PublicQuoteCalculator() {
             <h4 className="text-sm font-bold text-white mb-3">Desglose del cobro</h4>
             {[
               { label: "Monto cobrado al cliente", value: singleAmount, color: "text-white", bold: true },
-              { label: `Comisión Stripe (${tier.stripe}% + $${tier.stripeFixed})`, value: -stripeFee, color: "text-gray-400" },
+              { label: `Procesamiento Stripe (${tier.stripe}% + $${tier.stripeFixed})`, value: -stripeFee, color: "text-gray-400" },
               { label: `Comisión KobraPay (${tier.kpRate}%)`, value: -kpFee, color: "text-gray-400" },
-              { label: `IVA sobre comisión KobraPay (16%)`, value: -kpIva, color: "text-gray-400" },
+              { label: `IVA sobre comisión (16%)`, value: -kpIva, color: "text-gray-400" },
             ].map(item => (
               <div key={item.label} className="flex items-center justify-between">
                 <span className={`text-xs ${item.color}`}>{item.label}</span>
@@ -363,25 +372,29 @@ function PublicQuoteCalculator() {
               <span className="text-sm font-bold text-white">Tú recibes</span>
               <span className="text-xl font-black text-emerald-400">${netReceived.toLocaleString("es-MX", { minimumFractionDigits: 2 })}</span>
             </div>
-            <p className="text-xs text-gray-500 text-center">Tasa efectiva total: {effectiveRate.toFixed(2)}%</p>
+            <p className="text-xs text-emerald-400/70 text-center font-medium">Tasa efectiva todo incluido: {kpEffectiveRate.toFixed(2)}% — incluyendo procesador e IVA</p>
           </div>
 
           {/* Comparativa */}
           <div className="bg-black/30 rounded-2xl p-5">
             <h4 className="text-sm font-bold text-white mb-3">vs. Competencia (mismo cobro)</h4>
             <div className="space-y-2">
+              <p className="text-xs text-gray-500 mb-3">Tasas reales todo incluido (comisión + procesador + IVA)</p>
               {competitors.map(c => {
                 const cFee = (singleAmount * c.rate / 100) + c.fixed;
                 const cNet = singleAmount - cFee;
                 const isWinner = netReceived > cNet;
                 return (
                   <div key={c.name} className={`flex items-center justify-between rounded-lg px-3 py-2 ${
-                    isWinner ? "bg-emerald-500/10 border border-emerald-500/20" : "bg-white/5"
+                    isWinner ? "bg-white/5" : "bg-red-500/5 border border-red-500/10"
                   }`}>
-                    <span className="text-xs text-gray-400">{c.name} ({c.rate}%)</span>
+                    <div>
+                      <span className="text-xs text-gray-400">{c.name}</span>
+                      <span className="text-xs text-gray-600 ml-1">({(c as any).note || `${c.rate}%`})</span>
+                    </div>
                     <div className="flex items-center gap-2">
                       <span className="text-xs text-gray-300">${cNet.toLocaleString("es-MX", { minimumFractionDigits: 2 })}</span>
-                      {isWinner && <span className="text-xs bg-emerald-500 text-white px-1.5 py-0.5 rounded-full font-bold">KobraPay gana</span>}
+                      {!isWinner && <span className="text-xs text-red-400">↓ menos</span>}
                     </div>
                   </div>
                 );
