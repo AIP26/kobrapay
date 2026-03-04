@@ -850,7 +850,7 @@
 - [ ] Lo que KobraPay pide: tasas preferenciales, integración SPEI directa
 - [ ] Lo que KobraPay ofrece: co-branding, clientes nuevos, volumen
 - [ ] Proyecciones de volumen y crecimiento
-- [ ] Generar slides profesionales
+- [x] Generar slides profesionales
 
 ## IA para Filtrado de Registros y Anti-Bot (Roadmap)
 - [ ] Integrar hCaptcha o Cloudflare Turnstile en formulario de registro para detectar bots
@@ -872,7 +872,7 @@
 
 ## Fase UX - Simplificación y Comisiones Escalonadas
 - [ ] Simplificar sidebar del cliente (rol user): mostrar solo Panel, Nuevo Cobro, Mis Links, Mis Ventas, Transferencias, Soporte, Configuración
-- [ ] Agregar slide Q&A a presentación Bansí con preguntas frecuentes y respuestas preparadas
+- [x] Agregar slide Q&A a presentación Bansí con preguntas frecuentes y respuestas preparadas
 - [ ] Sistema de comisión escalonada para asociados: tabla 0.3%-5% según cantidad de clientes, editable por superadmin en tabla de comisiones
 - [x] Actualizar logo KobraPay navy en sidebar (LogoWithProfileSwitcher) y favicon
 - [x] Crear pantalla de onboarding rápido para usuarios nuevos (3 pasos interactivos)
