@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import {
   Building2, Percent, DollarSign, Shield, Camera,
   MessageSquare, Save, Info, CreditCard, ExternalLink, Receipt, Globe,
+  Link2, Eye, EyeOff, Copy, CheckCircle2,
 } from "lucide-react";
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
@@ -28,6 +29,10 @@ interface SettingsForm {
   selfieEnabled: boolean;
   chargebackText: string;
   businessCountry: string;
+  businessSlug: string;
+  publicBio: string;
+  websiteUrl: string;
+  publicProfileEnabled: boolean;
 }
 
 export default function Settings() {
@@ -42,6 +47,7 @@ export default function Settings() {
       commissionRate: 7, ivaRate: 16, ivaEnabled: true, usdExchangeRate: 0,
       otpEnabled: false, selfieEnabled: false, chargebackText: "",
       businessCountry: "MX",
+      businessSlug: "", publicBio: "", websiteUrl: "", publicProfileEnabled: false,
     },
   });
 
@@ -87,6 +93,10 @@ export default function Settings() {
         selfieEnabled: settings.selfieEnabled ?? false,
         chargebackText: settings.chargebackText || "",
         businessCountry: (settings as any).businessCountry || "MX",
+        businessSlug: (settings as any).businessSlug || "",
+        publicBio: (settings as any).publicBio || "",
+        websiteUrl: (settings as any).websiteUrl || "",
+        publicProfileEnabled: (settings as any).publicProfileEnabled ?? false,
       });
     }
   }, [settings, reset]);
@@ -98,6 +108,17 @@ export default function Settings() {
     },
     onError: (err) => toast.error(err.message || "Error al guardar"),
   });
+
+  const updatePublicProfile = trpc.vendor.updatePublicProfile.useMutation({
+    onSuccess: () => {
+      utils.vendor.getSettings.invalidate();
+      toast.success("Perfil público guardado correctamente");
+    },
+    onError: (err) => toast.error(err.message || "Error al guardar perfil público"),
+  });
+
+  const publicProfileEnabled = watch("publicProfileEnabled");
+  const businessSlug = watch("businessSlug");
 
   if (isLoading) {
     return (
@@ -646,6 +667,108 @@ export default function Settings() {
             </div>
 
             <p className="text-xs text-center text-gray-400">¿Necesitas otra pasarela? Contáctanos en soporte@kobrapay.mx</p>
+          </CardContent>
+        </Card>
+
+        {/* ─── Perfil Público del Negocio ─── */}
+        <Card className="border-gray-200 shadow-sm">
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Globe className="w-4 h-4 text-cyan-500" />
+              Perfil Público del Negocio
+            </CardTitle>
+            <p className="text-xs text-gray-500 mt-1">
+              Crea una página pública donde tus clientes puedan ver todos tus cobros activos sin necesidad de que compartas cada link individualmente.
+            </p>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {/* Toggle activar perfil */}
+            <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200">
+              <div>
+                <Label className="text-sm font-medium text-gray-700">Activar perfil público</Label>
+                <p className="text-xs text-gray-500 mt-0.5">Cuando está activo, cualquier persona puede ver tu página en kobrapay.mx/p/tu-slug</p>
+              </div>
+              <Switch
+                checked={publicProfileEnabled}
+                onCheckedChange={(v) => setValue("publicProfileEnabled", v, { shouldDirty: true })}
+              />
+            </div>
+
+            {/* Slug */}
+            <div className="space-y-1.5">
+              <Label className="text-sm font-medium text-gray-700 flex items-center gap-1">
+                <Link2 className="w-3.5 h-3.5 text-cyan-500" />
+                URL de tu perfil
+              </Label>
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-gray-400 bg-gray-100 px-3 py-2 rounded-l-lg border border-r-0 border-gray-200 whitespace-nowrap">kobrapay.mx/p/</span>
+                <Input
+                  {...register("businessSlug")}
+                  placeholder="mi-negocio"
+                  className="rounded-l-none"
+                />
+              </div>
+              <p className="text-xs text-gray-400">Solo letras minúsculas, números y guiones. Ej: clinica-dental-garcia</p>
+              {businessSlug && (
+                <div className="flex items-center gap-2 p-2 bg-cyan-50 border border-cyan-200 rounded-lg">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-cyan-500 flex-shrink-0" />
+                  <span className="text-xs text-cyan-700 flex-1 truncate">kobrapay.mx/p/{businessSlug}</span>
+                  <button
+                    type="button"
+                    onClick={() => { navigator.clipboard.writeText(`https://kobrapay.mx/p/${businessSlug}`); toast.success("URL copiada"); }}
+                    className="text-cyan-500 hover:text-cyan-700"
+                  >
+                    <Copy className="w-3.5 h-3.5" />
+                  </button>
+                  <a href={`/p/${businessSlug}`} target="_blank" rel="noopener noreferrer" className="text-cyan-500 hover:text-cyan-700">
+                    <ExternalLink className="w-3.5 h-3.5" />
+                  </a>
+                </div>
+              )}
+            </div>
+
+            {/* Bio */}
+            <div className="space-y-1.5">
+              <Label className="text-sm font-medium text-gray-700">Descripción del negocio</Label>
+              <Textarea
+                {...register("publicBio")}
+                placeholder="Ej: Clínica dental con más de 10 años de experiencia en CDMX. Aceptamos todas las tarjetas."
+                rows={3}
+                className="text-sm"
+              />
+              <p className="text-xs text-gray-400">Máximo 500 caracteres. Aparece en tu página pública.</p>
+            </div>
+
+            {/* Website */}
+            <div className="space-y-1.5">
+              <Label className="text-sm font-medium text-gray-700 flex items-center gap-1">
+                <Globe className="w-3.5 h-3.5 text-cyan-500" />
+                Sitio web (opcional)
+              </Label>
+              <Input
+                {...register("websiteUrl")}
+                placeholder="https://www.minegocio.com"
+                type="url"
+              />
+            </div>
+
+            {/* Botón guardar perfil público */}
+            <div className="flex justify-end pt-2">
+              <Button
+                type="button"
+                disabled={updatePublicProfile.isPending}
+                onClick={() => updatePublicProfile.mutate({
+                  businessSlug: businessSlug || undefined,
+                  publicBio: watch("publicBio") || undefined,
+                  websiteUrl: watch("websiteUrl") || undefined,
+                  publicProfileEnabled,
+                })}
+                className="bg-cyan-500 hover:bg-cyan-400 text-white gap-2"
+              >
+                <Globe className="w-4 h-4" />
+                {updatePublicProfile.isPending ? "Guardando..." : "Guardar Perfil Público"}
+              </Button>
+            </div>
           </CardContent>
         </Card>
 

@@ -73,6 +73,11 @@ export const vendorSettings = mysqlTable("vendor_settings", {
   chargebackText: text("chargebackText"),
   // País de operación del negocio (ISO 3166-1 alpha-2: MX, US, CA, ES, CO, etc.)
   businessCountry: varchar("businessCountry", { length: 4 }).default("MX").notNull(),
+  // Perfil público del negocio
+  businessSlug: varchar("businessSlug", { length: 64 }),   // URL amigable: kobrapay.mx/p/mi-negocio
+  publicBio: text("publicBio"),                            // Descripción pública del negocio
+  websiteUrl: varchar("websiteUrl", { length: 512 }),      // Sitio web del negocio
+  publicProfileEnabled: boolean("publicProfileEnabled").default(false).notNull(), // Perfil público activo
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });

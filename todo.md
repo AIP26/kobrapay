@@ -907,4 +907,10 @@
 - [ ] Agregar más países al catálogo: Chile, Perú, Ecuador, Bolivia, Venezuela, Paraguay, Uruguay, Costa Rica, Panamá, República Dominicana, China, Japón, Australia, India
 - [ ] Email de comprobante automático al pagador al completar el pago
 - [ ] Sección FAQ en la landing page
-- [ ] Auditoría final del panel: revisar módulos restantes
+- [x] Auditoría final del panel: revisar módulos restantes
+- [x] Corregir Panel de Métricas: status 'completed' → 'succeeded', chargebacks 'pending' → 'open/under_review'
+- [x] Sección Perfil Público en Settings.tsx con slug, bio, website y toggle
+- [x] Actualizar manuales v3.0: Superadmin, Admin Empresa, Empleado con todas las funcionalidades nuevas
+- [x] Actualizar brochure con sección de nuevas funcionalidades v3.0
+- [x] País de Operación (businessCountry) en Settings y CreateLink
+- [x] Perfil Público del Negocio: ruta /p/:slug con todos los links activos del comercio

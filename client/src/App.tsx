@@ -62,6 +62,7 @@ import KobraScore from "./pages/KobraScore";
 import MyDeposits from "./pages/MyDeposits";
 import QuoteLogs from "./pages/QuoteLogs";
 import SuperAdminMetrics from "./pages/SuperAdminMetrics";
+import BusinessProfile from "./pages/BusinessProfile";
 import KobraBot from "./components/KobraBot";
 import WelcomeOnboarding from "./components/WelcomeOnboarding";
 import { trpc } from "@/lib/trpc";
@@ -144,6 +145,7 @@ function Router() {
       <Route path="/dashboard/my-deposits" component={MyDeposits} />
       <Route path="/dashboard/metrics" component={SuperAdminMetrics} />
       <Route path="/dashboard/quote-logs" component={QuoteLogs} />
+      <Route path="/p/:slug" component={BusinessProfile} />
       <Route path="/sign-contract/:token" component={SignContract} />
       <Route path="/complete-profile" component={CompleteProfile} />
       <Route path="/dashboard/profile" component={MyProfile} />

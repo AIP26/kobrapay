@@ -195,6 +195,104 @@ export const appRouter = router({
         });
       }),
 
+    // ─── Perfil Público del Negocio ──────────────────────────────────────────────────────────────────────
+    updatePublicProfile: protectedProcedure
+      .input(z.object({
+        businessSlug: z.string().min(3).max(64).regex(/^[a-z0-9-]+$/, "Solo letras minúsculas, números y guiones").optional().or(z.literal("")),
+        publicBio: z.string().max(500).optional().or(z.literal("")),
+        websiteUrl: z.string().url().optional().or(z.literal("")),
+        publicProfileEnabled: z.boolean().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const { getDb } = await import('./db');
+        const db = await getDb();
+        if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
+        const { vendorSettings } = await import('../drizzle/schema');
+        const { eq } = await import('drizzle-orm');
+        // Verificar que el slug no esté en uso por otro usuario
+        if (input.businessSlug) {
+          const existing = await db.select({ id: vendorSettings.id, userId: vendorSettings.userId })
+            .from(vendorSettings)
+            .where(eq(vendorSettings.businessSlug, input.businessSlug))
+            .limit(1);
+          if (existing.length > 0 && existing[0].userId !== ctx.user.id) {
+            throw new TRPCError({ code: 'CONFLICT', message: 'Este slug ya está en uso por otro negocio' });
+          }
+        }
+        await upsertVendorSettings({
+          userId: ctx.user.id,
+          businessName: (await getVendorSettings(ctx.user.id))?.businessName || 'Mi Negocio',
+          businessSlug: input.businessSlug || null,
+          publicBio: input.publicBio || null,
+          websiteUrl: input.websiteUrl || null,
+          publicProfileEnabled: input.publicProfileEnabled,
+        });
+        return { success: true };
+      }),
+
+    // Obtener perfil público por slug (público, sin auth)
+    getPublicProfile: publicProcedure
+      .input(z.object({ slug: z.string() }))
+      .query(async ({ input }) => {
+        const { getDb } = await import('./db');
+        const db = await getDb();
+        if (!db) return null;
+        const { vendorSettings } = await import('../drizzle/schema');
+        const { eq, and } = await import('drizzle-orm');
+        const result = await db.select({
+          businessName: vendorSettings.businessName,
+          businessEmail: vendorSettings.businessEmail,
+          businessPhone: vendorSettings.businessPhone,
+          logoUrl: vendorSettings.logoUrl,
+          businessSlug: vendorSettings.businessSlug,
+          publicBio: vendorSettings.publicBio,
+          websiteUrl: vendorSettings.websiteUrl,
+          publicProfileEnabled: vendorSettings.publicProfileEnabled,
+          businessCountry: vendorSettings.businessCountry,
+          currency: vendorSettings.currency,
+          userId: vendorSettings.userId,
+        })
+          .from(vendorSettings)
+          .where(and(
+            eq(vendorSettings.businessSlug, input.slug),
+            eq(vendorSettings.publicProfileEnabled, true)
+          ))
+          .limit(1);
+        if (!result.length) return null;
+        return result[0];
+      }),
+
+    // Obtener links públicos activos de un negocio por userId
+    getPublicLinks: publicProcedure
+      .input(z.object({ userId: z.number() }))
+      .query(async ({ input }) => {
+        const { getDb } = await import('./db');
+        const db = await getDb();
+        if (!db) return [];
+        const { paymentLinks } = await import('../drizzle/schema');
+        const { eq, and, gt, isNull, or, sql } = await import('drizzle-orm');
+        const now = new Date();
+        return db.select({
+          id: paymentLinks.id,
+          token: paymentLinks.token,
+          clientName: paymentLinks.clientName,
+          amount: paymentLinks.amount,
+          currency: paymentLinks.currency,
+          description: paymentLinks.description,
+          expiresAt: paymentLinks.expiresAt,
+          status: paymentLinks.status,
+          createdAt: paymentLinks.createdAt,
+        })
+          .from(paymentLinks)
+          .where(and(
+            eq(paymentLinks.userId, input.userId),
+            sql`${paymentLinks.status} = 'active'`,
+            or(isNull(paymentLinks.expiresAt), gt(paymentLinks.expiresAt, now))
+          ))
+          .limit(20)
+          .orderBy(paymentLinks.createdAt);
+      }),
+
     // ─── Stripe Connect ────────────────────────────────────────────────────────────────────────────────
     // Crear o continuar el onboarding de Stripe Connect
     connectOnboard: protectedProcedure
@@ -6855,7 +6953,7 @@ Responde SIEMPRE en español mexicano, de forma amigable, clara y práctica. Si 
         total: sql<string>`COALESCE(SUM(CAST(amount AS DECIMAL(10,2))), 0)`,
         count: sql<number>`COUNT(*)`,
       }).from(transactions).where(
-        and(gte(transactions.createdAt, todayStart), sql`${transactions.status} = 'completed'`)
+        and(gte(transactions.createdAt, todayStart), sql`${transactions.status} = 'succeeded'`)
       );
 
       // Ventas de la semana
@@ -6863,7 +6961,7 @@ Responde SIEMPRE en español mexicano, de forma amigable, clara y práctica. Si 
         total: sql<string>`COALESCE(SUM(CAST(amount AS DECIMAL(10,2))), 0)`,
         count: sql<number>`COUNT(*)`,
       }).from(transactions).where(
-        and(gte(transactions.createdAt, weekAgoDate), sql`${transactions.status} = 'completed'`)
+        and(gte(transactions.createdAt, weekAgoDate), sql`${transactions.status} = 'succeeded'`)
       );
 
       // Nuevos registros hoy
@@ -6876,12 +6974,12 @@ Responde SIEMPRE en español mexicano, de forma amigable, clara y práctica. Si 
 
       // Total usuarios activos (con al menos 1 transacción)
       const activeUsers = await db.select({
-        count: sql<number>`COUNT(DISTINCT user_id)`,
+        count: sql<number>`COUNT(DISTINCT userId)`,
       }).from(transactions).where(gte(transactions.createdAt, monthAgoDate));
 
       // Chargebacks pendientes
       const pendingChargebacks = await db.select({ count: sql<number>`COUNT(*)` })
-        .from(chargebacks).where(sql`${chargebacks.status} = 'pending'`);
+        .from(chargebacks).where(sql`${chargebacks.status} IN ('open', 'under_review')`);
 
       // Links de pago activos
       const activeLinks = await db.select({ count: sql<number>`COUNT(*)` })
@@ -6893,7 +6991,7 @@ Responde SIEMPRE en español mexicano, de forma amigable, clara y práctica. Si 
         total: sql<string>`SUM(CAST(amount AS DECIMAL(10,2)))`,
         count: sql<number>`COUNT(*)`,
       }).from(transactions)
-        .where(and(gte(transactions.createdAt, monthAgoDate), sql`${transactions.status} = 'completed'`))
+        .where(and(gte(transactions.createdAt, monthAgoDate), sql`${transactions.status} = 'succeeded'`))
         .groupBy(transactions.userId)
         .orderBy(sql`SUM(CAST(amount AS DECIMAL(10,2))) DESC`)
         .limit(5);
