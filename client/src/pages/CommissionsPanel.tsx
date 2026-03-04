@@ -128,6 +128,13 @@ export default function CommissionsPanel() {
 
   const top5 = [...clients].sort((a, b) => b.totalCommission - a.totalCommission).slice(0, 5);
   const [generatingPdf, setGeneratingPdf] = useState(false);
+  // ─── Tiers de comisión escalonada ────────────────────────────────────────────
+  const [showTiers, setShowTiers] = useState(false);
+  const [editingTier, setEditingTier] = useState<number | null>(null);
+  const [tierForm, setTierForm] = useState({ minClients: 1, maxClients: '' as string | number, commissionPct: 1.0, label: '', description: '' });
+  const { data: tiersData, refetch: refetchTiers } = trpc.associate.listCommissionTiers.useQuery(undefined, { enabled: isSuperAdmin });
+  const updateTierMutation = trpc.associate.updateCommissionTier.useMutation({ onSuccess: () => { refetchTiers(); setEditingTier(null); } });
+  const createTierMutation = trpc.associate.createCommissionTier.useMutation({ onSuccess: () => { refetchTiers(); setTierForm({ minClients: 1, maxClients: '', commissionPct: 1.0, label: '', description: '' }); } });
   // ─── Pestañas de comisiones ───────────────────────────────────────────────────
   const [activeCommTab, setActiveCommTab] = useState<string>("mine");
   const { data: associatesData } = trpc.associate.listAllAssociates.useQuery(undefined, {
@@ -831,6 +838,103 @@ export default function CommissionsPanel() {
       <DrillDownPanel />
       {/* Modal desglose individual de transacción */}
       <TxDetailModal />
+
+      {/* ─── Sección de Comisión Escalonada (solo SuperAdmin) ─── */}
+      {isSuperAdmin && (
+        <div className="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden">
+          <button
+            onClick={() => setShowTiers(!showTiers)}
+            className="w-full flex items-center justify-between px-6 py-4 hover:bg-gray-50 transition-colors"
+          >
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-amber-100 rounded-lg"><TrendingUp className="w-5 h-5 text-amber-600" /></div>
+              <div className="text-left">
+                <p className="font-bold text-gray-900">Comisión Escalonada para Asociados</p>
+                <p className="text-xs text-gray-500">Tabla de porcentajes 0.3%–5% según cartera de clientes</p>
+              </div>
+            </div>
+            <ChevronRight className={`w-5 h-5 text-gray-400 transition-transform ${showTiers ? 'rotate-90' : ''}`} />
+          </button>
+          {showTiers && (
+            <div className="px-6 pb-6 space-y-4">
+              <div className="overflow-x-auto rounded-xl border border-gray-100">
+                <table className="w-full text-sm">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Nivel</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Clientes</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Comisión %</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Descripción</th>
+                      <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">Acción</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    {(tiersData ?? []).map((tier) => (
+                      <tr key={tier.id} className="hover:bg-gray-50/50">
+                        {editingTier === tier.id ? (
+                          <>
+                            <td className="px-4 py-3" colSpan={4}>
+                              <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                                <div>
+                                  <label className="text-xs text-gray-500">Nivel</label>
+                                  <input className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm" value={tierForm.label} onChange={e => setTierForm(f => ({ ...f, label: e.target.value }))} placeholder="Ej: Bronce" />
+                                </div>
+                                <div>
+                                  <label className="text-xs text-gray-500">Mín. clientes</label>
+                                  <input type="number" className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm" value={tierForm.minClients} onChange={e => setTierForm(f => ({ ...f, minClients: parseInt(e.target.value) || 1 }))} />
+                                </div>
+                                <div>
+                                  <label className="text-xs text-gray-500">Máx. clientes</label>
+                                  <input type="number" className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm" value={tierForm.maxClients as number} onChange={e => setTierForm(f => ({ ...f, maxClients: e.target.value ? parseInt(e.target.value) : '' }))} placeholder="Vacío = sin límite" />
+                                </div>
+                                <div>
+                                  <label className="text-xs text-gray-500">Comisión %</label>
+                                  <input type="number" step="0.1" className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm" value={tierForm.commissionPct} onChange={e => setTierForm(f => ({ ...f, commissionPct: parseFloat(e.target.value) || 0 }))} />
+                                </div>
+                              </div>
+                            </td>
+                            <td className="px-4 py-3 text-right">
+                              <div className="flex items-center justify-end gap-2">
+                                <button onClick={() => updateTierMutation.mutate({ id: tier.id, ...tierForm, maxClients: tierForm.maxClients === '' ? null : Number(tierForm.maxClients) })} className="text-xs bg-emerald-500 text-white px-3 py-1.5 rounded-lg hover:bg-emerald-600 font-medium">Guardar</button>
+                                <button onClick={() => setEditingTier(null)} className="text-xs bg-gray-100 text-gray-600 px-3 py-1.5 rounded-lg hover:bg-gray-200 font-medium">Cancelar</button>
+                              </div>
+                            </td>
+                          </>
+                        ) : (
+                          <>
+                            <td className="px-4 py-3 font-semibold text-gray-800">{tier.label}</td>
+                            <td className="px-4 py-3 text-gray-600">{tier.minClients}{tier.maxClients ? `–${tier.maxClients}` : '+'} clientes</td>
+                            <td className="px-4 py-3">
+                              <span className="bg-amber-100 text-amber-700 font-bold px-2.5 py-1 rounded-full text-sm">{parseFloat(String(tier.commissionPct)).toFixed(1)}%</span>
+                            </td>
+                            <td className="px-4 py-3 text-gray-500 text-xs">{tier.description}</td>
+                            <td className="px-4 py-3 text-right">
+                              <button onClick={() => { setEditingTier(tier.id); setTierForm({ minClients: tier.minClients, maxClients: tier.maxClients ?? '', commissionPct: parseFloat(String(tier.commissionPct)), label: tier.label, description: tier.description ?? '' }); }} className="text-xs text-amber-600 hover:text-amber-800 font-medium">Editar</button>
+                            </td>
+                          </>
+                        )}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              {/* Formulario para agregar nuevo tier */}
+              <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
+                <p className="text-sm font-semibold text-gray-700 mb-3">Agregar nuevo nivel</p>
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
+                  <input className="border border-gray-200 rounded-lg px-3 py-2 text-sm" placeholder="Nombre (ej: Oro)" value={tierForm.label} onChange={e => setTierForm(f => ({ ...f, label: e.target.value }))} />
+                  <input type="number" className="border border-gray-200 rounded-lg px-3 py-2 text-sm" placeholder="Mín. clientes" value={tierForm.minClients} onChange={e => setTierForm(f => ({ ...f, minClients: parseInt(e.target.value) || 1 }))} />
+                  <input type="number" className="border border-gray-200 rounded-lg px-3 py-2 text-sm" placeholder="Máx. (vacío=sin límite)" value={tierForm.maxClients as number} onChange={e => setTierForm(f => ({ ...f, maxClients: e.target.value ? parseInt(e.target.value) : '' }))} />
+                  <input type="number" step="0.1" className="border border-gray-200 rounded-lg px-3 py-2 text-sm" placeholder="Comisión %" value={tierForm.commissionPct} onChange={e => setTierForm(f => ({ ...f, commissionPct: parseFloat(e.target.value) || 0 }))} />
+                  <button onClick={() => createTierMutation.mutate({ ...tierForm, maxClients: tierForm.maxClients === '' ? null : Number(tierForm.maxClients) })} disabled={!tierForm.label || createTierMutation.isPending} className="bg-amber-500 text-white rounded-lg px-4 py-2 text-sm font-semibold hover:bg-amber-600 disabled:opacity-50">
+                    {createTierMutation.isPending ? 'Guardando...' : '+ Agregar'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
     </DashboardLayout>
   );
 }

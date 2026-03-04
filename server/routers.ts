@@ -745,12 +745,17 @@ export const appRouter = router({
     exportCsv: protectedProcedure.query(async ({ ctx }) => {
       const txs = await getTransactionsByUser(ctx.user.id);
       const succeeded = txs.filter((t) => t.status === "succeeded");
+      const settings = await getVendorSettings(ctx.user.id);
+      const ivaRate = settings?.ivaEnabled !== false ? parseFloat(String(settings?.ivaRate || 16)) / 100 : 0;
+      const ivaPct = (ivaRate * 100).toFixed(0);
 
       const rows = [
-        ["Fecha", "Cliente", "Email", "Descripción", "Monto Bruto", "Comisión %", "Comisión $", "Monto Neto", "Tarjeta", "Estado"].join(","),
+        ["Fecha", "Cliente", "Email", "Descripción", "Monto Bruto", "Comisión %", "Comisión $", `IVA (${ivaPct}%)`, "Total KobraPay", "Monto Neto", "Tarjeta", "Estado"].join(","),
         ...succeeded.map((t) => {
           const commRate = parseFloat(String(t.commissionRate || 0));
           const commAmt = parseFloat(String(t.commissionAmount || 0));
+          const ivaAmt = commAmt * ivaRate;
+          const totalKobraPay = commAmt + ivaAmt;
           const net = parseFloat(String(t.netAmount || t.amount));
           return [
             new Date(t.createdAt).toLocaleDateString("es-MX"),
@@ -760,6 +765,8 @@ export const appRouter = router({
             parseFloat(String(t.amount)).toFixed(2),
             commRate.toFixed(2) + "%",
             commAmt.toFixed(2),
+            ivaAmt.toFixed(2),
+            totalKobraPay.toFixed(2),
             net.toFixed(2),
             t.cardBrand ? `${t.cardBrand} ****${t.cardLast4}` : "",
             t.status,

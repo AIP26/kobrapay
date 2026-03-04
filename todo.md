@@ -781,8 +781,8 @@
 - [ ] Mostrar tasa IVA actual en el header del dashboard como recordatorio
 
 ## Sprint Mar 3, 2026 - IVA, Notificaciones, Comisiones PDF
-- [ ] Columna IVA en Mis Ventas (desglose: comisión base + IVA + total KobraPay)
-- [ ] Exportación CSV actualizada con columnas: comisión base, IVA, total KobraPay
+- [x] Columna IVA en Mis Ventas (desglose: comisión base + IVA + total KobraPay)
+- [x] Exportación CSV actualizada con columnas: comisión base, IVA, total KobraPay
 - [ ] Notificaciones push en tiempo real (WebSocket o polling) para campanita del superadmin
 - [ ] Modal de desglose de transacción en Panel de Comisiones (click en fila)
 - [ ] Reporte PDF de comisiones para superadmin (mensual, con membrete KobraPay)
@@ -871,13 +871,13 @@
 - [ ] Interfaz multi-idioma (espanol, ingles, sueco)
 
 ## Fase UX - Simplificación y Comisiones Escalonadas
-- [ ] Simplificar sidebar del cliente (rol user): mostrar solo Panel, Nuevo Cobro, Mis Links, Mis Ventas, Transferencias, Soporte, Configuración
+- [x] Simplificar sidebar del cliente (rol user): mostrar solo Panel, Nuevo Cobro, Mis Links, Mis Ventas, Transferencias, Soporte, Configuración
 - [x] Agregar slide Q&A a presentación Bansí con preguntas frecuentes y respuestas preparadas
-- [ ] Sistema de comisión escalonada para asociados: tabla 0.3%-5% según cantidad de clientes, editable por superadmin en tabla de comisiones
+- [x] Sistema de comisión escalonada para asociados: tabla 0.3%-5% según cantidad de clientes, editable por superadmin en tabla de comisiones
 - [x] Actualizar logo KobraPay navy en sidebar (LogoWithProfileSwitcher) y favicon
 - [x] Crear pantalla de onboarding rápido para usuarios nuevos (3 pasos interactivos)
 - [x] Implementar notificaciones push en el panel cuando un cliente paga un link
-- [ ] Botón de WhatsApp en notificaciones de pago recibido
+- [x] Botón de WhatsApp en notificaciones de pago recibido
 - [ ] Página de Perfil del Negocio con logo, nombre y datos fiscales
 - [ ] Selector de lada internacional en formulario de pago público
 - [x] Agregar tab "Programa de Referidos" en AssociateDashboard con código único, estadísticas y tabla de clientes
