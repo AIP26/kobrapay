@@ -14,7 +14,8 @@ import {
 } from "./db";
 import { notifyOwner } from "./_core/notification";
 import { createNotification } from "./db";
-import { sendRecurringPaymentEmail } from "./_core/email";
+import { sendRecurringPaymentEmail, sendPaymentReceipt } from "./_core/email";
+import { getVendorSettings } from "./db";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "", {
   apiVersion: "2026-02-25.clover",
@@ -117,6 +118,29 @@ export function registerStripeWebhook(app: express.Application) {
                     actionUrl: "/dashboard/ventas",
                   });
                 } catch (_) {}
+                // Enviar comprobante de pago al pagador
+                try {
+                  const payerEmail = pi.metadata?.payerEmail;
+                  if (payerEmail) {
+                    const vendorCfg = await getVendorSettings(userId);
+                    await sendPaymentReceipt({
+                      payerEmail,
+                      payerName: pi.metadata?.payerName || "Cliente",
+                      businessName: vendorCfg?.businessName || "KobraPay",
+                      businessEmail: vendorCfg?.businessEmail,
+                      amount: link.amount,
+                      currency: link.currency || "MXN",
+                      description: link.description || "Pago",
+                      transactionId: pi.id,
+                      cardBrand,
+                      cardLast4,
+                      paidAt: new Date(),
+                    });
+                    console.log(`[Webhook] Comprobante enviado a ${payerEmail}`);
+                  }
+                } catch (emailErr) {
+                  console.error("[Webhook] Error enviando comprobante al pagador:", emailErr);
+                }
               }
             }
             break;

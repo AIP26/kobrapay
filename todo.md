@@ -914,3 +914,7 @@
 - [x] Actualizar brochure con sección de nuevas funcionalidades v3.0
 - [x] País de Operación (businessCountry) en Settings y CreateLink
 - [x] Perfil Público del Negocio: ruta /p/:slug con todos los links activos del comercio
+
+## Entrega Final - Mar 4, 2026
+- [x] Email de comprobante automático al pagador: HTML profesional con logo del negocio, número de transacción, monto y datos
+- [x] Cláusula legal de firma electrónica en contratos (Art. 89 Código de Comercio México)

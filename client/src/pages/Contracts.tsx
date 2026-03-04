@@ -178,6 +178,19 @@ async function generateContractPDF(contract: ContractData) {
     y += 5 + extra;
   }
 
+  // Cláusula legal de firma electrónica
+  if (y > 240) { doc.addPage(); y = 20; }
+  doc.setFillColor(239, 246, 255);
+  doc.roundedRect(margin, y, contentW, 22, 2, 2, "F");
+  doc.setDrawColor(147, 197, 253);
+  doc.setLineWidth(0.3);
+  doc.roundedRect(margin, y, contentW, 22, 2, 2, "S");
+  addText("⚖️ VALIDEZ LEGAL — FIRMA ELECTRÓNICA", margin + 3, y + 5, { size: 8, bold: true, color: [30, 64, 175] });
+  const legalText = "De conformidad con los Artículos 89, 89 Bis, 90 y 93 del Código de Comercio de los Estados Unidos Mexicanos, la firma electrónica tiene plena validez jurídica. IP, fecha y evidencia digital registrados.";
+  addText(legalText, margin + 3, y + 11, { size: 7.5, maxWidth: contentW - 6, color: [30, 64, 175] });
+  addText("Fundamento: Código de Comercio Arts. 89–114 · LFEA · NOM-151-SCFI-2016 · LFPDPPP", margin + 3, y + 19, { size: 7, color: [59, 130, 246] });
+  y += 28;
+
   // Signature section
   if (y > 220) { doc.addPage(); y = 20; }
   y += 5;
@@ -322,6 +335,16 @@ function ContractPreviewModal({ contract, onClose }: { contract: ContractData; o
                 <p className="text-gray-700 whitespace-pre-wrap">{contract.customTerms}</p>
               </div>
             )}
+            {/* Cláusula legal de firma electrónica */}
+            <div className="bg-blue-50 border border-blue-200 rounded p-3 mt-2">
+              <p className="font-bold text-blue-800 text-xs mb-1">⚖️ VALIDEZ LEGAL — FIRMA ELECTRÓNICA</p>
+              <p className="text-blue-700 text-xs leading-relaxed">
+                De conformidad con los Artículos 89, 89 Bis, 90 y 93 del Código de Comercio de los Estados Unidos Mexicanos, la firma electrónica plasmada en el presente contrato tiene plena validez jurídica y produce los mismos efectos que una firma autógrafa. La dirección IP, fecha, hora y evidencia digital del firmante quedan registrados como prueba fehaciente de consentimiento.
+              </p>
+              <p className="text-blue-600 text-xs mt-1 font-medium">
+                Fundamento: Código de Comercio Arts. 89–114 · Ley de Firma Electrónica Avanzada (LFEA) · NOM-151-SCFI-2016 · LFPDPPP
+              </p>
+            </div>
           </div>
 
           {/* Signatures */}
