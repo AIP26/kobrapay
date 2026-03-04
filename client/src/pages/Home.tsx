@@ -18,6 +18,7 @@ import {
 import { Link } from "wouter";
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
+import { getSortedCountries, getCountryByCode } from "@shared/countries";
 
 const FEATURES = [
   { id: "links", icon: Link2, title: "Enlace en segundos", shortDesc: "Genera un enlace único y compártelo por WhatsApp o email.", color: "emerald", fullDesc: "Ingresa el nombre del cliente, monto y descripción. Obtén un enlace único listo para compartir por WhatsApp, email o código QR. El cliente paga desde cualquier dispositivo sin necesidad de instalar nada.", bullets: ["Enlace personalizado con nombre del cliente", "Código QR descargable incluido", "Expira automáticamente si no se paga", "Comparte en 1 clic por WhatsApp o email"], mockContent: "links" },
@@ -243,6 +244,7 @@ function FAQSection() {
 function PublicQuoteCalculator() {
   const [monthlyVolume, setMonthlyVolume] = useState(50000);
   const [singleAmount, setSingleAmount] = useState(5000);
+  const [simCountry, setSimCountry] = useState("MX");
   const [showEmailForm, setShowEmailForm] = useState(false);
   const [prospectName, setProspectName] = useState("");
   const [prospectEmail, setProspectEmail] = useState("");
@@ -253,12 +255,19 @@ function PublicQuoteCalculator() {
   });
   const tier = VOLUME_TIERS.find(t => monthlyVolume >= t.min && monthlyVolume <= t.max) || VOLUME_TIERS[0];
   const nextTier = VOLUME_TIERS[VOLUME_TIERS.indexOf(tier) + 1];
+  // Datos del país seleccionado
+  const countryData = getCountryByCode(simCountry);
+  const simCurrency = countryData?.currency || "MXN";
+  const simSymbol = countryData?.currencySymbol || "$";
+  const simVatRate = countryData?.taxRate ?? 0.16; // IVA del país
+  const vatLabel = countryData?.taxName || "IVA";
   // KobraPay: tasa base + IVA (igual que la competencia)
-  // totalRate ya incluye todo (Stripe + KobraPay + IVA), pero lo mostramos como base + IVA
-  const kpBaseRate = tier.totalRate / 1.16; // tasa base sin IVA
-  const kpNote = `${kpBaseRate.toFixed(2)}% + IVA`;
+  const kpBaseRate = tier.totalRate / (1 + simVatRate); // tasa base sin IVA
+  const kpNote = `${kpBaseRate.toFixed(2)}% + ${vatLabel}`;
   const totalFees = singleAmount * (tier.totalRate / 100);
   const netReceived = singleAmount - totalFees;
+  // Formatear moneda del país
+  const fmtAmt = (n: number) => `${simSymbol}${n.toLocaleString("es-MX", { minimumFractionDigits: 2 })} ${simCurrency}`;
 
   // Competencia: tasa base + cargo fijo + IVA (calculado correctamente)
   // El IVA se aplica sobre (tasa% * monto + cargo fijo)
@@ -277,7 +286,7 @@ function PublicQuoteCalculator() {
           <div>
             <div className="flex items-center justify-between mb-2">
               <label className="text-sm font-semibold text-white">Volumen mensual estimado</label>
-              <span className="text-emerald-400 font-bold text-sm">${monthlyVolume.toLocaleString("es-MX")} MXN</span>
+              <span className="text-emerald-400 font-bold text-sm">{simSymbol}{monthlyVolume.toLocaleString("es-MX")} {simCurrency}</span>
             </div>
             <input
               type="range"
@@ -321,18 +330,32 @@ function PublicQuoteCalculator() {
             )}
           </div>
 
-          {/* Monto de cobro individual */}
-          <div>
-            <label className="text-sm font-semibold text-white block mb-2">Simula un cobro de</label>
+          {/* Monto de cobro individual + selector de país/moneda */}
+          <div className="space-y-3">
+            <label className="text-sm font-semibold text-white block">Simula un cobro de</label>
             <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">$</span>
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">{getCountryByCode(simCountry)?.currencySymbol || "$"}</span>
               <input
                 type="number"
                 value={singleAmount}
                 onChange={e => setSingleAmount(Math.max(1, Number(e.target.value)))}
-                className="w-full bg-white/5 border border-white/10 rounded-xl pl-7 pr-4 py-2.5 text-white text-sm focus:outline-none focus:border-emerald-500"
+                className="w-full bg-white/5 border border-white/10 rounded-xl pl-7 pr-16 py-2.5 text-white text-sm focus:outline-none focus:border-emerald-500"
               />
-              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs">MXN</span>
+              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs font-bold">{getCountryByCode(simCountry)?.currency || "MXN"}</span>
+            </div>
+            <div>
+              <label className="text-xs text-gray-400 block mb-1">País / Moneda</label>
+              <select
+                value={simCountry}
+                onChange={e => setSimCountry(e.target.value)}
+                className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-white text-sm focus:outline-none focus:border-emerald-500"
+              >
+                {getSortedCountries().map(c => (
+                  <option key={c.code} value={c.code} className="bg-gray-900 text-white">
+                    {c.flag} {c.name} — {c.currency}
+                  </option>
+                ))}
+              </select>
             </div>
           </div>
         </div>
@@ -345,19 +368,19 @@ function PublicQuoteCalculator() {
             {/* Tasa base sin IVA */}
             <div className="flex items-center justify-between">
               <span className="text-xs text-gray-400">Monto cobrado al cliente</span>
-              <span className="text-sm font-semibold text-white">${singleAmount.toLocaleString("es-MX", { minimumFractionDigits: 2 })}</span>
+              <span className="text-sm font-semibold text-white">{fmtAmt(singleAmount)}</span>
             </div>
             <div className="flex items-center justify-between">
               <span className="text-xs text-gray-400">Comisión KobraPay ({kpBaseRate.toFixed(2)}%)</span>
-              <span className="text-sm font-semibold text-red-400">- ${(singleAmount * kpBaseRate / 100).toLocaleString("es-MX", { minimumFractionDigits: 2 })}</span>
+              <span className="text-sm font-semibold text-red-400">- {fmtAmt(singleAmount * kpBaseRate / 100)}</span>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-xs text-gray-400">IVA (16%)</span>
-              <span className="text-sm font-semibold text-red-400">- ${(singleAmount * kpBaseRate / 100 * 0.16).toLocaleString("es-MX", { minimumFractionDigits: 2 })}</span>
+              <span className="text-xs text-gray-400">{vatLabel} ({(simVatRate * 100).toFixed(0)}%)</span>
+              <span className="text-sm font-semibold text-red-400">- {fmtAmt(singleAmount * kpBaseRate / 100 * simVatRate)}</span>
             </div>
             <div className="border-t border-white/10 pt-3 flex items-center justify-between">
               <span className="text-sm font-bold text-white">Tú recibes</span>
-              <span className="text-xl font-black text-emerald-400">${netReceived.toLocaleString("es-MX", { minimumFractionDigits: 2 })}</span>
+              <span className="text-xl font-black text-emerald-400">{fmtAmt(netReceived)}</span>
             </div>
             <p className="text-xs text-emerald-400/70 text-center font-medium">{kpNote} — sin costos ocultos, sin sorpresas</p>
           </div>
@@ -382,7 +405,7 @@ function PublicQuoteCalculator() {
                       <span className="text-xs text-gray-600 ml-1">({c.note})</span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className="text-xs text-gray-300">${cNet.toLocaleString("es-MX", { minimumFractionDigits: 2 })}</span>
+                      <span className="text-xs text-gray-300">{fmtAmt(cNet)}</span>
 
                     </div>
                   </div>
@@ -394,7 +417,7 @@ function PublicQuoteCalculator() {
                   <span className="text-xs text-emerald-500/70 ml-1">({kpNote})</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-sm font-black text-emerald-400">${netReceived.toLocaleString("es-MX", { minimumFractionDigits: 2 })}</span>
+                  <span className="text-sm font-black text-emerald-400">{fmtAmt(netReceived)}</span>
                   <span className="text-xs text-emerald-400 font-bold">✔ mejor</span>
                 </div>
               </div>

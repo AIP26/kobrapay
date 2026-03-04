@@ -555,7 +555,8 @@ export const appRouter = router({
           clientPhone: z.string().max(32).optional().or(z.literal("")),
           amount: z.number().positive().min(1),
           description: z.string().min(1).max(1000),
-          currency: z.enum(["MXN", "USD"]).default("MXN"),
+          currency: z.string().min(2).max(8).default("MXN"), // ISO 4217: MXN, USD, EUR, CAD, COP, BRL, CLP, PEN, GBP, AUD, JPY, etc.
+          countryCode: z.string().length(2).optional(), // ISO 3166-1 alpha-2
           expiresInDays: z.number().min(1).max(365).optional(),
           requireOtp: z.boolean().default(false),
           requireSelfie: z.boolean().default(false),
@@ -608,6 +609,7 @@ export const appRouter = router({
            msiOptions: input.msiOptions && input.msiOptions.length > 0 ? JSON.stringify(input.msiOptions) : null,
           tipEnabled: input.tipEnabled,
           tipSuggestions: input.tipSuggestions && input.tipSuggestions.length > 0 ? JSON.stringify(input.tipSuggestions) : null,
+          countryCode: input.countryCode || "MX",
         });
         return { ...link, netAmount };
       }),

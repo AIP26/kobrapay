@@ -1,6 +1,7 @@
 import { useRef, useState } from "react";
 import { useRoute } from "wouter";
 import { trpc } from "@/lib/trpc";
+import { getCountryByCode } from "@shared/countries";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -45,7 +46,13 @@ export default function SignContract() {
   const [representanteLegal, setRepresentanteLegal] = useState("");
   const [rfcEmpresa, setRfcEmpresa] = useState("");
 
+  const [lang, setLang] = useState<"es" | "en">("es");
   const { data: contract, isLoading, error } = trpc.contracts.getByToken.useQuery({ token }, { enabled: !!token });
+
+  // Marco legal dinámico según el país del contrato
+  const countryCode = (contract as any)?.countryCode || "MX";
+  const countryInfo = getCountryByCode(countryCode);
+  const legalFramework = countryInfo?.legalFramework;
 
   const signMutation = trpc.contracts.signContract.useMutation({
     onSuccess: () => setStep("docs"),
@@ -256,6 +263,50 @@ export default function SignContract() {
                 </div>
               )}
 
+              {/* Cláusula legal dinámica por país */}
+              <div className="bg-blue-50 rounded-xl p-4 border border-blue-200 space-y-2">
+                <div className="flex items-center justify-between">
+                  <p className="font-bold text-blue-900 text-sm flex items-center gap-2">
+                    ⚖️ {legalFramework ? (lang === "en" ? legalFramework.titleEn : legalFramework.title) : (lang === "en" ? "Legal Validity — Electronic Signature" : "Validez Legal — Firma Electrónica")}
+                  </p>
+                  <button
+                    onClick={() => setLang(l => l === "es" ? "en" : "es")}
+                    className="text-xs bg-blue-100 hover:bg-blue-200 text-blue-700 px-2 py-1 rounded-lg font-medium"
+                  >
+                    {lang === "es" ? "🇺🇸 EN" : "🇲🇽 ES"}
+                  </button>
+                </div>
+                <p className="text-blue-800 text-xs leading-relaxed">
+                  {legalFramework
+                    ? (lang === "en" ? legalFramework.descriptionEn : legalFramework.description)
+                    : (lang === "en"
+                      ? "The electronic signature on this contract has full legal validity pursuant to applicable electronic commerce and digital signature laws. The signatory's IP address, date, time and digital evidence are recorded as proof of consent."
+                      : "De conformidad con los Artículos 89, 89 Bis, 90 y 93 del Código de Comercio, la firma electrónica tiene plena validez jurídica. La dirección IP, fecha, hora y evidencia digital quedan registrados como prueba de consentimiento."
+                    )
+                  }
+                </p>
+                {legalFramework && (
+                  <div className="space-y-1">
+                    <p className="text-blue-700 text-xs font-semibold">
+                      {lang === "en" ? "Legal basis:" : "Fundamento legal:"}
+                    </p>
+                    <ul className="list-disc list-inside space-y-0.5">
+                      {(lang === "en" ? legalFramework.lawsEn : legalFramework.laws).map((law: string, i: number) => (
+                        <li key={i} className="text-blue-700 text-xs">{law}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                {countryCode === "MX" && (
+                  <p className="text-blue-700 text-xs font-semibold">
+                    {lang === "en"
+                      ? "Standards: Commercial Code Arts. 89–114 · LFEA · NOM-151-SCFI-2016 · LFPDPPP"
+                      : "Fundamento: Código de Comercio Arts. 89–114 · LFEA · NOM-151-SCFI-2016 · LFPDPPP"
+                    }
+                  </p>
+                )}
+              </div>
+
               <div className="bg-red-50 rounded-xl p-3 border border-red-200">
                 <p className="text-red-700 text-xs font-medium flex items-center gap-1">
                   <AlertTriangle className="w-3 h-3" />
@@ -314,9 +365,13 @@ export default function SignContract() {
               </div>
             )}
 
-            <div className="mt-4 p-3 bg-red-50 rounded-lg border border-red-200">
-              <p className="text-xs text-red-700 font-medium">
-                ⚠️ POLÍTICA: Al firmar, el Cliente acepta todos los términos del contrato. La firma digital tiene la misma validez legal que una firma autógrafa conforme a la Ley de Firma Electrónica Avanzada.
+            <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200 space-y-1">
+              <p className="text-xs text-blue-800 font-bold">⚖️ {lang === "en" ? "Legal Validity" : "Validez Jurídica"}</p>
+              <p className="text-xs text-blue-700">
+                {lang === "en"
+                  ? (legalFramework?.descriptionEn || "This electronic signature has full legal validity pursuant to applicable electronic signature laws. Your IP, date and time will be recorded as evidence of consent.")
+                  : (legalFramework?.description || "Esta firma electrónica tiene plena validez legal conforme al Art. 89 del Código de Comercio y la Ley de Firma Electrónica Avanzada (LFEA). Se registrarán tu IP, fecha y hora como evidencia de consentimiento.")
+                }
               </p>
             </div>
           </div>

@@ -138,6 +138,8 @@ export const paymentLinks = mysqlTable("payment_links", {
   tipEnabled: boolean("tipEnabled").default(false).notNull(),
   // Opciones de propina sugeridas (JSON array de porcentajes: [10,15,20] o null para solo monto manual)
   tipSuggestions: text("tipSuggestions"),
+  // País del cobro (ISO 3166-1 alpha-2: MX, US, CA, ES, CO, etc.)
+  countryCode: varchar("countryCode", { length: 2 }).default("MX"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });

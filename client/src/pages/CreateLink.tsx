@@ -1,4 +1,5 @@
 import DashboardLayout from "@/components/DashboardLayout";
+import { getSortedCountries, getCountryByCode } from "@shared/countries";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -33,7 +34,16 @@ import {
 } from "lucide-react";
 
 function formatCurrency(amount: number, currency = "MXN") {
-  return new Intl.NumberFormat("es-MX", { style: "currency", currency }).format(amount);
+  const country = getSortedCountries().find(c => c.currency === currency);
+  try {
+    return new Intl.NumberFormat(country?.locale || "es-MX", {
+      style: "currency",
+      currency,
+      minimumFractionDigits: (currency === "JPY" || currency === "CLP") ? 0 : 2,
+    }).format(amount);
+  } catch {
+    return `${country?.currencySymbol || "$"}${amount.toFixed(2)}`;
+  }
 }
 
 export default function CreateLink() {
@@ -44,6 +54,7 @@ export default function CreateLink() {
     amount: "",
     description: "",
     currency: "MXN",
+    countryCode: "MX",
     expiresInDays: "0",
     requireOtp: false,
     requireSelfie: false,
@@ -109,7 +120,8 @@ export default function CreateLink() {
       clientPhone: form.clientPhone.trim() || undefined,
       amount,
       description: form.description.trim(),
-      currency: form.currency as "MXN" | "USD",
+      currency: form.currency,
+      countryCode: form.countryCode,
       expiresInDays: (form.expiresInDays && form.expiresInDays !== "0") ? parseInt(form.expiresInDays) : undefined,
       requireOtp: form.requireOtp,
       requireSelfie: form.requireSelfie,
@@ -175,7 +187,7 @@ export default function CreateLink() {
     setMsiOptions([]);
     setTipEnabled(false);
     setTipSuggestions([10, 15, 20]);
-    setForm({ clientName: "", clientEmail: "", clientPhone: "", amount: "", description: "", currency: "MXN", expiresInDays: "0", requireOtp: false, requireSelfie: false, requireSignature: false, requireIdUpload: false, usdExchangeRate: "", chargebackProtectionText: "" });
+    setForm({ clientName: "", clientEmail: "", clientPhone: "", amount: "", description: "", currency: "MXN", countryCode: "MX", expiresInDays: "0", requireOtp: false, requireSelfie: false, requireSignature: false, requireIdUpload: false, usdExchangeRate: "", chargebackProtectionText: "" });
   };
 
   const commissionRate = parseFloat(String(settings?.commissionRate || 0));
@@ -388,19 +400,36 @@ export default function CreateLink() {
                   </div>
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-gray-700 font-medium">Moneda</Label>
-                  <Select value={form.currency} onValueChange={(v) => setForm({ ...form, currency: v })}>
+                  <Label className="text-gray-700 font-medium">País y Moneda</Label>
+                  <Select
+                    value={form.countryCode}
+                    onValueChange={(code) => {
+                      const country = getCountryByCode(code);
+                      if (country) {
+                        setForm({ ...form, countryCode: code, currency: country.currency });
+                      }
+                    }}
+                  >
                     <SelectTrigger className="border-gray-200">
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="MXN">🇲🇽 MXN — Pesos Mexicanos</SelectItem>
-                      <SelectItem value="USD">🇺🇸 USD — Dólares (cobros internacionales)</SelectItem>
+                    <SelectContent className="max-h-64">
+                      {getSortedCountries().map((c) => (
+                        <SelectItem key={c.code} value={c.code}>
+                          {c.flag} {c.name} — {c.currency}
+                          {!c.stripeSupported && " ⚠️"}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
-                  {form.currency === "USD" && (
+                  {form.countryCode !== "MX" && (
+                    <p className="text-xs text-blue-600 flex items-center gap-1">
+                      <span>🌍</span> Cobro internacional en {getCountryByCode(form.countryCode)?.currencyName} ({form.currency})
+                    </p>
+                  )}
+                  {getCountryByCode(form.countryCode)?.stripeSupported === false && (
                     <p className="text-xs text-amber-600 flex items-center gap-1">
-                      <span>⚠️</span> Usa USD solo si tu cliente paga desde el extranjero o factura en dólares.
+                      <span>⚠️</span> Stripe no opera directamente en este país. El cobro se procesará en USD.
                     </p>
                   )}
                 </div>
