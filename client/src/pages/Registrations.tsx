@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { useState, useMemo } from "react";
 import { Textarea } from "@/components/ui/textarea";
+import { SECTOR_TEMPLATES, templateToPermissionsJson, type SectorTemplate } from "@shared/sectorTemplates";
 
 // ─── Tipos de cuenta disponibles ─────────────────────────────────────────────
 const ACCOUNT_TYPES = [
@@ -110,6 +111,7 @@ export default function Registrations() {
   const [selectedAccountType, setSelectedAccountType] = useState("business");
   const [permissions, setPermissions] = useState<Permissions>({});
   const [commissionRate, setCommissionRate] = useState(5);
+  const [selectedSectorTemplate, setSelectedSectorTemplate] = useState<string | null>(null);
 
   const { data: registrations = [], isLoading, refetch } = trpc.registrations.list.useQuery(undefined, {
     refetchInterval: 30000,
@@ -176,6 +178,15 @@ export default function Registrations() {
     setSelectedAccountType(typeId);
     const accountType = ACCOUNT_TYPES.find((t) => t.id === typeId) || ACCOUNT_TYPES[0];
     setPermissions({ ...accountType.defaultPermissions });
+  };
+
+  const handleSectorTemplate = (templateId: string) => {
+    const template = SECTOR_TEMPLATES.find((t: SectorTemplate) => t.id === templateId);
+    if (!template) return;
+    setSelectedSectorTemplate(templateId);
+    // Aplicar los permisos de la plantilla
+    setPermissions(templateToPermissionsJson(template) as Record<string, boolean>);
+    toast.success(`Plantilla "${template.name}" aplicada`);
   };
 
   const handleApprove = () => {
@@ -390,6 +401,33 @@ export default function Registrations() {
                       El usuario aún no ha completado su perfil extendido.
                     </div>
                   )}
+                </div>
+              </div>
+
+              {/* Plantilla de Sector — selector rápido */}
+              <div>
+                <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Plantilla por Sector</h3>
+                <p className="text-xs text-gray-400 mb-3">Selecciona el tipo de negocio para asignar permisos automáticamente.</p>
+                <div className="grid grid-cols-2 gap-2 mb-1">
+                  {SECTOR_TEMPLATES.map((tpl: SectorTemplate) => (
+                    <button
+                      key={tpl.id}
+                      onClick={() => handleSectorTemplate(tpl.id)}
+                      className={`flex items-start gap-2 p-2.5 rounded-xl border-2 text-left transition-all ${
+                        selectedSectorTemplate === tpl.id
+                          ? "border-emerald-500 bg-emerald-50"
+                          : "border-gray-200 hover:border-emerald-300 bg-white"
+                      }`}
+                    >
+                      <span className="text-lg leading-none mt-0.5">{tpl.icon}</span>
+                      <div>
+                        <p className={`text-xs font-semibold leading-tight ${
+                          selectedSectorTemplate === tpl.id ? "text-emerald-700" : "text-gray-700"
+                        }`}>{tpl.name}</p>
+                        <p className="text-xs text-gray-400 leading-tight mt-0.5 line-clamp-2">{tpl.description}</p>
+                      </div>
+                    </button>
+                  ))}
                 </div>
               </div>
 

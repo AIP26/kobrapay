@@ -879,7 +879,17 @@
 - [x] Implementar notificaciones push en el panel cuando un cliente paga un link
 - [x] Botón de WhatsApp en notificaciones de pago recibido
 - [ ] Página de Perfil del Negocio con logo, nombre y datos fiscales
-- [ ] Selector de lada internacional en formulario de pago público
+- [x] Selector de lada internacional en formulario de pago público
 - [x] Agregar tab "Programa de Referidos" en AssociateDashboard con código único, estadísticas y tabla de clientes
 - [x] Procedimiento getMyReferralInfo en router associate para código de referido y stats
 - [x] Botón de compartir por WhatsApp en tab de referidos
+
+## Sprint Final Mar 4, 2026 - Terminar todo
+- [x] Corregir Panel de Métricas (bug: no carga datos para rol admin/superadmin)
+- [x] Limpiar sidebar: ocultar módulos no esenciales (Training, Nómina, RH, Sector Salud) para rol admin
+- [x] Verificar flujo completo de Stripe: checkout → webhook → historial de pagos
+- [x] Agregar Perfil del Negocio (logo, nombre, RFC, datos fiscales)
+- [x] Selector de lada internacional en formulario de pago público
+- [x] Manual de operación en PDF (cómo activar Stripe live, cómo activar/desactivar módulos)
+- [x] Plantillas de acceso por sector: Restaurante/Comercio, Consultorio/Clínica, Escuela/Academia, Spa/Servicio, Básico — selector al aprobar usuario en panel de Registros y en Control de Módulos
+- [x] Sección FAQ profesional en la página de inicio: ¿Qué es KobraPay?, ¿Cómo funciona?, ¿Es seguro?, ¿Cuánto cuesta?, ¿Para qué tipo de negocios?, ¿Cómo me registro?, comparativa vs competencia

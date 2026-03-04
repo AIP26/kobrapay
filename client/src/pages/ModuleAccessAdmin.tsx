@@ -15,8 +15,70 @@ import { toast } from "sonner";
 import {
   ShieldCheck, ShieldX, Clock, CheckCircle2, XCircle, User,
   Building2, Pill, ClipboardList, Search, Plus, Trash2,
-  AlertTriangle, Lock
+  AlertTriangle, Lock, Zap
 } from "lucide-react";
+import { SECTOR_TEMPLATES, templateToPermissionsJson, type SectorTemplate } from "@shared/sectorTemplates";
+
+// ─── Componente: Aplicar Plantilla de Sector ──────────────────────────────────
+function SectorTemplateApplier() {
+  const [clientId, setClientId] = useState("");
+  const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
+  const applyMutation = trpc.moduleAccess.applyTemplate.useMutation({
+    onSuccess: (data: { success: boolean; templateName: string }) => {
+      toast.success(`✅ Plantilla "${data.templateName}" aplicada correctamente`);
+      setClientId("");
+      setSelectedTemplate(null);
+    },
+    onError: (e: { message: string }) => toast.error("Error: " + e.message),
+  });
+  return (
+    <div className="border border-emerald-200 bg-emerald-50/40 rounded-xl p-5 space-y-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+        {SECTOR_TEMPLATES.map((tpl: SectorTemplate) => (
+          <button
+            key={tpl.id}
+            onClick={() => setSelectedTemplate(tpl.id)}
+            className={`flex items-start gap-2 p-3 rounded-xl border-2 text-left transition-all ${
+              selectedTemplate === tpl.id
+                ? "border-emerald-500 bg-white shadow-sm"
+                : "border-gray-200 bg-white hover:border-emerald-300"
+            }`}
+          >
+            <span className="text-xl leading-none mt-0.5">{tpl.icon}</span>
+            <div>
+              <p className={`text-xs font-semibold ${
+                selectedTemplate === tpl.id ? "text-emerald-700" : "text-gray-700"
+              }`}>{tpl.name}</p>
+              <p className="text-xs text-gray-400 mt-0.5 leading-tight line-clamp-2">{tpl.description}</p>
+            </div>
+          </button>
+        ))}
+      </div>
+      {selectedTemplate && (
+        <div className="flex gap-3 items-end">
+          <div className="flex-1 space-y-1">
+            <Label className="text-xs font-medium text-gray-600">ID del cliente</Label>
+            <Input
+              type="number"
+              value={clientId}
+              onChange={e => setClientId(e.target.value)}
+              placeholder="Ej: 42 — ver ID en panel de Registros"
+              className="h-9 text-sm"
+            />
+          </div>
+          <Button
+            className="bg-emerald-600 hover:bg-emerald-700 text-white h-9 px-4 text-sm"
+            onClick={() => applyMutation.mutate({ clientId: parseInt(clientId), templateId: selectedTemplate })}
+            disabled={!clientId || applyMutation.isPending}
+          >
+            <Zap className="w-3.5 h-3.5 mr-1" />
+            {applyMutation.isPending ? "Aplicando..." : "Aplicar Plantilla"}
+          </Button>
+        </div>
+      )}
+    </div>
+  );
+}
 
 const MODULE_LABELS: Record<string, { label: string; icon: any; color: string }> = {
   prescriptions: { label: "Prescripciones Médicas", icon: ClipboardList, color: "text-blue-600" },

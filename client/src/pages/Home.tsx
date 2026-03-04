@@ -181,6 +181,65 @@ const VOLUME_TIERS = [
   { label: "Enterprise", min: 500001, max: 9999999, kpRate: 1.5, stripe: 1.5, stripeFixed: 3, color: "amber" },
 ];
 
+const FAQ_ITEMS = [
+  {
+    q: "¿Qué es KobraPay y para qué tipo de negocios está diseñado?",
+    a: "KobraPay es una plataforma de cobros digitales diseñada para negocios en México y Latinoamérica: restaurantes, hospitales, clínicas, escuelas, spas, consultorios médicos y dentales, comercios y cualquier empresa que necesite cobrar de forma profesional. No importa si eres un negocio pequeño o una empresa con múltiples sucursales — KobraPay escala contigo."
+  },
+  {
+    q: "¿Cómo funciona? ¿Necesito instalar algo?",
+    a: "No necesitas instalar nada. Creas tu cuenta, generas un enlace de pago en menos de 2 minutos y lo compartes por WhatsApp, email o código QR. Tu cliente paga desde su celular o computadora con tarjeta de crédito o débito. El dinero llega a tu cuenta y tú ves todo en tu panel en tiempo real."
+  },
+  {
+    q: "¿Es seguro? ¿Cómo protegen mis datos y los de mis clientes?",
+    a: "Sí. Los pagos son procesados por Stripe, la plataforma de pagos más confiable del mundo, con cifrado SSL de 256 bits. KobraPay nunca almacena datos de tarjetas. Además, incluimos verificación OTP, captura de selfie del pagador y firma digital para protegerte contra contracargos fraudulentos."
+  },
+  {
+    q: "¿Cuánto cuesta? ¿Hay mensualidad o costo fijo?",
+    a: "No hay mensualidad ni costo fijo. Solo pagas una comisión por cada transacción exitosa, y a mayor volumen de ventas, menor es tu porcentaje. Puedes simular exactamente cuánto pagarás con nuestro calculador de comisiones en esta misma página."
+  },
+  {
+    q: "¿Puedo ofrecer meses sin intereses a mis clientes?",
+    a: "Sí. Puedes activar opciones de 3, 6, 9, 12 o 24 meses sin intereses en tus enlaces de pago. El cliente elige su plan antes de ingresar su tarjeta. Compatible con tarjetas de crédito mexicanas."
+  },
+  {
+    q: "¿Qué diferencia a KobraPay de otras plataformas como Clip o Mercado Pago?",
+    a: "KobraPay está diseñado para negocios que necesitan más que un simple cobro: contratos digitales con firma, cobros recurrentes automatizados, transferencias internacionales (SPEI, Zelle, Wire), panel multi-negocio para gestionar varios clientes, y un sistema de asociados con comisión escalonada. Es una plataforma completa, no solo un lector de tarjetas."
+  },
+  {
+    q: "¿Cómo me registro? ¿Cuánto tiempo tarda la aprobación?",
+    a: "El registro toma menos de 5 minutos. Necesitas tu nombre, datos de tu negocio y RFC. La aprobación es en menos de 24 horas hábiles. Una vez aprobado, puedes generar tu primer enlace de pago de inmediato."
+  },
+  {
+    q: "¿Puedo integrar KobraPay en mi sitio web o tienda en línea?",
+    a: "Sí. Tenemos un widget embebible que puedes agregar a cualquier sitio web con unas pocas líneas de código HTML. También puedes usar nuestro Punto de Venta digital para cobrar en mostrador desde tu celular o tablet, sin hardware adicional."
+  },
+];
+
+function FAQSection() {
+  const [open, setOpen] = useState<number | null>(null);
+  return (
+    <div className="space-y-3">
+      {FAQ_ITEMS.map((item, i) => (
+        <div key={i} className="border border-white/10 rounded-xl overflow-hidden">
+          <button
+            className="w-full flex items-center justify-between gap-4 px-5 py-4 text-left bg-white/5 hover:bg-white/8 transition-colors"
+            onClick={() => setOpen(open === i ? null : i)}
+          >
+            <span className="text-sm font-medium text-white">{item.q}</span>
+            <span className={`text-emerald-400 text-lg font-bold flex-shrink-0 transition-transform ${open === i ? 'rotate-45' : ''}`}>+</span>
+          </button>
+          {open === i && (
+            <div className="px-5 py-4 bg-white/3 border-t border-white/10">
+              <p className="text-sm text-gray-400 leading-relaxed">{item.a}</p>
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function PublicQuoteCalculator() {
   const [monthlyVolume, setMonthlyVolume] = useState(50000);
   const [singleAmount, setSingleAmount] = useState(5000);
@@ -612,6 +671,22 @@ export default function Home() {
             <p className="text-gray-400 max-w-xl mx-auto">Mueve el slider para ver exactamente cuanto recibiras despues de comisiones. A mayor volumen, menor porcentaje.</p>
           </div>
           <PublicQuoteCalculator />
+        </div>
+      </section>
+
+      {/* FAQ */}
+      <section className="py-20 border-t border-white/5">
+        <div className="container max-w-3xl mx-auto">
+          <div className="text-center mb-12">
+            <span className="text-xs font-semibold tracking-widest text-emerald-400 uppercase">Preguntas Frecuentes</span>
+            <h2 className="text-2xl lg:text-3xl font-bold text-white mt-2 mb-3">Todo lo que necesitas saber</h2>
+            <p className="text-gray-400 text-sm">Resolvemos las dudas más comunes antes de que las tengas.</p>
+          </div>
+          <FAQSection />
+          <p className="text-center text-sm text-gray-500 mt-8">
+            ¿Tienes más preguntas?{" "}
+            <a href="mailto:soporte@kobrapay.mx" className="text-emerald-400 hover:underline">soporte@kobrapay.mx</a>
+          </p>
         </div>
       </section>
 

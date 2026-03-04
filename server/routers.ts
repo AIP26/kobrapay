@@ -488,6 +488,29 @@ export const appRouter = router({
         return { success: true };
       }),
 
+    // Aplicar plantilla de sector a un cliente (asigna permisos predefinidos)
+    applyTemplate: protectedProcedure
+      .input(z.object({
+        clientId: z.number(),
+        templateId: z.string(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        if (ctx.user.role !== "admin" && !ctx.isSuperAdmin) throw new TRPCError({ code: "FORBIDDEN" });
+        const { getTemplateById, templateToPermissionsJson } = await import('../shared/sectorTemplates');
+        const template = getTemplateById(input.templateId);
+        if (!template) throw new TRPCError({ code: "BAD_REQUEST", message: "Plantilla no encontrada" });
+        const client = await getPlatformClientById(input.clientId);
+        if (!client) throw new TRPCError({ code: "NOT_FOUND" });
+        const permissionsJson = JSON.stringify(templateToPermissionsJson(template));
+        if (client.userId) {
+          await upsertUserProfile(client.userId, {
+            permissions: permissionsJson,
+            accountType: input.templateId,
+          });
+        }
+        return { success: true, templateName: template.name };
+      }),
+
     // Desglose de comisiones por negocio para el admin
     getCommissionBreakdown: protectedProcedure.query(async ({ ctx }) => {
       if (ctx.user.role !== "admin" && !ctx.isSuperAdmin) throw new TRPCError({ code: "FORBIDDEN" });
@@ -4692,6 +4715,29 @@ export const appRouter = router({
         createdAt: users.createdAt,
       }).from(users).orderBy(desc(users.createdAt));
     }),
+
+    // Aplicar plantilla de sector a un cliente (asigna permisos predefinidos)
+    applyTemplate: protectedProcedure
+      .input(z.object({
+        clientId: z.number(),
+        templateId: z.string(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        if (ctx.user.role !== "admin" && !ctx.isSuperAdmin) throw new TRPCError({ code: "FORBIDDEN" });
+        const { getTemplateById, templateToPermissionsJson } = await import('../shared/sectorTemplates');
+        const template = getTemplateById(input.templateId);
+        if (!template) throw new TRPCError({ code: "BAD_REQUEST", message: "Plantilla no encontrada" });
+        const client = await getPlatformClientById(input.clientId);
+        if (!client) throw new TRPCError({ code: "NOT_FOUND" });
+        const permissionsJson = JSON.stringify(templateToPermissionsJson(template));
+        if (client.userId) {
+          await upsertUserProfile(client.userId, {
+            permissions: permissionsJson,
+            accountType: input.templateId,
+          });
+        }
+        return { success: true, templateName: template.name };
+      }),
   }),
 
   // ─────────────────────────────────────────────────────────────────────────
@@ -6785,7 +6831,7 @@ Responde SIEMPRE en español mexicano, de forma amigable, clara y práctica. Si 
 
   metrics: router({
     getDashboard: protectedProcedure.query(async ({ ctx }) => {
-      if (ctx.user.role !== 'superadmin' && ctx.user.role !== 'admin') {
+      if (!ctx.isSuperAdmin && ctx.user.role !== 'admin') {
         throw new TRPCError({ code: 'FORBIDDEN' });
       }
       const { getDb } = await import('./db');
