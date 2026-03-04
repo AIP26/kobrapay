@@ -173,12 +173,12 @@ function FeatureModal({ feature, onClose }: { feature: typeof FEATURES[0]; onClo
 const KOBRAPAY_LOGO = "https://files.manuscdn.com/user_upload_by_module/session_file/310519663381362445/BlaEgmymroahADGF.png";
 const KOBRAPAY_ICON = "https://d2xsxph8kpxj0f.cloudfront.net/310519663381362445/Tm7GPbTEGgvmgj5v2qy4Z4/kobrapay_logo_v2_52d63331.png";
 
-// Planes con tasas por volumen mensual
+// Planes todo incluido (KobraPay + Stripe + IVA ya absorbidos en el %)
 const VOLUME_TIERS = [
-  { label: "Express", min: 0, max: 50000, kpRate: 2.8, stripe: 1.5, stripeFixed: 3, color: "emerald" },
-  { label: "Connect", min: 50001, max: 150000, kpRate: 2.3, stripe: 1.5, stripeFixed: 3, color: "cyan" },
-  { label: "Custom", min: 150001, max: 500000, kpRate: 1.8, stripe: 1.5, stripeFixed: 3, color: "violet" },
-  { label: "Enterprise", min: 500001, max: 9999999, kpRate: 1.3, stripe: 1.5, stripeFixed: 3, color: "amber" },
+  { label: "Express", min: 0, max: 50000, totalRate: 3.5, color: "emerald" },
+  { label: "Connect", min: 50001, max: 150000, totalRate: 3.0, color: "cyan" },
+  { label: "Custom", min: 150001, max: 500000, totalRate: 2.5, color: "violet" },
+  { label: "Enterprise", min: 500001, max: 9999999, totalRate: 2.0, color: "amber" },
 ];
 
 const FAQ_ITEMS = [
@@ -251,34 +251,19 @@ function PublicQuoteCalculator() {
     onSuccess: () => { setQuoteSent(true); },
     onError: () => alert("Error al enviar. Verifica el email."),
   });
-  const iva = 0.16;
-
   const tier = VOLUME_TIERS.find(t => monthlyVolume >= t.min && monthlyVolume <= t.max) || VOLUME_TIERS[0];
   const nextTier = VOLUME_TIERS[VOLUME_TIERS.indexOf(tier) + 1];
-
-  // Cálculo para un cobro individual
-  const stripeFee = (singleAmount * (tier.stripe / 100)) + tier.stripeFixed;
-  const kpFee = singleAmount * (tier.kpRate / 100);
-  const kpIva = kpFee * iva;
-  const totalFees = stripeFee + kpFee + kpIva;
+  // Modelo todo incluido: una sola tasa, sin costos ocultos
+  const totalFees = singleAmount * (tier.totalRate / 100);
   const netReceived = singleAmount - totalFees;
-  const effectiveRate = (totalFees / singleAmount) * 100;
-
-  // Tasa todo incluido de KobraPay (KobraPay % + Stripe % + Stripe fijo + IVA sobre KobraPay)
-  // Expresada como tasa efectiva real para comparar manzanas con manzanas
-  const totalFeeKP = stripeFee + kpFee + kpIva;
-  const kpEffectiveRate = (totalFeeKP / singleAmount) * 100;
+  const kpEffectiveRate = tier.totalRate;
 
   // Competencia: tasas reales todo incluido (su comisión + su procesador + IVA implícito)
-  // Mercado Pago: 3.29% + IVA = 3.82% efectivo
-  // PayPal: 3.5% + $4 fijo + IVA = ~4.2% efectivo en cobros medianos
-  // Clip: 3.6% + IVA = 4.18% efectivo
-  // Conekta: 2.9% + $3 fijo + IVA = ~3.7% efectivo
   const competitors = [
     { name: "Mercado Pago", rate: 3.82, fixed: 0, note: "3.29% + IVA" },
-    { name: "PayPal", rate: 4.06, fixed: 4, note: "3.5% + $4 + IVA" },
+    { name: "Conekta", rate: 3.70, fixed: 0, note: "2.9% + $3 + IVA" },
+    { name: "PayPal", rate: 4.06, fixed: 0, note: "3.5% + $4 + IVA" },
     { name: "Clip", rate: 4.18, fixed: 0, note: "3.6% + IVA" },
-    { name: "Conekta", rate: 3.36, fixed: 3, note: "2.9% + $3 + IVA" },
   ];
 
   return (
@@ -319,7 +304,7 @@ function PublicQuoteCalculator() {
                 tier.color === "cyan" ? "text-cyan-400" :
                 tier.color === "violet" ? "text-violet-400" : "text-amber-400"
               }`}>Plan {tier.label}</span>
-              <span className="text-white font-black text-2xl">{tier.kpRate}%</span>
+              <span className="text-white font-black text-2xl">{tier.totalRate}%</span>
             </div>
             <p className="text-gray-400 text-xs">Comisión KobraPay para este volumen mensual</p>
             {nextTier && (
@@ -328,7 +313,7 @@ function PublicQuoteCalculator() {
                   💡 Procesando <span className="text-white font-semibold">${nextTier.min.toLocaleString("es-MX")} MXN/mes</span> o más, tu tasa baja a{" "}
                   <span className={`font-bold ${
                     tier.color === "cyan" ? "text-violet-400" : "text-amber-400"
-                  }`}>{nextTier.kpRate}%</span> — Plan {nextTier.label}
+                  }`}>{nextTier.totalRate}%</span> — Plan {nextTier.label}
                 </p>
               </div>
             )}
@@ -357,9 +342,7 @@ function PublicQuoteCalculator() {
             <h4 className="text-sm font-bold text-white mb-3">Desglose del cobro</h4>
             {[
               { label: "Monto cobrado al cliente", value: singleAmount, color: "text-white", bold: true },
-              { label: `Procesamiento Stripe (${tier.stripe}% + $${tier.stripeFixed})`, value: -stripeFee, color: "text-gray-400" },
-              { label: `Comisión KobraPay (${tier.kpRate}%)`, value: -kpFee, color: "text-gray-400" },
-              { label: `IVA sobre comisión (16%)`, value: -kpIva, color: "text-gray-400" },
+              { label: `Comisión KobraPay todo incluido (${tier.totalRate}%)`, value: -totalFees, color: "text-gray-400" },
             ].map(item => (
               <div key={item.label} className="flex items-center justify-between">
                 <span className={`text-xs ${item.color}`}>{item.label}</span>
@@ -372,7 +355,7 @@ function PublicQuoteCalculator() {
               <span className="text-sm font-bold text-white">Tú recibes</span>
               <span className="text-xl font-black text-emerald-400">${netReceived.toLocaleString("es-MX", { minimumFractionDigits: 2 })}</span>
             </div>
-            <p className="text-xs text-emerald-400/70 text-center font-medium">Tasa efectiva todo incluido: {kpEffectiveRate.toFixed(2)}% — incluyendo procesador e IVA</p>
+            <p className="text-xs text-emerald-400/70 text-center font-medium">{tier.totalRate}% todo incluido — sin costos ocultos, sin sorpresas</p>
           </div>
 
           {/* Comparativa */}
@@ -445,7 +428,7 @@ function PublicQuoteCalculator() {
                   <button
                     onClick={() => {
                       if (!prospectName || !prospectEmail) { alert("Ingresa tu nombre y email"); return; }
-                      sendPublicQuote.mutate({ prospectEmail, prospectName, monthlyVolume, singleAmount, kpRate: tier.kpRate });
+                      sendPublicQuote.mutate({ prospectEmail, prospectName, monthlyVolume, singleAmount, kpRate: tier.totalRate });
                     }}
                     disabled={sendPublicQuote.isPending}
                     className="flex-1 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-white rounded-xl text-sm font-semibold disabled:opacity-60"
