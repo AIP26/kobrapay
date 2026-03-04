@@ -895,3 +895,5 @@
 - [x] Sección FAQ profesional en la página de inicio: ¿Qué es KobraPay?, ¿Cómo funciona?, ¿Es seguro?, ¿Cuánto cuesta?, ¿Para qué tipo de negocios?, ¿Cómo me registro?, comparativa vs competencia
 - [x] Corregir simulador de cotización: mostrar tasa todo incluido (KobraPay + Stripe + IVA en un solo número), ajustar comparativa con competencia para que sea justa y KobraPay salga ganando
 - [ ] Cambiar simulador a modelo todo incluido: Express 3.5%, Connect 3.0%, Custom 2.5%, Enterprise 2.0% — sin $3 fijo visible, absorber costo Stripe en el porcentaje
+- [ ] Selector de moneda USD/MXN en CreateLink y PayPage — cobros internacionales con tarjetas de EUA y otros países
+- [ ] Cláusula legal de firma electrónica en contratos digitales (Art. 89 Código de Comercio México)

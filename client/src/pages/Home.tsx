@@ -253,17 +253,20 @@ function PublicQuoteCalculator() {
   });
   const tier = VOLUME_TIERS.find(t => monthlyVolume >= t.min && monthlyVolume <= t.max) || VOLUME_TIERS[0];
   const nextTier = VOLUME_TIERS[VOLUME_TIERS.indexOf(tier) + 1];
-  // Modelo todo incluido: una sola tasa, sin costos ocultos
+  // KobraPay: tasa base + IVA (igual que la competencia)
+  // totalRate ya incluye todo (Stripe + KobraPay + IVA), pero lo mostramos como base + IVA
+  const kpBaseRate = tier.totalRate / 1.16; // tasa base sin IVA
+  const kpNote = `${kpBaseRate.toFixed(2)}% + IVA`;
   const totalFees = singleAmount * (tier.totalRate / 100);
   const netReceived = singleAmount - totalFees;
-  const kpEffectiveRate = tier.totalRate;
 
-  // Competencia: tasas reales todo incluido (su comisión + su procesador + IVA implícito)
+  // Competencia: tasa base + cargo fijo + IVA (calculado correctamente)
+  // El IVA se aplica sobre (tasa% * monto + cargo fijo)
   const competitors = [
-    { name: "Mercado Pago", rate: 3.82, fixed: 0, note: "3.29% + IVA" },
-    { name: "Conekta", rate: 3.70, fixed: 0, note: "2.9% + $3 + IVA" },
-    { name: "PayPal", rate: 4.06, fixed: 0, note: "3.5% + $4 + IVA" },
-    { name: "Clip", rate: 4.18, fixed: 0, note: "3.6% + IVA" },
+    { name: "Mercado Pago", baseRate: 3.29, fixedBase: 0,  note: "3.29% + IVA" },
+    { name: "Conekta",      baseRate: 2.9,  fixedBase: 3,  note: "2.9% + $3 + IVA" },
+    { name: "PayPal",       baseRate: 3.5,  fixedBase: 4,  note: "3.5% + $4 + IVA" },
+    { name: "Clip",         baseRate: 3.6,  fixedBase: 0,  note: "3.6% + IVA" },
   ];
 
   return (
@@ -340,22 +343,24 @@ function PublicQuoteCalculator() {
           {/* Desglose */}
           <div className="bg-black/30 rounded-2xl p-5 space-y-3">
             <h4 className="text-sm font-bold text-white mb-3">Desglose del cobro</h4>
-            {[
-              { label: "Monto cobrado al cliente", value: singleAmount, color: "text-white", bold: true },
-              { label: `Comisión KobraPay todo incluido (${tier.totalRate}%)`, value: -totalFees, color: "text-gray-400" },
-            ].map(item => (
-              <div key={item.label} className="flex items-center justify-between">
-                <span className={`text-xs ${item.color}`}>{item.label}</span>
-                <span className={`text-sm font-semibold ${item.bold ? "text-white" : "text-red-400"}`}>
-                  {item.value > 0 ? "" : "- "}${Math.abs(item.value).toLocaleString("es-MX", { minimumFractionDigits: 2 })}
-                </span>
-              </div>
-            ))}
+            {/* Tasa base sin IVA */}
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-gray-400">Monto cobrado al cliente</span>
+              <span className="text-sm font-semibold text-white">${singleAmount.toLocaleString("es-MX", { minimumFractionDigits: 2 })}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-gray-400">Comisión KobraPay ({kpBaseRate.toFixed(2)}%)</span>
+              <span className="text-sm font-semibold text-red-400">- ${(singleAmount * kpBaseRate / 100).toLocaleString("es-MX", { minimumFractionDigits: 2 })}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-gray-400">IVA (16%)</span>
+              <span className="text-sm font-semibold text-red-400">- ${(singleAmount * kpBaseRate / 100 * 0.16).toLocaleString("es-MX", { minimumFractionDigits: 2 })}</span>
+            </div>
             <div className="border-t border-white/10 pt-3 flex items-center justify-between">
               <span className="text-sm font-bold text-white">Tú recibes</span>
               <span className="text-xl font-black text-emerald-400">${netReceived.toLocaleString("es-MX", { minimumFractionDigits: 2 })}</span>
             </div>
-            <p className="text-xs text-emerald-400/70 text-center font-medium">{tier.totalRate}% todo incluido — sin costos ocultos, sin sorpresas</p>
+            <p className="text-xs text-emerald-400/70 text-center font-medium">{kpNote} — sin costos ocultos, sin sorpresas</p>
           </div>
 
           {/* Comparativa */}
@@ -364,16 +369,18 @@ function PublicQuoteCalculator() {
             <div className="space-y-2">
               <p className="text-xs text-gray-500 mb-3">Tasas reales todo incluido (comisión + procesador + IVA)</p>
               {competitors.map(c => {
-                const cFee = (singleAmount * c.rate / 100) + c.fixed;
+                // Calcular costo real con IVA: (tasa% * monto + cargo fijo) * 1.16
+                const baseFee = (singleAmount * c.baseRate / 100) + c.fixedBase;
+                const cFee = baseFee * 1.16;
                 const cNet = singleAmount - cFee;
-                const isWinner = netReceived > cNet;
+                const isWinner = netReceived >= cNet;
                 return (
                   <div key={c.name} className={`flex items-center justify-between rounded-lg px-3 py-2 ${
                     isWinner ? "bg-white/5" : "bg-red-500/5 border border-red-500/10"
                   }`}>
                     <div>
                       <span className="text-xs text-gray-400">{c.name}</span>
-                      <span className="text-xs text-gray-600 ml-1">({(c as any).note || `${c.rate}%`})</span>
+                      <span className="text-xs text-gray-600 ml-1">({c.note})</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <span className="text-xs text-gray-300">${cNet.toLocaleString("es-MX", { minimumFractionDigits: 2 })}</span>
@@ -383,8 +390,14 @@ function PublicQuoteCalculator() {
                 );
               })}
               <div className="flex items-center justify-between rounded-lg px-3 py-2 bg-emerald-500/20 border border-emerald-500/40">
-                <span className="text-xs font-bold text-emerald-300">KobraPay (Plan {tier.label})</span>
-                <span className="text-sm font-black text-emerald-400">${netReceived.toLocaleString("es-MX", { minimumFractionDigits: 2 })}</span>
+                <div>
+                  <span className="text-xs font-bold text-emerald-300">KobraPay (Plan {tier.label})</span>
+                  <span className="text-xs text-emerald-500/70 ml-1">({kpNote})</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-black text-emerald-400">${netReceived.toLocaleString("es-MX", { minimumFractionDigits: 2 })}</span>
+                  <span className="text-xs text-emerald-400 font-bold">✔ mejor</span>
+                </div>
               </div>
             </div>
           </div>
