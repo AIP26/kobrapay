@@ -36,8 +36,8 @@ const STATUS_LABELS: Record<InvStatus, { label: string; color: string }> = {
 
 
 
-function formatMXN(amount: number) {
-  return new Intl.NumberFormat("es-MX", { style: "currency", currency: "MXN" }).format(amount);
+function formatCurrency(amount: number, currency = "MXN") {
+  return new Intl.NumberFormat("es-MX", { style: "currency", currency }).format(amount);
 }
 
 function formatDate(dateStr: string) {
@@ -208,7 +208,7 @@ export default function Invoices() {
           {[
             { label: "Total facturas", value: invoices.length, color: "text-gray-700" },
             { label: "Pagadas", value: invoices.filter(i => i.status === "paid").length, color: "text-green-600" },
-            { label: "Monto total", value: formatMXN(invoices.reduce((s, i) => s + (i.total || 0), 0)), color: "text-emerald-600" },
+            { label: "Monto total", value: formatCurrency(invoices.reduce((s, i) => s + (i.total || 0), 0)), color: "text-emerald-600" },
           ].map(({ label, value, color }) => (
             <Card key={label} className="border-0 shadow-sm">
               <CardContent className="p-4 text-center">
@@ -288,7 +288,7 @@ export default function Invoices() {
                               {cfg.label}
                             </span>
                           </td>
-                          <td className="px-4 py-4 text-sm font-bold text-gray-900 text-right">{formatMXN(inv.total / 100)}</td>
+                          <td className="px-4 py-4 text-sm font-bold text-gray-900 text-right">{formatCurrency(inv.total / 100, inv.currency)}</td>
                           <td className="px-4 py-4">
                             <div className="flex items-center justify-center gap-1">
                               {inv.status === "draft" && (
@@ -397,13 +397,13 @@ export default function Invoices() {
             {subtotalNum > 0 && (
               <div className="bg-gray-50 rounded-xl p-4 space-y-2">
                 <div className="flex justify-between text-sm text-gray-600">
-                  <span>Subtotal</span><span>{formatMXN(subtotalNum)}</span>
+                  <span>Subtotal</span><span>{formatCurrency(subtotalNum)}</span>
                 </div>
                 <div className="flex justify-between text-sm text-gray-600">
-                  <span>IVA (16%)</span><span>{formatMXN(ivaNum)}</span>
+                  <span>IVA (16%)</span><span>{formatCurrency(ivaNum)}</span>
                 </div>
                 <div className="flex justify-between text-base font-bold text-gray-900 border-t border-gray-200 pt-2">
-                  <span>Total</span><span className="text-emerald-600">{formatMXN(totalNum)}</span>
+                  <span>Total</span><span className="text-emerald-600">{formatCurrency(totalNum)}</span>
                 </div>
               </div>
             )}

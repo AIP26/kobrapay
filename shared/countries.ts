@@ -536,6 +536,328 @@ export const COUNTRIES: CountryConfig[] = [
     taxRate: 0.10,
   },
 
+  // ── Ecuador ─────────────────────────────────────────────────────────────────
+  {
+    code: "EC",
+    name: "Ecuador",
+    nameEn: "Ecuador",
+    flag: "🇪🇨",
+    currency: "USD",
+    currencySymbol: "$",
+    currencyName: "Dólares Americanos",
+    currencyNameEn: "US Dollars",
+    locale: "es-EC",
+    stripeCurrency: "usd",
+    stripeSupported: true,
+    legalFramework: {
+      title: "Validez Legal — Firma Electrónica (Ecuador)",
+      titleEn: "Legal Validity — Electronic Signature (Ecuador)",
+      laws: [
+        "Ley de Comercio Electrónico, Firmas Electrónicas y Mensajes de Datos (2002)",
+        "Decreto Ejecutivo 1356",
+        "Ley Orgánica de Protección de Datos Personales (2021)",
+      ],
+      lawsEn: [
+        "Law on Electronic Commerce, Electronic Signatures and Data Messages (2002)",
+        "Executive Decree 1356",
+        "Organic Law on Personal Data Protection (2021)",
+      ],
+      description:
+        "De conformidad con la Ley de Comercio Electrónico, Firmas Electrónicas y Mensajes de Datos, la firma electrónica en este contrato tiene plena validez jurídica en la República del Ecuador.",
+      descriptionEn:
+        "Pursuant to the Law on Electronic Commerce, Electronic Signatures and Data Messages, the electronic signature on this contract has full legal validity in the Republic of Ecuador.",
+    },
+    phonePrefix: "+593",
+    taxName: "IVA",
+    taxRate: 0.15,
+  },
+
+  // ── Bolivia ────────────────────────────────────────────────────────────────
+  {
+    code: "BO",
+    name: "Bolivia",
+    nameEn: "Bolivia",
+    flag: "🇧🇴",
+    currency: "BOB",
+    currencySymbol: "Bs.",
+    currencyName: "Bolivianos",
+    currencyNameEn: "Bolivian Bolivianos",
+    locale: "es-BO",
+    stripeCurrency: "bob",
+    stripeSupported: false,
+    legalFramework: {
+      title: "Validez Legal — Firma Electrónica (Bolivia)",
+      titleEn: "Legal Validity — Electronic Signature (Bolivia)",
+      laws: [
+        "Ley 164 de Telecomunicaciones y TIC (2011)",
+        "Decreto Supremo 1793 (Firma Digital)",
+        "Ley 1581 de Protección de Datos",
+      ],
+      lawsEn: [
+        "Law 164 on Telecommunications and ICT (2011)",
+        "Supreme Decree 1793 (Digital Signature)",
+        "Law 1581 on Data Protection",
+      ],
+      description:
+        "De conformidad con la Ley 164 de Telecomunicaciones y TIC y el Decreto Supremo 1793, la firma electrónica en este contrato tiene validez jurídica en el Estado Plurinacional de Bolivia.",
+      descriptionEn:
+        "Pursuant to Law 164 on Telecommunications and ICT and Supreme Decree 1793, the electronic signature on this contract has legal validity in the Plurinational State of Bolivia.",
+    },
+    phonePrefix: "+591",
+    taxName: "IVA",
+    taxRate: 0.13,
+  },
+
+  // ── Paraguay ───────────────────────────────────────────────────────────────
+  {
+    code: "PY",
+    name: "Paraguay",
+    nameEn: "Paraguay",
+    flag: "🇵🇾",
+    currency: "PYG",
+    currencySymbol: "₲",
+    currencyName: "Guaraníes",
+    currencyNameEn: "Paraguayan Guaraní",
+    locale: "es-PY",
+    stripeCurrency: "pyg",
+    stripeSupported: false,
+    legalFramework: {
+      title: "Validez Legal — Firma Electrónica (Paraguay)",
+      titleEn: "Legal Validity — Electronic Signature (Paraguay)",
+      laws: [
+        "Ley 4017/2010 de Validez Jurídica de la Firma Electrónica",
+        "Ley 4610/2012 (modificatoria)",
+        "Ley 6534/2020 de Protección de Datos Personales",
+      ],
+      lawsEn: [
+        "Law 4017/2010 on Legal Validity of Electronic Signature",
+        "Law 4610/2012 (amendment)",
+        "Law 6534/2020 on Personal Data Protection",
+      ],
+      description:
+        "De conformidad con la Ley 4017/2010, la firma electrónica en este contrato tiene plena validez jurídica en la República del Paraguay.",
+      descriptionEn:
+        "Pursuant to Law 4017/2010, the electronic signature on this contract has full legal validity in the Republic of Paraguay.",
+    },
+    phonePrefix: "+595",
+    taxName: "IVA",
+    taxRate: 0.10,
+  },
+
+  // ── Uruguay ────────────────────────────────────────────────────────────────
+  {
+    code: "UY",
+    name: "Uruguay",
+    nameEn: "Uruguay",
+    flag: "🇺🇾",
+    currency: "UYU",
+    currencySymbol: "$U",
+    currencyName: "Pesos Uruguayos",
+    currencyNameEn: "Uruguayan Pesos",
+    locale: "es-UY",
+    stripeCurrency: "uyu",
+    stripeSupported: false,
+    legalFramework: {
+      title: "Validez Legal — Firma Electrónica (Uruguay)",
+      titleEn: "Legal Validity — Electronic Signature (Uruguay)",
+      laws: [
+        "Ley 18.600 de Documento Electrónico y Firma Electrónica (2009)",
+        "Decreto 436/011",
+        "Ley 18.331 de Protección de Datos Personales",
+      ],
+      lawsEn: [
+        "Law 18.600 on Electronic Document and Electronic Signature (2009)",
+        "Decree 436/011",
+        "Law 18.331 on Personal Data Protection",
+      ],
+      description:
+        "De conformidad con la Ley 18.600, la firma electrónica en este contrato tiene plena validez jurídica en la República Oriental del Uruguay.",
+      descriptionEn:
+        "Pursuant to Law 18.600, the electronic signature on this contract has full legal validity in the Oriental Republic of Uruguay.",
+    },
+    phonePrefix: "+598",
+    taxName: "IVA",
+    taxRate: 0.22,
+  },
+
+  // ── Venezuela ──────────────────────────────────────────────────────────────
+  {
+    code: "VE",
+    name: "Venezuela",
+    nameEn: "Venezuela",
+    flag: "🇻🇪",
+    currency: "USD",
+    currencySymbol: "$",
+    currencyName: "Dólares Americanos",
+    currencyNameEn: "US Dollars",
+    locale: "es-VE",
+    stripeCurrency: "usd",
+    stripeSupported: true,
+    legalFramework: {
+      title: "Validez Legal — Firma Electrónica (Venezuela)",
+      titleEn: "Legal Validity — Electronic Signature (Venezuela)",
+      laws: [
+        "Decreto-Ley 1204 sobre Mensajes de Datos y Firmas Electrónicas (2001)",
+        "Ley Especial contra los Delitos Informáticos (2001)",
+      ],
+      lawsEn: [
+        "Decree-Law 1204 on Data Messages and Electronic Signatures (2001)",
+        "Special Law against Computer Crimes (2001)",
+      ],
+      description:
+        "De conformidad con el Decreto-Ley 1204 sobre Mensajes de Datos y Firmas Electrónicas, la firma electrónica en este contrato tiene validez jurídica en la República Bolivariana de Venezuela.",
+      descriptionEn:
+        "Pursuant to Decree-Law 1204 on Data Messages and Electronic Signatures, the electronic signature on this contract has legal validity in the Bolivarian Republic of Venezuela.",
+    },
+    phonePrefix: "+58",
+    taxName: "IVA",
+    taxRate: 0.16,
+  },
+
+  // ── Costa Rica ─────────────────────────────────────────────────────────────
+  {
+    code: "CR",
+    name: "Costa Rica",
+    nameEn: "Costa Rica",
+    flag: "🇨🇷",
+    currency: "CRC",
+    currencySymbol: "₡",
+    currencyName: "Colones Costarricenses",
+    currencyNameEn: "Costa Rican Colones",
+    locale: "es-CR",
+    stripeCurrency: "crc",
+    stripeSupported: false,
+    legalFramework: {
+      title: "Validez Legal — Firma Electrónica (Costa Rica)",
+      titleEn: "Legal Validity — Electronic Signature (Costa Rica)",
+      laws: [
+        "Ley 8454 de Certificados, Firmas Digitales y Documentos Electrónicos (2005)",
+        "Decreto Ejecutivo 33018-MICIT",
+        "Ley 8968 de Protección de la Persona frente al Tratamiento de sus Datos Personales",
+      ],
+      lawsEn: [
+        "Law 8454 on Certificates, Digital Signatures and Electronic Documents (2005)",
+        "Executive Decree 33018-MICIT",
+        "Law 8968 on Protection of Personal Data",
+      ],
+      description:
+        "De conformidad con la Ley 8454, la firma electrónica en este contrato tiene plena validez jurídica en la República de Costa Rica.",
+      descriptionEn:
+        "Pursuant to Law 8454, the electronic signature on this contract has full legal validity in the Republic of Costa Rica.",
+    },
+    phonePrefix: "+506",
+    taxName: "IVA",
+    taxRate: 0.13,
+  },
+
+  // ── Panamá ─────────────────────────────────────────────────────────────────
+  {
+    code: "PA",
+    name: "Panamá",
+    nameEn: "Panama",
+    flag: "🇵🇦",
+    currency: "USD",
+    currencySymbol: "$",
+    currencyName: "Dólares Americanos",
+    currencyNameEn: "US Dollars",
+    locale: "es-PA",
+    stripeCurrency: "usd",
+    stripeSupported: true,
+    legalFramework: {
+      title: "Validez Legal — Firma Electrónica (Panamá)",
+      titleEn: "Legal Validity — Electronic Signature (Panama)",
+      laws: [
+        "Ley 51 de 2008 (Firma Electrónica)",
+        "Decreto Ejecutivo 684 de 2013",
+        "Ley 81 de 2019 de Protección de Datos Personales",
+      ],
+      lawsEn: [
+        "Law 51 of 2008 (Electronic Signature)",
+        "Executive Decree 684 of 2013",
+        "Law 81 of 2019 on Personal Data Protection",
+      ],
+      description:
+        "De conformidad con la Ley 51 de 2008, la firma electrónica en este contrato tiene plena validez jurídica en la República de Panamá.",
+      descriptionEn:
+        "Pursuant to Law 51 of 2008, the electronic signature on this contract has full legal validity in the Republic of Panama.",
+    },
+    phonePrefix: "+507",
+    taxName: "ITBMS",
+    taxRate: 0.07,
+  },
+
+  // ── República Dominicana ───────────────────────────────────────────────────
+  {
+    code: "DO",
+    name: "República Dominicana",
+    nameEn: "Dominican Republic",
+    flag: "🇩🇴",
+    currency: "DOP",
+    currencySymbol: "RD$",
+    currencyName: "Pesos Dominicanos",
+    currencyNameEn: "Dominican Pesos",
+    locale: "es-DO",
+    stripeCurrency: "dop",
+    stripeSupported: false,
+    legalFramework: {
+      title: "Validez Legal — Firma Electrónica (Rep. Dominicana)",
+      titleEn: "Legal Validity — Electronic Signature (Dominican Republic)",
+      laws: [
+        "Ley 126-02 de Comercio Electrónico, Documentos y Firmas Digitales",
+        "Decreto 335-03",
+        "Ley 172-13 de Protección de Datos de Carácter Personal",
+      ],
+      lawsEn: [
+        "Law 126-02 on Electronic Commerce, Documents and Digital Signatures",
+        "Decree 335-03",
+        "Law 172-13 on Personal Data Protection",
+      ],
+      description:
+        "De conformidad con la Ley 126-02, la firma electrónica en este contrato tiene plena validez jurídica en la República Dominicana.",
+      descriptionEn:
+        "Pursuant to Law 126-02, the electronic signature on this contract has full legal validity in the Dominican Republic.",
+    },
+    phonePrefix: "+1-809",
+    taxName: "ITBIS",
+    taxRate: 0.18,
+  },
+
+  // ── India ──────────────────────────────────────────────────────────────────
+  {
+    code: "IN",
+    name: "India",
+    nameEn: "India",
+    flag: "🇮🇳",
+    currency: "INR",
+    currencySymbol: "₹",
+    currencyName: "Rupias Indias",
+    currencyNameEn: "Indian Rupees",
+    locale: "en-IN",
+    stripeCurrency: "inr",
+    stripeSupported: true,
+    legalFramework: {
+      title: "Validez Legal — Firma Electrónica (India)",
+      titleEn: "Legal Validity — Electronic Signature (India)",
+      laws: [
+        "Information Technology Act 2000 (IT Act)",
+        "IT (Amendment) Act 2008",
+        "Digital Personal Data Protection Act 2023",
+      ],
+      lawsEn: [
+        "Information Technology Act 2000 (IT Act)",
+        "IT (Amendment) Act 2008",
+        "Digital Personal Data Protection Act 2023",
+      ],
+      description:
+        "De conformidad con la Information Technology Act 2000 y sus enmiendas, la firma electrónica en este contrato tiene plena validez jurídica en la República de la India.",
+      descriptionEn:
+        "Pursuant to the Information Technology Act 2000 and its amendments, the electronic signature on this contract has full legal validity in the Republic of India.",
+    },
+    phonePrefix: "+91",
+    taxName: "GST",
+    taxRate: 0.18,
+  },
+
   // ── Australia ──────────────────────────────────────────────────────────────
   {
     code: "AU",
@@ -598,7 +920,7 @@ export const STRIPE_SUPPORTED_CURRENCIES = COUNTRIES
   }, [] as { currency: string; symbol: string; name: string; nameEn: string; stripeCurrency: string }[]);
 
 // Países prioritarios para el selector (los más usados primero)
-export const PRIORITY_COUNTRIES = ["MX", "US", "CA", "ES", "CO", "AR", "BR", "CL", "PE", "GB", "DE", "FR", "AU", "JP"];
+export const PRIORITY_COUNTRIES = ["MX", "US", "CA", "ES", "CO", "AR", "BR", "CL", "PE", "EC", "VE", "PA", "CR", "DO", "PY", "UY", "BO", "GB", "DE", "FR", "IN", "AU", "JP", "CN"];
 
 export function getSortedCountries(): CountryConfig[] {
   const priority = PRIORITY_COUNTRIES;

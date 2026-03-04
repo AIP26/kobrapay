@@ -1,5 +1,5 @@
 import DashboardLayout from "@/components/DashboardLayout";
-import { getSortedCountries, getCountryByCode } from "@shared/countries";
+import { getSortedCountries, getCountryByCode, COUNTRIES } from "@shared/countries";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -189,6 +189,19 @@ export default function CreateLink() {
     setTipSuggestions([10, 15, 20]);
     setForm({ clientName: "", clientEmail: "", clientPhone: "", amount: "", description: "", currency: "MXN", countryCode: "MX", expiresInDays: "0", requireOtp: false, requireSelfie: false, requireSignature: false, requireIdUpload: false, usdExchangeRate: "", chargebackProtectionText: "" });
   };
+
+  // Inicializar el país y moneda desde la configuración del negocio
+  const settingsCountry = (settings as any)?.businessCountry || "MX";
+  const settingsCountryConfig = COUNTRIES.find((c) => c.code === settingsCountry);
+
+  // Si settings carga y el form todavía tiene el valor por defecto, actualizar con el país del negocio
+  if (settings && form.countryCode === "MX" && settingsCountry !== "MX") {
+    setForm((prev) => ({
+      ...prev,
+      countryCode: settingsCountry,
+      currency: settingsCountryConfig?.currency || "MXN",
+    }));
+  }
 
   const commissionRate = parseFloat(String(settings?.commissionRate || 0));
   const previewAmount = parseFloat(form.amount) || 0;

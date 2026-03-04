@@ -47,8 +47,8 @@ const STATUS_CONFIG: Record<CBStatus, { label: string; color: string; icon: Reac
   closed: { label: "Cerrada", color: "bg-gray-100 text-gray-700", icon: <FileText className="w-3 h-3" /> },
 };
 
-function fmt(n: number) {
-  return new Intl.NumberFormat("es-MX", { style: "currency", currency: "MXN" }).format(n);
+function fmt(n: number, currency = "MXN") {
+  return new Intl.NumberFormat("es-MX", { style: "currency", currency }).format(n);
 }
 
 type Chargeback = {
@@ -209,7 +209,7 @@ export default function Chargebacks() {
                             {new Date(cb.createdAt).toLocaleDateString("es-MX")}
                           </td>
                           <td className="py-3 px-3 font-semibold text-gray-900">
-                            {fmt(cb.amount)}
+                            {fmt(cb.amount, cb.currency)}
                           </td>
                           <td className="py-3 px-3 text-gray-600 max-w-[180px] truncate">
                             {cb.reasonEs || cb.reason || "Sin motivo"}
@@ -263,7 +263,7 @@ export default function Chargebacks() {
           </DialogHeader>
           <div className="space-y-4 py-2">
             <div>
-              <Label>Monto en disputa (MXN)</Label>
+              <Label>Monto en disputa</Label>
               <Input
                 type="number"
                 placeholder="Ej: 1500"

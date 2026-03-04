@@ -213,7 +213,31 @@ const FAQ_ITEMS = [
   },
   {
     q: "¿Puedo integrar KobraPay en mi sitio web o tienda en línea?",
-    a: "Sí. Tenemos un widget embebible que puedes agregar a cualquier sitio web con unas pocas líneas de código HTML. También puedes usar nuestro Punto de Venta digital para cobrar en mostrador desde tu celular o tablet, sin hardware adicional."
+    a: "Sí. Tenemos un widget embebible que puedes agregar a cualquier sitio web con unas pocas líneas de código HTML. También puedes usar nuestro Punto de Venta digital para cobrar en mostrador desde tu celular o tablet, sin hardware adicional.",
+  },
+  {
+    q: "¿Puedo cobrar en dólares, euros u otras monedas internacionales?",
+    a: "Sí. KobraPay soporta más de 20 monedas: MXN, USD, CAD, EUR, GBP, BRL, COP, CLP, PEN, ARS, AUD, JPY, INR y más. Al crear un enlace de pago seleccionas el país y la moneda. Ideal para freelancers, exportadores y negocios de e-commerce que venden a clientes en el extranjero.",
+  },
+  {
+    q: "¿Puedo cobrarle a clientes en Estados Unidos, Canadá o Europa?",
+    a: "Sí. Gracias a nuestra integración con Stripe, puedes generar enlaces de pago en USD, CAD o EUR y compartirlos con clientes en cualquier parte del mundo. El cliente paga con su tarjeta local y el dinero llega a tu cuenta. No necesitas abrir una cuenta bancaria en el extranjero.",
+  },
+  {
+    q: "¿Qué pasa si un cliente disputa un pago (contracargo)?",
+    a: "KobraPay te protege con evidencias automáticas: selfie del pagador, firma digital del contrato, verificación OTP y registro de IP y dispositivo. Toda esta información se envía automáticamente a Stripe como evidencia en caso de disputa, aumentando significativamente tus probabilidades de ganar el contracargo.",
+  },
+  {
+    q: "¿En qué países está disponible KobraPay?",
+    a: "KobraPay está disponible para negocios en México, Estados Unidos, Canadá, España, Colombia, Brasil, Chile, Perú, Ecuador, Venezuela, Panamá, Costa Rica, República Dominicana, Uruguay, Paraguay, Bolivia, Reino Unido, Alemania, Francia, India, Australia y Japón. Estamos en constante expansión.",
+  },
+  {
+    q: "¿Los contratos digitales tienen validez legal en otros países?",
+    a: "Sí. Los contratos firmados en KobraPay tienen validez legal en todos los países donde operamos. En México están respaldados por el Código de Comercio Arts. 89-114 y la LFEA. En EE.UU. por el ESIGN Act. En la UE por el Reglamento eIDAS 910/2014. Cada contrato incluye automáticamente la legislación aplicable del país correspondiente.",
+  },
+  {
+    q: "¿Puedo usar KobraPay para cobros recurrentes o suscripciones?",
+    a: "Sí. Puedes configurar cobros recurrentes semanales, quincenales o mensuales. El sistema cobra automáticamente a la tarjeta del cliente en la fecha programada y te notifica cuando el pago se procesa. Ideal para gimnasios, escuelas, servicios de suscripción y cualquier negocio con clientes fijos.",
   },
 ];
 
@@ -245,6 +269,15 @@ function PublicQuoteCalculator() {
   const [monthlyVolume, setMonthlyVolume] = useState(50000);
   const [singleAmount, setSingleAmount] = useState(5000);
   const [simCountry, setSimCountry] = useState("MX");
+  const { data: vendorSettings } = trpc.vendor.getSettings.useQuery(undefined, {
+    retry: false,
+    // Solo cargar si el usuario está autenticado (no bloquea si no lo está)
+    onSuccess: (s: any) => {
+      if (s?.businessCountry && s.businessCountry !== "MX") {
+        setSimCountry(s.businessCountry);
+      }
+    },
+  } as any);
   const [showEmailForm, setShowEmailForm] = useState(false);
   const [prospectName, setProspectName] = useState("");
   const [prospectEmail, setProspectEmail] = useState("");

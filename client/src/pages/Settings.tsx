@@ -10,10 +10,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import {
   Building2, Percent, DollarSign, Shield, Camera,
-  MessageSquare, Save, Info, CreditCard, ExternalLink, Receipt,
+  MessageSquare, Save, Info, CreditCard, ExternalLink, Receipt, Globe,
 } from "lucide-react";
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
+import { COUNTRIES } from "../../../shared/countries";
 
 interface SettingsForm {
   businessName: string;
@@ -26,6 +27,7 @@ interface SettingsForm {
   otpEnabled: boolean;
   selfieEnabled: boolean;
   chargebackText: string;
+  businessCountry: string;
 }
 
 export default function Settings() {
@@ -39,6 +41,7 @@ export default function Settings() {
       businessName: "", businessEmail: "", businessPhone: "",
       commissionRate: 7, ivaRate: 16, ivaEnabled: true, usdExchangeRate: 0,
       otpEnabled: false, selfieEnabled: false, chargebackText: "",
+      businessCountry: "MX",
     },
   });
 
@@ -48,6 +51,27 @@ export default function Settings() {
   const ivaRate = watch("ivaRate");
   const usdRate = watch("usdExchangeRate");
   const commRate = watch("commissionRate");
+  const businessCountry = watch("businessCountry");
+
+  // Obtener configuración del país seleccionado
+  const selectedCountry = COUNTRIES.find((c) => c.code === businessCountry) || COUNTRIES[0];
+
+  // Cuando cambia el país, ajustar automáticamente la tasa de impuesto
+  const handleCountryChange = (code: string) => {
+    const country = COUNTRIES.find((c) => c.code === code);
+    if (country) {
+      setValue("businessCountry", code, { shouldDirty: true });
+      // Ajustar tasa de impuesto al valor por defecto del país
+      const defaultTaxRate = Math.round(country.taxRate * 100);
+      setValue("ivaRate", defaultTaxRate, { shouldDirty: true });
+      // Si el país tiene impuesto 0, deshabilitar IVA
+      if (defaultTaxRate === 0) {
+        setValue("ivaEnabled", false, { shouldDirty: true });
+      } else {
+        setValue("ivaEnabled", true, { shouldDirty: true });
+      }
+    }
+  };
 
   useEffect(() => {
     if (settings) {
@@ -62,6 +86,7 @@ export default function Settings() {
         otpEnabled: settings.otpEnabled ?? false,
         selfieEnabled: settings.selfieEnabled ?? false,
         chargebackText: settings.chargebackText || "",
+        businessCountry: (settings as any).businessCountry || "MX",
       });
     }
   }, [settings, reset]);
@@ -85,6 +110,66 @@ export default function Settings() {
       </DashboardLayout>
     );
   }
+
+  // Determinar el nombre del impuesto según el país
+  const taxLabel = selectedCountry.taxName || "IVA";
+  const currencyLabel = selectedCountry.currency;
+
+  // Tasas de impuesto sugeridas por país
+  const suggestedTaxRates: Record<string, { rate: number; label: string }[]> = {
+    MX: [
+      { rate: 0, label: "0% (Exento/RESICO)" },
+      { rate: 8, label: "8% (Zona fronteriza)" },
+      { rate: 16, label: "16% (Estándar)" },
+    ],
+    US: [
+      { rate: 0, label: "0% (No aplica)" },
+      { rate: 8, label: "8% (Promedio estatal)" },
+      { rate: 10, label: "10% (California)" },
+    ],
+    CA: [
+      { rate: 5, label: "5% (GST federal)" },
+      { rate: 13, label: "13% (HST Ontario)" },
+      { rate: 15, label: "15% (HST Marítimas)" },
+    ],
+    ES: [
+      { rate: 0, label: "0% (Exento)" },
+      { rate: 10, label: "10% (Reducido)" },
+      { rate: 21, label: "21% (General)" },
+    ],
+    GB: [
+      { rate: 0, label: "0% (Zero-rated)" },
+      { rate: 5, label: "5% (Reducido)" },
+      { rate: 20, label: "20% (Estándar)" },
+    ],
+    CO: [
+      { rate: 0, label: "0% (Exento)" },
+      { rate: 5, label: "5% (Reducido)" },
+      { rate: 19, label: "19% (General)" },
+    ],
+    BR: [
+      { rate: 0, label: "0% (Exento)" },
+      { rate: 12, label: "12% (Reducido)" },
+      { rate: 17, label: "17% (ICMS Estándar)" },
+    ],
+    AU: [
+      { rate: 0, label: "0% (Exento)" },
+      { rate: 10, label: "10% (GST Estándar)" },
+    ],
+    NZ: [
+      { rate: 0, label: "0% (Zero-rated)" },
+      { rate: 15, label: "15% (GST Estándar)" },
+    ],
+    SG: [
+      { rate: 0, label: "0% (Exento)" },
+      { rate: 9, label: "9% (GST Estándar)" },
+    ],
+  };
+
+  const taxRateOptions = suggestedTaxRates[businessCountry] || [
+    { rate: 0, label: "0% (Exento)" },
+    { rate: Math.round(selectedCountry.taxRate * 100), label: `${Math.round(selectedCountry.taxRate * 100)}% (Estándar)` },
+  ];
 
   return (
     <DashboardLayout title="Configuracion">
@@ -128,6 +213,70 @@ export default function Settings() {
           </CardContent>
         </Card>
 
+        {/* País de Operación */}
+        <Card className="border-cyan-200 shadow-sm">
+          <CardHeader className="pb-3 border-b border-cyan-100">
+            <CardTitle className="text-base font-semibold text-gray-800 flex items-center gap-2">
+              <Globe className="w-4 h-4 text-cyan-500" />
+              País de Operación
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-5 space-y-4">
+            <div className="space-y-1.5">
+              <Label className="text-sm text-gray-700">País donde opera tu negocio</Label>
+              <select
+                value={businessCountry}
+                onChange={(e) => handleCountryChange(e.target.value)}
+                className="w-full h-10 px-3 rounded-md border border-gray-200 bg-white text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-cyan-400"
+              >
+                {COUNTRIES.map((c) => (
+                  <option key={c.code} value={c.code}>
+                    {c.flag} {c.name} — {c.currency}
+                  </option>
+                ))}
+              </select>
+              <p className="text-xs text-gray-400">
+                Determina la moneda predeterminada, el impuesto aplicable y el marco legal de los contratos.
+              </p>
+            </div>
+
+            {/* Resumen del país seleccionado */}
+            <div className="p-3 bg-cyan-50 rounded-xl border border-cyan-200">
+              <div className="flex items-center gap-2 mb-2">
+                <span className="text-xl">{selectedCountry.flag}</span>
+                <div>
+                  <p className="text-sm font-semibold text-cyan-800">{selectedCountry.name}</p>
+                  <p className="text-xs text-cyan-600">{selectedCountry.legalFramework.title}</p>
+                </div>
+              </div>
+              <div className="grid grid-cols-3 gap-2 text-xs">
+                <div className="bg-white rounded-lg p-2 border border-cyan-100 text-center">
+                  <p className="text-gray-400">Moneda</p>
+                  <p className="font-semibold text-gray-800">{selectedCountry.currency}</p>
+                  <p className="text-gray-500">{selectedCountry.currencySymbol}</p>
+                </div>
+                <div className="bg-white rounded-lg p-2 border border-cyan-100 text-center">
+                  <p className="text-gray-400">Impuesto</p>
+                  <p className="font-semibold text-gray-800">{selectedCountry.taxName}</p>
+                  <p className="text-gray-500">{Math.round(selectedCountry.taxRate * 100)}%</p>
+                </div>
+                <div className="bg-white rounded-lg p-2 border border-cyan-100 text-center">
+                  <p className="text-gray-400">Prefijo tel.</p>
+                  <p className="font-semibold text-gray-800">{selectedCountry.phonePrefix}</p>
+                  <p className="text-gray-500">Código</p>
+                </div>
+              </div>
+              <div className="mt-2 pt-2 border-t border-cyan-100">
+                <p className="text-xs text-cyan-700 font-medium">Marco legal:</p>
+                <p className="text-xs text-cyan-600 mt-0.5">
+                  {selectedCountry.legalFramework.laws.slice(0, 2).join(" · ")}
+                  {selectedCountry.legalFramework.laws.length > 2 && " · ..."}
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Comisiones */}
         <Card className="border-gray-200 shadow-sm">
           <CardHeader className="pb-3 border-b border-gray-100">
@@ -158,48 +307,60 @@ export default function Settings() {
               </p>
             </div>
             <div className="p-3 bg-gray-50 rounded-xl border border-gray-200">
-              <p className="text-xs text-gray-500 mb-2 font-medium">Ejemplo para un cobro de $1,000 MXN:</p>
+              <p className="text-xs text-gray-500 mb-2 font-medium">
+                Ejemplo para un cobro de 1,000 {currencyLabel}:
+              </p>
               <div className="space-y-1">
                 <div className="flex justify-between text-xs">
                   <span className="text-gray-600">Monto bruto:</span>
-                  <span className="font-medium text-gray-800">$1,000.00 MXN</span>
+                  <span className="font-medium text-gray-800">
+                    {selectedCountry.currencySymbol}1,000.00 {currencyLabel}
+                  </span>
                 </div>
                 <div className="flex justify-between text-xs">
                   <span className="text-gray-600">Comisión KobraPay ({commRate || 7}%):</span>
-                  <span className="font-medium text-cyan-600">${((commRate || 7) * 10).toFixed(2)} MXN</span>
+                  <span className="font-medium text-cyan-600">
+                    {selectedCountry.currencySymbol}{((commRate || 7) * 10).toFixed(2)} {currencyLabel}
+                  </span>
                 </div>
                 {ivaEnabled && (ivaRate || 0) > 0 && (
                   <div className="flex justify-between text-xs">
-                    <span className="text-gray-600">IVA sobre comisión ({ivaRate}%):</span>
-                    <span className="font-medium text-orange-500">${((commRate || 7) * 10 * (ivaRate || 16) / 100).toFixed(2)} MXN</span>
+                    <span className="text-gray-600">{taxLabel} sobre comisión ({ivaRate}%):</span>
+                    <span className="font-medium text-orange-500">
+                      {selectedCountry.currencySymbol}{((commRate || 7) * 10 * (ivaRate || 16) / 100).toFixed(2)} {currencyLabel}
+                    </span>
                   </div>
                 )}
                 <div className="flex justify-between text-xs">
                   <span className="text-gray-600">Total cobrado por KobraPay:</span>
-                  <span className="font-semibold text-cyan-700">${((commRate || 7) * 10 * (1 + (ivaEnabled ? (ivaRate || 16) / 100 : 0))).toFixed(2)} MXN</span>
+                  <span className="font-semibold text-cyan-700">
+                    {selectedCountry.currencySymbol}{((commRate || 7) * 10 * (1 + (ivaEnabled ? (ivaRate || 16) / 100 : 0))).toFixed(2)} {currencyLabel}
+                  </span>
                 </div>
                 <div className="flex justify-between text-xs border-t border-gray-200 pt-1 mt-1">
                   <span className="text-gray-600">Neto para el comercio:</span>
-                  <span className="font-bold text-green-600">${(1000 - (commRate || 7) * 10 * (1 + (ivaEnabled ? (ivaRate || 16) / 100 : 0))).toFixed(2)} MXN</span>
+                  <span className="font-bold text-green-600">
+                    {selectedCountry.currencySymbol}{(1000 - (commRate || 7) * 10 * (1 + (ivaEnabled ? (ivaRate || 16) / 100 : 0))).toFixed(2)} {currencyLabel}
+                  </span>
                 </div>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        {/* Configuración Fiscal - IVA */}
+        {/* Configuración Fiscal */}
         <Card className="border-orange-200 shadow-sm">
           <CardHeader className="pb-3 border-b border-orange-100">
             <CardTitle className="text-base font-semibold text-gray-800 flex items-center gap-2">
               <Receipt className="w-4 h-4 text-orange-500" />
-              Configuración Fiscal — IVA
+              Configuración Fiscal — {taxLabel}
             </CardTitle>
           </CardHeader>
           <CardContent className="p-5 space-y-4">
             <div className="flex items-center justify-between p-3 bg-orange-50 rounded-xl border border-orange-200">
               <div>
-                <p className="text-sm font-medium text-gray-800">Cobrar IVA sobre la comisión</p>
-                <p className="text-xs text-gray-500 mt-0.5">Activa para sumar IVA a tu comisión de plataforma</p>
+                <p className="text-sm font-medium text-gray-800">Cobrar {taxLabel} sobre la comisión</p>
+                <p className="text-xs text-gray-500 mt-0.5">Activa para sumar {taxLabel} a tu comisión de plataforma</p>
               </div>
               <Switch
                 checked={ivaEnabled}
@@ -208,21 +369,21 @@ export default function Settings() {
             </div>
             {ivaEnabled && (
               <div className="space-y-1.5">
-                <Label className="text-sm text-gray-700">Tasa de IVA (%)</Label>
+                <Label className="text-sm text-gray-700">Tasa de {taxLabel} (%)</Label>
                 <div className="relative">
                   <Input
                     type="number"
                     step="0.01"
                     min="0"
                     max="100"
-                    placeholder="16"
+                    placeholder={String(Math.round(selectedCountry.taxRate * 100))}
                     {...register("ivaRate", { valueAsNumber: true })}
                     className="pr-8 text-lg font-semibold"
                   />
                   <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">%</span>
                 </div>
-                <div className="grid grid-cols-3 gap-2 mt-2">
-                  {[0, 8, 16].map((rate) => (
+                <div className={`grid gap-2 mt-2`} style={{ gridTemplateColumns: `repeat(${taxRateOptions.length}, 1fr)` }}>
+                  {taxRateOptions.map(({ rate, label }) => (
                     <button
                       key={rate}
                       type="button"
@@ -233,13 +394,13 @@ export default function Settings() {
                           : "bg-white text-gray-600 border-gray-200 hover:border-orange-300"
                       }`}
                     >
-                      {rate === 0 ? "0% (Exento)" : rate === 8 ? "8% (Frontera)" : "16% (Estándar)"}
+                      {label}
                     </button>
                   ))}
                 </div>
                 <p className="text-xs text-orange-600 bg-orange-50 p-2 rounded-lg border border-orange-100 mt-2">
-                  💡 <strong>Estrategia fiscal:</strong> Zona fronteriza = 8% · Exento/RESICO = 0% · Estándar = 16%.
-                  Escribe el porcentaje exacto que necesites.
+                  💡 <strong>Tasa configurada para {selectedCountry.name}:</strong> {taxLabel} {Math.round(selectedCountry.taxRate * 100)}% estándar.
+                  Ajusta según tu régimen fiscal específico.
                 </p>
               </div>
             )}
@@ -251,28 +412,28 @@ export default function Settings() {
           <CardHeader className="pb-3 border-b border-gray-100">
             <CardTitle className="text-base font-semibold text-gray-800 flex items-center gap-2">
               <DollarSign className="w-4 h-4 text-cyan-500" />
-              Tipo de Cambio USD / MXN
+              Tipo de Cambio USD / {currencyLabel}
             </CardTitle>
           </CardHeader>
           <CardContent className="p-5 space-y-4">
             <div className="space-y-1.5">
-              <Label className="text-sm text-gray-700">Tipo de cambio (USD a MXN)</Label>
+              <Label className="text-sm text-gray-700">Tipo de cambio (USD a {currencyLabel})</Label>
               <div className="relative">
                 <Input
                   type="number"
                   step="0.01"
                   min="0"
-                  placeholder="18.50"
+                  placeholder={businessCountry === "MX" ? "18.50" : "1.00"}
                   {...register("usdExchangeRate", { valueAsNumber: true })}
-                  className="pr-20"
+                  className="pr-24"
                 />
                 <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">
-                  MXN/USD
+                  {currencyLabel}/USD
                 </span>
               </div>
               <p className="text-xs text-gray-400">
-                Si pones 0, no se mostrara equivalente en USD. Con un valor (ej: 18.50), los
-                clientes de USA veran cuanto pagaran en dolares.
+                Si pones 0, no se mostrara equivalente en USD. Con un valor (ej: {businessCountry === "MX" ? "18.50" : "1.25"}), los
+                clientes veran cuanto pagaran en dolares.
               </p>
             </div>
             {usdRate > 0 && (
@@ -281,9 +442,9 @@ export default function Settings() {
                   Vista previa en pagina de pago:
                 </p>
                 <p className="text-xs text-blue-600">
-                  Un cobro de <strong>$1,000 MXN</strong> mostrara como{" "}
+                  Un cobro de <strong>1,000 {currencyLabel}</strong> mostrara como{" "}
                   <strong>aprox. ${(1000 / usdRate).toFixed(2)} USD</strong> al tipo de cambio
-                  de ${usdRate} MXN/USD
+                  de {usdRate} {currencyLabel}/USD
                 </p>
               </div>
             )}

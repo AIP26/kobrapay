@@ -71,6 +71,8 @@ export const vendorSettings = mysqlTable("vendor_settings", {
   selfieEnabled: boolean("selfieEnabled").default(false).notNull(),
   // Texto de protección contra contracargos (aparece en página de pago)
   chargebackText: text("chargebackText"),
+  // País de operación del negocio (ISO 3166-1 alpha-2: MX, US, CA, ES, CO, etc.)
+  businessCountry: varchar("businessCountry", { length: 4 }).default("MX").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });

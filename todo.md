@@ -902,3 +902,9 @@
 - [x] Comparativa de competencia solo visible cuando país = México
 - [x] Texto del plan "MXN/mes" usar moneda del país seleccionado
 - [x] Ocultar comparativa o mostrar mensaje genérico para países fuera de México
+
+## Fase siguiente - Expansión y mejoras
+- [ ] Agregar más países al catálogo: Chile, Perú, Ecuador, Bolivia, Venezuela, Paraguay, Uruguay, Costa Rica, Panamá, República Dominicana, China, Japón, Australia, India
+- [ ] Email de comprobante automático al pagador al completar el pago
+- [ ] Sección FAQ en la landing page
+- [ ] Auditoría final del panel: revisar módulos restantes

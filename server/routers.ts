@@ -174,6 +174,7 @@ export const appRouter = router({
           otpEnabled: z.boolean().optional(),
           selfieEnabled: z.boolean().optional(),
           chargebackText: z.string().max(1000).optional().or(z.literal("")),
+          businessCountry: z.string().length(2).optional(),
         })
       )
       .mutation(async ({ ctx, input }) => {
@@ -190,6 +191,7 @@ export const appRouter = router({
           otpEnabled: input.otpEnabled,
           selfieEnabled: input.selfieEnabled,
           chargebackText: input.chargebackText || null,
+          businessCountry: input.businessCountry || "MX",
         });
       }),
 
