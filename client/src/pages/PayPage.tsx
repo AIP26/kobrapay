@@ -87,6 +87,10 @@ function PaymentForm({ token }: { token: string }) {
   const [idFileName, setIdFileName] = useState("");
   const [clientSecret, setClientSecret] = useState("");
   const [paymentIntentId, setPaymentIntentId] = useState("");
+  const [allowedPaymentMethods, setAllowedPaymentMethods] = useState<string[]>(['card']);
+  const [selectedPayMethod, setSelectedPayMethod] = useState<'card' | 'oxxo' | 'spei'>('card');
+  const [oxxoVoucherUrl, setOxxoVoucherUrl] = useState<string | null>(null);
+  const [speiReference, setSpeiReference] = useState<string | null>(null);
   const [processing, setProcessing] = useState(false);
   const [successData, setSuccessData] = useState<{ amount: string; currency: string; description: string; email: string; businessName: string }>({
     amount: "", currency: "MXN", description: "", email: "", businessName: "",
@@ -463,6 +467,13 @@ function PaymentForm({ token }: { token: string }) {
       });
       setClientSecret(result.clientSecret);
       setPaymentIntentId(result.paymentIntentId);
+      if (result.allowedPaymentMethods) {
+        setAllowedPaymentMethods(result.allowedPaymentMethods);
+        // Si OXXO o SPEI están disponibles pero no tarjeta, seleccionar el primero disponible
+        if (!result.allowedPaymentMethods.includes('card') && result.allowedPaymentMethods.length > 0) {
+          setSelectedPayMethod(result.allowedPaymentMethods[0] as 'card' | 'oxxo' | 'spei');
+        }
+      }
     } catch (e: unknown) {
       toast.error((e as { message?: string })?.message || "Error al preparar el pago");
     } finally {
@@ -1016,15 +1027,55 @@ function PaymentForm({ token }: { token: string }) {
                       </Button>
                     </div>
                   ) : (
+                    <>
                     <form onSubmit={handlePayment}>
                       {/* Selector de método */}
-                      <div className="flex gap-2 mb-5">
-                        <button type="button" className="flex-1 border-2 border-blue-500 bg-blue-50 rounded-lg py-2 px-3 text-sm font-semibold text-blue-700 flex items-center justify-center gap-2">
-                          <CreditCard className="w-4 h-4" /> Tarjeta de débito o crédito
-                        </button>
-                      </div>
+                      {allowedPaymentMethods.length > 1 && (
+                        <div className="flex gap-2 mb-5">
+                          {allowedPaymentMethods.includes('card') && (
+                            <button type="button"
+                              onClick={() => setSelectedPayMethod('card')}
+                              className={`flex-1 border-2 rounded-lg py-2 px-3 text-sm font-semibold flex items-center justify-center gap-1.5 transition-all ${
+                                selectedPayMethod === 'card' ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-gray-200 bg-white text-gray-600 hover:border-blue-300'
+                              }`}>
+                              <CreditCard className="w-4 h-4" /> Tarjeta
+                            </button>
+                          )}
+                          {allowedPaymentMethods.includes('oxxo') && (
+                            <button type="button"
+                              onClick={() => setSelectedPayMethod('oxxo')}
+                              className={`flex-1 border-2 rounded-lg py-2 px-3 text-sm font-semibold flex items-center justify-center gap-1.5 transition-all ${
+                                selectedPayMethod === 'oxxo' ? 'border-orange-500 bg-orange-50 text-orange-700' : 'border-gray-200 bg-white text-gray-600 hover:border-orange-300'
+                              }`}>
+                              🏪 OXXO
+                            </button>
+                          )}
+                          {allowedPaymentMethods.includes('spei') && (
+                            <button type="button"
+                              onClick={() => setSelectedPayMethod('spei')}
+                              className={`flex-1 border-2 rounded-lg py-2 px-3 text-sm font-semibold flex items-center justify-center gap-1.5 transition-all ${
+                                selectedPayMethod === 'spei' ? 'border-green-500 bg-green-50 text-green-700' : 'border-gray-200 bg-white text-gray-600 hover:border-green-300'
+                              }`}>
+                              🏦 SPEI
+                            </button>
+                          )}
+                        </div>
+                      )}
+                      {allowedPaymentMethods.length === 1 && (
+                        <div className="flex gap-2 mb-5">
+                          <div className={`flex-1 border-2 rounded-lg py-2 px-3 text-sm font-semibold flex items-center justify-center gap-1.5 ${
+                            allowedPaymentMethods[0] === 'card' ? 'border-blue-500 bg-blue-50 text-blue-700' :
+                            allowedPaymentMethods[0] === 'oxxo' ? 'border-orange-500 bg-orange-50 text-orange-700' :
+                            'border-green-500 bg-green-50 text-green-700'
+                          }`}>
+                            {allowedPaymentMethods[0] === 'card' && <><CreditCard className="w-4 h-4" /> Tarjeta de débito o crédito</>}
+                            {allowedPaymentMethods[0] === 'oxxo' && <>🏪 Pago en OXXO</>}
+                            {allowedPaymentMethods[0] === 'spei' && <>🏦 Transferencia SPEI</>}
+                          </div>
+                        </div>
+                      )}
 
-                      <div className="space-y-4 mb-5">
+                      {selectedPayMethod === 'card' && <div className="space-y-4 mb-5">
                         <div>
                           <Label className="text-gray-600 text-sm mb-1.5 block">Número de tarjeta</Label>
                           <div className="border border-gray-200 rounded-xl px-4 py-3.5 bg-white focus-within:border-blue-400 focus-within:ring-2 focus-within:ring-blue-100 transition-all">
@@ -1045,16 +1096,15 @@ function PaymentForm({ token }: { token: string }) {
                             </div>
                           </div>
                         </div>
-                      </div>
-
-                      {chargebackText && (
+                      </div>}
+                      {selectedPayMethod === 'card' && chargebackText && (
                         <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 mb-4 flex gap-2">
                           <Shield className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
                           <p className="text-amber-800 text-xs">{chargebackText}</p>
                         </div>
                       )}
 
-                      {paymentError && (
+                      {selectedPayMethod === 'card' && paymentError && (
                         <div className="border-l-4 border-red-500 bg-red-50 rounded-r-xl p-4 mb-4">
                           <div className="flex items-start gap-3">
                             <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
@@ -1066,13 +1116,106 @@ function PaymentForm({ token }: { token: string }) {
                           </div>
                         </div>
                       )}
-                      <Button type="submit"
-                        className="w-full bg-gray-900 hover:bg-gray-800 text-white py-4 rounded-xl font-bold text-base"
-                        disabled={processing || !stripe}>
-                        {processing ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : <Lock className="w-5 h-5 mr-2" />}
-                        {lang === "en" ? "PAY NOW" : "REALIZAR PAGO"}
-                      </Button>
+                      {selectedPayMethod === 'card' && (
+                        <Button type="submit"
+                          className="w-full bg-gray-900 hover:bg-gray-800 text-white py-4 rounded-xl font-bold text-base"
+                          disabled={processing || !stripe}>
+                          {processing ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : <Lock className="w-5 h-5 mr-2" />}
+                          {lang === "en" ? "PAY NOW" : "REALIZAR PAGO"}
+                        </Button>
+                      )}
                     </form>
+                    {/* Formulario OXXO */}
+                    {clientSecret && selectedPayMethod === 'oxxo' && (
+                      <div className="mt-2">
+                        <div className="bg-orange-50 border border-orange-200 rounded-xl p-4 mb-4">
+                          <p className="text-sm font-semibold text-orange-800 mb-1">🏪 Pago en OXXO</p>
+                          <p className="text-xs text-orange-700">Al hacer clic se generará un voucher de pago. Llévalo a cualquier tienda OXXO y paga en efectivo. El voucher expira en 2 días.</p>
+                        </div>
+                        {oxxoVoucherUrl ? (
+                          <div className="text-center">
+                            <p className="text-sm text-green-700 font-semibold mb-3">✅ Voucher generado</p>
+                            <a href={oxxoVoucherUrl} target="_blank" rel="noopener noreferrer"
+                              className="inline-block bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 px-6 rounded-xl text-sm">
+                              Ver voucher OXXO
+                            </a>
+                          </div>
+                        ) : (
+                          <Button
+                            className="w-full bg-orange-500 hover:bg-orange-600 text-white py-4 rounded-xl font-bold text-base"
+                            disabled={processing || !stripe}
+                            onClick={async () => {
+                              if (!stripe) return;
+                              setProcessing(true);
+                              try {
+                                const { error, paymentIntent } = await stripe.confirmOxxoPayment(clientSecret, {
+                                  payment_method: { billing_details: { name: `${customer.firstName} ${customer.lastName}`.trim(), email: customer.email } },
+                                });
+                                if (error) { toast.error(error.message || "Error al generar voucher OXXO"); return; }
+                                const oxxoAction = paymentIntent?.next_action as unknown as Record<string, unknown> | undefined;
+                                const oxxoDetails = oxxoAction?.oxxo_display_details as Record<string, unknown> | undefined;
+                                const voucherUrl = (oxxoDetails?.hosted_voucher_url as string | undefined) || (oxxoAction?.hosted_voucher_url as string | undefined);
+                                if (voucherUrl) {
+                                  setOxxoVoucherUrl(voucherUrl);
+                                  window.open(voucherUrl, '_blank');
+                                  toast.success("¡Voucher OXXO generado! Paga en cualquier tienda OXXO.");
+                                }
+                              } catch { toast.error("Error al generar voucher OXXO"); }
+                              finally { setProcessing(false); }
+                            }}>
+                            {processing ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : <>🏪</>}
+                            Generar voucher OXXO
+                          </Button>
+                        )}
+                      </div>
+                    )}
+                    {/* Formulario SPEI */}
+                    {clientSecret && selectedPayMethod === 'spei' && (
+                      <div className="mt-2">
+                        <div className="bg-green-50 border border-green-200 rounded-xl p-4 mb-4">
+                          <p className="text-sm font-semibold text-green-800 mb-1">🏦 Transferencia SPEI</p>
+                          <p className="text-xs text-green-700">Al hacer clic se generará una CLABE de pago. Realiza la transferencia desde tu banco. La confirmación es automática.</p>
+                        </div>
+                        {speiReference ? (
+                          <div className="bg-white border border-green-300 rounded-xl p-4">
+                            <p className="text-sm text-green-700 font-semibold mb-2">✅ CLABE generada</p>
+                            <p className="text-xs text-gray-500 mb-1">Transfiere exactamente <strong>{formatMXN(amount)} MXN</strong> a:</p>
+                            <div className="bg-gray-50 rounded-lg p-3 font-mono text-sm text-gray-800 break-all select-all">{speiReference}</div>
+                            <p className="text-xs text-gray-400 mt-2">Banco: STP (Sistema de Transferencias y Pagos)</p>
+                          </div>
+                        ) : (
+                          <Button
+                            className="w-full bg-green-600 hover:bg-green-700 text-white py-4 rounded-xl font-bold text-base"
+                            disabled={processing || !stripe}
+                            onClick={async () => {
+                              if (!stripe) return;
+                              setProcessing(true);
+                              try {
+                                const { error, paymentIntent } = await stripe.confirmCustomerBalancePayment(clientSecret, {
+                                  payment_method: { customer_balance: {} },
+                                  payment_method_options: { customer_balance: { funding_type: 'bank_transfer', bank_transfer: { type: 'mx_bank_transfer' } } },
+                                }, { handleActions: false });
+                                if (error) { toast.error(error.message || "Error al generar referencia SPEI"); return; }
+                                const nextAction = paymentIntent?.next_action as unknown as Record<string, unknown> | undefined;
+                                const bankInstructions = nextAction?.display_bank_transfer_instructions as Record<string, unknown> | undefined;
+                                const financialAddresses = bankInstructions?.financial_addresses as Array<Record<string, unknown>> | undefined;
+                                const clabe = (financialAddresses?.[0]?.spei as Record<string, unknown> | undefined)?.clabe as string | undefined;
+                                if (clabe) {
+                                  setSpeiReference(clabe);
+                                  toast.success("¡CLABE generada! Realiza la transferencia desde tu banco.");
+                                } else {
+                                  toast.info("Referencia generada. Revisa tu correo para los datos de transferencia.");
+                                }
+                              } catch { toast.error("Error al generar referencia SPEI"); }
+                              finally { setProcessing(false); }
+                            }}>
+                            {processing ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : <>🏦</>}
+                            Obtener CLABE para transferencia
+                          </Button>
+                        )}
+                      </div>
+                    )}
+                    </>
                   )}
                 </div>
               )}
