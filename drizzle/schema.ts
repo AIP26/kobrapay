@@ -149,6 +149,9 @@ export const paymentLinks = mysqlTable("payment_links", {
   chargebackProtectionText: text("chargebackProtectionText"),
   // MSI: meses sin intereses habilitados (JSON array: [3,6,9,12])
   msiOptions: text("msiOptions"),
+  // Métodos de pago permitidos en este enlace (JSON array: ["card","oxxo","spei"])
+  // null = todos los habilitados por la plataforma
+  allowedPaymentMethods: text("allowedPaymentMethods"),
   // Propina: habilitar propina en el pago
   tipEnabled: boolean("tipEnabled").default(false).notNull(),
   // Opciones de propina sugeridas (JSON array de porcentajes: [10,15,20] o null para solo monto manual)

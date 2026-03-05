@@ -871,6 +871,8 @@ export const appRouter = router({
           usdExchangeRate: z.number().min(0).default(0),
           // MSI: array de meses habilitados (ej: [3, 6, 9, 12])
           msiOptions: z.array(z.number().int().min(3).max(24)).optional(),
+          // Métodos de pago permitidos: ["card","oxxo","spei"] — null/vacío = todos los de la plataforma
+          allowedPaymentMethods: z.array(z.enum(["card","oxxo","spei"])).optional(),
           // Propina
           tipEnabled: z.boolean().default(false),
           tipSuggestions: z.array(z.number().int().min(1).max(100)).optional(),
@@ -912,6 +914,7 @@ export const appRouter = router({
           commissionRate: String(commissionRate),
           commissionAmount: String(commissionAmount),
            msiOptions: input.msiOptions && input.msiOptions.length > 0 ? JSON.stringify(input.msiOptions) : null,
+          allowedPaymentMethods: input.allowedPaymentMethods && input.allowedPaymentMethods.length > 0 ? JSON.stringify(input.allowedPaymentMethods) : null,
           tipEnabled: input.tipEnabled,
           tipSuggestions: input.tipSuggestions && input.tipSuggestions.length > 0 ? JSON.stringify(input.tipSuggestions) : null,
           countryCode: input.countryCode || "MX",
@@ -1347,20 +1350,37 @@ export const appRouter = router({
         const kobraPayFeeRate = 0.015;
         const kobraPayFeeCents = Math.round(amountCents * kobraPayFeeRate);
 
+        // Determinar métodos de pago permitidos según configuración del enlace
+        // Si el enlace tiene allowedPaymentMethods, usarlos; si no, usar todos los disponibles
+        const linkAllowedMethods: string[] = link.allowedPaymentMethods
+          ? JSON.parse(link.allowedPaymentMethods as string)
+          : ['card', 'oxxo', 'spei'];
+
+        // Mapear a tipos de Stripe (spei = customer_balance con mx_bank_transfer)
+        const stripeMethodTypes: string[] = [];
+        if (linkAllowedMethods.includes('card')) stripeMethodTypes.push('card');
+        if (currency === 'mxn' && linkAllowedMethods.includes('oxxo')) stripeMethodTypes.push('oxxo');
+        if (currency === 'mxn' && linkAllowedMethods.includes('spei')) stripeMethodTypes.push('customer_balance');
+        // Siempre incluir al menos tarjeta como fallback
+        if (stripeMethodTypes.length === 0) stripeMethodTypes.push('card');
+
+        // Construir payment_method_options solo para los métodos activos
+        const pmOptions: Record<string, unknown> = {};
+        if (stripeMethodTypes.includes('oxxo')) {
+          pmOptions.oxxo = { expires_after_days: 2 };
+        }
+        if (stripeMethodTypes.includes('customer_balance')) {
+          pmOptions.customer_balance = {
+            funding_type: 'bank_transfer',
+            bank_transfer: { type: 'mx_bank_transfer' },
+          };
+        }
+
         const paymentIntentParams: Parameters<typeof stripe.paymentIntents.create>[0] = {
           amount: amountCents,
           currency,
-          // Habilitar métodos de pago: tarjeta, OXXO y SPEI para MXN
-          payment_method_types: currency === 'mxn'
-            ? ['card', 'oxxo', 'customer_balance']
-            : ['card'],
-          payment_method_options: currency === 'mxn' ? {
-            oxxo: { expires_after_days: 2 },
-            customer_balance: {
-              funding_type: 'bank_transfer',
-              bank_transfer: { type: 'mx_bank_transfer' },
-            },
-          } : undefined,
+          payment_method_types: stripeMethodTypes as any,
+          payment_method_options: Object.keys(pmOptions).length > 0 ? pmOptions as any : undefined,
           metadata: {
             paymentLinkId: String(link.id),
             paymentLinkToken: link.token,
@@ -1552,10 +1572,54 @@ export const appRouter = router({
           };
         }
 
-        return { success: false, status: paymentIntent.status };
+         return { success: false, status: paymentIntent.status };
+      }),
+
+    // ─── Reembolso de una transacción ───────────────────────────────────────
+    refund: protectedProcedure
+      .input(z.object({
+        transactionId: z.number(),
+        reason: z.enum(["duplicate", "fraudulent", "requested_by_customer"]).default("requested_by_customer"),
+        amountCents: z.number().int().positive().optional(), // null = reembolso total
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const db = await import('./db').then(m => m.getDb());
+        if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
+        const { transactions } = await import('../drizzle/schema');
+        const { eq, and } = await import('drizzle-orm');
+        // Obtener la transacción y verificar que pertenece al usuario
+        const txRows = await db.select().from(transactions)
+          .where(and(eq(transactions.id, input.transactionId), eq(transactions.userId, ctx.user.id)))
+          .limit(1);
+        if (!txRows.length) throw new TRPCError({ code: 'NOT_FOUND', message: 'Transacción no encontrada' });
+        const tx = txRows[0];
+        if (tx.status !== 'succeeded') {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: 'Solo se pueden reembolsar transacciones exitosas' });
+        }
+        if (!tx.stripePaymentIntentId) {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: 'Esta transacción no tiene referencia de pago de Stripe' });
+        }
+        // Crear el reembolso en Stripe
+        const refundParams: Stripe.RefundCreateParams = {
+          payment_intent: tx.stripePaymentIntentId,
+          reason: input.reason,
+        };
+        if (input.amountCents) refundParams.amount = input.amountCents;
+        const refund = await stripe.refunds.create(refundParams);
+        // Actualizar estado de la transacción a reembolsado
+        await db.update(transactions)
+          .set({ status: 'refunded', updatedAt: new Date() })
+          .where(eq(transactions.id, tx.id));
+        // Notificar al dueño
+        try {
+          await notifyOwner({
+            title: `↩️ Reembolso procesado: $${tx.amount} ${tx.currency}`,
+            content: `Se reembolsó $${tx.amount} ${tx.currency} a ${tx.payerName || 'cliente'} (${tx.payerEmail || ''}). Motivo: ${input.reason}. Stripe refund ID: ${refund.id}`,
+          });
+        } catch (_) {}
+        return { success: true, refundId: refund.id, status: refund.status };
       }),
   }),
-
   // ─── Colaboradores (staff) ────────────────────────────────────────────────
   staff: router({
     list: protectedProcedure.query(async ({ ctx }) => {

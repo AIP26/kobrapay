@@ -213,6 +213,16 @@ function TransactionDetailModal({
   const operationNumber = generateOperationNumber(tx);
   const description = tx.metadata ? (() => { try { return JSON.parse(tx.metadata).description || ""; } catch { return ""; } })() : "";
   const [isGeneratingEvidencePdf, setIsGeneratingEvidencePdf] = useState(false);
+  const [showRefundConfirm, setShowRefundConfirm] = useState(false);
+  const [refundReason, setRefundReason] = useState<"requested_by_customer" | "duplicate" | "fraudulent">("requested_by_customer");
+  const refundMutation = trpc.payments.refund.useMutation({
+    onSuccess: () => {
+      toast.success("Reembolso procesado. El cliente recibirá el dinero en 5-10 días hábiles.");
+      setShowRefundConfirm(false);
+      onClose();
+    },
+    onError: (err) => toast.error(err.message || "Error al procesar el reembolso"),
+  });
 
   const handleDownloadEvidencePdf = async () => {
     if (!tx.selfieUrl && !tx.signatureUrl && !tx.idDocumentUrl) {
@@ -627,6 +637,50 @@ function TransactionDetailModal({
                 <MessageCircle className="w-4 h-4 mr-2" />
                 Enviar comprobante por WhatsApp
               </Button>
+            )}
+            {/* Botón de Reembolso */}
+            {tx.status === "succeeded" && tx.stripePaymentIntentId && (
+              <div className="border-t border-gray-100 pt-3">
+                {!showRefundConfirm ? (
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowRefundConfirm(true)}
+                    className="w-full border-red-200 text-red-600 hover:bg-red-50"
+                  >
+                    <RefreshCw className="w-4 h-4 mr-2" />
+                    Emitir Reembolso
+                  </Button>
+                ) : (
+                  <div className="bg-red-50 border border-red-200 rounded-xl p-4 space-y-3">
+                    <p className="text-sm font-semibold text-red-700">Confirmar reembolso de {formatCurrency(tx.amount, tx.currency)}</p>
+                    <p className="text-xs text-red-600">Esta acción es irreversible. El cliente recibirá el dinero en 5-10 días hábiles.</p>
+                    <div className="space-y-1">
+                      <p className="text-xs font-medium text-gray-600">Motivo:</p>
+                      <select
+                        value={refundReason}
+                        onChange={(e) => setRefundReason(e.target.value as typeof refundReason)}
+                        className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white"
+                      >
+                        <option value="requested_by_customer">Solicitado por el cliente</option>
+                        <option value="duplicate">Pago duplicado</option>
+                        <option value="fraudulent">Transacción fraudulenta</option>
+                      </select>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button variant="outline" onClick={() => setShowRefundConfirm(false)} className="flex-1 text-sm">
+                        Cancelar
+                      </Button>
+                      <Button
+                        onClick={() => refundMutation.mutate({ transactionId: tx.id, reason: refundReason })}
+                        disabled={refundMutation.isPending}
+                        className="flex-1 bg-red-600 hover:bg-red-700 text-white text-sm"
+                      >
+                        {refundMutation.isPending ? "Procesando..." : "Confirmar Reembolso"}
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </div>
             )}
             <div className="flex gap-3">
               <Button variant="outline" onClick={onClose} className="flex-1">

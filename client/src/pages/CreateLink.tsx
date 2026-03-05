@@ -64,6 +64,8 @@ export default function CreateLink() {
     chargebackProtectionText: "",
   });
   const [msiOptions, setMsiOptions] = useState<number[]>([]);
+  // Métodos de pago: por defecto todos activos
+  const [allowedPaymentMethods, setAllowedPaymentMethods] = useState<("card" | "oxxo" | "spei")[]>(["card", "oxxo", "spei"]);
   const [tipEnabled, setTipEnabled] = useState(false);
   const [tipSuggestions, setTipSuggestions] = useState<number[]>([10, 15, 20]);
   const [showAdvanced, setShowAdvanced] = useState(false);
@@ -130,6 +132,7 @@ export default function CreateLink() {
       usdExchangeRate: exchangeRate,
       chargebackProtectionText: form.chargebackProtectionText.trim() || undefined,
       msiOptions: msiOptions.length > 0 ? msiOptions : undefined,
+      allowedPaymentMethods: allowedPaymentMethods.length > 0 ? allowedPaymentMethods : undefined,
       tipEnabled,
       tipSuggestions: tipEnabled && tipSuggestions.length > 0 ? tipSuggestions : undefined,
     });
@@ -185,6 +188,7 @@ export default function CreateLink() {
     setCreatedLink(null);
     setCopied(false);
     setMsiOptions([]);
+    setAllowedPaymentMethods(["card", "oxxo", "spei"]);
     setTipEnabled(false);
     setTipSuggestions([10, 15, 20]);
     setForm({ clientName: "", clientEmail: "", clientPhone: "", amount: "", description: "", currency: "MXN", countryCode: "MX", expiresInDays: "0", requireOtp: false, requireSelfie: false, requireSignature: false, requireIdUpload: false, usdExchangeRate: "", chargebackProtectionText: "" });
@@ -598,6 +602,44 @@ export default function CreateLink() {
                       <p className="text-xs text-gray-400">
                         Si el cliente paga con tarjeta USD, se mostrará el equivalente en dólares en la página de pago.
                       </p>
+                    </div>
+
+                    {/* Métodos de pago permitidos */}
+                    <div className="space-y-2">
+                      <Label className="text-gray-700 font-medium flex items-center gap-1.5">
+                        <CreditCard className="w-3.5 h-3.5 text-gray-400" />
+                        Métodos de pago aceptados
+                      </Label>
+                      <p className="text-xs text-gray-400">Elige qué formas de pago puede usar tu cliente en este enlace. Solo aplica para cobros en MXN.</p>
+                      <div className="flex flex-wrap gap-2">
+                        {([
+                          { key: "card" as const, label: "Tarjeta", icon: "💳" },
+                          { key: "oxxo" as const, label: "OXXO", icon: "🏪" },
+                          { key: "spei" as const, label: "SPEI / Transferencia", icon: "🏦" },
+                        ]).map(({ key, label, icon }) => (
+                          <button
+                            key={key}
+                            type="button"
+                            onClick={() => setAllowedPaymentMethods(prev =>
+                              prev.includes(key)
+                                ? prev.length > 1 ? prev.filter(m => m !== key) : prev // al menos uno activo
+                                : [...prev, key]
+                            )}
+                            className={`px-3 py-1.5 rounded-lg text-sm font-medium border transition-all flex items-center gap-1.5 ${
+                              allowedPaymentMethods.includes(key)
+                                ? "bg-cyan-500 text-white border-cyan-500"
+                                : "bg-white text-gray-400 border-gray-200 line-through opacity-60 hover:opacity-80"
+                            }`}
+                          >
+                            <span>{icon}</span> {label}
+                          </button>
+                        ))}
+                      </div>
+                      {allowedPaymentMethods.length < 3 && (
+                        <p className="text-xs text-amber-600">
+                          Solo se mostrarán: {allowedPaymentMethods.map(m => m === "card" ? "Tarjeta" : m === "oxxo" ? "OXXO" : "SPEI").join(", ")}
+                        </p>
+                      )}
                     </div>
 
                     {/* MSI - Meses Sin Intereses */}
