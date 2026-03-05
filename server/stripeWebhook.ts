@@ -115,7 +115,7 @@ export function registerStripeWebhook(app: express.Application) {
                     type: "payment_received",
                     title: `💰 Pago recibido: $${link.amount} ${link.currency}`,
                     message: `${pi.metadata?.payerName || "Cliente"} pagó $${link.amount} ${link.currency} por "${link.description || "enlace de pago"}".`,
-                    actionUrl: "/dashboard/ventas",
+                    actionUrl: "/dashboard/sales",
                   });
                 } catch (_) {}
                 // Enviar comprobante de pago al pagador

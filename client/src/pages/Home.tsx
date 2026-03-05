@@ -563,9 +563,14 @@ export default function Home() {
                   <Link href="/dashboard">Ir al Panel <ArrowRight className="w-4 h-4 ml-1" /></Link>
                 </Button>
               ) : (
-                <Button asChild className="bg-emerald-500 hover:bg-emerald-400 text-white">
-                  <a href={getLoginUrl("/dashboard")}>Iniciar Sesión</a>
-                </Button>
+                <>
+                  <Button asChild variant="ghost" className="text-gray-300 hover:text-white hover:bg-white/10 text-sm">
+                    <Link href="/login">Iniciar sesión</Link>
+                  </Button>
+                  <Button asChild className="bg-emerald-500 hover:bg-emerald-400 text-white text-sm">
+                    <Link href="/register">Crear cuenta</Link>
+                  </Button>
+                </>
               )
             )}
           </div>

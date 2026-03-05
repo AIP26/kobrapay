@@ -37,6 +37,10 @@ import PendingApproval from "./pages/PendingApproval";
 import MyProfile from "./pages/MyProfile";
 import Legal from "./pages/Legal";
 import Colaboradores from "./pages/Colaboradores";
+import LoginEmail from "./pages/LoginEmail";
+import RegisterEmail from "./pages/RegisterEmail";
+import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
 import HR from "./pages/HR";
 import Checador from "./pages/Checador";
 import Nomina from "./pages/Nomina";
@@ -150,6 +154,11 @@ function Router() {
       <Route path="/complete-profile" component={CompleteProfile} />
       <Route path="/dashboard/profile" component={MyProfile} />
       <Route path="/pending">{() => <PendingApproval status="pending" />}</Route>
+      <Route path="/dashboard/colaboradores" component={Colaboradores} />
+      <Route path="/login" component={LoginEmail} />
+      <Route path="/register" component={RegisterEmail} />
+      <Route path="/forgot-password" component={ForgotPassword} />
+      <Route path="/reset-password" component={ResetPassword} />
       <Route path="/legal" component={Legal} />
       <Route path="/terminos" component={Legal} />
       <Route path="/privacidad" component={Legal} />

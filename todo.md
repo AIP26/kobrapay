@@ -922,3 +922,53 @@
 ## Manuales en plataforma - Mar 4, 2026
 - [ ] Subir PDFs de manuales a CDN
 - [ ] Agregar botones de descarga en sección Ayuda según rol del usuario
+
+## Sesión Mar 5, 2026 - Seguridad, Login Propio, Eliminar Datos
+
+### Seguridad Crítica (completado)
+- [x] Validación de ownership en confirmPayment: verificar que paymentIntentId pertenece al linkToken
+- [x] linkToken guardado en metadata del paymentIntent para validación cruzada
+- [x] Eliminar OTP del log del servidor (no exponer código en texto plano)
+- [x] Monto máximo $999,999 MXN en createLink para prevenir fraude
+- [x] Validación de tamaño máximo en imageBase64 (5MB) para prevenir DoS
+- [x] paymentRateLimit aplicado a /api/stripe/webhook y /api/trpc/payments.*
+- [x] authRateLimit aplicado a /api/trpc/auth.loginEmail y /api/trpc/auth.register
+- [x] Body size limit reducido de 50MB a 10MB
+- [x] Token de nanoid aumentado de 12 a 21 caracteres (mayor entropía)
+- [x] getFraudAlerts en securityRouter: detecta transacciones sospechosas automáticamente
+
+### Login Propio (completado)
+- [x] Campos en schema users: passwordHash, loginMethod, emailVerified, emailVerifyToken, passwordResetToken, passwordResetExpires
+- [x] Migración SQL aplicada
+- [x] Endpoint auth.register (email + contraseña, hash bcrypt, anti-enumeración)
+- [x] Endpoint auth.loginEmail (bcrypt compare, JWT sesión compatible con SDK Manus)
+- [x] Endpoint auth.forgotPassword (token 32 bytes, expira 1h, email con Resend)
+- [x] Endpoint auth.resetPassword (invalida token después de usar)
+- [x] Endpoint auth.verifyEmail (token de verificación)
+- [x] Página /login con diseño KobraPay + opción OAuth
+- [x] Página /register con diseño KobraPay
+- [x] Página /forgot-password con diseño KobraPay
+- [x] Página /reset-password con diseño KobraPay
+- [x] Botones "Iniciar sesión" y "Crear cuenta" en header del Home
+
+### Eliminar Datos con PIN (completado)
+- [x] Campo deletePin en vendor_settings (hash bcrypt, 4 dígitos)
+- [x] Endpoint vendor.setDeletePin (crear/cambiar PIN)
+- [x] Endpoint vendor.verifyDeletePin (verificar PIN sin revelar hash)
+- [x] Endpoint transactions.deleteTransaction (con verificación de PIN y ownership)
+- [x] Endpoint transactions.deleteAllTransactions (con PIN, solo superadmin)
+- [x] Endpoint customers.deleteCustomer (con PIN)
+- [x] Endpoint customers.deleteAllCustomers (con PIN, solo superadmin)
+- [x] Botón eliminar en Mis Ventas con modal de confirmación + PIN
+- [x] Botón eliminar en Pagadores con modal de confirmación + PIN
+- [x] Sección de PIN en Settings con crear/cambiar PIN de 4 dígitos
+
+### Eliminar Documentos (completado)
+- [x] Endpoint profile.deleteDocument (elimina de S3 y limpia campo en DB)
+- [x] Botón "Eliminar" en sección Documentos de MyProfile con AlertDialog de confirmación
+
+### Correcciones de Bugs (completado)
+- [x] Bug 404: notificación de pago redirigía a /dashboard/ventas → corregido a /dashboard/sales
+- [x] actionUrl de contratos corregida a /dashboard/contracts
+- [x] Rutas faltantes en App.tsx: /login, /register, /forgot-password, /reset-password
+- [x] TypeScript: 0 errores

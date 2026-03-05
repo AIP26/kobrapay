@@ -163,4 +163,67 @@ export const securityRouter = router({
   checkSuperAdmin: protectedProcedure.query(({ ctx }) => {
     return { isSuperAdmin: isSuperAdmin(ctx.user.openId, ctx.user.role) };
   }),
+
+  /**
+   * Analiza transacciones recientes y detecta patrones de fraude/riesgo
+   */
+  getFraudAlerts: protectedProcedure.query(async ({ ctx }) => {
+    const db = await getDb();
+    if (!db) return { alerts: [], riskScore: 0, riskLevel: 'low' as const, analyzedTransactions: 0, generatedAt: new Date() };
+
+    const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+    const recentTxs = await db.select()
+      .from(transactions)
+      .innerJoin(paymentLinks, eq(transactions.paymentLinkId, paymentLinks.id))
+      .where(and(eq(paymentLinks.userId, ctx.user.id), gte(transactions.createdAt, since)))
+      .orderBy(desc(transactions.createdAt))
+      .limit(100);
+
+    const alerts: Array<{ type: string; severity: 'high' | 'medium' | 'low'; message: string; count?: number }> = [];
+    let riskScore = 0;
+
+    // 1. Detectar múltiples intentos fallidos (posible carding)
+    const failedTxs = recentTxs.filter(r => r.transactions.status === 'failed');
+    if (failedTxs.length >= 5) {
+      alerts.push({ type: 'carding', severity: 'high', message: `${failedTxs.length} pagos fallidos en los últimos 7 días. Posible intento de carding.`, count: failedTxs.length });
+      riskScore += 40;
+    } else if (failedTxs.length >= 3) {
+      alerts.push({ type: 'failed_payments', severity: 'medium', message: `${failedTxs.length} pagos fallidos en los últimos 7 días.`, count: failedTxs.length });
+      riskScore += 20;
+    }
+
+    // 2. Detectar mismo email con múltiples pagos en 24h
+    const emailCounts: Record<string, number> = {};
+    const last24h = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    recentTxs.filter(r => r.transactions.createdAt >= last24h && r.transactions.status === 'succeeded').forEach(r => {
+      const email = r.transactions.payerEmail || 'unknown';
+      emailCounts[email] = (emailCounts[email] || 0) + 1;
+    });
+    const suspiciousEmails = Object.entries(emailCounts).filter(([, cnt]) => cnt >= 3);
+    if (suspiciousEmails.length > 0) {
+      alerts.push({ type: 'repeated_payer', severity: 'medium', message: `${suspiciousEmails.length} correo(s) realizaron 3+ pagos en 24h. Verifica duplicados.`, count: suspiciousEmails.length });
+      riskScore += 25;
+    }
+
+    // 3. Detectar montos inusualmente altos (outliers)
+    const succeededAmounts = recentTxs
+      .filter(r => r.transactions.status === 'succeeded')
+      .map(r => parseFloat(String(r.payment_links.amount)));
+    if (succeededAmounts.length >= 5) {
+      const avg = succeededAmounts.reduce((a, b) => a + b, 0) / succeededAmounts.length;
+      const outliers = succeededAmounts.filter(a => a > avg * 5);
+      if (outliers.length > 0) {
+        alerts.push({ type: 'high_amount', severity: 'low', message: `${outliers.length} transacción(es) con monto inusualmente alto (>5x promedio).`, count: outliers.length });
+        riskScore += 10;
+      }
+    }
+
+    return {
+      alerts,
+      riskScore: Math.min(riskScore, 100),
+      riskLevel: (riskScore >= 60 ? 'high' : riskScore >= 30 ? 'medium' : 'low') as 'high' | 'medium' | 'low',
+      analyzedTransactions: recentTxs.length,
+      generatedAt: new Date(),
+    };
+  }),
 });

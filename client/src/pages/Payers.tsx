@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { trpc } from "@/lib/trpc";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
   Users,
@@ -17,8 +18,13 @@ import {
   X,
   CheckCircle2,
   Hash,
+  Trash2,
+  Lock,
+  AlertTriangle,
 } from "lucide-react";
 import { useDebounce } from "@/hooks/useDebounce";
+import { useAuth } from "@/_core/hooks/useAuth";
+import { toast } from "sonner";
 
 function formatCurrency(amount: number | string) {
   return new Intl.NumberFormat("es-MX", { style: "currency", currency: "MXN" }).format(Number(amount));
@@ -166,11 +172,45 @@ function PayerDetail({ payer, onClose }: { payer: Payer; onClose: () => void }) 
 }
 
 export default function Payers() {
+  const { user } = useAuth();
+  const isSuperAdmin = (user as Record<string, unknown>)?.isSuperAdmin === true;
+
   const [search, setSearch] = useState("");
   const [selectedPayer, setSelectedPayer] = useState<Payer | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<Payer | null>(null);
+  const [deletePin, setDeletePin] = useState(["", "", "", ""]);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const pinRefs = [useRef<HTMLInputElement>(null), useRef<HTMLInputElement>(null), useRef<HTMLInputElement>(null), useRef<HTMLInputElement>(null)];
   const debouncedSearch = useDebounce(search, 400);
 
-  const { data: payers, isLoading } = trpc.customers.list.useQuery({ search: debouncedSearch });
+  const { data: payers, isLoading, refetch } = trpc.customers.list.useQuery({ search: debouncedSearch });
+  const { data: pinStatus } = trpc.vendor.hasDeletePin.useQuery(undefined, { enabled: isSuperAdmin });
+
+  const deleteMutation = trpc.customers.delete.useMutation({
+    onSuccess: () => {
+      toast.success("Pagador eliminado correctamente");
+      setDeleteTarget(null);
+      setDeletePin(["", "", "", ""]);
+      refetch();
+    },
+    onError: (err) => {
+      toast.error(err.message || "Error al eliminar");
+      setDeletePin(["", "", "", ""]);
+      pinRefs[0].current?.focus();
+    },
+  });
+
+  const handleDeleteConfirm = async () => {
+    if (!deleteTarget) return;
+    const pin = deletePin.join("");
+    if (pin.length !== 4) { toast.error("Ingresa los 4 dígitos del PIN"); return; }
+    setIsDeleting(true);
+    try {
+      await deleteMutation.mutateAsync({ email: deleteTarget.email, pin });
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   const totalPaid = (payers || []).reduce((sum, p) => sum + Number(p.totalPaid || 0), 0);
   const totalTx = (payers || []).reduce((sum, p) => sum + (p.totalTransactions || 0), 0);
@@ -333,6 +373,16 @@ export default function Payers() {
                       </div>
 
                       <ChevronRight className="w-4 h-4 text-gray-300 flex-shrink-0" />
+                      {/* Botón eliminar solo para superadmin */}
+                      {isSuperAdmin && (
+                        <button
+                          onClick={(e) => { e.stopPropagation(); setDeleteTarget(payer); setDeletePin(["","","",""]); }}
+                          className="ml-1 p-1.5 rounded-lg text-gray-300 hover:text-red-500 hover:bg-red-50 transition-colors flex-shrink-0"
+                          title="Eliminar pagador"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      )}
                     </button>
                   );
                 })}
@@ -346,6 +396,81 @@ export default function Payers() {
       {selectedPayer && (
         <PayerDetail payer={selectedPayer} onClose={() => setSelectedPayer(null)} />
       )}
+
+      {/* Modal eliminar pagador con PIN */}
+      <Dialog open={!!deleteTarget} onOpenChange={(open) => { if (!open) { setDeleteTarget(null); setDeletePin(["","","",""]); } }}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-red-600">
+              <Trash2 className="w-5 h-5" />
+              Eliminar pagador
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            {!pinStatus?.hasPin ? (
+              <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
+                <div className="flex items-start gap-3">
+                  <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="font-semibold text-amber-800 text-sm">No tienes un PIN configurado</p>
+                    <p className="text-amber-700 text-xs mt-1">Ve a <strong>Ajustes</strong> para crear tu PIN de 4 dígitos antes de eliminar pagadores.</p>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <>
+                <div className="bg-red-50 border border-red-200 rounded-xl p-3">
+                  <p className="text-sm text-red-700">
+                    ¿Eliminar al pagador <strong>{deleteTarget?.name}</strong>?
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1">{deleteTarget?.email}</p>
+                  <p className="text-xs text-red-500 mt-1">Se eliminará de tu directorio. Sus transacciones históricas se conservarán.</p>
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                    <Lock className="w-4 h-4 text-gray-500" />
+                    Ingresa tu PIN de seguridad
+                  </p>
+                  <div className="flex gap-3 justify-center">
+                    {deletePin.map((digit, i) => (
+                      <input
+                        key={i}
+                        ref={pinRefs[i]}
+                        type="password"
+                        inputMode="numeric"
+                        maxLength={1}
+                        value={digit}
+                        onChange={(e) => {
+                          const val = e.target.value.replace(/\D/g, "");
+                          const p = [...deletePin]; p[i] = val; setDeletePin(p);
+                          if (val && i < 3) pinRefs[i+1].current?.focus();
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === "Backspace" && !deletePin[i] && i > 0) pinRefs[i-1].current?.focus();
+                          if (e.key === "Enter" && deletePin.join("").length === 4) handleDeleteConfirm();
+                        }}
+                        className="w-12 h-12 text-center text-xl font-bold border-2 rounded-xl focus:border-red-500 focus:outline-none transition-colors"
+                      />
+                    ))}
+                  </div>
+                </div>
+                <div className="flex gap-3">
+                  <Button variant="outline" className="flex-1" onClick={() => { setDeleteTarget(null); setDeletePin(["","","",""]); }} disabled={isDeleting}>
+                    Cancelar
+                  </Button>
+                  <Button
+                    className="flex-1 bg-red-600 hover:bg-red-700 text-white"
+                    onClick={handleDeleteConfirm}
+                    disabled={isDeleting || deletePin.join("").length !== 4}
+                  >
+                    {isDeleting ? "Eliminando..." : "Confirmar"}
+                  </Button>
+                </div>
+              </>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </DashboardLayout>
   );
 }

@@ -29,6 +29,12 @@ export const users = mysqlTable("users", {
   // Multi-tenant: si es cliente de la plataforma, quién lo creó
   createdByUserId: int("createdByUserId"),
   isActive: boolean("isActive").default(true).notNull(),
+  // Login propio (email + contraseña, independiente de Manus OAuth)
+  passwordHash: varchar("passwordHash", { length: 255 }),    // bcrypt hash
+  passwordResetToken: varchar("passwordResetToken", { length: 128 }),
+  passwordResetExpires: timestamp("passwordResetExpires"),
+  emailVerified: boolean("emailVerified").default(false).notNull(),
+  emailVerifyToken: varchar("emailVerifyToken", { length: 128 }),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
   lastSignedIn: timestamp("lastSignedIn").defaultNow().notNull(),
@@ -78,6 +84,8 @@ export const vendorSettings = mysqlTable("vendor_settings", {
   publicBio: text("publicBio"),                            // Descripción pública del negocio
   websiteUrl: varchar("websiteUrl", { length: 512 }),      // Sitio web del negocio
   publicProfileEnabled: boolean("publicProfileEnabled").default(false).notNull(), // Perfil público activo
+  // PIN de 4 dígitos para operaciones sensibles (eliminar transacciones, etc.)
+  deletePin: varchar("deletePin", { length: 4 }),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });

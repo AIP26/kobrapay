@@ -24,10 +24,14 @@ import {
   ArrowLeft,
   ShieldCheck,
   MessageCircle,
+  Trash2,
+  KeyRound,
+  Lock,
 } from "lucide-react";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
 import { generateEvidencePdf } from "@/lib/generateEvidencePdf";
 import { toast } from "sonner";
+import { useAuth } from "@/_core/hooks/useAuth";
 
 function formatCurrency(amount: number | string, currency = "MXN") {
   return new Intl.NumberFormat("es-MX", { style: "currency", currency }).format(Number(amount));
@@ -673,12 +677,21 @@ function groupByDate(txs: Transaction[]) {
 }
 
 export default function Sales() {
+  const { user } = useAuth();
+  const isSuperAdmin = (user as Record<string, unknown>)?.isSuperAdmin === true;
+
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [filter, setFilter] = useState<"all" | "succeeded" | "pending" | "failed">("all");
   const [selectedTx, setSelectedTx] = useState<Transaction | null>(null);
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
+
+  // Estado para modal de eliminación con PIN
+  const [deleteTarget, setDeleteTarget] = useState<Transaction | null>(null);
+  const [deletePin, setDeletePin] = useState(["", "", "", ""]);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const pinRefs = [useRef<HTMLInputElement>(null), useRef<HTMLInputElement>(null), useRef<HTMLInputElement>(null), useRef<HTMLInputElement>(null)];
 
   // Debounce the search input
   useMemo(() => {
@@ -702,6 +715,32 @@ export default function Sales() {
     undefined,
     { enabled: false }
   );
+  const { data: pinStatus } = trpc.vendor.hasDeletePin.useQuery(undefined, { enabled: isSuperAdmin });
+  const deleteMutation = trpc.transactions.delete.useMutation({
+    onSuccess: () => {
+      toast.success("Transacción eliminada correctamente");
+      setDeleteTarget(null);
+      setDeletePin(["", "", "", ""]);
+      refetch();
+    },
+    onError: (err) => {
+      toast.error(err.message || "Error al eliminar");
+      setDeletePin(["", "", "", ""]);
+      pinRefs[0].current?.focus();
+    },
+  });
+
+  const handleDeleteConfirm = async () => {
+    if (!deleteTarget) return;
+    const pin = deletePin.join("");
+    if (pin.length !== 4) { toast.error("Ingresa los 4 dígitos del PIN"); return; }
+    setIsDeleting(true);
+    try {
+      await deleteMutation.mutateAsync({ transactionId: deleteTarget.id, pin });
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   const filtered = useMemo(() => {
     if (!transactions) return [];
@@ -988,6 +1027,16 @@ export default function Sales() {
                               )}
                               <p className="text-xs text-gray-400 mt-0.5">{timeStr} hs</p>
                             </div>
+                            {/* Botón eliminar (solo superadmin) */}
+                            {isSuperAdmin && (
+                              <button
+                                onClick={(e) => { e.stopPropagation(); setDeleteTarget(tx as Transaction); setDeletePin(["","","",""]); }}
+                                className="ml-1 p-1.5 rounded-lg text-gray-300 hover:text-red-500 hover:bg-red-50 transition-colors flex-shrink-0"
+                                title="Eliminar transacción"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            )}
                           </div>
                         );
                       })}
@@ -1038,6 +1087,82 @@ export default function Sales() {
       {selectedTx && (
         <TransactionDetailModal tx={selectedTx} onClose={() => setSelectedTx(null)} />
       )}
+
+      {/* Modal de eliminación con PIN */}
+      <Dialog open={!!deleteTarget} onOpenChange={(open) => { if (!open) { setDeleteTarget(null); setDeletePin(["","","",""]); } }}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-red-600">
+              <Trash2 className="w-5 h-5" />
+              Eliminar transacción
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            {!pinStatus?.hasPin ? (
+              <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
+                <div className="flex items-start gap-3">
+                  <KeyRound className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="font-semibold text-amber-800 text-sm">No tienes un PIN configurado</p>
+                    <p className="text-amber-700 text-xs mt-1">Ve a <strong>Ajustes &gt; Seguridad</strong> para crear tu PIN de 4 dígitos antes de eliminar transacciones.</p>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <>
+                <div className="bg-red-50 border border-red-200 rounded-xl p-3">
+                  <p className="text-sm text-red-700">
+                    ¿Eliminar la transacción de <strong>{deleteTarget?.payerName || "cliente"}</strong> por <strong>{formatCurrency(Number(deleteTarget?.amount || 0))}</strong>?
+                  </p>
+                  <p className="text-xs text-red-500 mt-1">Esta acción es <strong>irreversible</strong>. El registro se borrará permanentemente.</p>
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                    <Lock className="w-4 h-4 text-gray-500" />
+                    Ingresa tu PIN de seguridad
+                  </p>
+                  <div className="flex gap-3 justify-center">
+                    {deletePin.map((digit, i) => (
+                      <input
+                        key={i}
+                        ref={pinRefs[i]}
+                        type="password"
+                        inputMode="numeric"
+                        maxLength={1}
+                        value={digit}
+                        onChange={(e) => {
+                          const val = e.target.value.replace(/\D/g, "");
+                          const newPin = [...deletePin];
+                          newPin[i] = val;
+                          setDeletePin(newPin);
+                          if (val && i < 3) pinRefs[i + 1].current?.focus();
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === "Backspace" && !deletePin[i] && i > 0) pinRefs[i - 1].current?.focus();
+                          if (e.key === "Enter" && deletePin.join("").length === 4) handleDeleteConfirm();
+                        }}
+                        className="w-12 h-12 text-center text-xl font-bold border-2 rounded-xl focus:border-red-500 focus:outline-none transition-colors"
+                      />
+                    ))}
+                  </div>
+                </div>
+                <div className="flex gap-3">
+                  <Button variant="outline" className="flex-1" onClick={() => { setDeleteTarget(null); setDeletePin(["","","",""]); }} disabled={isDeleting}>
+                    Cancelar
+                  </Button>
+                  <Button
+                    className="flex-1 bg-red-600 hover:bg-red-700 text-white"
+                    onClick={handleDeleteConfirm}
+                    disabled={isDeleting || deletePin.join("").length !== 4}
+                  >
+                    {isDeleting ? "Eliminando..." : "Confirmar eliminación"}
+                  </Button>
+                </div>
+              </>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </DashboardLayout>
   );
 }

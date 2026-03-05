@@ -152,6 +152,177 @@ export const appRouter = router({
       await db.update(users).set({ onboardingCompleted: true }).where(eq(users.id, ctx.user.id));
       return { success: true };
     }),
+
+    // ─── Login propio (email + contraseña) ──────────────────────────────────────────────────────────────────────
+    register: publicProcedure
+      .input(z.object({
+        name: z.string().min(2).max(100),
+        email: z.string().email(),
+        password: z.string().min(8).max(128),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const bcrypt = await import('bcryptjs');
+        const crypto = await import('crypto');
+        const { getDb } = await import('./db');
+        const db = await getDb();
+        if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
+        const { users } = await import('../drizzle/schema');
+        const { eq, or } = await import('drizzle-orm');
+        // Verificar si ya existe
+        const existing = await db.select({ id: users.id, email: users.email })
+          .from(users).where(eq(users.email, input.email)).limit(1);
+        if (existing.length > 0) {
+          throw new TRPCError({ code: 'CONFLICT', message: 'Ya existe una cuenta con este correo electrónico' });
+        }
+        const passwordHash = await bcrypt.hash(input.password, 12);
+        const openId = `email_${crypto.randomBytes(16).toString('hex')}`;
+        const verifyToken = crypto.randomBytes(32).toString('hex');
+        await db.insert(users).values({
+          openId,
+          name: input.name,
+          email: input.email,
+          loginMethod: 'email',
+          role: 'user',
+          accountStatus: 'active',
+          isActive: true,
+          onboardingCompleted: false,
+          emailVerified: false,
+          emailVerifyToken: verifyToken,
+          passwordHash,
+          lastSignedIn: new Date(),
+        });
+        // Enviar email de bienvenida/verificación
+        try {
+          const origin = ctx.req.headers.origin || ctx.req.headers.referer?.split('/').slice(0,3).join('/') || 'https://payprocess-tm7gpbte.manus.space';
+          await sendWelcomeEmail({ to: input.email, name: input.name, businessName: input.name });
+        } catch { /* no bloquear el registro si el email falla */ }
+        return { success: true, message: 'Cuenta creada. Revisa tu correo para verificar tu cuenta.' };
+      }),
+
+    loginEmail: publicProcedure
+      .input(z.object({
+        email: z.string().email(),
+        password: z.string().min(1),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const bcrypt = await import('bcryptjs');
+        const jwt = await import('jsonwebtoken');
+        const { getDb } = await import('./db');
+        const db = await getDb();
+        if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
+        const { users } = await import('../drizzle/schema');
+        const { eq } = await import('drizzle-orm');
+        const found = await db.select().from(users)
+          .where(eq(users.email, input.email)).limit(1);
+        if (!found.length || !found[0].passwordHash) {
+          throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Correo o contraseña incorrectos' });
+        }
+        const user = found[0];
+        if (!user.isActive || user.accountStatus === 'blocked') {
+          throw new TRPCError({ code: 'FORBIDDEN', message: 'Tu cuenta está bloqueada. Contacta a soporte.' });
+        }
+        const valid = await bcrypt.compare(input.password, user.passwordHash as string);
+        if (!valid) throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Correo o contraseña incorrectos' });
+        // Actualizar lastSignedIn
+        await db.update(users).set({ lastSignedIn: new Date() }).where(eq(users.id, user.id));
+        // Generar JWT de sesión usando el mismo formato que el SDK de Manus
+        const { sdk: sdkInstance } = await import('./_core/sdk');
+        const sessionToken = await sdkInstance.createSessionToken(user.openId, {
+          name: user.name || '',
+          expiresInMs: 30 * 24 * 60 * 60 * 1000, // 30 días
+        });
+        const cookieOptions = getSessionCookieOptions(ctx.req);
+        ctx.res.cookie(COOKIE_NAME, sessionToken, { ...cookieOptions, maxAge: 30 * 24 * 60 * 60 * 1000 });
+        return { success: true, user: { id: user.id, name: user.name, email: user.email, role: user.role } };
+      }),
+
+    forgotPassword: publicProcedure
+      .input(z.object({ email: z.string().email() }))
+      .mutation(async ({ ctx, input }) => {
+        const crypto = await import('crypto');
+        const { getDb } = await import('./db');
+        const db = await getDb();
+        if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
+        const { users } = await import('../drizzle/schema');
+        const { eq } = await import('drizzle-orm');
+        const found = await db.select({ id: users.id, name: users.name, email: users.email, passwordHash: users.passwordHash })
+          .from(users).where(eq(users.email, input.email)).limit(1);
+        // Siempre responder éxito para no revelar si el email existe (anti-enumeración)
+        if (!found.length || !found[0].passwordHash) {
+          return { success: true, message: 'Si el correo existe, recibirás instrucciones en breve.' };
+        }
+        const token = crypto.randomBytes(32).toString('hex');
+        const expires = new Date(Date.now() + 60 * 60 * 1000); // 1 hora
+        await db.update(users).set({ passwordResetToken: token, passwordResetExpires: expires })
+          .where(eq(users.id, found[0].id));
+        try {
+          const origin = ctx.req.headers.origin || 'https://payprocess-tm7gpbte.manus.space';
+          const resetUrl = `${origin}/reset-password?token=${token}`;
+          const { Resend } = await import('resend');
+          const resend = new Resend(process.env.RESEND_API_KEY);
+          await resend.emails.send({
+            from: 'KobraPay <noreply@kobrapay.mx>',
+            to: found[0].email!,
+            subject: 'Recupera tu contraseña - KobraPay',
+            html: `
+              <div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:32px">
+                <img src="https://cdn.manus.space/kobrapay-logo.png" alt="KobraPay" style="height:40px;margin-bottom:24px" />
+                <h2 style="color:#111;margin-bottom:8px">Recupera tu contraseña</h2>
+                <p style="color:#555">Hola ${found[0].name || 'usuario'}, recibimos una solicitud para restablecer tu contraseña.</p>
+                <a href="${resetUrl}" style="display:inline-block;margin:24px 0;padding:14px 28px;background:#06b6d4;color:#fff;border-radius:8px;text-decoration:none;font-weight:600">Restablecer contraseña</a>
+                <p style="color:#888;font-size:13px">Este enlace expira en 1 hora. Si no solicitaste esto, ignora este correo.</p>
+              </div>
+            `,
+          });
+        } catch { /* no bloquear si el email falla */ }
+        return { success: true, message: 'Si el correo existe, recibirás instrucciones en breve.' };
+      }),
+
+    resetPassword: publicProcedure
+      .input(z.object({
+        token: z.string().min(1),
+        newPassword: z.string().min(8).max(128),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const bcrypt = await import('bcryptjs');
+        const { getDb } = await import('./db');
+        const db = await getDb();
+        if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
+        const { users } = await import('../drizzle/schema');
+        const { eq, and, gt } = await import('drizzle-orm');
+        const found = await db.select({ id: users.id })
+          .from(users)
+          .where(and(
+            eq(users.passwordResetToken, input.token),
+            gt(users.passwordResetExpires, new Date())
+          ))
+          .limit(1);
+        if (!found.length) {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: 'El enlace de recuperación es inválido o ha expirado. Solicita uno nuevo.' });
+        }
+        const passwordHash = await bcrypt.hash(input.newPassword, 12);
+        await db.update(users).set({
+          passwordHash,
+          passwordResetToken: null,
+          passwordResetExpires: null,
+        }).where(eq(users.id, found[0].id));
+        return { success: true, message: 'Contraseña actualizada correctamente. Ya puedes iniciar sesión.' };
+      }),
+
+    verifyEmail: publicProcedure
+      .input(z.object({ token: z.string().min(1) }))
+      .mutation(async ({ input }) => {
+        const { getDb } = await import('./db');
+        const db = await getDb();
+        if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
+        const { users } = await import('../drizzle/schema');
+        const { eq } = await import('drizzle-orm');
+        const found = await db.select({ id: users.id })
+          .from(users).where(eq(users.emailVerifyToken, input.token)).limit(1);
+        if (!found.length) throw new TRPCError({ code: 'BAD_REQUEST', message: 'Token de verificación inválido' });
+        await db.update(users).set({ emailVerified: true, emailVerifyToken: null }).where(eq(users.id, found[0].id));
+        return { success: true };
+      }),
   }),
 
   // ─── Configuración del vendedor ───────────────────────────────────────────
@@ -194,6 +365,40 @@ export const appRouter = router({
           businessCountry: input.businessCountry || "MX",
         });
       }),
+
+    // ─── PIN de seguridad para operaciones sensibles ─────────────────────────────────────────────────────
+    setDeletePin: protectedProcedure
+      .input(z.object({
+        newPin: z.string().length(4).regex(/^\d{4}$/, "El PIN debe ser exactamente 4 dígitos numéricos"),
+        currentPin: z.string().length(4).regex(/^\d{4}$/).optional(), // requerido si ya tiene PIN
+      }))
+      .mutation(async ({ ctx, input }) => {
+        if (!isSuperAdmin(ctx.user.openId, ctx.user.role)) {
+          throw new TRPCError({ code: 'FORBIDDEN', message: 'Solo el superadministrador puede configurar el PIN' });
+        }
+        const settings = await getVendorSettings(ctx.user.id);
+        // Si ya tiene PIN, verificar el PIN actual antes de cambiar
+        if (settings?.deletePin) {
+          if (!input.currentPin) {
+            throw new TRPCError({ code: 'BAD_REQUEST', message: 'Debes ingresar tu PIN actual para cambiarlo' });
+          }
+          if (settings.deletePin !== input.currentPin) {
+            throw new TRPCError({ code: 'UNAUTHORIZED', message: 'PIN actual incorrecto' });
+          }
+        }
+        await upsertVendorSettings({
+          userId: ctx.user.id,
+          businessName: settings?.businessName || 'Mi Negocio',
+          deletePin: input.newPin,
+        });
+        return { success: true, isNew: !settings?.deletePin };
+      }),
+
+    hasDeletePin: protectedProcedure.query(async ({ ctx }) => {
+      if (!isSuperAdmin(ctx.user.openId, ctx.user.role)) return { hasPin: false };
+      const settings = await getVendorSettings(ctx.user.id);
+      return { hasPin: !!settings?.deletePin };
+    }),
 
     // ─── Perfil Público del Negocio ──────────────────────────────────────────────────────────────────────
     updatePublicProfile: protectedProcedure
@@ -653,7 +858,7 @@ export const appRouter = router({
           clientName: z.string().min(1).max(255),
           clientEmail: z.string().email().optional().or(z.literal("")),
           clientPhone: z.string().max(32).optional().or(z.literal("")),
-          amount: z.number().positive().min(1),
+          amount: z.number().positive().min(1).max(999999), // Máximo $999,999 MXN para prevenir fraude
           description: z.string().min(1).max(1000),
           currency: z.string().min(2).max(8).default("MXN"), // ISO 4217: MXN, USD, EUR, CAD, COP, BRL, CLP, PEN, GBP, AUD, JPY, etc.
           countryCode: z.string().length(2).optional(), // ISO 3166-1 alpha-2
@@ -672,7 +877,7 @@ export const appRouter = router({
         })
       )
       .mutation(async ({ ctx, input }) => {
-        const token = nanoid(12);
+        const token = nanoid(21); // 21 chars = ~126 bits de entropía, suficiente para prevenir enumeración
         const expiresAt = input.expiresInDays
           ? new Date(Date.now() + input.expiresInDays * 24 * 60 * 60 * 1000)
           : null;
@@ -901,6 +1106,61 @@ export const appRouter = router({
 
       return { csv: rows.join("\n"), count: succeeded.length };
     }),
+
+    // Eliminar transacción (solo superadmin, requiere PIN de 4 dígitos)
+    delete: protectedProcedure
+      .input(z.object({
+        transactionId: z.number(),
+        pin: z.string().length(4).regex(/^\d{4}$/, "El PIN debe ser 4 dígitos numéricos"),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        // Solo superadmin puede eliminar transacciones
+        if (!isSuperAdmin(ctx.user.openId, ctx.user.role)) {
+          throw new TRPCError({ code: 'FORBIDDEN', message: 'Solo el superadministrador puede eliminar transacciones' });
+        }
+        // Verificar PIN
+        const settings = await getVendorSettings(ctx.user.id);
+        if (!settings?.deletePin) {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: 'No tienes un PIN configurado. Configura tu PIN en Ajustes > Seguridad.' });
+        }
+        if (settings.deletePin !== input.pin) {
+          throw new TRPCError({ code: 'UNAUTHORIZED', message: 'PIN incorrecto. Verifica tu PIN de seguridad.' });
+        }
+        // Verificar que la transacción existe y pertenece al superadmin
+        const db = await import('./db').then(m => m.getDb());
+        if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
+        const { transactions: txTable } = await import('../drizzle/schema');
+        const { eq } = await import('drizzle-orm');
+        const existing = await db.select().from(txTable).where(eq(txTable.id, input.transactionId)).limit(1);
+        if (!existing.length) throw new TRPCError({ code: 'NOT_FOUND', message: 'Transacción no encontrada' });
+        await db.delete(txTable).where(eq(txTable.id, input.transactionId));
+        return { success: true };
+      }),
+
+    // Eliminar múltiples transacciones (solo superadmin, requiere PIN)
+    deleteMany: protectedProcedure
+      .input(z.object({
+        transactionIds: z.array(z.number()).min(1).max(100),
+        pin: z.string().length(4).regex(/^\d{4}$/, "El PIN debe ser 4 dígitos numéricos"),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        if (!isSuperAdmin(ctx.user.openId, ctx.user.role)) {
+          throw new TRPCError({ code: 'FORBIDDEN', message: 'Solo el superadministrador puede eliminar transacciones' });
+        }
+        const settings = await getVendorSettings(ctx.user.id);
+        if (!settings?.deletePin) {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: 'No tienes un PIN configurado. Configura tu PIN en Ajustes > Seguridad.' });
+        }
+        if (settings.deletePin !== input.pin) {
+          throw new TRPCError({ code: 'UNAUTHORIZED', message: 'PIN incorrecto. Verifica tu PIN de seguridad.' });
+        }
+        const db = await import('./db').then(m => m.getDb());
+        if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
+        const { transactions: txTable } = await import('../drizzle/schema');
+        const { inArray } = await import('drizzle-orm');
+        await db.delete(txTable).where(inArray(txTable.id, input.transactionIds));
+        return { success: true, deleted: input.transactionIds.length };
+      }),
   }),
 
   // ─── Verificación OTP ─────────────────────────────────────────────────────
@@ -929,7 +1189,7 @@ export const appRouter = router({
         });
 
         const emailSent = await sendOtpEmail(input.email, code, settings?.businessName || "Procesador de Pagos");
-        console.log(`[OTP] Email enviado: ${emailSent}, código: ${code}`);
+        console.log(`[OTP] Email enviado: ${emailSent}`); // No loguear el código por seguridad
 
         return { success: true, message: "Código enviado a tu email" };
       }),
@@ -965,7 +1225,7 @@ export const appRouter = router({
       .input(
         z.object({
           token: z.string(),
-          imageBase64: z.string(), // imagen en base64
+          imageBase64: z.string().max(7_000_000, "La imagen es demasiado grande (máx 5MB)"), // ~5MB en base64
           mimeType: z.string().default("image/jpeg"),
         })
       )
@@ -994,7 +1254,7 @@ export const appRouter = router({
       .input(
         z.object({
           token: z.string(),
-          imageBase64: z.string(), // canvas PNG en base64
+          imageBase64: z.string().max(7_000_000, "La firma es demasiado grande (máx 5MB)"), // canvas PNG en base64
         })
       )
       .mutation(async ({ input }) => {
@@ -1093,6 +1353,7 @@ export const appRouter = router({
           metadata: {
             paymentLinkId: String(link.id),
             paymentLinkToken: link.token,
+            linkToken: link.token, // Para validar ownership en confirmPayment
             userId: String(link.userId),
             payerName: input.payerName,
             payerEmail: input.payerEmail,
@@ -1160,9 +1421,22 @@ export const appRouter = router({
     confirmPayment: publicProcedure
       .input(z.object({ paymentIntentId: z.string(), token: z.string() }))
       .mutation(async ({ input }) => {
-        const paymentIntent = await stripe.paymentIntents.retrieve(input.paymentIntentId);
         const link = await getPaymentLinkByToken(input.token);
         if (!link) throw new TRPCError({ code: "NOT_FOUND" });
+        // Verificar que el paymentIntent pertenece a este link (anti-fraude)
+        const paymentIntent = await stripe.paymentIntents.retrieve(input.paymentIntentId);
+        const piLinkToken = paymentIntent.metadata?.linkToken;
+        if (piLinkToken && piLinkToken !== input.token) {
+          console.warn(`[Security] confirmPayment: paymentIntent ${input.paymentIntentId} no pertenece al token ${input.token}`);
+          throw new TRPCError({ code: "FORBIDDEN", message: "Este pago no corresponde a este enlace" });
+        }
+        // Verificar que el monto del paymentIntent coincide con el monto del link (anti-manipulación de precio)
+        const piAmount = paymentIntent.amount; // en centavos
+        const linkAmountCents = Math.round(parseFloat(String(link.amount)) * 100);
+        if (Math.abs(piAmount - linkAmountCents) > 1) {
+          console.warn(`[Security] confirmPayment: monto manipulado. PI: ${piAmount}, Link: ${linkAmountCents}`);
+          throw new TRPCError({ code: "BAD_REQUEST", message: "El monto del pago no coincide con el enlace" });
+        }
 
         if (paymentIntent.status === "succeeded") {
           await updatePaymentLinkStatus(link.id, "paid", new Date());
@@ -1373,6 +1647,48 @@ export const appRouter = router({
       .input(z.object({ email: z.string().email() }))
       .query(async ({ ctx, input }) => {
         return getCustomerTransactions(ctx.user.id, input.email);
+      }),
+
+    // Eliminar un cliente/pagador (solo superadmin, requiere PIN)
+    delete: protectedProcedure
+      .input(z.object({
+        email: z.string().email(),
+        pin: z.string().length(4).regex(/^\d{4}$/, "El PIN debe ser 4 dígitos"),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        if (!isSuperAdmin(ctx.user.openId, ctx.user.role)) {
+          throw new TRPCError({ code: 'FORBIDDEN', message: 'Solo el superadministrador puede eliminar clientes' });
+        }
+        const settings = await getVendorSettings(ctx.user.id);
+        if (!settings?.deletePin) throw new TRPCError({ code: 'BAD_REQUEST', message: 'Configura tu PIN en Ajustes antes de eliminar' });
+        if (settings.deletePin !== input.pin) throw new TRPCError({ code: 'UNAUTHORIZED', message: 'PIN incorrecto' });
+        const db = await import('./db').then(m => m.getDb());
+        if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
+        const { customers } = await import('../drizzle/schema');
+        const { eq, and } = await import('drizzle-orm');
+        await db.delete(customers).where(and(eq(customers.email, input.email), eq(customers.userId, ctx.user.id)));
+        return { success: true };
+      }),
+
+    // Eliminar TODOS los clientes del usuario (solo superadmin, requiere PIN)
+    deleteAll: protectedProcedure
+      .input(z.object({
+        pin: z.string().length(4).regex(/^\d{4}$/, "El PIN debe ser 4 dígitos"),
+        confirm: z.literal("ELIMINAR TODO"),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        if (!isSuperAdmin(ctx.user.openId, ctx.user.role)) {
+          throw new TRPCError({ code: 'FORBIDDEN', message: 'Solo el superadministrador puede realizar esta acción' });
+        }
+        const settings = await getVendorSettings(ctx.user.id);
+        if (!settings?.deletePin) throw new TRPCError({ code: 'BAD_REQUEST', message: 'Configura tu PIN en Ajustes antes de eliminar' });
+        if (settings.deletePin !== input.pin) throw new TRPCError({ code: 'UNAUTHORIZED', message: 'PIN incorrecto' });
+        const db = await import('./db').then(m => m.getDb());
+        if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
+        const { customers } = await import('../drizzle/schema');
+        const { eq } = await import('drizzle-orm');
+        const result = await db.delete(customers).where(eq(customers.userId, ctx.user.id));
+        return { success: true, deleted: result[0]?.affectedRows ?? 0 };
       }),
   }),
   // ─── Catálogo / Inventario ────────────────────────────────────────────────────
@@ -1716,7 +2032,7 @@ export const appRouter = router({
                 type: 'contract_signed',
                 title: '\u2712\ufe0f Contrato firmado por el cliente',
                 message: `${contract.clientName} ha firmado el contrato No. KP-${String(contract.id).padStart(5, '0')}. Entra a Contratos para firmarlo t\u00fa tambi\u00e9n.`,
-                actionUrl: '/contracts',
+                actionUrl: '/dashboard/contracts',
                 metadata: JSON.stringify({ contractId: contract.id, clientName: contract.clientName }),
               });
             }
@@ -2222,6 +2538,16 @@ export const appRouter = router({
         const fieldMap: Record<string, string> = { ine: "ineUrl", domicilio: "domicilioUrl", acta: "actaConstitutiva" };
         await upsertUserProfile(ctx.user.id, { [fieldMap[input.docType]]: url } as Parameters<typeof upsertUserProfile>[1]);
         return { url };
+      }),
+
+    deleteDocument: protectedProcedure
+      .input(z.object({
+        docType: z.enum(["ine", "domicilio", "acta"]),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const fieldMap: Record<string, string> = { ine: "ineUrl", domicilio: "domicilioUrl", acta: "actaConstitutiva" };
+        await upsertUserProfile(ctx.user.id, { [fieldMap[input.docType]]: null } as Parameters<typeof upsertUserProfile>[1]);
+        return { success: true };
       }),
   }),
 
@@ -7037,6 +7363,7 @@ Responde SIEMPRE en español mexicano, de forma amigable, clara y práctica. Si 
       };
     }),
   }),
+
 });
 export type AppRouter = typeof appRouter;
 

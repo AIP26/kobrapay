@@ -262,6 +262,13 @@ export function registerSecurityMiddleware(app: Express): void {
 
   // 2. Rate limiting
   app.use("/api/oauth", authRateLimit);
+  // Rate limit estricto para endpoints de pago (30 intentos por 10 min por IP)
+  app.use("/api/trpc/transactions.createIntent", paymentRateLimit);
+  app.use("/api/trpc/transactions.confirmPayment", paymentRateLimit);
+  // Rate limit para login propio (prevenir fuerza bruta)
+  app.use("/api/trpc/auth.loginEmail", authRateLimit);
+  app.use("/api/trpc/auth.forgotPassword", authRateLimit);
+  app.use("/api/trpc/auth.register", authRateLimit);
   app.use("/api/trpc", generalRateLimit);
   app.use("/api/trpc", speedLimiter);
 

@@ -159,8 +159,7 @@ export async function sendPaymentReceipt(data: {
               <table width="100%" cellpadding="0" cellspacing="0">
                 <tr>
                   <td>
-                    <h1 style="margin:0;color:#ffffff;font-size:26px;font-weight:800;">KobraPay</h1>
-                    <p style="margin:2px 0 0;color:rgba(255,255,255,0.8);font-size:12px;">Cobra fácil, cobra global</p>
+                    <img src="https://d2xsxph8kpxj0f.cloudfront.net/310519663381362445/Tm7GPbTEGgvmgj5v2qy4Z4/KobraPay_Horizontal_ConTarjeta_Transparente_24bda49f.png" alt="KobraPay" style="max-height:56px;max-width:200px;object-fit:contain;display:block;" />
                   </td>
                   <td align="right">
                     <p style="margin:0;color:rgba(255,255,255,0.9);font-size:13px;font-weight:600;">RECIBO DE PAGO</p>

@@ -13,9 +13,11 @@ import {
   MessageSquare, Save, Info, CreditCard, ExternalLink, Receipt, Globe,
   Link2, Eye, EyeOff, Copy, CheckCircle2,
 } from "lucide-react";
-import { useEffect } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { COUNTRIES } from "../../../shared/countries";
+import { useAuth } from "@/_core/hooks/useAuth";
+import { KeyRound, Lock } from "lucide-react";
 
 interface SettingsForm {
   businessName: string;
@@ -37,7 +39,44 @@ interface SettingsForm {
 
 export default function Settings() {
   const utils = trpc.useUtils();
+  const { user } = useAuth();
+  const isSuperAdmin = (user as Record<string, unknown>)?.isSuperAdmin === true;
   const { data: settings, isLoading } = trpc.vendor.getSettings.useQuery();
+  const { data: pinStatus, refetch: refetchPinStatus } = trpc.vendor.hasDeletePin.useQuery(undefined, { enabled: isSuperAdmin });
+
+  // Estado del formulario de PIN
+  const [pinMode, setPinMode] = useState<"idle" | "create" | "change">("idle");
+  const [newPin, setNewPin] = useState(["", "", "", ""]);
+  const [currentPin, setCurrentPin] = useState(["", "", "", ""]);
+  const [confirmPin, setConfirmPin] = useState(["", "", "", ""]);
+  const newPinRefs = [useRef<HTMLInputElement>(null), useRef<HTMLInputElement>(null), useRef<HTMLInputElement>(null), useRef<HTMLInputElement>(null)];
+  const currentPinRefs = [useRef<HTMLInputElement>(null), useRef<HTMLInputElement>(null), useRef<HTMLInputElement>(null), useRef<HTMLInputElement>(null)];
+  const confirmPinRefs = [useRef<HTMLInputElement>(null), useRef<HTMLInputElement>(null), useRef<HTMLInputElement>(null), useRef<HTMLInputElement>(null)];
+
+  const setPinMutation = trpc.vendor.setDeletePin.useMutation({
+    onSuccess: (data) => {
+      toast.success(data.isNew ? "PIN creado exitosamente" : "PIN actualizado exitosamente");
+      setPinMode("idle");
+      setNewPin(["","","",""]);
+      setCurrentPin(["","","",""]);
+      setConfirmPin(["","","",""]);
+      refetchPinStatus();
+    },
+    onError: (err) => toast.error(err.message || "Error al guardar PIN"),
+  });
+
+  const handleSavePin = () => {
+    const np = newPin.join("");
+    const cp = confirmPin.join("");
+    if (np.length !== 4) { toast.error("El PIN debe tener 4 dígitos"); return; }
+    if (np !== cp) { toast.error("Los PINs no coinciden"); setConfirmPin(["","","",""]); confirmPinRefs[0].current?.focus(); return; }
+    const cur = currentPin.join("");
+    if (pinStatus?.hasPin && cur.length !== 4) { toast.error("Ingresa tu PIN actual"); return; }
+    setPinMutation.mutate({
+      newPin: np,
+      currentPin: pinStatus?.hasPin ? cur : undefined,
+    });
+  };
   const {
     register, handleSubmit, setValue, watch, reset,
     formState: { isDirty },
@@ -771,6 +810,140 @@ export default function Settings() {
             </div>
           </CardContent>
         </Card>
+
+        {/* ─── Sección PIN de Seguridad (solo superadmin) ─── */}
+        {isSuperAdmin && (
+          <Card className="border-gray-200 shadow-sm">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base font-semibold text-gray-800 flex items-center gap-2">
+                <Lock className="w-4 h-4 text-cyan-600" />
+                PIN de Seguridad
+              </CardTitle>
+              <p className="text-sm text-gray-500">PIN de 4 dígitos para operaciones sensibles como eliminar transacciones.</p>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {/* Estado actual del PIN */}
+              <div className="flex items-center justify-between p-3 bg-gray-50 rounded-xl border border-gray-200">
+                <div className="flex items-center gap-3">
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center ${pinStatus?.hasPin ? 'bg-green-100' : 'bg-amber-100'}`}>
+                    <KeyRound className={`w-4 h-4 ${pinStatus?.hasPin ? 'text-green-600' : 'text-amber-600'}`} />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-800">{pinStatus?.hasPin ? 'PIN configurado' : 'Sin PIN configurado'}</p>
+                    <p className="text-xs text-gray-500">{pinStatus?.hasPin ? 'Tu PIN está activo y protege las eliminaciones' : 'Crea un PIN para poder eliminar transacciones'}</p>
+                  </div>
+                </div>
+                {pinMode === "idle" && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => { setPinMode(pinStatus?.hasPin ? "change" : "create"); setNewPin(["","","",""]); setCurrentPin(["","","",""]); setConfirmPin(["","","",""]); }}
+                    className="text-cyan-600 border-cyan-300 hover:bg-cyan-50"
+                  >
+                    {pinStatus?.hasPin ? 'Cambiar PIN' : 'Crear PIN'}
+                  </Button>
+                )}
+              </div>
+
+              {/* Formulario de PIN */}
+              {pinMode !== "idle" && (
+                <div className="space-y-4 p-4 bg-gray-50 rounded-xl border border-gray-200">
+                  <p className="text-sm font-semibold text-gray-700">{pinStatus?.hasPin ? 'Cambiar PIN de seguridad' : 'Crear PIN de seguridad'}</p>
+
+                  {/* PIN actual (solo si ya tiene uno) */}
+                  {pinStatus?.hasPin && (
+                    <div>
+                      <p className="text-xs text-gray-500 mb-2">PIN actual</p>
+                      <div className="flex gap-3">
+                        {currentPin.map((digit, i) => (
+                          <input
+                            key={i}
+                            ref={currentPinRefs[i]}
+                            type="password"
+                            inputMode="numeric"
+                            maxLength={1}
+                            value={digit}
+                            onChange={(e) => {
+                              const val = e.target.value.replace(/\D/g, "");
+                              const p = [...currentPin]; p[i] = val; setCurrentPin(p);
+                              if (val && i < 3) currentPinRefs[i+1].current?.focus();
+                            }}
+                            onKeyDown={(e) => { if (e.key === "Backspace" && !currentPin[i] && i > 0) currentPinRefs[i-1].current?.focus(); }}
+                            className="w-12 h-12 text-center text-xl font-bold border-2 rounded-xl focus:border-cyan-500 focus:outline-none bg-white"
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Nuevo PIN */}
+                  <div>
+                    <p className="text-xs text-gray-500 mb-2">Nuevo PIN (4 dígitos)</p>
+                    <div className="flex gap-3">
+                      {newPin.map((digit, i) => (
+                        <input
+                          key={i}
+                          ref={newPinRefs[i]}
+                          type="password"
+                          inputMode="numeric"
+                          maxLength={1}
+                          value={digit}
+                          onChange={(e) => {
+                            const val = e.target.value.replace(/\D/g, "");
+                            const p = [...newPin]; p[i] = val; setNewPin(p);
+                            if (val && i < 3) newPinRefs[i+1].current?.focus();
+                          }}
+                          onKeyDown={(e) => { if (e.key === "Backspace" && !newPin[i] && i > 0) newPinRefs[i-1].current?.focus(); }}
+                          className="w-12 h-12 text-center text-xl font-bold border-2 rounded-xl focus:border-cyan-500 focus:outline-none bg-white"
+                        />
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Confirmar PIN */}
+                  <div>
+                    <p className="text-xs text-gray-500 mb-2">Confirmar nuevo PIN</p>
+                    <div className="flex gap-3">
+                      {confirmPin.map((digit, i) => (
+                        <input
+                          key={i}
+                          ref={confirmPinRefs[i]}
+                          type="password"
+                          inputMode="numeric"
+                          maxLength={1}
+                          value={digit}
+                          onChange={(e) => {
+                            const val = e.target.value.replace(/\D/g, "");
+                            const p = [...confirmPin]; p[i] = val; setConfirmPin(p);
+                            if (val && i < 3) confirmPinRefs[i+1].current?.focus();
+                          }}
+                          onKeyDown={(e) => { if (e.key === "Backspace" && !confirmPin[i] && i > 0) confirmPinRefs[i-1].current?.focus(); }}
+                          className="w-12 h-12 text-center text-xl font-bold border-2 rounded-xl focus:border-cyan-500 focus:outline-none bg-white"
+                        />
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="flex gap-3">
+                    <Button type="button" variant="outline" className="flex-1" onClick={() => { setPinMode("idle"); setNewPin(["","","",""]); setCurrentPin(["","","",""]); setConfirmPin(["","","",""]); }}>
+                      Cancelar
+                    </Button>
+                    <Button
+                      type="button"
+                      className="flex-1 bg-cyan-500 hover:bg-cyan-400 text-white"
+                      onClick={handleSavePin}
+                      disabled={setPinMutation.isPending}
+                    >
+                      <KeyRound className="w-4 h-4 mr-2" />
+                      {setPinMutation.isPending ? "Guardando..." : (pinStatus?.hasPin ? "Actualizar PIN" : "Crear PIN")}
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
 
         <div className="flex justify-end pb-8">
           <Button

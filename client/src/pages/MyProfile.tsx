@@ -10,8 +10,19 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import {
   User, Building2, CreditCard, FileText, Camera, Upload,
-  CheckCircle2, AlertCircle, Eye, ExternalLink, Loader2, Save
+  CheckCircle2, AlertCircle, Eye, ExternalLink, Loader2, Save, Trash2
 } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 // ─── Tipos ────────────────────────────────────────────────────────────────────
 type Section = "personal" | "negocio" | "bancario" | "documentos" | "capacitaciones";
@@ -88,6 +99,14 @@ export default function MyProfile() {
   const uploadDocMutation = trpc.profile.uploadDocument.useMutation({
     onSuccess: (_, vars) => {
       toast.success(`Documento "${vars.docType}" subido correctamente`);
+      utils.profile.get.invalidate();
+    },
+    onError: (err) => toast.error(err.message),
+  });
+
+  const deleteDocMutation = trpc.profile.deleteDocument.useMutation({
+    onSuccess: (_, vars) => {
+      toast.success(`Documento eliminado correctamente`);
       utils.profile.get.invalidate();
     },
     onError: (err) => toast.error(err.message),
@@ -239,6 +258,9 @@ export default function MyProfile() {
           onUpload={handleDocUpload}
           uploading={uploadDocMutation.isPending}
           uploadingDocType={uploadDocMutation.variables?.docType}
+          onDelete={(docType) => deleteDocMutation.mutate({ docType })}
+          deleting={deleteDocMutation.isPending}
+          deletingDocType={deleteDocMutation.variables?.docType}
         />
       )}
       {/* Sección Perfil Profesional */}
@@ -657,12 +679,15 @@ function BancarioSection({
 type DocType = "ine" | "domicilio" | "acta";
 
 function DocumentosSection({
-  profile, onUpload, uploading, uploadingDocType
+  profile, onUpload, uploading, uploadingDocType, onDelete, deleting, deletingDocType
 }: {
   profile: Record<string, string | null | undefined> | null;
   onUpload: (e: React.ChangeEvent<HTMLInputElement>, docType: DocType) => void;
   uploading: boolean;
   uploadingDocType?: string;
+  onDelete: (docType: DocType) => void;
+  deleting: boolean;
+  deletingDocType?: string;
 }) {
   const docs: { id: DocType; label: string; desc: string; urlKey: string; required: boolean }[] = [
     { id: "ine", label: "INE / Pasaporte", desc: "Identificación oficial vigente (ambos lados)", urlKey: "ineUrl", required: true },
@@ -686,6 +711,7 @@ function DocumentosSection({
           {docs.map(({ id, label, desc, urlKey, required }) => {
             const uploaded = !!profile?.[urlKey];
             const isUploading = uploading && uploadingDocType === id;
+            const isDeleting = deleting && deletingDocType === id;
 
             return (
               <div key={id} className="flex items-center gap-4 p-4 border rounded-xl">
@@ -713,6 +739,40 @@ function DocumentosSection({
                     >
                       <ExternalLink className="h-3 w-3" /> Ver
                     </a>
+                  )}
+                  {uploaded && (
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                          disabled={isDeleting}
+                        >
+                          {isDeleting
+                            ? <Loader2 className="h-3 w-3 animate-spin" />
+                            : <Trash2 className="h-3 w-3" />
+                          }
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>¿Eliminar documento?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Se eliminará <strong>{label}</strong> de tu perfil. Podrás volver a subirlo cuando quieras.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                          <AlertDialogAction
+                            className="bg-red-600 hover:bg-red-700"
+                            onClick={() => onDelete(id)}
+                          >
+                            Sí, eliminar
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
                   )}
                   <input
                     ref={el => { inputRefs.current[id] = el; }}

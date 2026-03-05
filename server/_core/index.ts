@@ -45,9 +45,10 @@ async function startServer() {
   // Stripe webhook MUST be registered BEFORE json middleware (needs raw body)
   registerStripeWebhook(app);
 
-  // Configure body parser with larger size limit for file uploads
-  app.use(express.json({ limit: "50mb" }));
-  app.use(express.urlencoded({ limit: "50mb", extended: true }));
+  // Configure body parser — 10MB es suficiente para imágenes base64 (~7MB) con margen
+  // Reducido de 50MB para prevenir ataques DoS por body inflado
+  app.use(express.json({ limit: "10mb" }));
+  app.use(express.urlencoded({ limit: "10mb", extended: true }));
 
   // OAuth callback under /api/oauth/callback
   registerOAuthRoutes(app);
