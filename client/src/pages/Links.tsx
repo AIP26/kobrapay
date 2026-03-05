@@ -245,7 +245,10 @@ export default function Links() {
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 flex-wrap">
                             <p className="text-sm font-semibold text-gray-800">{link.clientName}</p>
-                            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border ${cfg.color}`}>
+                            <span
+                              className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border ${cfg.color} ${link.status === 'pending' ? 'cursor-help' : ''}`}
+                              title={link.status === 'pending' ? 'El cliente aún no ha realizado el pago. El enlace está activo y esperando ser cobrado.' : link.status === 'paid' ? 'Pago recibido exitosamente.' : link.status === 'expired' ? 'El enlace ha expirado y ya no puede usarse.' : link.status === 'cancelled' ? 'Este enlace fue cancelado.' : ''}
+                            >
                               <StatusIcon className="w-3 h-3" />
                               {cfg.label}
                             </span>

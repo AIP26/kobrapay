@@ -1034,7 +1034,7 @@ export const appRouter = router({
         z.object({
           token: z.string(),
           payerName: z.string().min(1).max(255),
-          payerEmail: z.string().email(),
+          payerEmail: z.string().transform(v => v.trim().toLowerCase()).pipe(z.string().email()),
           payerPhone: z.string().max(32).optional().or(z.literal("")),
           otpVerified: z.boolean().default(false),
           selfieVerified: z.boolean().default(false),
