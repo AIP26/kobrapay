@@ -1162,10 +1162,21 @@ export const appRouter = router({
         const { transactions: txTable } = await import('../drizzle/schema');
         const { inArray } = await import('drizzle-orm');
         await db.delete(txTable).where(inArray(txTable.id, input.transactionIds));
-        return { success: true, deleted: input.transactionIds.length };
+         return { success: true, deleted: input.transactionIds.length };
       }),
+    // Listar transacciones con solicitudes de reembolso pendientes (para admin del negocio)
+    listPendingRefunds: protectedProcedure.query(async ({ ctx }) => {
+      const db = await import('./db').then(m => m.getDb());
+      if (!db) return [];
+      const { transactions } = await import('../drizzle/schema');
+      const { eq, and } = await import('drizzle-orm');
+      return db.select().from(transactions)
+        .where(and(
+          eq(transactions.userId, ctx.user.id),
+          eq((transactions as any).refundRequestStatus, 'pending')
+        ));
+    }),
   }),
-
   // ─── Verificación OTP ─────────────────────────────────────────────────────
   otp: router({
     send: publicProcedure

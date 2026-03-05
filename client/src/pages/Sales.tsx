@@ -219,6 +219,8 @@ function TransactionDetailModal({
   const [isGeneratingEvidencePdf, setIsGeneratingEvidencePdf] = useState(false);
   const [showRefundConfirm, setShowRefundConfirm] = useState(false);
   const [refundReason, setRefundReason] = useState<"requested_by_customer" | "duplicate" | "fraudulent">("requested_by_customer");
+  const [refundType, setRefundType] = useState<"full" | "partial">("full");
+  const [refundPartialAmount, setRefundPartialAmount] = useState("");
   const refundMutation = trpc.payments.refund.useMutation({
     onSuccess: (data) => {
       if ((data as { pending?: boolean }).pending) {
@@ -663,6 +665,40 @@ function TransactionDetailModal({
                     <p className="text-sm font-semibold text-red-700">{isEmployee ? 'Solicitar reembolso' : 'Confirmar reembolso'} de {formatCurrency(tx.amount, tx.currency)}</p>
                     <p className="text-xs text-red-600">{isEmployee ? 'Tu solicitud será enviada al administrador para aprobación. El reembolso no se procesará hasta que sea aprobado.' : 'Esta acción es irreversible. El cliente recibirá el dinero en 5-10 días hábiles.'}</p>
                     <div className="space-y-1">
+                      <p className="text-xs font-medium text-gray-600">Tipo de reembolso:</p>
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setRefundType('full')}
+                          className={`flex-1 text-xs py-2 rounded-lg border font-medium transition-colors ${refundType === 'full' ? 'bg-red-600 text-white border-red-600' : 'bg-white text-gray-600 border-gray-200 hover:border-red-300'}`}
+                        >
+                          Total ({formatCurrency(tx.amount, tx.currency)})
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setRefundType('partial')}
+                          className={`flex-1 text-xs py-2 rounded-lg border font-medium transition-colors ${refundType === 'partial' ? 'bg-red-600 text-white border-red-600' : 'bg-white text-gray-600 border-gray-200 hover:border-red-300'}`}
+                        >
+                          Parcial
+                        </button>
+                      </div>
+                      {refundType === 'partial' && (
+                        <div className="mt-2">
+                          <p className="text-xs text-gray-500 mb-1">Monto a reembolsar (máx. {formatCurrency(tx.amount, tx.currency)}):</p>
+                          <input
+                            type="number"
+                            min="1"
+                            max={Number(tx.amount)}
+                            step="0.01"
+                            value={refundPartialAmount}
+                            onChange={(e) => setRefundPartialAmount(e.target.value)}
+                            placeholder="Ej. 500.00"
+                            className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white"
+                          />
+                        </div>
+                      )}
+                    </div>
+                    <div className="space-y-1">
                       <p className="text-xs font-medium text-gray-600">Motivo:</p>
                       <select
                         value={refundReason}
@@ -679,7 +715,12 @@ function TransactionDetailModal({
                         Cancelar
                       </Button>
                       <Button
-                        onClick={() => refundMutation.mutate({ transactionId: tx.id, reason: refundReason })}
+                        onClick={() => {
+                          const amountCents = refundType === 'partial' && refundPartialAmount
+                            ? Math.round(parseFloat(refundPartialAmount) * 100)
+                            : undefined;
+                          refundMutation.mutate({ transactionId: tx.id, reason: refundReason, amountCents });
+                        }}
                         disabled={refundMutation.isPending}
                         className="flex-1 bg-red-600 hover:bg-red-700 text-white text-sm"
                       >
@@ -789,6 +830,17 @@ export default function Sales() {
     { enabled: false }
   );
   const { data: pinStatus } = trpc.vendor.hasDeletePin.useQuery(undefined, { enabled: isSuperAdmin });
+  const isAdmin = user?.role === 'admin' || isSuperAdmin;
+  const { data: pendingRefunds = [], refetch: refetchPendingRefunds } = trpc.transactions.listPendingRefunds.useQuery(undefined, { enabled: isAdmin });
+  const approveRefundMutation = trpc.payments.approveRefund.useMutation({
+    onSuccess: (data) => {
+      if (data.action === 'approved') toast.success('Reembolso aprobado y procesado correctamente');
+      else toast.success('Solicitud de reembolso rechazada');
+      refetchPendingRefunds();
+      refetch();
+    },
+    onError: (err) => toast.error(err.message || 'Error al procesar la solicitud'),
+  });
   const deleteMutation = trpc.transactions.delete.useMutation({
     onSuccess: () => {
       toast.success("Transacción eliminada correctamente");
@@ -891,6 +943,45 @@ export default function Sales() {
   return (
     <DashboardLayout title="Mis Ventas">
       <div className="space-y-5">
+        {/* Bandeja de aprobaciones de reembolsos pendientes - solo para admin */}
+        {isAdmin && pendingRefunds.length > 0 && (
+          <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
+            <div className="flex items-center gap-2 mb-3">
+              <AlertCircle className="w-5 h-5 text-amber-600" />
+              <h3 className="font-semibold text-amber-800 text-sm">Solicitudes de reembolso pendientes ({pendingRefunds.length})</h3>
+            </div>
+            <div className="space-y-3">
+              {pendingRefunds.map((tx) => (
+                <div key={tx.id} className="bg-white border border-amber-100 rounded-lg p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-gray-800">{tx.payerName || 'Cliente'} — {formatCurrency(tx.amount, tx.currency)}</p>
+                    <p className="text-xs text-gray-500">{tx.payerEmail || ''} · {formatDate(tx.createdAt)}</p>
+                    <p className="text-xs text-amber-700 mt-0.5">Motivo: {tx.refundRequestReason === 'duplicate' ? 'Pago duplicado' : tx.refundRequestReason === 'fraudulent' ? 'Transacción fraudulenta' : 'Solicitado por el cliente'}</p>
+                  </div>
+                  <div className="flex gap-2 shrink-0">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="text-red-600 border-red-200 hover:bg-red-50 text-xs"
+                      disabled={approveRefundMutation.isPending}
+                      onClick={() => approveRefundMutation.mutate({ transactionId: tx.id, action: 'reject' })}
+                    >
+                      Rechazar
+                    </Button>
+                    <Button
+                      size="sm"
+                      className="bg-green-600 hover:bg-green-700 text-white text-xs"
+                      disabled={approveRefundMutation.isPending}
+                      onClick={() => approveRefundMutation.mutate({ transactionId: tx.id, action: 'approve' })}
+                    >
+                      Aprobar
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
         {/* Stats Row */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {[
