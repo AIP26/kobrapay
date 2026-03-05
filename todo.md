@@ -918,3 +918,7 @@
 ## Entrega Final - Mar 4, 2026
 - [x] Email de comprobante automático al pagador: HTML profesional con logo del negocio, número de transacción, monto y datos
 - [x] Cláusula legal de firma electrónica en contratos (Art. 89 Código de Comercio México)
+
+## Manuales en plataforma - Mar 4, 2026
+- [ ] Subir PDFs de manuales a CDN
+- [ ] Agregar botones de descarga en sección Ayuda según rol del usuario

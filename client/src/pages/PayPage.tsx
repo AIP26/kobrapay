@@ -552,7 +552,7 @@ function PaymentForm({ token }: { token: string }) {
             <p className="text-xs text-gray-400">Recibo enviado a <strong>{successData.email}</strong></p>
           </div>
         </div>
-        <PageFooter />
+        <PageFooter lang={lang} />
       </div>
     );
   }
@@ -561,7 +561,7 @@ function PaymentForm({ token }: { token: string }) {
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       <PageHeader businessName={businessName} lang={lang} onToggleLang={() => setLang(l => l === "es" ? "en" : "es")} />
-      <StepProgress step={step} requireOtp={requireOtp} requireSelfie={requireSelfie} requireSignature={requireSignature} requireIdUpload={requireIdUpload} />
+      <StepProgress step={step} requireOtp={requireOtp} requireSelfie={requireSelfie} requireSignature={requireSignature} requireIdUpload={requireIdUpload} lang={lang} />
 
       <div className="flex-1 flex items-start justify-center p-4 pt-6">
         <div className="w-full max-w-2xl">
@@ -587,24 +587,24 @@ function PaymentForm({ token }: { token: string }) {
               {/* PASO 1: Información */}
               {step === "info" && (
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-800 mb-4">Información del pago</h3>
+                  <h3 className="text-lg font-semibold text-gray-800 mb-4">{lang === "en" ? "Payment information" : "Información del pago"}</h3>
                   <div className="space-y-2 mb-5">
-                    <InfoRow label="Para" value={linkData.clientName} />
-                    <InfoRow label="Concepto" value={linkData.description} />
-                    <InfoRow label="Monto" value={`${formatMXN(amount)} ${currency}`} />
-                    {usdEquivalent && <InfoRow label="Equiv. USD" value={`$${usdEquivalent} (TC: $${exchangeRate})`} />}
+                    <InfoRow label={lang === "en" ? "To" : "Para"} value={linkData.clientName} />
+                    <InfoRow label={lang === "en" ? "Concept" : "Concepto"} value={linkData.description} />
+                    <InfoRow label={lang === "en" ? "Amount" : "Monto"} value={`${formatMXN(amount)} ${currency}`} />
+                    {usdEquivalent && <InfoRow label={lang === "en" ? "USD Equiv." : "Equiv. USD"} value={`$${usdEquivalent} (TC: $${exchangeRate})`} />}
                   </div>
                   {chargebackText && (
                     <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-5 flex gap-3">
                       <Shield className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
-                      <p className="text-amber-800 text-sm">{chargebackText}</p>
+                      <p className="text-amber-800 text-sm">{lang === "en" ? "By completing this payment, you acknowledge that the charge is final and cannot be cancelled or refunded once processed." : chargebackText}</p>
                     </div>
                   )}
                   <Button
                     className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 text-base font-semibold rounded-xl"
                     onClick={() => setStep("customer")}
                   >
-                    Continuar <ChevronRight className="w-5 h-5 ml-1" />
+                    {lang === "en" ? "Continue" : "Continuar"} <ChevronRight className="w-5 h-5 ml-1" />
                   </Button>
                 </div>
               )}
@@ -615,7 +615,7 @@ function PaymentForm({ token }: { token: string }) {
                   <h3 className="text-lg font-semibold text-gray-800 mb-4">{lang === "en" ? "Your information" : "Tus datos"}</h3>
                   <div className="grid grid-cols-2 gap-4 mb-4">
                     <div>
-                      <Label className="text-gray-600 text-sm mb-1 block">Nombre(s)</Label>
+                      <Label className="text-gray-600 text-sm mb-1 block">{lang === "en" ? "First name" : "Nombre(s)"}</Label>
                       <div className="relative">
                         <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                         <Input className="pl-9" placeholder={lang === "en" ? "John" : "Juan"} value={customer.firstName}
@@ -623,7 +623,7 @@ function PaymentForm({ token }: { token: string }) {
                       </div>
                     </div>
                     <div>
-                      <Label className="text-gray-600 text-sm mb-1 block">Apellidos</Label>
+                      <Label className="text-gray-600 text-sm mb-1 block">{lang === "en" ? "Last name" : "Apellidos"}</Label>
                       <div className="relative">
                         <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                         <Input className="pl-9" placeholder={lang === "en" ? "Smith" : "García López"} value={customer.lastName}
@@ -632,7 +632,7 @@ function PaymentForm({ token }: { token: string }) {
                     </div>
                   </div>
                   <div className="mb-4">
-                    <Label className="text-gray-600 text-sm mb-1 block">Correo electrónico</Label>
+                    <Label className="text-gray-600 text-sm mb-1 block">{lang === "en" ? "Email" : "Correo electrónico"}</Label>
                     <div className="relative">
                       <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                       <Input className="pl-9" type="email" placeholder={lang === "en" ? "email@example.com" : "correo@ejemplo.com"} value={customer.email}
@@ -654,7 +654,7 @@ function PaymentForm({ token }: { token: string }) {
                   </div>
                   <div className="flex gap-3">
                     <Button variant="outline" onClick={() => setStep("info")} className="flex-1">
-                      <ArrowLeft className="w-4 h-4 mr-1" /> Atrás
+                      <ArrowLeft className="w-4 h-4 mr-1" /> {lang === "en" ? "Back" : "Atrás"}
                     </Button>
                     <Button
                       className="flex-[2] bg-blue-600 hover:bg-blue-700 text-white py-3 font-semibold rounded-xl"
@@ -1079,7 +1079,7 @@ function PaymentForm({ token }: { token: string }) {
         </div>
       </div>
 
-      <PageFooter />
+      <PageFooter lang={lang} />
     </div>
   );
 }
@@ -1134,10 +1134,10 @@ function PageHeader({ businessName, lang, onToggleLang }: { businessName: string
   );
 }
 
-function PageFooter() {
+function PageFooter({ lang }: { lang?: "es" | "en" }) {
   return (
     <div className="py-6 px-4 text-center">
-      <p className="text-gray-400 text-xs mb-3">Pago procesado de manera segura con:</p>
+      <p className="text-gray-400 text-xs mb-3">{lang === "en" ? "Payment securely processed with:" : "Pago procesado de manera segura con:"}</p>
       <div className="flex items-center justify-center gap-6 flex-wrap">
         <div className="flex items-center gap-1.5">
           <div className="w-10 h-6 bg-blue-700 rounded text-white text-xs font-bold flex items-center justify-center">VISA</div>
@@ -1157,9 +1157,9 @@ function PageFooter() {
         </div>
       </div>
       <div className="flex items-center justify-center gap-4 mt-4 flex-wrap">
-        <a href="/legal" target="_blank" rel="noopener noreferrer" className="text-gray-400 text-xs hover:text-gray-600 underline underline-offset-2 transition-colors">Términos de Uso</a>
+        <a href="/legal" target="_blank" rel="noopener noreferrer" className="text-gray-400 text-xs hover:text-gray-600 underline underline-offset-2 transition-colors">{lang === "en" ? "Terms of Use" : "Términos de Uso"}</a>
         <span className="text-gray-300 text-xs">·</span>
-        <a href="/privacidad" target="_blank" rel="noopener noreferrer" className="text-gray-400 text-xs hover:text-gray-600 underline underline-offset-2 transition-colors">Aviso de Privacidad</a>
+        <a href="/privacidad" target="_blank" rel="noopener noreferrer" className="text-gray-400 text-xs hover:text-gray-600 underline underline-offset-2 transition-colors">{lang === "en" ? "Privacy Policy" : "Aviso de Privacidad"}</a>
         <span className="text-gray-300 text-xs">·</span>
         <span className="text-gray-400 text-xs">© {new Date().getFullYear()} KobraPay</span>
       </div>
@@ -1176,15 +1176,15 @@ function InfoRow({ label, value }: { label: string; value: string }) {
   );
 }
 
-function StepProgress({ step, requireOtp, requireSelfie, requireSignature, requireIdUpload }: { step: Step; requireOtp: boolean; requireSelfie: boolean; requireSignature: boolean; requireIdUpload: boolean }) {
+function StepProgress({ step, requireOtp, requireSelfie, requireSignature, requireIdUpload, lang }: { step: Step; requireOtp: boolean; requireSelfie: boolean; requireSignature: boolean; requireIdUpload: boolean; lang?: "es" | "en" }) {
   const steps = [
-    { id: "info", label: "Pago" },
-    { id: "customer", label: "Datos" },
-    ...(requireOtp ? [{ id: "otp", label: "Verificar" }] : []),
+    { id: "info", label: lang === "en" ? "Payment" : "Pago" },
+    { id: "customer", label: lang === "en" ? "Details" : "Datos" },
+    ...(requireOtp ? [{ id: "otp", label: lang === "en" ? "Verify" : "Verificar" }] : []),
     ...(requireSelfie ? [{ id: "selfie", label: "Selfie" }] : []),
-    ...(requireSignature ? [{ id: "signature", label: "Firma" }] : []),
+    ...(requireSignature ? [{ id: "signature", label: lang === "en" ? "Sign" : "Firma" }] : []),
     ...(requireIdUpload ? [{ id: "id_upload", label: "ID" }] : []),
-    { id: "payment", label: "Pagar" },
+    { id: "payment", label: lang === "en" ? "Pay" : "Pagar" },
   ];
   const currentIndex = steps.findIndex((s) => s.id === step);
   return (

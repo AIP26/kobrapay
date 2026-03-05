@@ -5,8 +5,29 @@ import {
   Link2, CreditCard, BarChart3, Users, Shield, FileText,
   ChevronDown, ChevronRight, HelpCircle, Phone, Mail,
   Package, MonitorSmartphone, Code2, RefreshCw, UserCheck,
-  Handshake, TrendingUp, UserCog, AlertTriangle, BookOpen,
+  Handshake, TrendingUp, UserCog, AlertTriangle, BookOpen, Download,
 } from "lucide-react";
+
+const MANUALS = {
+  superadmin: {
+    label: "Manual Superadmin",
+    url: "https://d2xsxph8kpxj0f.cloudfront.net/310519663381362445/Tm7GPbTEGgvmgj5v2qy4Z4/manual_superadmin_ebf8a3b1.pdf",
+    desc: "Gestión completa de la plataforma, métricas, usuarios y configuración avanzada.",
+    color: "amber",
+  },
+  admin: {
+    label: "Manual Administrador",
+    url: "https://d2xsxph8kpxj0f.cloudfront.net/310519663381362445/Tm7GPbTEGgvmgj5v2qy4Z4/manual_admin_empresa_2d947f70.pdf",
+    desc: "Cobros, contratos, clientes, reportes y configuración del negocio.",
+    color: "emerald",
+  },
+  empleado: {
+    label: "Manual Empleado",
+    url: "https://d2xsxph8kpxj0f.cloudfront.net/310519663381362445/Tm7GPbTEGgvmgj5v2qy4Z4/manual_empleado_c5f67a48.pdf",
+    desc: "Guía para asistentes y operadores: cobros, ventas y atención al cliente.",
+    color: "cyan",
+  },
+};
 
 interface FAQItem {
   q: string;
@@ -436,6 +457,105 @@ export default function Help() {
           }`}>
             <HelpCircle className="w-3.5 h-3.5" />
             Manual para: {roleLabel}
+          </div>
+        </div>
+
+        {/* Descarga de Manuales */}
+        <div className="bg-[#1a1f2e] border border-white/10 rounded-2xl p-5 mb-6">
+          <div className="flex items-center gap-2 mb-3">
+            <Download className="w-4 h-4 text-emerald-400" />
+            <h2 className="font-semibold text-white text-sm">Descargar Manual PDF</h2>
+          </div>
+          <p className="text-xs text-gray-400 mb-4">Descarga el manual completo de tu rol para consultarlo sin conexión.</p>
+          <div className="flex flex-col gap-3">
+            {isSuperAdmin && (
+              <>
+                <a
+                  href={MANUALS.superadmin.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  download
+                  className="flex items-center justify-between px-4 py-3 bg-amber-500/10 border border-amber-500/20 rounded-xl hover:bg-amber-500/20 transition-colors group"
+                >
+                  <div>
+                    <p className="text-sm font-medium text-amber-300">{MANUALS.superadmin.label}</p>
+                    <p className="text-xs text-gray-400 mt-0.5">{MANUALS.superadmin.desc}</p>
+                  </div>
+                  <Download className="w-4 h-4 text-amber-400 group-hover:scale-110 transition-transform flex-shrink-0 ml-3" />
+                </a>
+                <a
+                  href={MANUALS.admin.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  download
+                  className="flex items-center justify-between px-4 py-3 bg-emerald-500/10 border border-emerald-500/20 rounded-xl hover:bg-emerald-500/20 transition-colors group"
+                >
+                  <div>
+                    <p className="text-sm font-medium text-emerald-300">{MANUALS.admin.label}</p>
+                    <p className="text-xs text-gray-400 mt-0.5">{MANUALS.admin.desc}</p>
+                  </div>
+                  <Download className="w-4 h-4 text-emerald-400 group-hover:scale-110 transition-transform flex-shrink-0 ml-3" />
+                </a>
+                <a
+                  href={MANUALS.empleado.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  download
+                  className="flex items-center justify-between px-4 py-3 bg-cyan-500/10 border border-cyan-500/20 rounded-xl hover:bg-cyan-500/20 transition-colors group"
+                >
+                  <div>
+                    <p className="text-sm font-medium text-cyan-300">{MANUALS.empleado.label}</p>
+                    <p className="text-xs text-gray-400 mt-0.5">{MANUALS.empleado.desc}</p>
+                  </div>
+                  <Download className="w-4 h-4 text-cyan-400 group-hover:scale-110 transition-transform flex-shrink-0 ml-3" />
+                </a>
+              </>
+            )}
+            {!isSuperAdmin && isAdmin && (
+              <>
+                <a
+                  href={MANUALS.admin.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  download
+                  className="flex items-center justify-between px-4 py-3 bg-emerald-500/10 border border-emerald-500/20 rounded-xl hover:bg-emerald-500/20 transition-colors group"
+                >
+                  <div>
+                    <p className="text-sm font-medium text-emerald-300">{MANUALS.admin.label}</p>
+                    <p className="text-xs text-gray-400 mt-0.5">{MANUALS.admin.desc}</p>
+                  </div>
+                  <Download className="w-4 h-4 text-emerald-400 group-hover:scale-110 transition-transform flex-shrink-0 ml-3" />
+                </a>
+                <a
+                  href={MANUALS.empleado.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  download
+                  className="flex items-center justify-between px-4 py-3 bg-cyan-500/10 border border-cyan-500/20 rounded-xl hover:bg-cyan-500/20 transition-colors group"
+                >
+                  <div>
+                    <p className="text-sm font-medium text-cyan-300">{MANUALS.empleado.label}</p>
+                    <p className="text-xs text-gray-400 mt-0.5">{MANUALS.empleado.desc}</p>
+                  </div>
+                  <Download className="w-4 h-4 text-cyan-400 group-hover:scale-110 transition-transform flex-shrink-0 ml-3" />
+                </a>
+              </>
+            )}
+            {!isSuperAdmin && !isAdmin && (
+              <a
+                href={MANUALS.empleado.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                download
+                className="flex items-center justify-between px-4 py-3 bg-cyan-500/10 border border-cyan-500/20 rounded-xl hover:bg-cyan-500/20 transition-colors group"
+              >
+                <div>
+                  <p className="text-sm font-medium text-cyan-300">{MANUALS.empleado.label}</p>
+                  <p className="text-xs text-gray-400 mt-0.5">{MANUALS.empleado.desc}</p>
+                </div>
+                <Download className="w-4 h-4 text-cyan-400 group-hover:scale-110 transition-transform flex-shrink-0 ml-3" />
+              </a>
+            )}
           </div>
         </div>
 
