@@ -972,3 +972,22 @@
 - [x] actionUrl de contratos corregida a /dashboard/contracts
 - [x] Rutas faltantes en App.tsx: /login, /register, /forgot-password, /reset-password
 - [x] TypeScript: 0 errores
+
+## Sesión Mar 5, 2026 - Selección múltiple en Mis Ventas
+
+- [ ] Modo selección múltiple con checkboxes en Mis Ventas
+- [ ] Backend deleteMany para eliminar varias transacciones con PIN
+- [ ] Botón "Seleccionar todo" y contador de seleccionados
+- [ ] Botón "Eliminar seleccionados" con modal PIN
+
+## Sesión Mar 5, 2026 - Entrega Final Producción
+- [ ] Bulk delete con checkboxes en Mis Ventas (UI + modal PIN)
+- [ ] Sección FAQ en landing page (Home.tsx)
+- [ ] Subir PDFs de manuales a CDN
+- [ ] Botones de descarga de manuales en panel de Ayuda según rol
+
+## Sesión Mar 5, 2026 - Completado
+- [x] Bulk delete con checkboxes en Ventas (selección múltiple + modal PIN)
+- [x] FAQ en landing page (ya existía con 13 preguntas)
+- [x] Manuales PDF en Help.tsx (ya existían y accesibles vía CDN)
+- [x] Stripe live activado (sk_live, pk_live, whsec confirmados)

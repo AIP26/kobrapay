@@ -27,6 +27,9 @@ import {
   Trash2,
   KeyRound,
   Lock,
+  CheckSquare,
+  Square,
+  X,
 } from "lucide-react";
 import { useState, useMemo, useRef } from "react";
 import { generateEvidencePdf } from "@/lib/generateEvidencePdf";
@@ -693,6 +696,14 @@ export default function Sales() {
   const [isDeleting, setIsDeleting] = useState(false);
   const pinRefs = [useRef<HTMLInputElement>(null), useRef<HTMLInputElement>(null), useRef<HTMLInputElement>(null), useRef<HTMLInputElement>(null)];
 
+  // Estado para selección múltiple (bulk delete)
+  const [selectMode, setSelectMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
+  const [bulkPin, setBulkPin] = useState(["", "", "", ""]);
+  const [isBulkDeleting, setIsBulkDeleting] = useState(false);
+  const bulkPinRefs = [useRef<HTMLInputElement>(null), useRef<HTMLInputElement>(null), useRef<HTMLInputElement>(null), useRef<HTMLInputElement>(null)];
+
   // Debounce the search input
   useMemo(() => {
     const timer = setTimeout(() => setDebouncedSearch(search), 400);
@@ -739,6 +750,42 @@ export default function Sales() {
       await deleteMutation.mutateAsync({ transactionId: deleteTarget.id, pin });
     } finally {
       setIsDeleting(false);
+    }
+  };
+
+  const deleteManyMutation = trpc.transactions.deleteMany.useMutation({
+    onSuccess: (data) => {
+      toast.success(`${data.deleted} transacción${data.deleted !== 1 ? "es" : ""} eliminada${data.deleted !== 1 ? "s" : ""} correctamente`);
+      setBulkDeleteOpen(false);
+      setBulkPin(["", "", "", ""]);
+      setSelectedIds(new Set());
+      setSelectMode(false);
+      refetch();
+    },
+    onError: (err) => {
+      toast.error(err.message || "Error al eliminar");
+      setBulkPin(["", "", "", ""]);
+      bulkPinRefs[0].current?.focus();
+    },
+  });
+
+  const handleBulkDeleteConfirm = async () => {
+    const pin = bulkPin.join("");
+    if (pin.length !== 4) { toast.error("Ingresa los 4 dígitos del PIN"); return; }
+    if (selectedIds.size === 0) { toast.error("No hay transacciones seleccionadas"); return; }
+    setIsBulkDeleting(true);
+    try {
+      await deleteManyMutation.mutateAsync({ transactionIds: Array.from(selectedIds), pin });
+    } finally {
+      setIsBulkDeleting(false);
+    }
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedIds.size === filtered.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(filtered.map((tx) => tx.id)));
     }
   };
 
@@ -857,6 +904,17 @@ export default function Sales() {
                   <Download className="w-3.5 h-3.5 mr-1.5" />
                   Exportar CSV
                 </Button>
+                {isSuperAdmin && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => { setSelectMode(!selectMode); setSelectedIds(new Set()); }}
+                    className={`h-8 text-xs ${selectMode ? "border-cyan-400 text-cyan-700 bg-cyan-50" : "border-gray-200"}`}
+                  >
+                    <CheckSquare className="w-3.5 h-3.5 mr-1.5" />
+                    Seleccionar
+                  </Button>
+                )}
               </div>
             </div>
 
@@ -920,6 +978,47 @@ export default function Sales() {
           </CardHeader>
 
           <CardContent className="p-0">
+            {/* Barra de acciones de selección masiva */}
+            {selectMode && (
+              <div className="flex items-center justify-between px-6 py-3 bg-cyan-50 border-b border-cyan-200">
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={toggleSelectAll}
+                    className="flex items-center gap-2 text-sm font-medium text-cyan-700 hover:text-cyan-900 transition-colors"
+                  >
+                    {selectedIds.size === filtered.length && filtered.length > 0 ? (
+                      <CheckSquare className="w-4 h-4" />
+                    ) : (
+                      <Square className="w-4 h-4" />
+                    )}
+                    {selectedIds.size === filtered.length && filtered.length > 0 ? "Deseleccionar todo" : "Seleccionar todo"}
+                  </button>
+                  {selectedIds.size > 0 && (
+                    <span className="text-xs text-cyan-600 bg-cyan-100 px-2 py-0.5 rounded-full font-medium">
+                      {selectedIds.size} seleccionada{selectedIds.size !== 1 ? "s" : ""}
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center gap-2">
+                  {selectedIds.size > 0 && (
+                    <Button
+                      size="sm"
+                      className="h-8 text-xs bg-red-600 hover:bg-red-700 text-white"
+                      onClick={() => { setBulkDeleteOpen(true); setBulkPin(["", "", "", ""]); }}
+                    >
+                      <Trash2 className="w-3.5 h-3.5 mr-1.5" />
+                      Eliminar {selectedIds.size}
+                    </Button>
+                  )}
+                  <button
+                    onClick={() => { setSelectMode(false); setSelectedIds(new Set()); }}
+                    className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            )}
             {isLoading ? (
               <div className="space-y-0">
                 {[1, 2, 3, 4, 5].map((i) => (
@@ -967,12 +1066,44 @@ export default function Sales() {
                         const opNum = generateOperationNumber(tx as Transaction);
                         const failInfo = tx.status === "failed" ? getFailureDetails(tx.errorMessage) : null;
                         const timeStr = new Date(tx.createdAt).toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit" });
+                        const isSelected = selectedIds.has(tx.id);
                         return (
                           <div
                             key={tx.id}
-                            onClick={() => setSelectedTx(tx as Transaction)}
-                            className="flex items-center gap-4 px-6 py-4 hover:bg-cyan-50/30 transition-colors cursor-pointer border-b border-gray-50 last:border-0"
+                            onClick={() => {
+                              if (selectMode) {
+                                const next = new Set(selectedIds);
+                                if (next.has(tx.id)) next.delete(tx.id);
+                                else next.add(tx.id);
+                                setSelectedIds(next);
+                              } else {
+                                setSelectedTx(tx as Transaction);
+                              }
+                            }}
+                            className={`flex items-center gap-4 px-6 py-4 transition-colors cursor-pointer border-b border-gray-50 last:border-0 ${
+                              isSelected ? "bg-cyan-50 border-l-2 border-l-cyan-400" : "hover:bg-cyan-50/30"
+                            }`}
                           >
+                            {/* Checkbox de selección */}
+                            {selectMode && (
+                              <div className="flex-shrink-0" onClick={(e) => e.stopPropagation()}>
+                                <button
+                                  onClick={() => {
+                                    const next = new Set(selectedIds);
+                                    if (next.has(tx.id)) next.delete(tx.id);
+                                    else next.add(tx.id);
+                                    setSelectedIds(next);
+                                  }}
+                                  className="p-0.5 rounded transition-colors"
+                                >
+                                  {isSelected ? (
+                                    <CheckSquare className="w-5 h-5 text-cyan-600" />
+                                  ) : (
+                                    <Square className="w-5 h-5 text-gray-300 hover:text-gray-500" />
+                                  )}
+                                </button>
+                              </div>
+                            )}
                             {/* Ícono de bolsa con estado */}
                             <div className="relative flex-shrink-0">
                               <div className={`w-11 h-11 rounded-full flex items-center justify-center border-2 ${
@@ -1087,6 +1218,82 @@ export default function Sales() {
       {selectedTx && (
         <TransactionDetailModal tx={selectedTx} onClose={() => setSelectedTx(null)} />
       )}
+
+      {/* Modal de eliminación masiva con PIN */}
+      <Dialog open={bulkDeleteOpen} onOpenChange={(open) => { if (!open) { setBulkDeleteOpen(false); setBulkPin(["","","",""]); } }}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-red-600">
+              <Trash2 className="w-5 h-5" />
+              Eliminar {selectedIds.size} transacción{selectedIds.size !== 1 ? "es" : ""}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            {!pinStatus?.hasPin ? (
+              <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
+                <div className="flex items-start gap-3">
+                  <KeyRound className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="font-semibold text-amber-800 text-sm">No tienes un PIN configurado</p>
+                    <p className="text-amber-700 text-xs mt-1">Ve a <strong>Ajustes &gt; Seguridad</strong> para crear tu PIN de 4 dígitos antes de eliminar transacciones.</p>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <>
+                <div className="bg-red-50 border border-red-200 rounded-xl p-3">
+                  <p className="text-sm text-red-700">
+                    ¿Eliminar <strong>{selectedIds.size} transacción{selectedIds.size !== 1 ? "es" : ""}</strong> seleccionada{selectedIds.size !== 1 ? "s" : ""}?
+                  </p>
+                  <p className="text-xs text-red-500 mt-1">Esta acción es <strong>irreversible</strong>. Los registros se borrarán permanentemente.</p>
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                    <Lock className="w-4 h-4 text-gray-500" />
+                    Ingresa tu PIN de seguridad
+                  </p>
+                  <div className="flex gap-3 justify-center">
+                    {bulkPin.map((digit, i) => (
+                      <input
+                        key={i}
+                        ref={bulkPinRefs[i]}
+                        type="password"
+                        inputMode="numeric"
+                        maxLength={1}
+                        value={digit}
+                        onChange={(e) => {
+                          const val = e.target.value.replace(/\D/g, "");
+                          const newPin = [...bulkPin];
+                          newPin[i] = val;
+                          setBulkPin(newPin);
+                          if (val && i < 3) bulkPinRefs[i + 1].current?.focus();
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === "Backspace" && !bulkPin[i] && i > 0) bulkPinRefs[i - 1].current?.focus();
+                          if (e.key === "Enter" && bulkPin.join("").length === 4) handleBulkDeleteConfirm();
+                        }}
+                        className="w-12 h-12 text-center text-xl font-bold border-2 rounded-xl focus:border-red-500 focus:outline-none transition-colors"
+                      />
+                    ))}
+                  </div>
+                </div>
+                <div className="flex gap-3">
+                  <Button variant="outline" className="flex-1" onClick={() => { setBulkDeleteOpen(false); setBulkPin(["","","",""]); }} disabled={isBulkDeleting}>
+                    Cancelar
+                  </Button>
+                  <Button
+                    className="flex-1 bg-red-600 hover:bg-red-700 text-white"
+                    onClick={handleBulkDeleteConfirm}
+                    disabled={isBulkDeleting || bulkPin.join("").length !== 4}
+                  >
+                    {isBulkDeleting ? "Eliminando..." : `Eliminar ${selectedIds.size}`}
+                  </Button>
+                </div>
+              </>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Modal de eliminación con PIN */}
       <Dialog open={!!deleteTarget} onOpenChange={(open) => { if (!open) { setDeleteTarget(null); setDeletePin(["","","",""]); } }}>
