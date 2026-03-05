@@ -131,8 +131,8 @@ function PaymentForm({ token }: { token: string }) {
       country: "MX",
       currency: "mxn",
       total: { label: linkData.description || "Pago KobraPay", amount: amountCents },
-      requestPayerName: false,
-      requestPayerEmail: false,
+      requestPayerName: true,
+      requestPayerEmail: true,
     });
     pr.canMakePayment().then((result) => {
       setWalletChecked(true);
@@ -143,11 +143,13 @@ function PaymentForm({ token }: { token: string }) {
         let secret = clientSecret;
         let intentId = paymentIntentId;
         if (!secret) {
+          // Sanitizar email: trim + lowercase. Si está vacío usar placeholder válido
+          const walletEmail = customer.email ? customer.email.trim().toLowerCase() : (ev.payerEmail ? ev.payerEmail.trim().toLowerCase() : "pagador@kobrapay.mx");
           const res = await createIntent.mutateAsync({
             token,
-            payerName: `${customer.firstName} ${customer.lastName}`.trim() || "Cliente",
-            payerEmail: customer.email || "",
-            payerPhone: customer.phone || "",
+            payerName: `${customer.firstName} ${customer.lastName}`.trim() || ev.payerName || "Cliente",
+            payerEmail: walletEmail,
+            payerPhone: customer.phone || ev.payerPhone || "",
             otpVerified,
             selfieVerified,
             selfieUrl,
