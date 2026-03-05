@@ -204,6 +204,11 @@ export const transactions = mysqlTable("transactions", {
   metadata: text("metadata"),
   // MSI seleccionado por el pagador (null = pago de contado)
   msiMonths: int("msiMonths"),
+  // Solicitud de reembolso pendiente de aprobación (generada por empleados del negocio)
+  refundRequestedBy: int("refundRequestedBy"),
+  refundRequestedAt: timestamp("refundRequestedAt"),
+  refundRequestReason: varchar("refundRequestReason", { length: 64 }),
+  refundRequestStatus: mysqlEnum("refundRequestStatus", ["pending", "approved", "rejected"]),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });

@@ -195,9 +195,11 @@ function generateOperationNumber(tx: Transaction): string {
 function TransactionDetailModal({
   tx,
   onClose,
+  currentUser,
 }: {
   tx: Transaction;
   onClose: () => void;
+  currentUser?: { role?: string; staffRole?: string | null } | null;
 }) {
   const cfg = statusConfig[tx.status as keyof typeof statusConfig] ?? statusConfig.pending;
   const StatusIcon = cfg.icon;
@@ -212,12 +214,18 @@ function TransactionDetailModal({
   const failureDetails = tx.status === "failed" ? getFailureDetails(tx.errorMessage) : null;
   const operationNumber = generateOperationNumber(tx);
   const description = tx.metadata ? (() => { try { return JSON.parse(tx.metadata).description || ""; } catch { return ""; } })() : "";
+  // Empleado = rol 'user' con staffRole asignado. Solo puede SOLICITAR reembolsos.
+  const isEmployee = currentUser?.role === 'user' && currentUser?.staffRole != null;
   const [isGeneratingEvidencePdf, setIsGeneratingEvidencePdf] = useState(false);
   const [showRefundConfirm, setShowRefundConfirm] = useState(false);
   const [refundReason, setRefundReason] = useState<"requested_by_customer" | "duplicate" | "fraudulent">("requested_by_customer");
   const refundMutation = trpc.payments.refund.useMutation({
-    onSuccess: () => {
-      toast.success("Reembolso procesado. El cliente recibirá el dinero en 5-10 días hábiles.");
+    onSuccess: (data) => {
+      if ((data as { pending?: boolean }).pending) {
+        toast.success("⚠️ Solicitud enviada. El administrador debe aprobarla antes de procesar el reembolso.");
+      } else {
+        toast.success("Reembolso procesado. El cliente recibirá el dinero en 5-10 días hábiles.");
+      }
       setShowRefundConfirm(false);
       onClose();
     },
@@ -648,12 +656,12 @@ function TransactionDetailModal({
                     className="w-full border-red-200 text-red-600 hover:bg-red-50"
                   >
                     <RefreshCw className="w-4 h-4 mr-2" />
-                    Emitir Reembolso
+                    {isEmployee ? 'Solicitar Reembolso' : 'Emitir Reembolso'}
                   </Button>
                 ) : (
                   <div className="bg-red-50 border border-red-200 rounded-xl p-4 space-y-3">
-                    <p className="text-sm font-semibold text-red-700">Confirmar reembolso de {formatCurrency(tx.amount, tx.currency)}</p>
-                    <p className="text-xs text-red-600">Esta acción es irreversible. El cliente recibirá el dinero en 5-10 días hábiles.</p>
+                    <p className="text-sm font-semibold text-red-700">{isEmployee ? 'Solicitar reembolso' : 'Confirmar reembolso'} de {formatCurrency(tx.amount, tx.currency)}</p>
+                    <p className="text-xs text-red-600">{isEmployee ? 'Tu solicitud será enviada al administrador para aprobación. El reembolso no se procesará hasta que sea aprobado.' : 'Esta acción es irreversible. El cliente recibirá el dinero en 5-10 días hábiles.'}</p>
                     <div className="space-y-1">
                       <p className="text-xs font-medium text-gray-600">Motivo:</p>
                       <select
@@ -675,7 +683,7 @@ function TransactionDetailModal({
                         disabled={refundMutation.isPending}
                         className="flex-1 bg-red-600 hover:bg-red-700 text-white text-sm"
                       >
-                        {refundMutation.isPending ? "Procesando..." : "Confirmar Reembolso"}
+                        {refundMutation.isPending ? (isEmployee ? 'Enviando...' : 'Procesando...') : (isEmployee ? 'Enviar Solicitud' : 'Confirmar Reembolso')}
                       </Button>
                     </div>
                   </div>
@@ -1270,7 +1278,7 @@ export default function Sales() {
 
       {/* Modal de detalle */}
       {selectedTx && (
-        <TransactionDetailModal tx={selectedTx} onClose={() => setSelectedTx(null)} />
+        <TransactionDetailModal tx={selectedTx} onClose={() => setSelectedTx(null)} currentUser={user as { role?: string; staffRole?: string | null } | null} />
       )}
 
       {/* Modal de eliminación masiva con PIN */}

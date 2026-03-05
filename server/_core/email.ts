@@ -826,3 +826,153 @@ export async function sendQuoteEmail(data: QuoteEmailData): Promise<boolean> {
     return false;
   }
 }
+
+// ─── Email de Notificación de Reembolso ──────────────────────────────────────
+
+export async function sendRefundNotification(data: {
+  payerEmail: string;
+  payerName: string;
+  businessName: string;
+  amount: string | number;
+  currency: string;
+  description?: string | null;
+  refundId: string;
+  reason: string;
+  refundedAt: Date;
+}): Promise<boolean> {
+  const resend = getResend();
+  if (!resend) {
+    console.warn("[Email] RESEND_API_KEY no configurada. No se envió notificación de reembolso.");
+    return false;
+  }
+
+  const amountFormatted = new Intl.NumberFormat("es-MX", {
+    style: "currency",
+    currency: data.currency || "MXN",
+  }).format(parseFloat(String(data.amount)));
+
+  const dateFormatted = new Intl.DateTimeFormat("es-MX", {
+    dateStyle: "full",
+    timeStyle: "short",
+    timeZone: "America/Mexico_City",
+  }).format(data.refundedAt);
+
+  const reasonLabels: Record<string, string> = {
+    requested_by_customer: "Solicitado por el cliente",
+    duplicate: "Pago duplicado",
+    fraudulent: "Transacción fraudulenta",
+  };
+  const reasonLabel = reasonLabels[data.reason] || data.reason;
+
+  const html = `<!DOCTYPE html>
+<html lang="es">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"></head>
+<body style="margin:0;padding:0;background:#f4f4f5;font-family:'Helvetica Neue',Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f4f5;padding:40px 0;">
+    <tr>
+      <td align="center">
+        <table width="600" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.08);">
+          <tr>
+            <td style="background:linear-gradient(135deg,#6366f1,#8b5cf6);padding:32px 40px;">
+              <table width="100%" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td>
+                    <img src="https://d2xsxph8kpxj0f.cloudfront.net/310519663381362445/Tm7GPbTEGgvmgj5v2qy4Z4/KobraPay_Horizontal_ConTarjeta_Transparente_24bda49f.png" alt="KobraPay" style="max-height:48px;max-width:180px;object-fit:contain;display:block;" />
+                  </td>
+                  <td align="right">
+                    <p style="margin:0;color:rgba(255,255,255,0.9);font-size:13px;font-weight:600;">REEMBOLSO PROCESADO</p>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+          <tr>
+            <td style="background:#faf5ff;padding:28px 40px;text-align:center;border-bottom:2px solid #ede9fe;">
+              <p style="margin:0 0 6px;color:#7c3aed;font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;">Monto reembolsado</p>
+              <p style="margin:0;color:#4c1d95;font-size:42px;font-weight:900;letter-spacing:-1px;">${amountFormatted}</p>
+              <p style="margin:8px 0 0;color:#6d28d9;font-size:13px;">${data.currency}</p>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:32px 40px;">
+              <p style="margin:0 0 20px;color:#374151;font-size:15px;">Hola <strong>${data.payerName}</strong>,</p>
+              <p style="margin:0 0 20px;color:#6b7280;font-size:14px;line-height:1.6;">
+                Tu reembolso de <strong>${amountFormatted}</strong> ha sido procesado exitosamente por <strong>${data.businessName}</strong>. 
+                El dinero será acreditado a tu cuenta en <strong>5 a 10 días hábiles</strong>, dependiendo de tu banco.
+              </p>
+              <table width="100%" cellpadding="0" cellspacing="0" style="background:#f9fafb;border-radius:8px;padding:20px;margin:0 0 24px;">
+                <tr>
+                  <td style="padding:6px 0;border-bottom:1px solid #e5e7eb;">
+                    <table width="100%" cellpadding="0" cellspacing="0">
+                      <tr>
+                        <td style="color:#6b7280;font-size:13px;">Negocio</td>
+                        <td align="right" style="color:#111827;font-size:13px;font-weight:600;">${data.businessName}</td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+                ${data.description ? `<tr><td style="padding:6px 0;border-bottom:1px solid #e5e7eb;"><table width="100%" cellpadding="0" cellspacing="0"><tr><td style="color:#6b7280;font-size:13px;">Concepto</td><td align="right" style="color:#111827;font-size:13px;font-weight:600;">${data.description}</td></tr></table></td></tr>` : ""}
+                <tr>
+                  <td style="padding:6px 0;border-bottom:1px solid #e5e7eb;">
+                    <table width="100%" cellpadding="0" cellspacing="0">
+                      <tr>
+                        <td style="color:#6b7280;font-size:13px;">Motivo</td>
+                        <td align="right" style="color:#111827;font-size:13px;font-weight:600;">${reasonLabel}</td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding:6px 0;border-bottom:1px solid #e5e7eb;">
+                    <table width="100%" cellpadding="0" cellspacing="0">
+                      <tr>
+                        <td style="color:#6b7280;font-size:13px;">Fecha</td>
+                        <td align="right" style="color:#111827;font-size:13px;font-weight:600;">${dateFormatted}</td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding:6px 0;">
+                    <table width="100%" cellpadding="0" cellspacing="0">
+                      <tr>
+                        <td style="color:#6b7280;font-size:13px;">Referencia</td>
+                        <td align="right" style="color:#111827;font-size:11px;font-family:monospace;">${data.refundId}</td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+              <p style="margin:0;color:#9ca3af;font-size:12px;line-height:1.6;">
+                Si tienes alguna pregunta sobre este reembolso, contacta directamente a <strong>${data.businessName}</strong>.<br>
+                Este correo fue enviado automáticamente por KobraPay.
+              </p>
+            </td>
+          </tr>
+          <tr>
+            <td style="background:#f9fafb;padding:20px 40px;text-align:center;border-top:1px solid #f3f4f6;">
+              <p style="margin:0;color:#9ca3af;font-size:11px;">KobraPay · kobrapay.mx · soporte@kobrapay.mx</p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
+
+  try {
+    const { error } = await resend.emails.send({
+      from: `${data.businessName} via KobraPay <${ENV.fromEmail}>`,
+      to: data.payerEmail,
+      subject: `Reembolso procesado — ${amountFormatted} de ${data.businessName}`,
+      html,
+    });
+    if (error) { console.error("[Email] Error al enviar notificación de reembolso:", error); return false; }
+    console.log(`[Email] Notificación de reembolso enviada a ${data.payerEmail}`);
+    return true;
+  } catch (err) {
+    console.error("[Email] Excepción al enviar notificación de reembolso:", err);
+    return false;
+  }
+}

@@ -98,7 +98,7 @@ import { systemRouter } from "./_core/systemRouter";
 import { isSuperAdmin, protectedProcedure, publicProcedure, router } from "./_core/trpc";
 import { securityRouter } from "./routers/security";
 import { notifyOwner } from "./_core/notification";
-import { sendOtpEmail, sendPaymentReceipt, sendWelcomeEmail, sendInvoiceEmail } from "./_core/email";
+import { sendOtpEmail, sendPaymentReceipt, sendWelcomeEmail, sendInvoiceEmail, sendRefundNotification } from "./_core/email";
 import { storagePut } from "./storage";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "", {
@@ -1580,16 +1580,21 @@ export const appRouter = router({
       .input(z.object({
         transactionId: z.number(),
         reason: z.enum(["duplicate", "fraudulent", "requested_by_customer"]).default("requested_by_customer"),
-        amountCents: z.number().int().positive().optional(), // null = reembolso total
+        amountCents: z.number().int().positive().optional(),
       }))
       .mutation(async ({ ctx, input }) => {
         const db = await import('./db').then(m => m.getDb());
         if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
         const { transactions } = await import('../drizzle/schema');
-        const { eq, and } = await import('drizzle-orm');
-        // Obtener la transacción y verificar que pertenece al usuario
+        const { eq, and, or } = await import('drizzle-orm');
+        // Empleados pueden solicitar reembolsos de transacciones de su jefe (createdByUserId)
+        const isEmployee = ctx.user.role === 'user' && ctx.user.staffRole != null;
         const txRows = await db.select().from(transactions)
-          .where(and(eq(transactions.id, input.transactionId), eq(transactions.userId, ctx.user.id)))
+          .where(
+            isEmployee
+              ? and(eq(transactions.id, input.transactionId), eq(transactions.userId, ctx.user.createdByUserId!))
+              : and(eq(transactions.id, input.transactionId), eq(transactions.userId, ctx.user.id))
+          )
           .limit(1);
         if (!txRows.length) throw new TRPCError({ code: 'NOT_FOUND', message: 'Transacción no encontrada' });
         const tx = txRows[0];
@@ -1599,25 +1604,117 @@ export const appRouter = router({
         if (!tx.stripePaymentIntentId) {
           throw new TRPCError({ code: 'BAD_REQUEST', message: 'Esta transacción no tiene referencia de pago de Stripe' });
         }
-        // Crear el reembolso en Stripe
+        // Si es empleado, crear solicitud pendiente de aprobación
+        if (isEmployee) {
+          await db.update(transactions)
+            .set({
+              refundRequestedBy: ctx.user.id,
+              refundRequestedAt: new Date(),
+              refundRequestReason: input.reason,
+              refundRequestStatus: 'pending',
+              updatedAt: new Date(),
+            })
+            .where(eq(transactions.id, tx.id));
+          // Notificar al administrador del negocio
+          try {
+            await notifyOwner({
+              title: `⚠️ Solicitud de reembolso pendiente`,
+              content: `Tu empleado solicitó un reembolso de $${tx.amount} ${tx.currency} para ${tx.payerName || 'cliente'} (${tx.payerEmail || ''}). Motivo: ${input.reason}. Ve a Mis Ventas para aprobar o rechazar.`,
+            });
+          } catch (_) {}
+          return { success: true, pending: true, message: 'Solicitud enviada al administrador para aprobación' };
+        }
+        // Si es admin, ejecutar directamente
         const refundParams: Stripe.RefundCreateParams = {
           payment_intent: tx.stripePaymentIntentId,
           reason: input.reason,
         };
         if (input.amountCents) refundParams.amount = input.amountCents;
         const refund = await stripe.refunds.create(refundParams);
-        // Actualizar estado de la transacción a reembolsado
         await db.update(transactions)
-          .set({ status: 'refunded', updatedAt: new Date() })
+          .set({ status: 'refunded', refundRequestStatus: null, updatedAt: new Date() })
           .where(eq(transactions.id, tx.id));
-        // Notificar al dueño
+        // Enviar email de notificación al cliente
+        if (tx.payerEmail) {
+          try {
+            const settings = await getVendorSettings(tx.userId);
+            await sendRefundNotification({
+              payerEmail: tx.payerEmail,
+              payerName: tx.payerName || 'Cliente',
+              businessName: settings?.businessName || 'KobraPay',
+              amount: tx.amount,
+              currency: tx.currency,
+              description: tx.metadata ? (() => { try { return JSON.parse(tx.metadata).description || undefined; } catch { return undefined; } })() : undefined,
+              refundId: refund.id,
+              reason: input.reason,
+              refundedAt: new Date(),
+            });
+          } catch (err) {
+            console.error('[Email] Error al enviar notificación de reembolso:', err);
+          }
+        }
         try {
           await notifyOwner({
             title: `↩️ Reembolso procesado: $${tx.amount} ${tx.currency}`,
             content: `Se reembolsó $${tx.amount} ${tx.currency} a ${tx.payerName || 'cliente'} (${tx.payerEmail || ''}). Motivo: ${input.reason}. Stripe refund ID: ${refund.id}`,
           });
         } catch (_) {}
-        return { success: true, refundId: refund.id, status: refund.status };
+        return { success: true, pending: false, refundId: refund.id, status: refund.status };
+      }),
+
+    // ─── Aprobar o rechazar solicitud de reembolso (solo admin) ────────────────────
+    approveRefund: protectedProcedure
+      .input(z.object({
+        transactionId: z.number(),
+        action: z.enum(['approve', 'reject']),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        if (ctx.user.role !== 'admin' && ctx.user.role !== 'superadmin') {
+          throw new TRPCError({ code: 'FORBIDDEN', message: 'Solo el administrador puede aprobar reembolsos' });
+        }
+        const db = await import('./db').then(m => m.getDb());
+        if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
+        const { transactions } = await import('../drizzle/schema');
+        const { eq, and } = await import('drizzle-orm');
+        const txRows = await db.select().from(transactions)
+          .where(and(eq(transactions.id, input.transactionId), eq(transactions.userId, ctx.user.id)))
+          .limit(1);
+        if (!txRows.length) throw new TRPCError({ code: 'NOT_FOUND', message: 'Transacción no encontrada' });
+        const tx = txRows[0];
+        if (tx.refundRequestStatus !== 'pending') {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: 'No hay solicitud de reembolso pendiente' });
+        }
+        if (input.action === 'reject') {
+          await db.update(transactions)
+            .set({ refundRequestStatus: 'rejected', updatedAt: new Date() })
+            .where(eq(transactions.id, tx.id));
+          return { success: true, action: 'rejected' };
+        }
+        // Aprobar: ejecutar el reembolso en Stripe
+        if (!tx.stripePaymentIntentId) throw new TRPCError({ code: 'BAD_REQUEST', message: 'Sin referencia Stripe' });
+        const refund = await stripe.refunds.create({
+          payment_intent: tx.stripePaymentIntentId,
+          reason: (tx.refundRequestReason as Stripe.RefundCreateParams.Reason) || 'requested_by_customer',
+        });
+        await db.update(transactions)
+          .set({ status: 'refunded', refundRequestStatus: 'approved', updatedAt: new Date() })
+          .where(eq(transactions.id, tx.id));
+        if (tx.payerEmail) {
+          try {
+            const settings = await getVendorSettings(tx.userId);
+            await sendRefundNotification({
+              payerEmail: tx.payerEmail,
+              payerName: tx.payerName || 'Cliente',
+              businessName: settings?.businessName || 'KobraPay',
+              amount: tx.amount,
+              currency: tx.currency,
+              refundId: refund.id,
+              reason: tx.refundRequestReason || 'requested_by_customer',
+              refundedAt: new Date(),
+            });
+          } catch (_) {}
+        }
+        return { success: true, action: 'approved', refundId: refund.id };
       }),
   }),
   // ─── Colaboradores (staff) ────────────────────────────────────────────────
