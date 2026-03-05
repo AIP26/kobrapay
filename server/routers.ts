@@ -1350,6 +1350,17 @@ export const appRouter = router({
         const paymentIntentParams: Parameters<typeof stripe.paymentIntents.create>[0] = {
           amount: amountCents,
           currency,
+          // Habilitar métodos de pago: tarjeta, OXXO y SPEI para MXN
+          payment_method_types: currency === 'mxn'
+            ? ['card', 'oxxo', 'customer_balance']
+            : ['card'],
+          payment_method_options: currency === 'mxn' ? {
+            oxxo: { expires_after_days: 2 },
+            customer_balance: {
+              funding_type: 'bank_transfer',
+              bank_transfer: { type: 'mx_bank_transfer' },
+            },
+          } : undefined,
           metadata: {
             paymentLinkId: String(link.id),
             paymentLinkToken: link.token,
@@ -7380,6 +7391,81 @@ Responde SIEMPRE en español mexicano, de forma amigable, clara y práctica. Si 
         generatedAt: now,
       };
     }),
+  }),
+
+  // ─── CONFIGURACIÓN GLOBAL DE PLATAFORMA ────────────────────────────────────
+  platformConfig: router({
+    // Obtener todas las configuraciones (superadmin)
+    getAll: protectedProcedure.query(async ({ ctx }) => {
+      if (!ctx.isSuperAdmin) throw new TRPCError({ code: "FORBIDDEN" });
+      const { getDb } = await import('./db');
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+      const { platformConfig } = await import('../drizzle/schema');
+      const configs = await db.select().from(platformConfig);
+      return configs;
+    }),
+
+    // Obtener configuración pública (para simulador y frontend)
+    getPublic: publicProcedure.query(async () => {
+      const { getDb } = await import('./db');
+      const db = await getDb();
+      const { platformConfig } = await import('../drizzle/schema');
+      const keys = ['kobrapay_fee_rate', 'stripe_fee_rate', 'stripe_fee_fixed_mxn', 'iva_rate', 'oxxo_enabled', 'spei_enabled'];
+      const result: Record<string, string> = {};
+      if (db) {
+        const configs = await db.select().from(platformConfig);
+        for (const c of configs) {
+          if (keys.includes(c.key)) result[c.key] = c.value;
+        }
+      }
+      // Defaults si no existen
+      return {
+        kobrapayFeeRate: parseFloat(result['kobrapay_fee_rate'] ?? '1.5'),
+        stripeFeeRate: parseFloat(result['stripe_fee_rate'] ?? '1.5'),
+        stripeFeeFixed: parseFloat(result['stripe_fee_fixed_mxn'] ?? '3'),
+        ivaRate: parseFloat(result['iva_rate'] ?? '16'),
+        oxxoEnabled: (result['oxxo_enabled'] ?? 'true') === 'true',
+        speiEnabled: (result['spei_enabled'] ?? 'true') === 'true',
+      };
+    }),
+
+    // Actualizar una configuración (superadmin)
+    update: protectedProcedure
+      .input(z.object({
+        key: z.string(),
+        value: z.string(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        if (!ctx.isSuperAdmin) throw new TRPCError({ code: "FORBIDDEN" });
+        const { getDb } = await import('./db');
+        const db = await getDb();
+        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+        const { platformConfig } = await import('../drizzle/schema');
+        const now = Date.now();
+        await db.insert(platformConfig)
+          .values({ key: input.key, value: input.value, updatedAt: now, updatedBy: ctx.user.id })
+          .onDuplicateKeyUpdate({ set: { value: input.value, updatedAt: now, updatedBy: ctx.user.id } });
+        return { success: true };
+      }),
+
+    // Actualizar múltiples configuraciones a la vez (superadmin)
+    updateMany: protectedProcedure
+      .input(z.array(z.object({ key: z.string(), value: z.string() })))
+      .mutation(async ({ ctx, input }) => {
+        if (!ctx.isSuperAdmin) throw new TRPCError({ code: "FORBIDDEN" });
+        const { getDb } = await import('./db');
+        const db = await getDb();
+        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+        const { platformConfig } = await import('../drizzle/schema');
+        const now = Date.now();
+        for (const item of input) {
+          await db.insert(platformConfig)
+            .values({ key: item.key, value: item.value, updatedAt: now, updatedBy: ctx.user.id })
+            .onDuplicateKeyUpdate({ set: { value: item.value, updatedAt: now, updatedBy: ctx.user.id } });
+        }
+        return { success: true };
+      }),
   }),
 
 });

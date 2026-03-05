@@ -180,6 +180,7 @@ const NAV_GROUPS = [
     adminOnly: true,
     items: [
       { href: "/dashboard/metrics", icon: Activity, label: "Panel de Métricas" },
+      { href: "/dashboard/platform-config", icon: Settings, label: "Config. Plataforma", superAdminOnly: true },
       { href: "/dashboard/clients", icon: Users, label: "Mis Clientes" },
       { href: "/dashboard/registrations", icon: UserCog, label: "Registros" },
       { href: "/dashboard/ai-scoring", icon: Brain, label: "Scoring IA" },

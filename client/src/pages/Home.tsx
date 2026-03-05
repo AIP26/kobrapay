@@ -404,7 +404,7 @@ function PublicQuoteCalculator() {
               <span className="text-sm font-semibold text-white">{fmtAmt(singleAmount)}</span>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-xs text-gray-400">Comisión KobraPay ({kpBaseRate.toFixed(2)}%)</span>
+              <span className="text-xs text-gray-400">Comisión *KobraPay ({kpBaseRate.toFixed(2)}%)</span>
               <span className="text-sm font-semibold text-red-400">- {fmtAmt(singleAmount * kpBaseRate / 100)}</span>
             </div>
             <div className="flex items-center justify-between">
@@ -415,7 +415,8 @@ function PublicQuoteCalculator() {
               <span className="text-sm font-bold text-white">Tú recibes</span>
               <span className="text-xl font-black text-emerald-400">{fmtAmt(netReceived)}</span>
             </div>
-            <p className="text-xs text-emerald-400/70 text-center font-medium">{kpNote} — sin costos ocultos, sin sorpresas</p>
+            <p className="text-xs text-emerald-400/70 text-center font-medium">*{kpNote} — sin costos ocultos, sin sorpresas</p>
+            <p className="text-xs text-gray-600 text-center mt-1">*Incluye comisión de procesamiento de pagos + IVA</p>
           </div>
 
           {/* Comparativa: solo para México */}
@@ -444,7 +445,7 @@ function PublicQuoteCalculator() {
                 <div className="flex items-center justify-between rounded-lg px-3 py-2 bg-emerald-500/20 border border-emerald-500/40">
                   <div>
                     <span className="text-xs font-bold text-emerald-300">KobraPay (Plan {tier.label})</span>
-                    <span className="text-xs text-emerald-500/70 ml-1">({kpNote})</span>
+                    <span className="text-xs text-emerald-500/70 ml-1">(*{kpNote})</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="text-sm font-black text-emerald-400">{fmtAmt(netReceived)}</span>

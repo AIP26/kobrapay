@@ -1243,3 +1243,15 @@ export const transferRecords = mysqlTable("transfer_records", {
 });
 export type TransferRecord = typeof transferRecords.$inferSelect;
 export type InsertTransferRecord = typeof transferRecords.$inferInsert;
+
+// ─── CONFIGURACIÓN GLOBAL DE PLATAFORMA ─────────────────────────────────────
+export const platformConfig = mysqlTable("platform_config", {
+  id: int("id").primaryKey().autoincrement(),
+  key: varchar("key", { length: 128 }).notNull().unique(),
+  value: text("value").notNull(),
+  description: varchar("description", { length: 255 }),
+  updatedAt: bigint("updated_at", { mode: "number" }).notNull(),
+  updatedBy: int("updated_by"),
+});
+export type PlatformConfig = typeof platformConfig.$inferSelect;
+export type InsertPlatformConfig = typeof platformConfig.$inferInsert;
