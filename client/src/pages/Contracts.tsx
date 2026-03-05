@@ -79,6 +79,19 @@ async function generateContractPDF(contract: ContractData) {
   const contentW = pageW - margin * 2;
   let y = 20;
 
+  // Cargar logo
+  const logoUrl = "https://d2xsxph8kpxj0f.cloudfront.net/310519663381362445/Tm7GPbTEGgvmgj5v2qy4Z4/kobrapay_logo_pro_white_fd2cc62e.png";
+  let logoBase64: string | null = null;
+  try {
+    const resp = await fetch(logoUrl);
+    const blob = await resp.blob();
+    logoBase64 = await new Promise<string>((resolve) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result as string);
+      reader.readAsDataURL(blob);
+    });
+  } catch (_) { /* fallback a texto */ }
+
   const addText = (text: string, x: number, yPos: number, opts: { size?: number; bold?: boolean; color?: [number,number,number]; maxWidth?: number } = {}) => {
     doc.setFontSize(opts.size || 10);
     doc.setFont("helvetica", opts.bold ? "bold" : "normal");
@@ -96,13 +109,22 @@ async function generateContractPDF(contract: ContractData) {
   // Header
   doc.setFillColor(14, 116, 144);
   doc.rect(0, 0, pageW, 28, "F");
-  doc.setFontSize(18);
-  doc.setFont("helvetica", "bold");
   doc.setTextColor(255, 255, 255);
-  doc.text("CONTRATO DE SERVICIOS", margin, 13);
-  doc.setFontSize(10);
-  doc.setFont("helvetica", "normal");
-  doc.text("KobraPay — Plataforma de Procesamiento de Pagos Digitales", margin, 21);
+  if (logoBase64) {
+    doc.addImage(logoBase64, "PNG", margin, 5, 40, 10);
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    doc.text("CONTRATO DE SERVICIOS", pageW - margin, 13, { align: "right" });
+    doc.setFontSize(9);
+    doc.text("Plataforma de Procesamiento de Pagos Digitales", pageW - margin, 21, { align: "right" });
+  } else {
+    doc.setFontSize(18);
+    doc.setFont("helvetica", "bold");
+    doc.text("CONTRATO DE SERVICIOS", margin, 13);
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    doc.text("KobraPay — Plataforma de Procesamiento de Pagos Digitales", margin, 21);
+  }
   y = 38;
 
   // Contract number

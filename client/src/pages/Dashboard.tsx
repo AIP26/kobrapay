@@ -43,7 +43,11 @@ const statusConfig = {
 
 export default function Dashboard() {
   const { user } = useAuth();
-  const { data: stats, isLoading: statsLoading } = trpc.transactions.stats.useQuery();
+  const { data: stats, isLoading: statsLoading } = trpc.transactions.stats.useQuery(undefined, {
+    staleTime: 0,
+    refetchOnWindowFocus: true,
+    refetchOnMount: true,
+  });
   const { data: links, isLoading: linksLoading } = trpc.paymentLinks.list.useQuery();
   const { data: txs } = trpc.transactions.list.useQuery();
   const { data: clientStats } = trpc.clients.getStats.useQuery(undefined, {

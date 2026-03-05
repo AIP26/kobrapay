@@ -53,24 +53,45 @@ export default function MonthlyReport() {
     return arr;
   }, [data, daysInMonth]);
 
-  const generatePDF = () => {
+  const generatePDF = async () => {
     if (!data) return;
     const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
     const pageW = doc.internal.pageSize.getWidth();
+
+    // Cargar logo como base64
+    const logoUrl = "https://d2xsxph8kpxj0f.cloudfront.net/310519663381362445/Tm7GPbTEGgvmgj5v2qy4Z4/kobrapay_logo_pro_white_fd2cc62e.png";
+    let logoBase64: string | null = null;
+    try {
+      const resp = await fetch(logoUrl);
+      const blob = await resp.blob();
+      logoBase64 = await new Promise<string>((resolve) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result as string);
+        reader.readAsDataURL(blob);
+      });
+    } catch (_) { /* si falla, usar texto */ }
 
     // Header
     doc.setFillColor(15, 23, 42); // dark navy
     doc.rect(0, 0, pageW, 40, "F");
     doc.setTextColor(255, 255, 255);
-    doc.setFontSize(22);
-    doc.setFont("helvetica", "bold");
-    doc.text("KobraPay", 14, 18);
-    doc.setFontSize(10);
-    doc.setFont("helvetica", "normal");
-    doc.text("Plataforma de Cobros Profesional", 14, 25);
-    doc.setFontSize(14);
-    doc.setFont("helvetica", "bold");
-    doc.text(`Reporte Mensual — ${MONTHS_ES[month - 1]} ${year}`, 14, 34);
+    if (logoBase64) {
+      // Logo imagen: ancho 48mm, alto proporcional ~12mm
+      doc.addImage(logoBase64, "PNG", 12, 8, 48, 12);
+      doc.setFontSize(14);
+      doc.setFont("helvetica", "bold");
+      doc.text(`Reporte Mensual — ${MONTHS_ES[month - 1]} ${year}`, 14, 34);
+    } else {
+      doc.setFontSize(22);
+      doc.setFont("helvetica", "bold");
+      doc.text("KobraPay", 14, 18);
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "normal");
+      doc.text("Plataforma de Cobros Profesional", 14, 25);
+      doc.setFontSize(14);
+      doc.setFont("helvetica", "bold");
+      doc.text(`Reporte Mensual — ${MONTHS_ES[month - 1]} ${year}`, 14, 34);
+    }
 
     // Business info
     doc.setTextColor(100, 116, 139);

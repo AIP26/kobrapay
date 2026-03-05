@@ -59,7 +59,7 @@ import { Button } from "./ui/button";
 import { Avatar, AvatarFallback } from "./ui/avatar";
 import PendingApproval from "@/pages/PendingApproval";
 
-const KOBRAPAY_ICON = "https://d2xsxph8kpxj0f.cloudfront.net/310519663381362445/Tm7GPbTEGgvmgj5v2qy4Z4/KobraPay_Horizontal_ConTarjeta_Transparente_a810edb4.png";
+const KOBRAPAY_ICON = "https://d2xsxph8kpxj0f.cloudfront.net/310519663381362445/Tm7GPbTEGgvmgj5v2qy4Z4/kobrapay_logo_pro_white_fd2cc62e.png";
 
 // ─── Mapa de permisos por ítem del sidebar ────────────────────────────────────
 const ITEM_PERMISSION_MAP: Record<string, string> = {

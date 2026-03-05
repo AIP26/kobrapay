@@ -2357,6 +2357,20 @@ export const appRouter = router({
         status: platformClients.status,
       }).from(platformClients);
 
+      // Obtener datos de usuarios y vendor_settings para fallback
+      const { vendorSettings } = await import('../drizzle/schema');
+      const allUsers = await db.select({
+        id: users.id,
+        name: users.name,
+        email: users.email,
+      }).from(users);
+      const allVendorSettings = await db.select({
+        userId: vendorSettings.userId,
+        businessName: vendorSettings.businessName,
+      }).from(vendorSettings);
+      const userMap = new Map(allUsers.map(u => [u.id, u]));
+      const vendorMap = new Map(allVendorSettings.map(v => [v.userId, v]));
+
       // Agrupar comisiones por cliente
       const clientMap = new Map<number, {
         clientId: number;
@@ -2420,8 +2434,12 @@ export const appRouter = router({
         const clientData = clientMap.get(tx.userId);
         return {
           ...tx,
-          clientName: clientData?.businessName || clientData?.name || 'Cliente desconocido',
-          clientEmail: clientData?.email || null,
+          clientName: clientData?.businessName || clientData?.name ||
+            vendorMap.get(tx.userId)?.businessName ||
+            userMap.get(tx.userId)?.name ||
+            userMap.get(tx.userId)?.email ||
+            'Sin nombre',
+          clientEmail: clientData?.email || userMap.get(tx.userId)?.email || null,
         };
       });
       return {
