@@ -247,7 +247,7 @@ const PLANS = [
     bg: "bg-emerald-50",
     border: "border-emerald-200",
     headerBg: "from-emerald-500 to-teal-600",
-    commission: 3.0,
+    commission: 3.5,
     price: "Sin costo fijo",
     description: "La solución perfecta para negocios que quieren empezar a cobrar con tarjeta hoy mismo, sin complicaciones.",
     pitch: "¿Tu cliente todavía cobra solo en efectivo? Con KobraPay Express puede recibir pagos con tarjeta desde el primer día, sin contratos complicados ni equipos costosos.",
@@ -271,7 +271,7 @@ const PLANS = [
     bg: "bg-blue-50",
     border: "border-blue-200",
     headerBg: "from-blue-500 to-indigo-600",
-    commission: 2.5,
+    commission: 3.1,
     price: "Sin costo fijo",
     description: "Para negocios en crecimiento que necesitan cobros recurrentes, contratos digitales y su propia cuenta bancaria de cobros.",
     pitch: "¿Tu cliente tiene clientes que pagan mensualidades? Con Connect puede automatizar los cobros recurrentes y firmar contratos digitales sin papel.",
@@ -296,7 +296,7 @@ const PLANS = [
     bg: "bg-purple-50",
     border: "border-purple-200",
     headerBg: "from-purple-500 to-violet-600",
-    commission: 2.0,
+    commission: 2.7,
     price: "Cotización personalizada",
     description: "Para empresas medianas que necesitan módulos a la medida, agenda médica completa y gestión de personal.",
     pitch: "¿Tu cliente tiene un consultorio o empresa con varios empleados? Custom les da una plataforma completa con expedientes, agenda y cobros todo en uno.",
@@ -321,14 +321,14 @@ const PLANS = [
     bg: "bg-amber-50",
     border: "border-amber-200",
     headerBg: "from-amber-500 to-orange-600",
-    commission: 1.5,
+    commission: 2.5,
     price: "Negociable por volumen",
     description: "Para corporativos y cadenas con alto volumen de transacciones que necesitan integración API y SLA garantizado.",
     pitch: "¿Tu cliente es una cadena o corporativo? Enterprise les da integración directa con sus sistemas actuales y un gestor de cuenta dedicado.",
     features: [
       "Todo lo del plan Custom",
       "Integración API completa con sus sistemas",
-      "Comisión desde 1.5% (negociable por volumen)",
+      "Comisión desde 2.5% + IVA (Enterprise para volúmenes +$500K MXN/mes)",
       "Gestor de cuenta dedicado",
       "SLA garantizado (99.9% uptime)",
       "Soporte 24/7 por teléfono",
@@ -489,7 +489,7 @@ function AssociateQuoteSimulator() {
               <input type="number" value={kobrapayRate} onChange={e => setKobrapayRate(e.target.value)} className="w-full pl-3 pr-8 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300" placeholder="1.5" step="0.1" min="0" />
               <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">%</span>
             </div>
-            <p className="text-xs text-gray-400 mt-1">Sugerido: 1.5% / 0.8% terminal</p>
+            <p className="text-xs text-gray-400 mt-1">Express 3.5% / Connect 3.1% / Custom 2.7% / Enterprise 2.5%</p>
           </div>
           <div>
             <label className="text-xs font-semibold text-gray-500 uppercase mb-1.5 block">% IVA sobre comisión</label>
@@ -663,7 +663,7 @@ const FAQ_ITEMS = [
   },
   {
     q: "¿Cuánto cobra KobraPay? ¿Es más caro que la competencia?",
-    a: "KobraPay cobra desde 1.5% por cobro online (más IVA sobre la comisión). Comparado con Mercado Pago (3.29%), PayPal (3.5%), Clip (3.6%) y Conekta (2.9%), KobraPay es más económico. Sin mensualidad fija, sin contrato de permanencia y sin hardware para cobros online. Usa el simulador de arriba para ver el desglose exacto con los números de tu negocio.",
+    a: "KobraPay cobra desde 2.5% + IVA (Plan Enterprise para volúmenes mayores a $500K MXN/mes). Los planes son: Express 3.5%, Connect 3.1%, Custom 2.7% y Enterprise 2.5%. Comparado con Mercado Pago (3.29% + IVA), PayPal (3.5% + IVA), Clip (3.6% + IVA) y Conekta (2.9% + IVA), KobraPay es más económico. Sin mensualidad fija, sin contrato de permanencia y sin hardware para cobros online. Usa el simulador de arriba para ver el desglose exacto con los números de tu negocio.",
     icon: DollarSign,
   },
   {

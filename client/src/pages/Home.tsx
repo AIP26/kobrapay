@@ -177,9 +177,9 @@ const KOBRAPAY_ICON = "https://d2xsxph8kpxj0f.cloudfront.net/310519663381362445/
 // Planes todo incluido (KobraPay + Stripe + IVA ya absorbidos en el %)
 const VOLUME_TIERS = [
   { label: "Express", min: 0, max: 50000, totalRate: 3.5, color: "emerald" },
-  { label: "Connect", min: 50001, max: 150000, totalRate: 3.0, color: "cyan" },
-  { label: "Custom", min: 150001, max: 500000, totalRate: 2.5, color: "violet" },
-  { label: "Enterprise", min: 500001, max: 9999999, totalRate: 2.0, color: "amber" },
+  { label: "Connect", min: 50001, max: 150000, totalRate: 3.1, color: "cyan" },
+  { label: "Custom", min: 150001, max: 500000, totalRate: 2.7, color: "violet" },
+  { label: "Enterprise", min: 500001, max: 9999999, totalRate: 2.5, color: "amber" },
 ];
 
 const FAQ_ITEMS = [
@@ -295,7 +295,7 @@ function PublicQuoteCalculator() {
   const simVatRate = countryData?.taxRate ?? 0.16; // IVA del país
   const vatLabel = countryData?.taxName || "IVA";
   // KobraPay: tasa del plan + IVA encima (modelo estándar México, igual que Mercado Pago, Clip, etc.)
-  // tier.totalRate es la tasa base SIN IVA (ej. 2.5%)
+  // tier.totalRate es la tasa base SIN IVA (ej. Express 3.5%, Connect 3.1%, Custom 2.7%, Enterprise 2.5%)
   const kpBaseRate = tier.totalRate; // tasa base del plan (sin IVA)
   const kpCommission = singleAmount * (kpBaseRate / 100); // comisión base
   const kpVatAmount = kpCommission * simVatRate; // IVA sobre la comisión

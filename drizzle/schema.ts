@@ -66,7 +66,7 @@ export const vendorSettings = mysqlTable("vendor_settings", {
   stripeAccountId: varchar("stripeAccountId", { length: 128 }),
   stripeOnboarded: mysqlEnum("stripeOnboarded", ["pending", "complete", "restricted"]).default("pending").notNull(),
   // Comisión que cobra la plataforma a este usuario (% por transacción)
-  commissionRate: decimal("commissionRate", { precision: 5, scale: 2 }).default("7.00").notNull(),
+  commissionRate: decimal("commissionRate", { precision: 5, scale: 2 }).default("3.50").notNull(), // Express: 3.5%, Connect: 3.1%, Custom: 2.7%, Enterprise: 2.5%
   // IVA configurable sobre la comisión de KobraPay (estrategia fiscal)
   ivaRate: decimal("ivaRate", { precision: 5, scale: 2 }).default("16.00").notNull(),
   ivaEnabled: boolean("ivaEnabled").default(true).notNull(),

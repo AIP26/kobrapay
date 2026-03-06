@@ -664,6 +664,9 @@ function TransactionDetailModal({
                   <div className="bg-red-50 border border-red-200 rounded-xl p-4 space-y-3">
                     <p className="text-sm font-semibold text-red-700">{isEmployee ? 'Solicitar reembolso' : 'Confirmar reembolso'} de {formatCurrency(tx.amount, tx.currency)}</p>
                     <p className="text-xs text-red-600">{isEmployee ? 'Tu solicitud será enviada al administrador para aprobación. El reembolso no se procesará hasta que sea aprobado.' : 'Esta acción es irreversible. El cliente recibirá el dinero en 5-10 días hábiles.'}</p>
+                    <div className="bg-amber-50 border border-amber-200 rounded-lg p-2">
+                      <p className="text-xs text-amber-800">⚠️ <strong>Aviso:</strong> La comisión de servicio de KobraPay <strong>no es reembolsable</strong>. Solo se devuelve el monto neto al cliente, descontando la comisión ya cobrada.</p>
+                    </div>
                     <div className="space-y-1">
                       <p className="text-xs font-medium text-gray-600">Tipo de reembolso:</p>
                       <div className="flex gap-2">

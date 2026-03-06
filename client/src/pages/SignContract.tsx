@@ -242,7 +242,8 @@ export default function SignContract() {
                 <p className="font-semibold text-gray-900 mb-2">CLÁUSULAS PRINCIPALES:</p>
                 <ol className="list-decimal list-inside space-y-2 text-gray-700">
                   <li><strong>Objeto:</strong> KobraPay prestará al Cliente servicios de procesamiento de pagos en línea mediante enlaces de cobro, punto de venta digital, y herramientas de gestión financiera.</li>
-                  <li><strong>Comisión:</strong> El Cliente acepta una comisión del <strong className="text-cyan-700">{contract.commissionRate}%</strong> sobre cada transacción procesada a través de la plataforma.</li>
+                  <li><strong>Comisión:</strong> El Cliente acepta una comisión del <strong className="text-cyan-700">{contract.commissionRate}% + IVA</strong> sobre cada transacción procesada a través de la plataforma.</li>
+                  <li><strong>Comisión no reembolsable:</strong> Las comisiones de procesamiento cobradas por KobraPay son definitivas e irrevocables. En caso de reembolso a un cliente final, la comisión ya cobrada no será devuelta al Cliente. El Cliente es responsable de cubrir el monto total del reembolso con sus propios fondos.</li>
                   {Number(contract.contractDurationMonths) > 0 && (
                     <li><strong>Vigencia:</strong> El presente contrato tendrá una duración de <strong>{contract.contractDurationMonths === 12 ? '1 año (12 meses)' : contract.contractDurationMonths === 24 ? '2 años (24 meses)' : `${contract.contractDurationMonths} meses`}</strong> a partir de la fecha de firma. La terminación anticipada generará una penalización equivalente a 2 meses de comisiones promedio.</li>
                   )}

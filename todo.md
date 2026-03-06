@@ -1001,3 +1001,18 @@
 - [x] Reporte PDF real con jsPDF + jspdf-autotable (membrete KobraPay, KPIs, tabla de clientes, historial mensual, footer con paginación)
 - [x] System prompts de IA actualizados con información correcta de KobraPay
 - [x] Pitch deck empresarial v2 completado (9 slides)
+
+## Sesión Mar 5-6, 2026 - Auditoría completa y producción
+
+- [x] Actualizar todos los % en routers.ts: Express 3.5%, Connect 3.1%, Custom 2.7%, Enterprise 2.5% (3 AI prompts corregidos)
+- [x] Agregar cláusula de comisión no reembolsable en Contracts.tsx (PDF del contrato)
+- [x] Agregar cláusula de comisión no reembolsable en SignContract.tsx (vista cliente al firmar)
+- [x] Agregar cláusula de comisión no reembolsable en Legal.tsx (términos de servicio)
+- [x] Agregar aviso de comisión no reembolsable en modal de confirmación de reembolso (Sales.tsx)
+- [x] Actualizar system prompts de IA con nuevos porcentajes (3.5%, 3.1%, 2.7%, 2.5%) en 3 asistentes
+- [x] Regenerar slide de Planes del pitch deck con 4 planes y % correctos
+- [x] Regenerar slide de Cierre con QR code real de kobrapay.mx
+- [x] Auditoría de seguridad: rate limiting, validación de inputs, permisos por rol - 61 tests pasando
+- [x] Verificar que las transferencias SPEI funcionan correctamente (mx_bank_transfer + CLABE)
+- [x] Verificar flujo completo de pagos con tarjeta, OXXO y SPEI en PayPage
+- [ ] Guardar checkpoint final de producción

@@ -152,6 +152,13 @@ export default function Legal() {
                 {COMPANY} no reembolsa comisiones por transacciones que hayan sido procesadas exitosamente.
               </p>
               <p>
+                <strong>Comisiones en caso de reembolso:</strong> Las comisiones de procesamiento cobradas por {COMPANY}
+                son definitivas e irrevocables. En caso de que el Comercio realice un reembolso total o parcial a su
+                cliente final (Pagador), la comisión de procesamiento previamente cobrada no será devuelta al Comercio.
+                El Comercio es responsable de cubrir el monto total del reembolso a su cliente final con sus propios fondos.
+                Esta política aplica sin excepción, independientemente del motivo del reembolso.
+              </p>
+              <p>
                 Stripe, Inc. puede aplicar tarifas adicionales por procesamiento internacional, conversión de divisas
                 o disputas (contracargos), las cuales serán trasladadas al Comercio.
               </p>
