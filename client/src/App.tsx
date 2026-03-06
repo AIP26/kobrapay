@@ -69,6 +69,8 @@ import SuperAdminMetrics from "./pages/SuperAdminMetrics";
 import AssociateLiquidation from "./pages/AssociateLiquidation";
 import PlatformConfig from "./pages/PlatformConfig";
 import BusinessProfile from "./pages/BusinessProfile";
+import ImpersonateClient from "./pages/ImpersonateClient";
+import ImpersonationBar from "./components/ImpersonationBar";
 import KobraBot from "./components/KobraBot";
 import WelcomeOnboarding from "./components/WelcomeOnboarding";
 import { trpc } from "@/lib/trpc";
@@ -157,6 +159,7 @@ function Router() {
       <Route path="/sign-contract/:token" component={SignContract} />
       <Route path="/complete-profile" component={CompleteProfile} />
       <Route path="/dashboard/profile" component={MyProfile} />
+      <Route path="/dashboard/impersonate" component={ImpersonateClient} />
       <Route path="/pending">{() => <PendingApproval status="pending" />}</Route>
       <Route path="/dashboard/colaboradores" component={Colaboradores} />
       <Route path="/login" component={LoginEmail} />
@@ -177,6 +180,7 @@ function App() {
     <ErrorBoundary>
       <ThemeProvider defaultTheme="light">
         <TooltipProvider>
+          <ImpersonationBar />
           <Toaster />
           <Router />
           <KobraBotWrapper />

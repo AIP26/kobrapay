@@ -22,6 +22,7 @@ import {
   Plus,
   QrCode,
   Search,
+  Trash2,
   XCircle,
 } from "lucide-react";
 
@@ -69,6 +70,11 @@ export default function Links() {
 
   const cancelLink = trpc.paymentLinks.cancel.useMutation({
     onSuccess: () => { utils.paymentLinks.list.invalidate(); toast.success("Enlace cancelado"); },
+    onError: (err) => toast.error(err.message),
+  });
+
+  const deleteLink = trpc.paymentLinks.delete.useMutation({
+    onSuccess: () => { utils.paymentLinks.list.invalidate(); utils.transactions.stats.invalidate(); toast.success("Enlace eliminado"); },
     onError: (err) => toast.error(err.message),
   });
 
@@ -323,6 +329,13 @@ export default function Links() {
                                 title="Cancelar enlace"
                               >
                                 <XCircle className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => { if (confirm("¿Eliminar este enlace permanentemente? Esta acción no se puede deshacer.")) deleteLink.mutate({ id: link.id }); }}
+                                className="p-1.5 rounded-lg hover:bg-red-100 text-gray-400 hover:text-red-600 transition-all"
+                                title="Eliminar enlace"
+                              >
+                                <Trash2 className="w-4 h-4" />
                               </button>
                             </>
                           )}

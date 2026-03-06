@@ -50,6 +50,7 @@ import {
   Star,
   Banknote,
   Activity,
+  Eye,
 } from "lucide-react";
 import { useState, useCallback, useMemo, useEffect, useRef } from "react";
 import GlobalSearch from "./GlobalSearch";
@@ -187,6 +188,7 @@ const NAV_GROUPS = [
       { href: "/dashboard/kobra-score", icon: Star, label: "KobraScore" },
       { href: "/dashboard/quote-logs", icon: Mail, label: "Cotizaciones" },
       { href: "/dashboard/security", icon: Shield, label: "Seguridad" },
+      { href: "/dashboard/impersonate", icon: Eye, label: "Ver como Cliente", superAdminOnly: true },
       { href: "/dashboard/associate-liquidation", icon: TrendingUp, label: "Liquidación Asociados", superAdminOnly: true },
     ],
   },

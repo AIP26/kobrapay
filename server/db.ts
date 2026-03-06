@@ -434,7 +434,7 @@ export async function updateTransactionStatus(
 
 export async function getDashboardStats(userId: number) {
   const db = await getDb();
-  if (!db) return { totalCollected: 0, totalNetAmount: 0, totalCommission: 0, totalLinks: 0, paidLinks: 0, pendingLinks: 0, monthCollected: 0, monthTransactions: 0, todayCollected: 0, todayTransactions: 0, totalCustomers: 0 };
+  if (!db) return { totalCollected: 0, totalNetAmount: 0, totalCommission: 0, totalLinks: 0, paidLinks: 0, pendingLinks: 0, monthCollected: 0, monthTransactions: 0, todayCollected: 0, todayTransactions: 0, totalCustomers: 0, totalTransactions: 0 };
 
   const links = await db.select().from(paymentLinks).where(eq(paymentLinks.userId, userId));
   const txs = await db
@@ -458,7 +458,9 @@ export async function getDashboardStats(userId: number) {
     totalNetAmount,
     totalCommission,
     totalLinks: links.length,
-    paidLinks: links.filter((l) => l.status === "paid").length,
+    // paidLinks = transacciones succeeded reales (no links con status paid que pueden ser de prueba)
+    paidLinks: txs.length,
+    totalTransactions: txs.length,
     pendingLinks: links.filter((l) => l.status === "pending").length,
     monthCollected: monthTxs.reduce((sum, t) => sum + parseFloat(String(t.amount)), 0),
     monthTransactions: monthTxs.length,

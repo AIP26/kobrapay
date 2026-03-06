@@ -610,12 +610,18 @@ export default function Home() {
                 </Button>
               )}
             </div>
-            <div className="mt-8 flex items-center gap-2.5 flex-wrap">
-              <span className="text-xs text-gray-500">Aceptamos:</span>
-              {["VISA", "MC", "AMEX"].map((brand) => (
-                <span key={brand} className="bg-white/10 text-white text-xs font-bold px-2.5 py-0.5 rounded border border-white/10">{brand}</span>
-              ))}
-              <span className="text-xs text-gray-500">· Powered by Stripe</span>
+            <div className="mt-8 space-y-2.5">
+              <p className="text-xs text-gray-500 font-medium">Aceptamos todos los métodos de pago:</p>
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="bg-blue-600/20 border border-blue-500/30 text-blue-300 text-xs font-black px-2.5 py-1 rounded-lg">VISA</span>
+                <span className="bg-orange-600/20 border border-orange-500/30 text-orange-300 text-xs font-black px-2.5 py-1 rounded-lg">Mastercard</span>
+                <span className="bg-blue-400/20 border border-blue-400/30 text-blue-200 text-xs font-black px-2.5 py-1 rounded-lg">AMEX</span>
+                <span className="bg-red-600/20 border border-red-500/30 text-red-300 text-xs font-bold px-2.5 py-1 rounded-lg">🏪 OXXO</span>
+                <span className="bg-green-600/20 border border-green-500/30 text-green-300 text-xs font-bold px-2.5 py-1 rounded-lg">🏦 SPEI</span>
+                <span className="bg-white/10 border border-white/10 text-white text-xs font-bold px-2.5 py-1 rounded-lg"> Apple Pay</span>
+                <span className="bg-white/10 border border-white/10 text-white text-xs font-bold px-2.5 py-1 rounded-lg">G Pay</span>
+              </div>
+              <p className="text-xs text-gray-600">Procesado por Stripe · SSL 256-bit · PCI DSS</p>
             </div>
           </div>
         </div>

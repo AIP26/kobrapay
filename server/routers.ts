@@ -1059,6 +1059,25 @@ export const appRouter = router({
         return { success: true };
       }),
 
+    delete: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        const { getDb: _getDb } = await import('./db');
+        const db = await _getDb();
+        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+        const { paymentLinks: plTable } = await import('../drizzle/schema');
+        const { eq, and } = await import('drizzle-orm');
+        const [link] = await db.select().from(plTable)
+          .where(and(eq(plTable.id, input.id), eq(plTable.userId, ctx.user.id)))
+          .limit(1);
+        if (!link) throw new TRPCError({ code: "NOT_FOUND" });
+        if (link.status === 'paid') {
+          throw new TRPCError({ code: "BAD_REQUEST", message: "No se pueden eliminar enlaces pagados. Tienen historial de transacciones." });
+        }
+        await db.delete(plTable).where(and(eq(plTable.id, input.id), eq(plTable.userId, ctx.user.id)));
+        return { success: true };
+      }),
+
     getByToken: publicProcedure
       .input(z.object({ token: z.string() }))
       .query(async ({ input }) => {
@@ -2608,13 +2627,18 @@ export const appRouter = router({
   commissions: router({
     // Resumen general de comisiones de la plataforma
     summary: protectedProcedure.query(async ({ ctx }) => {
-      if (!ctx.isSuperAdmin) throw new TRPCError({ code: "FORBIDDEN" });
+      // Admins normales pueden ver sus propias comisiones; superadmin ve todo
+      const isAdmin = ctx.user.role === 'admin';
+      if (!ctx.isSuperAdmin && !isAdmin) throw new TRPCError({ code: "FORBIDDEN" });
       const db = await import('./db').then(m => m.getDb());
       if (!db) return { totalEarned: 0, totalTransactions: 0, clients: [] };
       const { eq, and, desc, sql } = await import('drizzle-orm');
       const { transactions, users, platformClients } = await import('../drizzle/schema');
 
-      // Obtener todas las transacciones exitosas
+      // Obtener transacciones exitosas (filtrar por userId si es admin normal)
+      const txWhere = ctx.isSuperAdmin
+        ? eq(transactions.status, 'succeeded')
+        : and(eq(transactions.status, 'succeeded'), eq(transactions.userId, ctx.user.id));
       const allTxs = await db.select({
         id: transactions.id,
         userId: transactions.userId,
@@ -2632,10 +2656,13 @@ export const appRouter = router({
         currency: transactions.currency,
         paymentLinkId: transactions.paymentLinkId,
       }).from(transactions)
-        .where(eq(transactions.status, 'succeeded'))
+        .where(txWhere)
         .orderBy(desc(transactions.createdAt));
 
-      // Obtener todos los clientes de la plataforma
+      // Obtener clientes de la plataforma (filtrar por adminUserId si es admin normal)
+      const clientsWhere = ctx.isSuperAdmin
+        ? undefined
+        : eq(platformClients.adminUserId, ctx.user.id);
       const clients = await db.select({
         id: platformClients.id,
         userId: platformClients.userId,
@@ -2644,7 +2671,8 @@ export const appRouter = router({
         businessName: platformClients.businessName,
         commissionRate: platformClients.commissionRate,
         status: platformClients.status,
-      }).from(platformClients);
+      }).from(platformClients)
+        .where(clientsWhere);
 
       // Obtener datos de usuarios y vendor_settings para fallback
       const { vendorSettings } = await import('../drizzle/schema');
@@ -2674,6 +2702,7 @@ export const appRouter = router({
         lastTransactionAt: Date | null;
       }>();
 
+      // Poblar clientMap con clientes registrados (usando userId si existe)
       for (const client of clients) {
         if (!client.userId) continue;
         clientMap.set(client.userId, {
@@ -2688,6 +2717,28 @@ export const appRouter = router({
           totalCommission: 0,
           lastTransactionAt: null,
         });
+      }
+
+      // También agregar entradas para usuarios con transacciones que no están en platform_clients
+      for (const tx of allTxs) {
+        if (!clientMap.has(tx.userId)) {
+          const u = userMap.get(tx.userId);
+          const vs = vendorMap.get(tx.userId);
+          // Buscar en platform_clients por email del usuario
+          const matchedClient = clients.find(c => c.email?.toLowerCase() === u?.email?.toLowerCase());
+          clientMap.set(tx.userId, {
+            clientId: matchedClient?.id ?? tx.userId,
+            name: u?.name || u?.email || `Usuario #${tx.userId}`,
+            email: u?.email || '',
+            businessName: vs?.businessName || matchedClient?.businessName || null,
+            commissionRate: matchedClient?.commissionRate || null,
+            status: 'active',
+            totalTransactions: 0,
+            totalVolume: 0,
+            totalCommission: 0,
+            lastTransactionAt: null,
+          });
+        }
       }
 
       let totalEarned = 0;
@@ -8068,6 +8119,76 @@ Responde SIEMPRE en español mexicano, de forma amigable, clara y práctica. Si 
         }
         return { success: true };
       }),
+  }),
+
+  // ─── Impersonación de clientes (solo superadmin) ──────────────────────────────
+  impersonate: router({
+    // Obtener lista de usuarios que se pueden impersonar
+    listUsers: protectedProcedure.query(async ({ ctx }) => {
+      if (!ctx.isSuperAdmin) throw new TRPCError({ code: "FORBIDDEN" });
+      const db = await import('./db').then(m => m.getDb());
+      if (!db) return [];
+      const { users, vendorSettings } = await import('../drizzle/schema');
+      const { eq, ne } = await import('drizzle-orm');
+      const allUsers = await db.select({
+        id: users.id,
+        name: users.name,
+        email: users.email,
+        role: users.role,
+        openId: users.openId,
+        accountStatus: users.accountStatus,
+        createdAt: users.createdAt,
+      }).from(users)
+        .where(ne(users.id, ctx.user.id))
+        .orderBy(users.id);
+      // Obtener businessName de vendorSettings
+      const allVS = await db.select({ userId: vendorSettings.userId, businessName: vendorSettings.businessName }).from(vendorSettings);
+      const vsMap = new Map(allVS.map(v => [v.userId, v.businessName]));
+      return allUsers.map(u => ({ ...u, businessName: vsMap.get(u.id) || null }));
+    }),
+
+    // Crear token de sesión para impersonar a un usuario
+    startSession: protectedProcedure
+      .input(z.object({ userId: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        if (!ctx.isSuperAdmin) throw new TRPCError({ code: "FORBIDDEN" });
+        const db = await import('./db').then(m => m.getDb());
+        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+        const { users } = await import('../drizzle/schema');
+        const { eq } = await import('drizzle-orm');
+        const found = await db.select({ id: users.id, openId: users.openId, name: users.name, email: users.email })
+          .from(users).where(eq(users.id, input.userId)).limit(1);
+        if (!found.length) throw new TRPCError({ code: "NOT_FOUND", message: "Usuario no encontrado" });
+        const target = found[0];
+        const { sdk: sdkInstance } = await import('./_core/sdk');
+        const { COOKIE_NAME } = await import('@shared/const');
+        const { getSessionCookieOptions } = await import('./_core/cookies');
+        // Guardar el token original del superadmin en una cookie separada para poder restaurar
+        const originalToken = ctx.req.cookies?.[COOKIE_NAME];
+        const impersonateToken = await sdkInstance.createSessionToken(target.openId, {
+          name: target.name || '',
+          expiresInMs: 4 * 60 * 60 * 1000, // 4 horas máximo
+        });
+        const cookieOptions = getSessionCookieOptions(ctx.req);
+        // Guardar token original para restaurar después
+        if (originalToken) {
+          ctx.res.cookie('kobrapay_superadmin_restore', originalToken, { ...cookieOptions, maxAge: 4 * 60 * 60 * 1000 });
+        }
+        ctx.res.cookie(COOKIE_NAME, impersonateToken, { ...cookieOptions, maxAge: 4 * 60 * 60 * 1000 });
+        return { success: true, targetUser: { id: target.id, name: target.name, email: target.email } };
+      }),
+
+    // Restaurar sesión original del superadmin
+    restoreSession: protectedProcedure.mutation(async ({ ctx }) => {
+      const { COOKIE_NAME } = await import('@shared/const');
+      const { getSessionCookieOptions } = await import('./_core/cookies');
+      const restoreToken = ctx.req.cookies?.['kobrapay_superadmin_restore'];
+      if (!restoreToken) throw new TRPCError({ code: "NOT_FOUND", message: "No hay sesión de superadmin para restaurar" });
+      const cookieOptions = getSessionCookieOptions(ctx.req);
+      ctx.res.cookie(COOKIE_NAME, restoreToken, { ...cookieOptions, maxAge: 30 * 24 * 60 * 60 * 1000 });
+      ctx.res.clearCookie('kobrapay_superadmin_restore', cookieOptions);
+      return { success: true };
+    }),
   }),
 
 });

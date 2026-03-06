@@ -1196,12 +1196,26 @@ function PaymentForm({ token }: { token: string }) {
                           <p className="text-xs text-orange-700">Al hacer clic se generará un voucher de pago. Llévalo a cualquier tienda OXXO y paga en efectivo. El voucher expira en 2 días.</p>
                         </div>
                         {oxxoVoucherUrl ? (
-                          <div className="text-center">
-                            <p className="text-sm text-green-700 font-semibold mb-3">✅ Voucher generado</p>
-                            <a href={oxxoVoucherUrl} target="_blank" rel="noopener noreferrer"
-                              className="inline-block bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 px-6 rounded-xl text-sm">
-                              Ver voucher OXXO
-                            </a>
+                          <div className="space-y-3">
+                            <div className="bg-orange-50 border-2 border-orange-400 rounded-xl p-4 text-center">
+                              <div className="text-4xl mb-2">🏪</div>
+                              <p className="text-base font-bold text-orange-800 mb-1">¡Voucher listo! Pago pendiente</p>
+                              <p className="text-xs text-orange-700 mb-3">Ve a cualquier tienda OXXO, muestra este código en caja y paga en efectivo. Tienes <strong>2 días</strong> para pagar antes de que expire.</p>
+                              <a href={oxxoVoucherUrl} target="_blank" rel="noopener noreferrer"
+                                className="inline-flex items-center justify-center gap-2 bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 px-6 rounded-xl text-sm w-full">
+                                📄 Ver e imprimir voucher OXXO
+                              </a>
+                            </div>
+                            <div className="bg-gray-50 rounded-xl p-3">
+                              <p className="text-xs font-semibold text-gray-700 mb-2">Pasos para pagar:</p>
+                              <ol className="text-xs text-gray-600 space-y-1">
+                                <li>1️⃣ Abre el voucher y muéstralo en caja del OXXO</li>
+                                <li>2️⃣ Indica que quieres pagar un "servicio" o "pago en línea"</li>
+                                <li>3️⃣ Entrega el efectivo al cajero</li>
+                                <li>4️⃣ Guarda tu ticket como comprobante</li>
+                              </ol>
+                            </div>
+                            <p className="text-xs text-center text-gray-400">La confirmación del pago es automática al realizarlo en OXXO</p>
                           </div>
                         ) : (
                           <Button

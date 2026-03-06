@@ -64,8 +64,8 @@ export default function CreateLink() {
     chargebackProtectionText: "",
   });
   const [msiOptions, setMsiOptions] = useState<number[]>([]);
-  // Métodos de pago: por defecto todos activos
-  const [allowedPaymentMethods, setAllowedPaymentMethods] = useState<("card" | "oxxo" | "spei" | "meses")[]>(["card", "oxxo", "spei"]);
+  // Métodos de pago: por defecto solo tarjeta (OXXO/SPEI/MSI se activan manualmente)
+  const [allowedPaymentMethods, setAllowedPaymentMethods] = useState<("card" | "oxxo" | "spei" | "meses")[]>(["card"]);
   const [tipEnabled, setTipEnabled] = useState(false);
   const [tipSuggestions, setTipSuggestions] = useState<number[]>([10, 15, 20]);
   const [showAdvanced, setShowAdvanced] = useState(false);
@@ -188,7 +188,7 @@ export default function CreateLink() {
     setCreatedLink(null);
     setCopied(false);
     setMsiOptions([]);
-    setAllowedPaymentMethods(["card", "oxxo", "spei"]);
+    setAllowedPaymentMethods(["card"]);
     setTipEnabled(false);
     setTipSuggestions([10, 15, 20]);
     setForm({ clientName: "", clientEmail: "", clientPhone: "", amount: "", description: "", currency: "MXN", countryCode: "MX", expiresInDays: "0", requireOtp: false, requireSelfie: false, requireSignature: false, requireIdUpload: false, usdExchangeRate: "", chargebackProtectionText: "" });
