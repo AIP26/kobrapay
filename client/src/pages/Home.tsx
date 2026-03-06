@@ -294,10 +294,13 @@ function PublicQuoteCalculator() {
   const simSymbol = countryData?.currencySymbol || "$";
   const simVatRate = countryData?.taxRate ?? 0.16; // IVA del país
   const vatLabel = countryData?.taxName || "IVA";
-  // KobraPay: tasa base + IVA (igual que la competencia)
-  const kpBaseRate = tier.totalRate / (1 + simVatRate); // tasa base sin IVA
-  const kpNote = `${kpBaseRate.toFixed(2)}% + ${vatLabel}`;
-  const totalFees = singleAmount * (tier.totalRate / 100);
+  // KobraPay: tasa del plan + IVA encima (modelo estándar México, igual que Mercado Pago, Clip, etc.)
+  // tier.totalRate es la tasa base SIN IVA (ej. 2.5%)
+  const kpBaseRate = tier.totalRate; // tasa base del plan (sin IVA)
+  const kpCommission = singleAmount * (kpBaseRate / 100); // comisión base
+  const kpVatAmount = kpCommission * simVatRate; // IVA sobre la comisión
+  const kpNote = `${kpBaseRate.toFixed(1)}% + ${vatLabel}`;
+  const totalFees = kpCommission + kpVatAmount; // comisión + IVA
   const netReceived = singleAmount - totalFees;
   // Formatear moneda del país
   const fmtAmt = (n: number) => `${simSymbol}${n.toLocaleString("es-MX", { minimumFractionDigits: 2 })} ${simCurrency}`;
@@ -404,12 +407,12 @@ function PublicQuoteCalculator() {
               <span className="text-sm font-semibold text-white">{fmtAmt(singleAmount)}</span>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-xs text-gray-400">Comisión *KobraPay ({kpBaseRate.toFixed(2)}%)</span>
-              <span className="text-sm font-semibold text-red-400">- {fmtAmt(singleAmount * kpBaseRate / 100)}</span>
+              <span className="text-xs text-gray-400">Comisión KobraPay ({kpBaseRate.toFixed(1)}%)</span>
+              <span className="text-sm font-semibold text-red-400">- {fmtAmt(kpCommission)}</span>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-xs text-gray-400">{vatLabel} ({(simVatRate * 100).toFixed(0)}%)</span>
-              <span className="text-sm font-semibold text-red-400">- {fmtAmt(singleAmount * kpBaseRate / 100 * simVatRate)}</span>
+              <span className="text-xs text-gray-400">{vatLabel} ({(simVatRate * 100).toFixed(0)}%) sobre comisión</span>
+              <span className="text-sm font-semibold text-red-400">- {fmtAmt(kpVatAmount)}</span>
             </div>
             <div className="border-t border-white/10 pt-3 flex items-center justify-between">
               <span className="text-sm font-bold text-white">Tú recibes</span>
