@@ -962,8 +962,8 @@ export const appRouter = router({
           usdExchangeRate: z.number().min(0).default(0),
           // MSI: array de meses habilitados (ej: [3, 6, 9, 12])
           msiOptions: z.array(z.number().int().min(3).max(24)).optional(),
-          // Métodos de pago permitidos: ["card","oxxo","spei"] — null/vacío = todos los de la plataforma
-          allowedPaymentMethods: z.array(z.enum(["card","oxxo","spei"])).optional(),
+          // Métodos de pago permitidos: ["card","oxxo","spei","meses"] — null/vacío = todos los de la plataforma
+          allowedPaymentMethods: z.array(z.enum(["card","oxxo","spei","meses"])).optional(),
           // Propina
           tipEnabled: z.boolean().default(false),
           tipSuggestions: z.array(z.number().int().min(1).max(100)).optional(),
@@ -1455,34 +1455,36 @@ export const appRouter = router({
         const kobraPayFeeCents = Math.round(amountCents * kobraPayFeeRate);
 
         // Determinar métodos de pago permitidos según configuración del enlace
-        // Por defecto solo tarjeta (card) — OXXO y SPEI requieren activación explícita en Stripe
+        // Por defecto solo tarjeta. OXXO, SPEI y meses sin intereses se activan por enlace.
         const linkAllowedMethods: string[] = link.allowedPaymentMethods
           ? JSON.parse(link.allowedPaymentMethods as string)
           : ['card'];
-
         // Mapear a tipos de Stripe
-        // NOTA: customer_balance (SPEI) requiere activación especial en el dashboard de Stripe.
-        // Solo se incluye si el enlace lo tiene explícitamente activado.
         const stripeMethodTypes: string[] = [];
         if (linkAllowedMethods.includes('card')) stripeMethodTypes.push('card');
         if (currency === 'mxn' && linkAllowedMethods.includes('oxxo')) stripeMethodTypes.push('oxxo');
-        // SPEI/customer_balance: solo si está explícitamente activado Y la cuenta Stripe lo soporta
-        // if (currency === 'mxn' && linkAllowedMethods.includes('spei')) stripeMethodTypes.push('customer_balance');
+        // SPEI (transferencia bancaria) — activado en Stripe dashboard
+        if (currency === 'mxn' && linkAllowedMethods.includes('spei')) stripeMethodTypes.push('customer_balance');
         // Siempre incluir al menos tarjeta como fallback
         if (stripeMethodTypes.length === 0) stripeMethodTypes.push('card');
-
+        // Meses sin intereses (installments) — solo para MXN con tarjetas mexicanas
+        const enableInstallments = currency === 'mxn' && linkAllowedMethods.includes('meses');
         // Construir payment_method_options solo para los métodos activos
         const pmOptions: Record<string, unknown> = {};
         if (stripeMethodTypes.includes('oxxo')) {
-          pmOptions.oxxo = { expires_after_days: 2 };
+          pmOptions.oxxo = { expires_after_days: 3 };
         }
-        // customer_balance desactivado hasta que la cuenta Stripe tenga mx_bank_transfer habilitado
-        // if (stripeMethodTypes.includes('customer_balance')) {
-        //   pmOptions.customer_balance = {
-        //     funding_type: 'bank_transfer',
-        //     bank_transfer: { type: 'mx_bank_transfer' },
-        //   };
-        // }
+        if (stripeMethodTypes.includes('customer_balance')) {
+          pmOptions.customer_balance = {
+            funding_type: 'bank_transfer',
+            bank_transfer: { type: 'mx_bank_transfer' },
+          };
+        }
+        if (enableInstallments) {
+          pmOptions.card = {
+            installments: { enabled: true },
+          };
+        }
 
         const paymentIntentParams: Parameters<typeof stripe.paymentIntents.create>[0] = {
           amount: amountCents,

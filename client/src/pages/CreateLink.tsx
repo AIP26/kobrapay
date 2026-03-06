@@ -65,7 +65,7 @@ export default function CreateLink() {
   });
   const [msiOptions, setMsiOptions] = useState<number[]>([]);
   // Métodos de pago: por defecto todos activos
-  const [allowedPaymentMethods, setAllowedPaymentMethods] = useState<("card" | "oxxo" | "spei")[]>(["card", "oxxo", "spei"]);
+  const [allowedPaymentMethods, setAllowedPaymentMethods] = useState<("card" | "oxxo" | "spei" | "meses")[]>(["card", "oxxo", "spei"]);
   const [tipEnabled, setTipEnabled] = useState(false);
   const [tipSuggestions, setTipSuggestions] = useState<number[]>([10, 15, 20]);
   const [showAdvanced, setShowAdvanced] = useState(false);
@@ -637,7 +637,7 @@ export default function CreateLink() {
                       </div>
                       {allowedPaymentMethods.length < 3 && (
                         <p className="text-xs text-amber-600">
-                          Solo se mostrarán: {allowedPaymentMethods.map(m => m === "card" ? "Tarjeta" : m === "oxxo" ? "OXXO" : "SPEI").join(", ")}
+                          Solo se mostrarán: {allowedPaymentMethods.map(m => m === "card" ? "Tarjeta" : m === "oxxo" ? "OXXO" : m === "spei" ? "SPEI" : "Meses sin intereses").join(", ")}
                         </p>
                       )}
                     </div>
