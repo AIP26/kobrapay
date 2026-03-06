@@ -1054,3 +1054,8 @@
 - [x] Webhook Stripe: dispute.created, dispute.updated, dispute.closed actualizan estado en BD
 - [x] Procedimiento tRPC submitEvidence: envía evidencia automáticamente a Stripe con un clic
 - [x] Aviso corregido en reembolsos: cliente recibe 100%, negocio absorbe la comisión
+
+## Bugs Reportados
+- [x] Error React #310 en página "Ver como Cliente" (ImpersonateClient) - crash al cargar (hooks movidos antes de early return)
+- [x] Limitar menú lateral para clientes (rol admin): solo mostrar módulos de su negocio, ocultar herramientas de superadmin
+- [x] Mostrar barra naranja de impersonación cuando superadmin ve como cliente

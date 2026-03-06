@@ -260,6 +260,21 @@ function ClientDetailPanel({ clientId, onBack }: { clientId: number; onBack: () 
   // Tabs
   const [activeTab, setActiveTab] = useState<"resumen" | "perfil" | "negocio" | "asociado" | "permisos" | "transacciones">("resumen");
 
+  // Permisos — hooks DEBEN estar antes de cualquier early return (reglas de React)
+  const parsePerms = (raw: string | null): Record<string, boolean> => {
+    if (!raw) return Object.fromEntries(ALL_PERMISSIONS.map(p => [p.key, true]));
+    try { return JSON.parse(raw) as Record<string, boolean>; } catch { return {}; }
+  };
+  const [localPerms, setLocalPerms] = useState<Record<string, boolean>>({});
+  const [permsDirty, setPermsDirty] = useState(false);
+  const updatePerms = trpc.clients.updatePermissions.useMutation({
+    onSuccess: () => { toast.success("Permisos actualizados"); setPermsDirty(false); utils.clients.getDetail.invalidate({ id: clientId }); },
+    onError: () => toast.error("Error al guardar permisos"),
+  });
+  const togglePerm = (key: string) => {
+    setLocalPerms(prev => { const next = { ...prev, [key]: !prev[key] }; setPermsDirty(true); return next; });
+  };
+
   if (isLoading) {
     return (
       <div className="space-y-4">
@@ -280,20 +295,9 @@ function ClientDetailPanel({ clientId, onBack }: { clientId: number; onBack: () 
   const initials = client.name.split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2);
   const currentCommission = parseFloat(String(client.commissionRate ?? 7));
 
-  // Permisos
-  const parsePerms = (raw: string | null): Record<string, boolean> => {
-    if (!raw) return Object.fromEntries(ALL_PERMISSIONS.map(p => [p.key, true]));
-    try { return JSON.parse(raw) as Record<string, boolean>; } catch { return {}; }
-  };
-  const [localPerms, setLocalPerms] = useState<Record<string, boolean>>(() => parsePerms(permissions));
-  const [permsDirty, setPermsDirty] = useState(false);
-  const updatePerms = trpc.clients.updatePermissions.useMutation({
-    onSuccess: () => { toast.success("Permisos actualizados"); setPermsDirty(false); utils.clients.getDetail.invalidate({ id: clientId }); },
-    onError: () => toast.error("Error al guardar permisos"),
-  });
-  const togglePerm = (key: string) => {
-    setLocalPerms(prev => { const next = { ...prev, [key]: !prev[key] }; setPermsDirty(true); return next; });
-  };
+  // Sincronizar permisos cuando llegan los datos (si aún no están cargados)
+  const parsedPerms = parsePerms(permissions);
+  const effectivePerms = Object.keys(localPerms).length > 0 ? localPerms : parsedPerms;
 
   const TABS = [
     { id: "resumen", label: "Resumen" },
@@ -773,7 +777,7 @@ function ClientDetailPanel({ clientId, onBack }: { clientId: number; onBack: () 
           <CardContent className="p-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
               {ALL_PERMISSIONS.map(({ key, label, description }) => {
-                const enabled = localPerms[key] !== false;
+                const enabled = effectivePerms[key] !== false;
                 return (
                   <button key={key} onClick={() => togglePerm(key)}
                     className={`flex items-start gap-3 p-3 rounded-xl border text-left transition-all ${

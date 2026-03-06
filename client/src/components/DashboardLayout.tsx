@@ -59,6 +59,7 @@ import { Link, useLocation } from "wouter";
 import { Button } from "./ui/button";
 import { Avatar, AvatarFallback } from "./ui/avatar";
 import PendingApproval from "@/pages/PendingApproval";
+import ImpersonationBar from "./ImpersonationBar";
 
 const KOBRAPAY_ICON = "https://d2xsxph8kpxj0f.cloudfront.net/310519663381362445/Tm7GPbTEGgvmgj5v2qy4Z4/kobrapay_logo_pro_white_fd2cc62e.png";
 
@@ -106,8 +107,10 @@ const NAV_GROUPS = [
       { href: "/dashboard", icon: Home, label: "Panel" },
       { href: "/dashboard/sales", icon: BarChart3, label: "Mis Ventas" },
       { href: "/dashboard/report", icon: FileText, label: "Reporte Mensual" },
+      // Solo superadmin ve KobraPay Advisor y Advisor IA
       { href: "/dashboard/advisor", icon: Bot, label: "KobraPay Advisor", superAdminOnly: true },
       { href: "/dashboard/assistant-advisor", icon: Bot, label: "Advisor IA", assistantOnly: true },
+      // Business Advisor visible para clientes (admin)
       { href: "/dashboard/business-advisor", icon: Bot, label: "Business Advisor", adminOnly: true },
       { href: "/dashboard/associate", icon: Users, label: "Cuenta de Asociado", associateOnly: true },
     ],
@@ -136,15 +139,18 @@ const NAV_GROUPS = [
     icon: Building2,
     color: "text-blue-500/70",
     items: [
-      { href: "/dashboard/contracts", icon: Handshake, label: "Contratos" },
-      { href: "/dashboard/agents", icon: UserPlus, label: "Vendedores" },
-      { href: "/dashboard/commissions", icon: TrendingUp, label: "Comisiones" },
-      { href: "/dashboard/hr", icon: Briefcase, label: "Expedientes RH", superAdminOnly: true },
-      { href: "/dashboard/staff", icon: UserCheck, label: "Colaboradores", superAdminOnly: true },
-      { href: "/dashboard/checador", icon: Clock, label: "Reloj Checador", superAdminOnly: true },
-      { href: "/dashboard/nomina", icon: Calculator, label: "Nómina", superAdminOnly: true },
+      // Contratos, Vendedores, Comisiones: solo superadmin
+      { href: "/dashboard/contracts", icon: Handshake, label: "Contratos", superAdminOnly: true },
+      { href: "/dashboard/agents", icon: UserPlus, label: "Vendedores", superAdminOnly: true },
+      { href: "/dashboard/commissions", icon: TrendingUp, label: "Comisiones", superAdminOnly: true },
+      // Estos módulos SÍ son para clientes (admin)
+      { href: "/dashboard/hr", icon: Briefcase, label: "Expedientes RH" },
+      { href: "/dashboard/staff", icon: UserCheck, label: "Colaboradores" },
+      { href: "/dashboard/checador", icon: Clock, label: "Reloj Checador" },
+      { href: "/dashboard/nomina", icon: Calculator, label: "Nómina" },
+      // Capacitaciones: solo superadmin
       { href: "/dashboard/training", icon: GraduationCap, label: "Capacitaciones", superAdminOnly: true },
-      { href: "/dashboard/proveedores", icon: BookUser, label: "Proveedores", superAdminOnly: true },
+      { href: "/dashboard/proveedores", icon: BookUser, label: "Proveedores" },
     ],
   },
   {
@@ -156,9 +162,10 @@ const NAV_GROUPS = [
       { href: "/dashboard/module-access", icon: ShieldCheck, label: "Control de Módulos" },
       { href: "/dashboard/module-manager", icon: ShieldCheck, label: "Accesos Equipo" },
       { href: "/dashboard/assistant-panel", icon: UserCog, label: "Panel Asistente" },
-      { href: "/dashboard/medical", icon: Stethoscope, label: "Agenda Médica", superAdminOnly: true },
-      { href: "/dashboard/prescriptions", icon: ClipboardList, label: "Prescripciones", superAdminOnly: true },
-      { href: "/dashboard/farmacia", icon: Pill, label: "Farmacia", superAdminOnly: true },
+      // Agenda Médica, Prescripciones y Farmacia visibles para clientes (admin)
+      { href: "/dashboard/medical", icon: Stethoscope, label: "Agenda Médica" },
+      { href: "/dashboard/prescriptions", icon: ClipboardList, label: "Prescripciones" },
+      { href: "/dashboard/farmacia", icon: Pill, label: "Farmacia" },
     ],
   },
   {
@@ -180,13 +187,15 @@ const NAV_GROUPS = [
     color: "text-amber-500/70",
     adminOnly: true,
     items: [
-      { href: "/dashboard/metrics", icon: Activity, label: "Panel de Métricas" },
+      // Todo el bloque de administración es solo para superadmin
+      { href: "/dashboard/metrics", icon: Activity, label: "Panel de Métricas", superAdminOnly: true },
       { href: "/dashboard/platform-config", icon: Settings, label: "Config. Plataforma", superAdminOnly: true },
-      { href: "/dashboard/clients", icon: Users, label: "Mis Clientes" },
-      { href: "/dashboard/registrations", icon: UserCog, label: "Registros" },
-      { href: "/dashboard/ai-scoring", icon: Brain, label: "Scoring IA" },
-      { href: "/dashboard/kobra-score", icon: Star, label: "KobraScore" },
-      { href: "/dashboard/quote-logs", icon: Mail, label: "Cotizaciones" },
+      { href: "/dashboard/clients", icon: Users, label: "Mis Clientes", superAdminOnly: true },
+      { href: "/dashboard/registrations", icon: UserCog, label: "Registros", superAdminOnly: true },
+      { href: "/dashboard/ai-scoring", icon: Brain, label: "Scoring IA", superAdminOnly: true },
+      { href: "/dashboard/kobra-score", icon: Star, label: "KobraScore", superAdminOnly: true },
+      { href: "/dashboard/quote-logs", icon: Mail, label: "Cotizaciones", superAdminOnly: true },
+      // Seguridad SÍ visible para clientes (admin)
       { href: "/dashboard/security", icon: Shield, label: "Seguridad" },
       { href: "/dashboard/impersonate", icon: Eye, label: "Ver como Cliente", superAdminOnly: true },
       { href: "/dashboard/associate-liquidation", icon: TrendingUp, label: "Liquidación Asociados", superAdminOnly: true },
@@ -393,6 +402,7 @@ function Sidebar({
     permissions['__isAssociate'] !== true;
 
   const isItemVisible = (href: string, superAdminOnly?: boolean, assistantOnly?: boolean, adminOnly?: boolean, associateOnly?: boolean) => {
+    // Ítems exclusivos de superadmin: solo él los ve
     if (superAdminOnly && !isSuperAdmin) return false;
     if (assistantOnly) return isSuperAdmin || permissions['__isAssistant'] === true;
     if (adminOnly) return isSuperAdmin || isAdmin;
@@ -408,9 +418,10 @@ function Sidebar({
       return permissions[permKey] === true;
     }
 
-    // Para admin y roles especiales: usar permisos normales
+    // Para admin (clientes de la plataforma): mostrar todo lo que no sea superAdminOnly
+    // (ya filtrado arriba). Aplicar permisos adicionales si están configurados.
     const permKey = ITEM_PERMISSION_MAP[href];
-    if (!permKey) return true; // sin restricción = siempre visible
+    if (!permKey) return true; // sin restricción de permiso = siempre visible para admin
     return permissions[permKey] !== false;
   };
 
@@ -662,6 +673,8 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
   return (
     <div className="flex h-screen bg-gray-50 overflow-hidden">
+      {/* Barra de impersonación — visible cuando superadmin está viendo como cliente */}
+      <ImpersonationBar />
       {/* Desktop Sidebar — altura fija h-screen */}
       <div className="hidden lg:block flex-shrink-0">
         <Sidebar {...sidebarProps} />
