@@ -187,6 +187,7 @@ const NAV_GROUPS = [
       { href: "/dashboard/kobra-score", icon: Star, label: "KobraScore" },
       { href: "/dashboard/quote-logs", icon: Mail, label: "Cotizaciones" },
       { href: "/dashboard/security", icon: Shield, label: "Seguridad" },
+      { href: "/dashboard/associate-liquidation", icon: TrendingUp, label: "Liquidación Asociados", superAdminOnly: true },
     ],
   },
   {

@@ -2804,6 +2804,92 @@ export const appRouter = router({
         await updateChargebackStatus(input.id, input.status, input.notes, resolvedAt);
         return { success: true };
       }),
+    // Enviar evidencia a Stripe para disputar un contracargo
+    submitEvidence: protectedProcedure
+      .input(z.object({
+        chargebackId: z.number(),
+        stripeDisputeId: z.string(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const { getAllChargebacks, getPaymentConsentByTransaction } = await import('./db');
+        // Verificar que el chargeback pertenece al usuario
+        const cbs = await getChargebacksByUser(ctx.user.id);
+        const cb = cbs.find(c => c.id === input.chargebackId);
+        if (!cb) throw new TRPCError({ code: 'NOT_FOUND', message: 'Contracargo no encontrado' });
+        if (!cb.stripeDisputeId) throw new TRPCError({ code: 'BAD_REQUEST', message: 'Sin ID de disputa en Stripe' });
+        // Obtener evidencia: consentimiento + datos de transacción
+        const consent = cb.transactionId ? await getPaymentConsentByTransaction(cb.transactionId) : null;
+        const txs = await getTransactionsByUser(ctx.user.id);
+        const tx = cb.transactionId ? txs.find(t => t.id === cb.transactionId) : null;
+        const vendorCfg = await getVendorSettings(ctx.user.id);
+        // Construir evidencia para Stripe
+        const evidencePayload: Record<string, string> = {
+          product_description: (tx?.metadata ? (() => { try { return JSON.parse(String(tx.metadata)).description || ''; } catch { return ''; } })() : '') || 'Servicio procesado a través de KobraPay',
+          customer_name: tx?.payerName || consent?.payerName || 'Cliente',
+          customer_email_address: tx?.payerEmail || consent?.payerEmail || '',
+          billing_address: `${tx?.payerName || ''} - ${tx?.payerEmail || ''}`,
+          service_date: tx ? new Date(tx.createdAt).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+          uncategorized_text: [
+            `EVIDENCIA DE PAGO - KobraPay`,
+            `Negocio: ${vendorCfg?.businessName || 'KobraPay'}`,
+            `Monto: $${tx?.amount || cb.amount / 100} ${tx?.currency || cb.currency}`,
+            `Fecha de pago: ${tx ? new Date(tx.createdAt).toLocaleString('es-MX') : 'N/A'}`,
+            `N° Operación: ${tx?.operationNumber || 'N/A'}`,
+            `Stripe PI: ${tx?.stripePaymentIntentId || 'N/A'}`,
+            consent ? [
+              `CONSENTIMIENTO EXPLÍCITO DEL PAGADOR:`,
+              `  - Nombre: ${consent.payerName}`,
+              `  - Email: ${consent.payerEmail}`,
+              `  - IP: ${consent.ipAddress || 'N/A'}`,
+              `  - Timestamp: ${new Date(consent.consentAt).toLocaleString('es-MX')}`,
+              `  - Monto aceptado: $${consent.amountAccepted} ${consent.currency}`,
+              `  - Términos aceptados: ${consent.termsSnapshot ? 'Sí (snapshot guardado)' : 'Sí'}`,
+            ].join('\n') : 'Sin registro de consentimiento digital',
+          ].join('\n'),
+        };
+        // Enviar a Stripe
+        const stripe = new (await import('stripe')).default(process.env.STRIPE_SECRET_KEY || '', { apiVersion: '2026-02-25.clover' as any });
+        await stripe.disputes.update(cb.stripeDisputeId, {
+          evidence: evidencePayload as any,
+          submit: true,
+        });
+        // Actualizar estado a under_review
+        await updateChargebackStatus(cb.id, 'under_review', 'Evidencia enviada automáticamente a Stripe');
+        return { success: true, message: 'Evidencia enviada a Stripe correctamente' };
+      }),
+    // Guardar consentimiento del pagador antes del pago
+    saveConsent: publicProcedure
+      .input(z.object({
+        paymentToken: z.string(),
+        payerName: z.string(),
+        payerEmail: z.string().email(),
+        payerPhone: z.string().optional(),
+        ipAddress: z.string().optional(),
+        userAgent: z.string().optional(),
+        serviceDescription: z.string().optional(),
+        amountAccepted: z.string(),
+        currency: z.string().default('MXN'),
+        termsSnapshot: z.string().optional(),
+        consentAt: z.number(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const { createPaymentConsent } = await import('./db');
+        await createPaymentConsent({
+          paymentToken: input.paymentToken,
+          payerName: input.payerName,
+          payerEmail: input.payerEmail,
+          payerPhone: input.payerPhone,
+          ipAddress: input.ipAddress || (ctx.req.headers['x-forwarded-for'] as string) || ctx.req.socket?.remoteAddress || '',
+          userAgent: input.userAgent || (ctx.req.headers['user-agent'] as string) || '',
+          serviceDescription: input.serviceDescription,
+          amountAccepted: input.amountAccepted,
+          currency: input.currency,
+          termsSnapshot: input.termsSnapshot,
+          consentAt: input.consentAt,
+          createdAt: Date.now(),
+        });
+        return { success: true };
+      }),
   }),
 
   // *** INVOICES (Facturas) ***

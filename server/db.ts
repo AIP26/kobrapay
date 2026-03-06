@@ -68,6 +68,9 @@ import {
   associateEarnings,
   AssociateEarning,
   InsertAssociateEarning,
+  paymentConsents,
+  PaymentConsent,
+  InsertPaymentConsent,
 } from "../drizzle/schema";
 import { ENV } from "./_core/env";
 
@@ -1662,4 +1665,63 @@ export async function linkClientToAssociate(clientUserId: number, associateCommi
   await db.update(vendorSettings)
     .set({ referredByAssociateCommissionId: associateCommissionId } as Partial<typeof vendorSettings.$inferInsert>)
     .where(eq(vendorSettings.userId, clientUserId));
+}
+
+// ─── Payment Consents (Evidencia Anti-Contracargos) ───────────────────────────
+
+/**
+ * Guarda el consentimiento explícito del pagador antes de procesar el pago.
+ * Esta evidencia se usa para disputar contracargos ante Stripe y bancos.
+ */
+export async function createPaymentConsent(data: InsertPaymentConsent): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  await db.insert(paymentConsents).values(data);
+}
+
+/**
+ * Vincula un consentimiento a una transacción confirmada.
+ */
+export async function linkConsentToTransaction(paymentToken: string, transactionId: number): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(paymentConsents)
+    .set({ transactionId } as any)
+    .where(eq(paymentConsents.paymentToken, paymentToken));
+}
+
+/**
+ * Obtiene el consentimiento de un pago por token.
+ */
+export async function getPaymentConsent(paymentToken: string): Promise<PaymentConsent | null> {
+  const db = await getDb();
+  if (!db) return null;
+  const results = await db.select().from(paymentConsents)
+    .where(eq(paymentConsents.paymentToken, paymentToken))
+    .limit(1);
+  return results[0] || null;
+}
+
+/**
+ * Obtiene el consentimiento de un pago por transactionId.
+ */
+export async function getPaymentConsentByTransaction(transactionId: number): Promise<PaymentConsent | null> {
+  const db = await getDb();
+  if (!db) return null;
+  const results = await db.select().from(paymentConsents)
+    .where(eq(paymentConsents.transactionId, transactionId))
+    .limit(1);
+  return results[0] || null;
+}
+
+/**
+ * Obtiene un chargeback por stripeDisputeId.
+ */
+export async function getChargebackByDisputeId(stripeDisputeId: string): Promise<Chargeback | null> {
+  const db = await getDb();
+  if (!db) return null;
+  const results = await db.select().from(chargebacks)
+    .where(eq(chargebacks.stripeDisputeId, stripeDisputeId))
+    .limit(1);
+  return results[0] || null;
 }

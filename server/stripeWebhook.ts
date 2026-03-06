@@ -7,12 +7,15 @@ import {
   updatePaymentLinkStatus,
   updateTransactionStatus,
   createChargeback,
+  getChargebackByDisputeId,
+  updateChargebackStatus,
   getSubscriptionByStripeId,
   getSubscriptionByCustomerId,
   updateSubscription,
   getUserById,
   getAssociateCommissionForClient,
   recordAssociateEarning,
+  linkConsentToTransaction,
 } from "./db";
 import { notifyOwner } from "./_core/notification";
 import { createNotification } from "./db";
@@ -247,12 +250,56 @@ export function registerStripeWebhook(app: express.Application) {
           case "charge.dispute.updated": {
             const dispute = event.data.object as Stripe.Dispute;
             console.log(`[Stripe Webhook] Disputa actualizada: ${dispute.id} status=${dispute.status}`);
+            try {
+              const cb = await getChargebackByDisputeId(dispute.id);
+              if (cb) {
+                const statusMap: Record<string, string> = {
+                  needs_response: 'open',
+                  under_review: 'under_review',
+                  charge_refunded: 'lost',
+                  warning_needs_response: 'open',
+                  warning_under_review: 'under_review',
+                  warning_closed: 'lost',
+                };
+                const newStatus = statusMap[dispute.status] || dispute.status;
+                await updateChargebackStatus(cb.id, newStatus);
+                console.log(`[Stripe Webhook] Chargeback ${cb.id} actualizado a: ${newStatus}`);
+              }
+            } catch (err) {
+              console.error('[Stripe Webhook] Error actualizando chargeback:', err);
+            }
             break;
           }
 
           case "charge.dispute.closed": {
             const dispute = event.data.object as Stripe.Dispute;
             console.log(`[Stripe Webhook] Disputa cerrada: ${dispute.id} status=${dispute.status}`);
+            try {
+              const cb = await getChargebackByDisputeId(dispute.id);
+              if (cb) {
+                // won = ganamos la disputa, lost = perdimos
+                const finalStatus = dispute.status === 'won' ? 'won' : 'lost';
+                await updateChargebackStatus(cb.id, finalStatus, undefined, new Date());
+                // Notificar al vendedor del resultado
+                const statusText = finalStatus === 'won'
+                  ? `✅ Ganaste la disputa de $${(dispute.amount / 100).toFixed(2)} ${dispute.currency.toUpperCase()}. El dinero fue devuelto a tu cuenta.`
+                  : `❌ Perdiste la disputa de $${(dispute.amount / 100).toFixed(2)} ${dispute.currency.toUpperCase()}. El banco resolvió a favor del cliente.`;
+                await notifyOwner({
+                  title: finalStatus === 'won' ? '✅ Contracargo ganado' : '❌ Contracargo perdido',
+                  content: statusText,
+                });
+                await createNotification({
+                  userId: cb.userId,
+                  type: 'payment_received',
+                  title: finalStatus === 'won' ? '✅ Contracargo cerrado a tu favor' : '❌ Contracargo cerrado en contra',
+                  message: statusText,
+                  actionUrl: '/dashboard/sales',
+                });
+                console.log(`[Stripe Webhook] Chargeback ${cb.id} cerrado: ${finalStatus}`);
+              }
+            } catch (err) {
+              console.error('[Stripe Webhook] Error cerrando chargeback:', err);
+            }
             break;
           }
 

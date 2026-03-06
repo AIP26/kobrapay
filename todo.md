@@ -1032,3 +1032,25 @@
 - [ ] Panel de liquidación de asociados para superadmin (/dashboard/associate-liquidation)
 - [ ] Botón "Liquidación Asociados" en menú del superadmin
 - [ ] Reembolso: cliente recibe 100% del monto cobrado (negocio absorbe comisión)
+
+## Sesión Mar 5, 2026 - Blindaje Anti-Contracargos y Comisiones de Asociados
+
+### Comisiones Automáticas de Asociados
+- [x] Tabla associate_earnings en BD para historial de ganancias por pago
+- [x] Campo referredByAssociateCommissionId en vendor_settings para vincular cliente-asociado
+- [x] Webhook Stripe: calcula 0.3% automático por cada pago del cliente referido
+- [x] Procedimientos tRPC: getMyEarnings, linkClientToAssociate, getAssociateEarningsSummary
+- [x] Historial de ganancias por pago en panel del asociado (tab Comisiones)
+- [x] Página AssociateLiquidation para superadmin con panel de liquidación mensual
+- [x] Botón "Liquidación Asociados" en menú superadmin (sección Administración)
+
+### Blindaje Anti-Contracargos
+- [x] Tabla payment_consents en BD para guardar evidencia de consentimiento
+- [x] Checkbox obligatorio antes de pagar con timestamp visible
+- [x] Botón de pagar deshabilitado hasta aceptar términos
+- [x] statement_descriptor_suffix con nombre del negocio en Stripe (cargo claro en estado de cuenta)
+- [x] Badges de contracargo en Mis Ventas (⚠️ Disputando, ✅ Ganado, ❌ Perdido, 🔍 En revisión)
+- [x] Panel de contracargo con botón "Disputar" en modal de detalle de venta
+- [x] Webhook Stripe: dispute.created, dispute.updated, dispute.closed actualizan estado en BD
+- [x] Procedimiento tRPC submitEvidence: envía evidencia automáticamente a Stripe con un clic
+- [x] Aviso corregido en reembolsos: cliente recibe 100%, negocio absorbe la comisión

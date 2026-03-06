@@ -218,6 +218,20 @@ function TransactionDetailModal({
   const isEmployee = currentUser?.role === 'user' && currentUser?.staffRole != null;
   const [isGeneratingEvidencePdf, setIsGeneratingEvidencePdf] = useState(false);
   const [showRefundConfirm, setShowRefundConfirm] = useState(false);
+  const [isSubmittingEvidence, setIsSubmittingEvidence] = useState(false);
+  // Obtener el contracargo de esta transacción si existe
+  const { data: txChargebacks = [] } = trpc.chargebacks.list.useQuery();
+  const txChargeback = txChargebacks.find(cb => cb.transactionId === tx.id);
+  const submitEvidenceMutation = trpc.chargebacks.submitEvidence.useMutation({
+    onSuccess: () => {
+      toast.success('✅ Evidencia enviada a Stripe. La disputa está en revisión.');
+      setIsSubmittingEvidence(false);
+    },
+    onError: (err) => {
+      toast.error(err.message || 'Error al enviar evidencia');
+      setIsSubmittingEvidence(false);
+    },
+  });
   const [refundReason, setRefundReason] = useState<"requested_by_customer" | "duplicate" | "fraudulent">("requested_by_customer");
   const [refundType, setRefundType] = useState<"full" | "partial">("full");
   const [refundPartialAmount, setRefundPartialAmount] = useState("");
@@ -764,6 +778,66 @@ function TransactionDetailModal({
                 </Button>
               )}
             </div>
+
+            {/* Panel de contracargo si existe */}
+            {txChargeback && (
+              <div className={`mt-4 rounded-xl border p-4 ${
+                txChargeback.status === 'won'
+                  ? 'bg-green-50 border-green-200'
+                  : txChargeback.status === 'lost'
+                  ? 'bg-gray-50 border-gray-200'
+                  : txChargeback.status === 'under_review'
+                  ? 'bg-blue-50 border-blue-200'
+                  : 'bg-red-50 border-red-200'
+              }`}>
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex-1">
+                    <p className={`text-sm font-bold mb-1 ${
+                      txChargeback.status === 'won' ? 'text-green-800'
+                      : txChargeback.status === 'lost' ? 'text-gray-700'
+                      : txChargeback.status === 'under_review' ? 'text-blue-800'
+                      : 'text-red-800'
+                    }`}>
+                      {txChargeback.status === 'won' && '✅ Contracargo — Cerrado a tu favor'}
+                      {txChargeback.status === 'lost' && '❌ Contracargo — Cerrado en contra'}
+                      {txChargeback.status === 'under_review' && '🔍 Contracargo — En revisión por Stripe'}
+                      {txChargeback.status === 'open' && '⚠️ Contracargo — Requiere respuesta'}
+                      {!['won','lost','under_review','open'].includes(txChargeback.status) && `⚠️ Contracargo — ${txChargeback.reasonEs || txChargeback.status}`}
+                    </p>
+                    <p className="text-xs text-gray-600">
+                      {txChargeback.status === 'won' && 'Disputamos el contracargo y se resolvió a tu favor. El dinero fue devuelto a tu cuenta.'}
+                      {txChargeback.status === 'lost' && 'Disputamos el contracargo y se resolvió a favor del cliente. El banco te debitó el monto.'}
+                      {txChargeback.status === 'under_review' && 'La evidencia fue enviada a Stripe y está siendo revisada por el banco emisor.'}
+                      {txChargeback.status === 'open' && `Motivo: ${txChargeback.reasonEs || txChargeback.reason || 'Contracargo'}. Envía la evidencia para disputarlo.`}
+                    </p>
+                    {txChargeback.dueBy && txChargeback.status === 'open' && (
+                      <p className="text-xs font-semibold text-red-700 mt-1">
+                        ⏰ Fecha límite: {new Date(txChargeback.dueBy).toLocaleDateString('es-MX', { day: '2-digit', month: 'long', year: 'numeric' })}
+                      </p>
+                    )}
+                  </div>
+                  {txChargeback.status === 'open' && txChargeback.stripeDisputeId && (
+                    <button
+                      onClick={async () => {
+                        setIsSubmittingEvidence(true);
+                        await submitEvidenceMutation.mutateAsync({
+                          chargebackId: txChargeback.id,
+                          stripeDisputeId: txChargeback.stripeDisputeId!,
+                        });
+                      }}
+                      disabled={isSubmittingEvidence}
+                      className="flex-shrink-0 bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white text-xs font-bold px-3 py-2 rounded-lg flex items-center gap-1.5 transition-colors"
+                    >
+                      {isSubmittingEvidence ? (
+                        <>⏳ Enviando...</>
+                      ) : (
+                        <>⚔️ Disputar</>  
+                      )}
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </DialogContent>
@@ -835,6 +909,16 @@ export default function Sales() {
   );
   const { data: pinStatus } = trpc.vendor.hasDeletePin.useQuery(undefined, { enabled: isSuperAdmin });
   const isAdmin = user?.role === 'admin' || isSuperAdmin;
+  // Cargar contracargos para mostrar badges en las transacciones
+  const { data: chargebacks = [] } = trpc.chargebacks.list.useQuery();
+  // Mapa de transactionId -> chargeback para acceso rápido
+  const chargebackMap = useMemo(() => {
+    const map = new Map<number, typeof chargebacks[0]>();
+    for (const cb of chargebacks) {
+      if (cb.transactionId) map.set(cb.transactionId, cb);
+    }
+    return map;
+  }, [chargebacks]);
   const { data: pendingRefunds = [], refetch: refetchPendingRefunds } = trpc.transactions.listPendingRefunds.useQuery(undefined, { enabled: isAdmin });
   const approveRefundMutation = trpc.payments.approveRefund.useMutation({
     onSuccess: (data) => {
@@ -1224,6 +1308,7 @@ export default function Sales() {
                         const failInfo = tx.status === "failed" ? getFailureDetails(tx.errorMessage) : null;
                         const timeStr = new Date(tx.createdAt).toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit" });
                         const isSelected = selectedIds.has(tx.id);
+                        const txChargeback = chargebackMap.get(tx.id);
                         return (
                           <div
                             key={tx.id}
@@ -1298,6 +1383,24 @@ export default function Sales() {
                               <p className="text-xs text-gray-400 mt-0.5 font-mono">Operación {opNum}</p>
                               {failInfo && (
                                 <p className="text-xs text-red-500 mt-0.5">{failInfo.title}</p>
+                              )}
+                              {/* Badge de contracargo */}
+                              {txChargeback && (
+                                <span className={`inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full mt-1 ${
+                                  txChargeback.status === 'won'
+                                    ? 'bg-green-100 text-green-700'
+                                    : txChargeback.status === 'lost'
+                                    ? 'bg-gray-100 text-gray-600 line-through'
+                                    : txChargeback.status === 'under_review'
+                                    ? 'bg-blue-100 text-blue-700'
+                                    : 'bg-red-100 text-red-700'
+                                }`}>
+                                  {txChargeback.status === 'won' && '✅ Contracargo cerrado a tu favor'}
+                                  {txChargeback.status === 'lost' && '❌ Contracargo cerrado en contra'}
+                                  {txChargeback.status === 'under_review' && '🔍 Contracargo · En revisión'}
+                                  {txChargeback.status === 'open' && '⚠️ Contracargo · Disputando'}
+                                  {!['won','lost','under_review','open'].includes(txChargeback.status) && `⚠️ Contracargo · ${txChargeback.reasonEs || txChargeback.status}`}
+                                </span>
                               )}
                             </div>
 
