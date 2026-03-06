@@ -86,6 +86,9 @@ export const vendorSettings = mysqlTable("vendor_settings", {
   publicProfileEnabled: boolean("publicProfileEnabled").default(false).notNull(), // Perfil público activo
   // PIN de 4 dígitos para operaciones sensibles (eliminar transacciones, etc.)
   deletePin: varchar("deletePin", { length: 4 }),
+  // ID del registro en associateCommissions que refiere a este cliente
+  // Cuando se activa, cada pago de este cliente genera comisión automática al asociado
+  referredByAssociateCommissionId: int("referred_by_associate_commission_id"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
@@ -1263,3 +1266,64 @@ export const platformConfig = mysqlTable("platform_config", {
 });
 export type PlatformConfig = typeof platformConfig.$inferSelect;
 export type InsertPlatformConfig = typeof platformConfig.$inferInsert;
+
+// ─── Historial de ganancias por pago para asociados ──────────────────────────
+// Cada vez que un cliente referido procesa un pago, se registra aquí la ganancia del asociado
+export const associateEarnings = mysqlTable("associate_earnings", {
+  id: int("id").autoincrement().primaryKey(),
+  // ID del registro en associateCommissions (relación asociado ↔ cliente)
+  associateCommissionId: int("associate_commission_id").notNull(),
+  // ID del asociado (desnormalizado para consultas rápidas)
+  associateUserId: int("associate_user_id").notNull(),
+  // ID del usuario cliente que generó el pago
+  clientUserId: int("client_user_id").notNull(),
+  // ID de la transacción que generó esta ganancia
+  transactionId: int("transaction_id"),
+  // Monto bruto del pago del cliente (en MXN)
+  paymentAmount: decimal("payment_amount", { precision: 14, scale: 2 }).notNull(),
+  // % de comisión del asociado (ej: 0.30)
+  commissionRate: decimal("commission_rate", { precision: 5, scale: 2 }).notNull(),
+  // Monto de comisión ganada por el asociado (paymentAmount * commissionRate / 100)
+  commissionAmount: decimal("commission_amount", { precision: 14, scale: 2 }).notNull(),
+  // Moneda del pago
+  currency: varchar("currency", { length: 10 }).default("MXN").notNull(),
+  // Estado: pending (acumulado, no pagado), paid (ya se pagó al asociado)
+  status: mysqlEnum("earning_status", ["pending", "paid"]).default("pending").notNull(),
+  // Referencia del pago al asociado (cuando se liquida)
+  paidAt: bigint("paid_at", { mode: "number" }),
+  paidReference: varchar("paid_reference", { length: 128 }),
+  createdAt: bigint("created_at", { mode: "number" }).notNull(),
+});
+export type AssociateEarning = typeof associateEarnings.$inferSelect;
+export type InsertAssociateEarning = typeof associateEarnings.$inferInsert;
+
+// ─── Tabla: payment_consents (evidencia anti-contracargos) ───────────────────
+// Guarda el consentimiento explícito del pagador antes de procesar el pago.
+// Esta evidencia se usa para disputar contracargos ante Stripe y bancos.
+export const paymentConsents = mysqlTable("payment_consents", {
+  id: int("id").autoincrement().primaryKey(),
+  // Token del enlace de pago
+  paymentToken: varchar("payment_token", { length: 128 }).notNull(),
+  // ID de la transacción (se actualiza cuando el pago se confirma)
+  transactionId: int("transaction_id"),
+  // Datos del pagador al momento del consentimiento
+  payerName: varchar("payer_name", { length: 255 }).notNull(),
+  payerEmail: varchar("payer_email", { length: 255 }).notNull(),
+  payerPhone: varchar("payer_phone", { length: 50 }),
+  // IP del dispositivo del pagador
+  ipAddress: varchar("ip_address", { length: 64 }),
+  // User-Agent del navegador
+  userAgent: varchar("user_agent", { length: 512 }),
+  // Descripción del servicio/producto al que dio consentimiento
+  serviceDescription: text("service_description"),
+  // Monto exacto aceptado (en la moneda del enlace)
+  amountAccepted: decimal("amount_accepted", { precision: 14, scale: 2 }).notNull(),
+  currency: varchar("currency", { length: 10 }).default("MXN").notNull(),
+  // Texto exacto de los términos que aceptó (snapshot)
+  termsSnapshot: text("terms_snapshot"),
+  // Timestamp exacto del consentimiento (Unix ms)
+  consentAt: bigint("consent_at", { mode: "number" }).notNull(),
+  createdAt: bigint("created_at", { mode: "number" }).notNull(),
+});
+export type PaymentConsent = typeof paymentConsents.$inferSelect;
+export type InsertPaymentConsent = typeof paymentConsents.$inferInsert;

@@ -105,6 +105,9 @@ function PaymentForm({ token }: { token: string }) {
   const [paymentRequest, setPaymentRequest] = useState<PaymentRequest | null>(null);
   const [walletAvailable, setWalletAvailable] = useState(false);
   const [walletChecked, setWalletChecked] = useState(false);
+  // Anti-contracargos: consentimiento explícito del pagador
+  const [consentChecked, setConsentChecked] = useState(false);
+  const [consentTimestamp, setConsentTimestamp] = useState<number | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -496,6 +499,11 @@ function PaymentForm({ token }: { token: string }) {
   const handlePayment = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!stripe || !elements || !clientSecret) return;
+    // Anti-contracargos: verificar consentimiento explícito
+    if (!consentChecked) {
+      toast.error(lang === 'en' ? 'You must accept the terms and conditions to continue.' : 'Debes aceptar los términos y condiciones para continuar.');
+      return;
+    }
     setProcessing(true);
     setPaymentError(null);
     const cardNumber = elements.getElement(CardNumberElement);
@@ -1104,6 +1112,41 @@ function PaymentForm({ token }: { token: string }) {
                         </div>
                       )}
 
+                      {/* ─── Checkbox de consentimiento anti-contracargos ─── */}
+                      <div className={`border-2 rounded-xl p-4 mb-4 transition-colors cursor-pointer ${
+                        consentChecked ? 'border-green-400 bg-green-50' : 'border-gray-200 bg-gray-50'
+                      }`}
+                        onClick={() => {
+                          const newVal = !consentChecked;
+                          setConsentChecked(newVal);
+                          if (newVal) setConsentTimestamp(Date.now());
+                          else setConsentTimestamp(null);
+                        }}>
+                        <div className="flex items-start gap-3">
+                          <div className={`w-5 h-5 rounded border-2 flex-shrink-0 mt-0.5 flex items-center justify-center transition-colors ${
+                            consentChecked ? 'bg-green-500 border-green-500' : 'border-gray-400 bg-white'
+                          }`}>
+                            {consentChecked && <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}
+                          </div>
+                          <div>
+                            <p className="text-xs font-semibold text-gray-800 mb-0.5">
+                              {lang === 'en' ? 'I agree to the payment terms and conditions' : 'Acepto los términos y condiciones del pago'}
+                            </p>
+                            <p className="text-xs text-gray-500">
+                              {lang === 'en'
+                                ? `I authorize the charge of ${formatMXN(amount + tipAmount)} ${currency} to my payment method. I understand this charge is non-refundable per the cancellation policy.`
+                                : `Autorizo el cargo de ${formatMXN(amount + tipAmount)} ${currency} a mi método de pago. Entiendo que este cargo no es reembolsable según la política de cancelación.`
+                              }
+                            </p>
+                            {consentTimestamp && (
+                              <p className="text-xs text-green-600 mt-1 font-medium">
+                                ✅ {lang === 'en' ? 'Accepted at' : 'Aceptado el'} {new Date(consentTimestamp).toLocaleString('es-MX')}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
                       {selectedPayMethod === 'card' && paymentError && (
                         <div className="border-l-4 border-red-500 bg-red-50 rounded-r-xl p-4 mb-4">
                           <div className="flex items-start gap-3">
@@ -1118,8 +1161,12 @@ function PaymentForm({ token }: { token: string }) {
                       )}
                       {selectedPayMethod === 'card' && (
                         <Button type="submit"
-                          className="w-full bg-gray-900 hover:bg-gray-800 text-white py-4 rounded-xl font-bold text-base"
-                          disabled={processing || !stripe}>
+                          className={`w-full py-4 rounded-xl font-bold text-base transition-all ${
+                            consentChecked
+                              ? 'bg-gray-900 hover:bg-gray-800 text-white'
+                              : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                          }`}
+                          disabled={processing || !stripe || !consentChecked}>
                           {processing ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : <Lock className="w-5 h-5 mr-2" />}
                           {lang === "en" ? "PAY NOW" : "REALIZAR PAGO"}
                         </Button>

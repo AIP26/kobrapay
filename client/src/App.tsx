@@ -66,6 +66,7 @@ import KobraScore from "./pages/KobraScore";
 import MyDeposits from "./pages/MyDeposits";
 import QuoteLogs from "./pages/QuoteLogs";
 import SuperAdminMetrics from "./pages/SuperAdminMetrics";
+import AssociateLiquidation from "./pages/AssociateLiquidation";
 import PlatformConfig from "./pages/PlatformConfig";
 import BusinessProfile from "./pages/BusinessProfile";
 import KobraBot from "./components/KobraBot";
@@ -149,6 +150,7 @@ function Router() {
       <Route path="/dashboard/kobra-score" component={KobraScore} />
       <Route path="/dashboard/my-deposits" component={MyDeposits} />
       <Route path="/dashboard/metrics" component={SuperAdminMetrics} />
+      <Route path="/dashboard/associate-liquidation" component={AssociateLiquidation} />
       <Route path="/dashboard/platform-config" component={PlatformConfig} />
       <Route path="/dashboard/quote-logs" component={QuoteLogs} />
       <Route path="/p/:slug" component={BusinessProfile} />

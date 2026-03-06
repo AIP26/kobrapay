@@ -63,6 +63,11 @@ import {
   courseProgress,
   CourseProgress,
   InsertCourseProgress,
+  associateCommissions,
+  AssociateCommission,
+  associateEarnings,
+  AssociateEarning,
+  InsertAssociateEarning,
 } from "../drizzle/schema";
 import { ENV } from "./_core/env";
 
@@ -1562,4 +1567,99 @@ export async function deleteContract(id: number, createdByUserId: number): Promi
   const db = await getDb();
   if (!db) throw new Error("DB not available");
   await db.delete(contracts).where(and(eq(contracts.id, id), eq(contracts.createdByUserId, createdByUserId)));
+}
+
+// ─── Comisiones automáticas de asociados ─────────────────────────────────────
+
+/**
+ * Obtiene el registro associateCommissions vinculado a un usuario cliente.
+ * Busca en vendor_settings el campo referred_by_associate_commission_id.
+ */
+export async function getAssociateCommissionForClient(clientUserId: number): Promise<AssociateCommission | undefined> {
+  const db = await getDb();
+  if (!db) return undefined;
+  // Buscar en vendor_settings el ID del registro de comisión del asociado
+  const [vs] = await db.select({ referredByAssociateCommissionId: vendorSettings.referredByAssociateCommissionId })
+    .from(vendorSettings)
+    .where(eq(vendorSettings.userId, clientUserId))
+    .limit(1);
+  if (!vs?.referredByAssociateCommissionId) return undefined;
+  // Obtener el registro de associateCommissions
+  const [ac] = await db.select()
+    .from(associateCommissions)
+    .where(eq(associateCommissions.id, vs.referredByAssociateCommissionId))
+    .limit(1);
+  return ac;
+}
+
+/**
+ * Registra una ganancia de comisión para el asociado cuando su cliente procesa un pago.
+ * Actualiza también los totales acumulados en associateCommissions.
+ */
+export async function recordAssociateEarning(data: {
+  associateCommissionId: number;
+  associateUserId: number;
+  clientUserId: number;
+  transactionId?: number;
+  paymentAmount: number;
+  commissionRate: number;
+  currency?: string;
+}): Promise<AssociateEarning | undefined> {
+  const db = await getDb();
+  if (!db) return undefined;
+  const commissionAmount = Math.round(data.paymentAmount * (data.commissionRate / 100) * 100) / 100;
+  const now = Date.now();
+  // Insertar el registro de ganancia
+  await db.insert(associateEarnings).values({
+    associateCommissionId: data.associateCommissionId,
+    associateUserId: data.associateUserId,
+    clientUserId: data.clientUserId,
+    transactionId: data.transactionId ?? null,
+    paymentAmount: String(data.paymentAmount),
+    commissionRate: String(data.commissionRate),
+    commissionAmount: String(commissionAmount),
+    currency: data.currency ?? 'MXN',
+    status: 'pending',
+    createdAt: now,
+  } as InsertAssociateEarning);
+  // Actualizar los totales acumulados en associateCommissions
+  await db.execute(sql`
+    UPDATE associate_commissions
+    SET totalVolumeProcessed = totalVolumeProcessed + ${data.paymentAmount},
+        totalCommissionEarned = totalCommissionEarned + ${commissionAmount},
+        updatedAt = ${now}
+    WHERE id = ${data.associateCommissionId}
+  `);
+  // Retornar el registro creado
+  const [created] = await db.select()
+    .from(associateEarnings)
+    .where(eq(associateEarnings.associateCommissionId, data.associateCommissionId))
+    .orderBy(desc(associateEarnings.createdAt))
+    .limit(1);
+  return created;
+}
+
+/**
+ * Obtiene el historial de ganancias de un asociado.
+ */
+export async function getAssociateEarnings(associateUserId: number, limit = 50) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select()
+    .from(associateEarnings)
+    .where(eq(associateEarnings.associateUserId, associateUserId))
+    .orderBy(desc(associateEarnings.createdAt))
+    .limit(limit);
+}
+
+/**
+ * Vincula un cliente con su asociado referidor.
+ * Se llama cuando el superadmin activa el cliente (status = 'active').
+ */
+export async function linkClientToAssociate(clientUserId: number, associateCommissionId: number): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(vendorSettings)
+    .set({ referredByAssociateCommissionId: associateCommissionId } as Partial<typeof vendorSettings.$inferInsert>)
+    .where(eq(vendorSettings.userId, clientUserId));
 }

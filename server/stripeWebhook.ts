@@ -11,6 +11,8 @@ import {
   getSubscriptionByCustomerId,
   updateSubscription,
   getUserById,
+  getAssociateCommissionForClient,
+  recordAssociateEarning,
 } from "./db";
 import { notifyOwner } from "./_core/notification";
 import { createNotification } from "./db";
@@ -118,6 +120,36 @@ export function registerStripeWebhook(app: express.Application) {
                     actionUrl: "/dashboard/sales",
                   });
                 } catch (_) {}
+                // ─── Comisión automática del asociado ─────────────────────
+                // Si este cliente fue referido por un asociado, calcular y registrar su comisión
+                try {
+                  const assocComm = await getAssociateCommissionForClient(userId);
+                  if (assocComm && assocComm.status === 'active') {
+                    const paymentAmountNum = parseFloat(String(link.amount));
+                    const commRate = parseFloat(String(assocComm.commissionRate));
+                    await recordAssociateEarning({
+                      associateCommissionId: assocComm.id,
+                      associateUserId: assocComm.associateUserId,
+                      clientUserId: userId,
+                      transactionId: tx?.id,
+                      paymentAmount: paymentAmountNum,
+                      commissionRate: commRate,
+                      currency: link.currency || 'MXN',
+                    });
+                    const commAmount = Math.round(paymentAmountNum * (commRate / 100) * 100) / 100;
+                    console.log(`[Webhook] Comisión asociado ID=${assocComm.associateUserId}: +$${commAmount} (${commRate}% de $${paymentAmountNum})`);
+                    // Notificar al asociado de su ganancia
+                    await createNotification({
+                      userId: assocComm.associateUserId,
+                      type: 'payment_received',
+                      title: `💰 Nueva comisión: $${commAmount.toFixed(2)} ${link.currency || 'MXN'}`,
+                      message: `Tu cliente procesó un pago de $${paymentAmountNum} ${link.currency || 'MXN'}. Ganaste $${commAmount.toFixed(2)} de comisión (${commRate}%).`,
+                      actionUrl: '/dashboard/associate',
+                    });
+                  }
+                } catch (assocErr) {
+                  console.error('[Webhook] Error calculando comisión de asociado:', assocErr);
+                }
                 // Enviar comprobante de pago al pagador
                 try {
                   const payerEmail = pi.metadata?.payerEmail;

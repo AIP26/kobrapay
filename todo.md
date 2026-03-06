@@ -1016,3 +1016,19 @@
 - [x] Verificar que las transferencias SPEI funcionan correctamente (mx_bank_transfer + CLABE)
 - [x] Verificar flujo completo de pagos con tarjeta, OXXO y SPEI en PayPage
 - [ ] Guardar checkpoint final de producción
+
+## Blindaje Anti-Contracargos + Comisiones Asociados (Mar 5, 2026)
+- [ ] Checkbox obligatorio de consentimiento antes de pagar en PayPage (timestamp + IP + email + nombre)
+- [ ] Tabla payment_consents en BD para guardar evidencia de consentimiento
+- [ ] Descripción clara del cargo en Stripe (nombre del negocio + descripción del servicio)
+- [ ] PDF de evidencia de pago con políticas, monto, fecha, nombre y aceptación del checkbox
+- [ ] Mejorar página de éxito con resumen completo (monto, nombre, servicio, fecha)
+- [ ] Sección de evidencia en panel de contracargos (ver consentimiento + IP + timestamp por transacción)
+- [ ] Sistema de comisiones automáticas para asociados (0.3% por pago de cliente referido)
+- [ ] Tabla associate_earnings en BD para historial de ganancias por pago
+- [ ] Campo referredByAssociateCommissionId en vendor_settings para vincular cliente con asociado
+- [ ] Webhook Stripe: calcular y acumular comisión del asociado automáticamente
+- [ ] Historial de ganancias por pago en panel del asociado (tab Comisiones)
+- [ ] Panel de liquidación de asociados para superadmin (/dashboard/associate-liquidation)
+- [ ] Botón "Liquidación Asociados" en menú del superadmin
+- [ ] Reembolso: cliente recibe 100% del monto cobrado (negocio absorbe comisión)

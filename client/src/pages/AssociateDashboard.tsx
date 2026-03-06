@@ -758,6 +758,16 @@ export default function AssociateDashboard() {
     enabled: activeTab === "referidos",
   });
 
+  const { data: myEarningsData, isLoading: loadingEarnings } = trpc.associate.getMyEarnings.useQuery(
+    { limit: 30 },
+    { enabled: activeTab === "comisiones" }
+  );
+  const myEarnings = myEarningsData ?? [];
+  const pendingEarnings = myEarnings.filter((e) => e.status === 'pending');
+  const paidEarnings = myEarnings.filter((e) => e.status === 'paid');
+  const totalPendingAmount = pendingEarnings.reduce((s, e) => s + parseFloat(String(e.commissionAmount || 0)), 0);
+  const totalPaidAmount = paidEarnings.reduce((s, e) => s + parseFloat(String(e.commissionAmount || 0)), 0);
+
   const myClients = myClientsData ?? [];
   const totalEarned = myClients.reduce((s: number, c) => s + parseFloat(String(c.totalCommissionEarned || "0")), 0);
   const activeClients = myClients.filter((c) => c.status === "active").length;
@@ -1459,13 +1469,96 @@ export default function AssociateDashboard() {
             {/* Tabla de tiers de comisión escalonada */}
             <CommissionTiersTable activeClients={activeClients} />
 
+            {/* Historial de ganancias por pago */}
+            <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+              <div className="px-6 py-4 border-b border-gray-100">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <TrendingUp className="w-5 h-5 text-emerald-600" />
+                    <h3 className="font-semibold text-gray-900">Historial de ganancias por pago</h3>
+                  </div>
+                  <div className="flex gap-3">
+                    <div className="text-right">
+                      <p className="text-xs text-gray-400">Por cobrar</p>
+                      <p className="text-sm font-bold text-amber-600">{new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(totalPendingAmount)}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-xs text-gray-400">Ya cobrado</p>
+                      <p className="text-sm font-bold text-emerald-600">{new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(totalPaidAmount)}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              {loadingEarnings ? (
+                <div className="space-y-0">
+                  {[1,2,3].map(i => (
+                    <div key={i} className="flex items-center gap-4 px-6 py-4 border-b border-gray-50">
+                      <div className="flex-1 h-4 bg-gray-100 animate-pulse rounded" />
+                      <div className="w-24 h-4 bg-gray-100 animate-pulse rounded" />
+                    </div>
+                  ))}
+                </div>
+              ) : myEarnings.length === 0 ? (
+                <div className="text-center py-12">
+                  <DollarSign className="w-10 h-10 text-gray-200 mx-auto mb-2" />
+                  <p className="text-gray-500 text-sm font-medium">Sin ganancias registradas aún</p>
+                  <p className="text-xs text-gray-400 mt-1">Cada vez que un cliente tuyo procese un pago, aparecerá aquí automáticamente</p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="bg-gray-50/50 border-b border-gray-100">
+                        <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase">Fecha</th>
+                        <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Cliente</th>
+                        <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Pago del cliente</th>
+                        <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Tu comisión (0.3%)</th>
+                        <th className="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Estado</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-50">
+                      {myEarnings.map((earning) => (
+                        <tr key={earning.id} className="hover:bg-gray-50/50 transition-colors">
+                          <td className="px-6 py-3 text-xs text-gray-500">
+                            {new Date(earning.createdAt).toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' })}
+                          </td>
+                          <td className="px-4 py-3">
+                            <p className="text-xs font-medium text-gray-700">Cliente #{earning.clientUserId}</p>
+                          </td>
+                          <td className="px-4 py-3 text-right text-xs font-medium text-gray-700">
+                            {new Intl.NumberFormat('es-MX', { style: 'currency', currency: earning.currency || 'MXN' }).format(parseFloat(String(earning.paymentAmount)))}
+                          </td>
+                          <td className="px-4 py-3 text-right">
+                            <span className="text-sm font-bold text-emerald-600">
+                              +{new Intl.NumberFormat('es-MX', { style: 'currency', currency: earning.currency || 'MXN' }).format(parseFloat(String(earning.commissionAmount)))}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 text-center">
+                            {earning.status === 'paid' ? (
+                              <span className="inline-flex items-center gap-1 text-xs bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full">
+                                <CheckCircle className="w-3 h-3" /> Pagado
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">
+                                <Clock className="w-3 h-3" /> Por cobrar
+                              </span>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+
             {/* Nota informativa */}
             <div className="bg-gray-50 rounded-xl p-4 border border-gray-200 flex items-start gap-3">
               <AlertCircle className="w-5 h-5 text-gray-400 shrink-0 mt-0.5" />
               <div>
                 <p className="text-sm font-medium text-gray-700">¿Cuándo recibes tus comisiones?</p>
                 <p className="text-xs text-gray-500 mt-1">
-                  Las comisiones se acumulan automáticamente cada vez que un cliente activo procesa un pago. 
+                  Las comisiones se acumulan automáticamente cada vez que un cliente activo procesa un pago.
                   El pago de comisiones se realiza según el ciclo acordado con KobraPay (semanal, quincenal o mensual).
                 </p>
               </div>

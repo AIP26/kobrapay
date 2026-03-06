@@ -1411,6 +1411,12 @@ export const appRouter = router({
           },
           description: link.description,
           receipt_email: input.payerEmail,
+          // Anti-contracargos: descripción clara en el estado de cuenta del cliente
+          // statement_descriptor: máx 22 caracteres, solo letras/números/espacios
+          statement_descriptor_suffix: (() => {
+            const biz = (vendorSettings?.businessName || 'KOBRAPAY').toUpperCase().replace(/[^A-Z0-9 ]/g, '').substring(0, 22);
+            return biz || 'KOBRAPAY';
+          })(),
         };
 
         // Si el vendedor tiene Connect activo, enrutar pago y retener comisión KobraPay
@@ -6500,6 +6506,95 @@ Responde SIEMPRE en español mexicano, de forma motivadora, práctica y orientad
         })),
       };
     }),
+
+    // Obtener historial de ganancias del asociado (por cada pago de sus clientes)
+    getMyEarnings: protectedProcedure
+      .input(z.object({ limit: z.number().optional() }))
+      .query(async ({ ctx, input }) => {
+        const isAssociate = ctx.user.role === 'associate' || ctx.isSuperAdmin;
+        if (!isAssociate) throw new TRPCError({ code: 'FORBIDDEN' });
+        const { getAssociateEarnings } = await import('./db');
+        return getAssociateEarnings(ctx.user.id, input.limit ?? 50);
+      }),
+
+    // [SuperAdmin] Vincular un cliente con su asociado referidor
+    linkClientToAssociate: protectedProcedure
+      .input(z.object({
+        clientUserId: z.number(),
+        associateCommissionId: z.number(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        if (!ctx.isSuperAdmin) throw new TRPCError({ code: 'FORBIDDEN' });
+        const { linkClientToAssociate } = await import('./db');
+        await linkClientToAssociate(input.clientUserId, input.associateCommissionId);
+        return { success: true };
+      }),
+
+    // [SuperAdmin] Obtener todos los asociados con sus ganancias pendientes de liquidar
+    getPendingLiquidations: protectedProcedure.query(async ({ ctx }) => {
+      if (!ctx.isSuperAdmin) throw new TRPCError({ code: 'FORBIDDEN' });
+      const db = await import('./db').then(m => m.getDb ? m.getDb() : null);
+      if (!db) return [];
+      const { users, associateCommissions, associateEarnings } = await import('../drizzle/schema');
+      const { eq, and, desc } = await import('drizzle-orm');
+      const associates = await db.select().from(users).where(eq(users.role, 'associate'));
+      const result = await Promise.all(associates.map(async (assoc) => {
+        const pending = await db.select().from(associateEarnings)
+          .where(and(eq(associateEarnings.associateUserId, assoc.id), eq(associateEarnings.status, 'pending')))
+          .orderBy(desc(associateEarnings.createdAt));
+        const pendingTotal = pending.reduce((acc, e) => acc + parseFloat(String(e.commissionAmount) || '0'), 0);
+        const commRec = await db.select().from(associateCommissions)
+          .where(eq(associateCommissions.associateUserId, assoc.id));
+        const totalEarned = commRec.reduce((acc, c) => acc + parseFloat(String(c.totalCommissionEarned) || '0'), 0);
+        return {
+          associateId: assoc.id,
+          associateName: assoc.name || assoc.email || `Asociado #${assoc.id}`,
+          associateEmail: assoc.email,
+          pendingTotal: Math.round(pendingTotal * 100) / 100,
+          pendingCount: pending.length,
+          totalEarned: Math.round(totalEarned * 100) / 100,
+          recentEarnings: pending.slice(0, 5).map(e => ({
+            id: e.id,
+            paymentAmount: parseFloat(String(e.paymentAmount)),
+            commissionAmount: parseFloat(String(e.commissionAmount)),
+            commissionRate: parseFloat(String(e.commissionRate)),
+            currency: e.currency,
+            createdAt: e.createdAt,
+          })),
+        };
+      }));
+      return result.filter(r => r.pendingTotal > 0 || r.totalEarned > 0);
+    }),
+
+    // [SuperAdmin] Marcar ganancias como pagadas (liquidar al asociado)
+    markEarningsPaid: protectedProcedure
+      .input(z.object({
+        associateUserId: z.number(),
+        reference: z.string().min(1),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        if (!ctx.isSuperAdmin) throw new TRPCError({ code: 'FORBIDDEN' });
+        const db = await import('./db').then(m => m.getDb ? m.getDb() : null);
+        if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
+        const { associateEarnings } = await import('../drizzle/schema');
+        const { eq, and } = await import('drizzle-orm');
+        const now = Date.now();
+        await db.update(associateEarnings)
+          .set({ status: 'paid', paidAt: now, paidReference: input.reference })
+          .where(and(
+            eq(associateEarnings.associateUserId, input.associateUserId),
+            eq(associateEarnings.status, 'pending'),
+          ));
+        const { createNotification } = await import('./db');
+        await createNotification({
+          userId: input.associateUserId,
+          type: 'payment_received',
+          title: '✅ Comisión liquidada',
+          message: `Tu comisión acumulada ha sido transferida. Referencia: ${input.reference}`,
+          actionUrl: '/dashboard/associate',
+        });
+        return { success: true };
+      }),
   }),
   advisor: router({
     chat: protectedProcedure
