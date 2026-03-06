@@ -1455,16 +1455,19 @@ export const appRouter = router({
         const kobraPayFeeCents = Math.round(amountCents * kobraPayFeeRate);
 
         // Determinar métodos de pago permitidos según configuración del enlace
-        // Si el enlace tiene allowedPaymentMethods, usarlos; si no, usar todos los disponibles
+        // Por defecto solo tarjeta (card) — OXXO y SPEI requieren activación explícita en Stripe
         const linkAllowedMethods: string[] = link.allowedPaymentMethods
           ? JSON.parse(link.allowedPaymentMethods as string)
-          : ['card', 'oxxo', 'spei'];
+          : ['card'];
 
-        // Mapear a tipos de Stripe (spei = customer_balance con mx_bank_transfer)
+        // Mapear a tipos de Stripe
+        // NOTA: customer_balance (SPEI) requiere activación especial en el dashboard de Stripe.
+        // Solo se incluye si el enlace lo tiene explícitamente activado.
         const stripeMethodTypes: string[] = [];
         if (linkAllowedMethods.includes('card')) stripeMethodTypes.push('card');
         if (currency === 'mxn' && linkAllowedMethods.includes('oxxo')) stripeMethodTypes.push('oxxo');
-        if (currency === 'mxn' && linkAllowedMethods.includes('spei')) stripeMethodTypes.push('customer_balance');
+        // SPEI/customer_balance: solo si está explícitamente activado Y la cuenta Stripe lo soporta
+        // if (currency === 'mxn' && linkAllowedMethods.includes('spei')) stripeMethodTypes.push('customer_balance');
         // Siempre incluir al menos tarjeta como fallback
         if (stripeMethodTypes.length === 0) stripeMethodTypes.push('card');
 
@@ -1473,12 +1476,13 @@ export const appRouter = router({
         if (stripeMethodTypes.includes('oxxo')) {
           pmOptions.oxxo = { expires_after_days: 2 };
         }
-        if (stripeMethodTypes.includes('customer_balance')) {
-          pmOptions.customer_balance = {
-            funding_type: 'bank_transfer',
-            bank_transfer: { type: 'mx_bank_transfer' },
-          };
-        }
+        // customer_balance desactivado hasta que la cuenta Stripe tenga mx_bank_transfer habilitado
+        // if (stripeMethodTypes.includes('customer_balance')) {
+        //   pmOptions.customer_balance = {
+        //     funding_type: 'bank_transfer',
+        //     bank_transfer: { type: 'mx_bank_transfer' },
+        //   };
+        // }
 
         const paymentIntentParams: Parameters<typeof stripe.paymentIntents.create>[0] = {
           amount: amountCents,
