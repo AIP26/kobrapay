@@ -1057,49 +1057,45 @@ function PaymentForm({ token }: { token: string }) {
                   ) : (
                     <>
                     <form onSubmit={handlePayment}>
-                      {/* Selector de método */}
-                      {allowedPaymentMethods.length > 1 && (
-                        <div className="flex gap-2 mb-5">
-                          {allowedPaymentMethods.includes('card') && (
-                            <button type="button"
-                              onClick={() => setSelectedPayMethod('card')}
-                              className={`flex-1 border-2 rounded-lg py-2 px-3 text-sm font-semibold flex items-center justify-center gap-1.5 transition-all ${
-                                selectedPayMethod === 'card' ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-gray-200 bg-white text-gray-600 hover:border-blue-300'
-                              }`}>
-                              <CreditCard className="w-4 h-4" /> Tarjeta
-                            </button>
-                          )}
-                          {allowedPaymentMethods.includes('oxxo') && (
-                            <button type="button"
-                              onClick={() => setSelectedPayMethod('oxxo')}
-                              className={`flex-1 border-2 rounded-lg py-2 px-3 text-sm font-semibold flex items-center justify-center gap-1.5 transition-all ${
-                                selectedPayMethod === 'oxxo' ? 'border-orange-500 bg-orange-50 text-orange-700' : 'border-gray-200 bg-white text-gray-600 hover:border-orange-300'
-                              }`}>
-                              🏪 OXXO
-                            </button>
-                          )}
-                          {allowedPaymentMethods.includes('spei') && (
-                            <button type="button"
-                              onClick={() => setSelectedPayMethod('spei')}
-                              className={`flex-1 border-2 rounded-lg py-2 px-3 text-sm font-semibold flex items-center justify-center gap-1.5 transition-all ${
-                                selectedPayMethod === 'spei' ? 'border-green-500 bg-green-50 text-green-700' : 'border-gray-200 bg-white text-gray-600 hover:border-green-300'
-                              }`}>
-                              🏦 SPEI
-                            </button>
-                          )}
-                        </div>
-                      )}
-                      {allowedPaymentMethods.length === 1 && (
-                        <div className="flex gap-2 mb-5">
-                          <div className={`flex-1 border-2 rounded-lg py-2 px-3 text-sm font-semibold flex items-center justify-center gap-1.5 ${
-                            allowedPaymentMethods[0] === 'card' ? 'border-blue-500 bg-blue-50 text-blue-700' :
-                            allowedPaymentMethods[0] === 'oxxo' ? 'border-orange-500 bg-orange-50 text-orange-700' :
-                            'border-green-500 bg-green-50 text-green-700'
-                          }`}>
-                            {allowedPaymentMethods[0] === 'card' && <><CreditCard className="w-4 h-4" /> Tarjeta de débito o crédito</>}
-                            {allowedPaymentMethods[0] === 'oxxo' && <>🏪 Pago en OXXO</>}
-                            {allowedPaymentMethods[0] === 'spei' && <>🏦 Transferencia SPEI</>}
+                      {/* Selector de método — UI mejorada */}
+                      {allowedPaymentMethods.length > 0 && (
+                        <div className="mb-5">
+                          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Método de pago</p>
+                          <div className={`grid gap-2 mb-2`} style={{gridTemplateColumns: `repeat(${Math.min(allowedPaymentMethods.filter(m => ['card','oxxo','spei'].includes(m)).length, 3)}, 1fr)`}}>
+                            {allowedPaymentMethods.includes('card') && (
+                              <button type="button" onClick={() => setSelectedPayMethod('card')}
+                                className={`border-2 rounded-xl py-3 px-2 flex flex-col items-center justify-center gap-1 transition-all ${
+                                  selectedPayMethod === 'card' ? 'border-blue-500 bg-blue-50 shadow-sm' : 'border-gray-200 bg-white hover:border-blue-300'
+                                }`}>
+                                <CreditCard className={`w-5 h-5 ${selectedPayMethod === 'card' ? 'text-blue-600' : 'text-gray-400'}`} />
+                                <span className={`text-xs font-bold ${selectedPayMethod === 'card' ? 'text-blue-700' : 'text-gray-500'}`}>Tarjeta</span>
+                                {selectedPayMethod === 'card' && <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />}
+                              </button>
+                            )}
+                            {allowedPaymentMethods.includes('oxxo') && (
+                              <button type="button" onClick={() => setSelectedPayMethod('oxxo')}
+                                className={`border-2 rounded-xl py-3 px-2 flex flex-col items-center justify-center gap-1 transition-all ${
+                                  selectedPayMethod === 'oxxo' ? 'border-orange-500 bg-orange-50 shadow-sm' : 'border-gray-200 bg-white hover:border-orange-300'
+                                }`}>
+                                <span className="text-xl leading-none">🏪</span>
+                                <span className={`text-xs font-bold ${selectedPayMethod === 'oxxo' ? 'text-orange-700' : 'text-gray-500'}`}>OXXO</span>
+                                {selectedPayMethod === 'oxxo' && <span className="w-1.5 h-1.5 rounded-full bg-orange-500" />}
+                              </button>
+                            )}
+                            {allowedPaymentMethods.includes('spei') && (
+                              <button type="button" onClick={() => setSelectedPayMethod('spei')}
+                                className={`border-2 rounded-xl py-3 px-2 flex flex-col items-center justify-center gap-1 transition-all ${
+                                  selectedPayMethod === 'spei' ? 'border-green-500 bg-green-50 shadow-sm' : 'border-gray-200 bg-white hover:border-green-300'
+                                }`}>
+                                <span className="text-xl leading-none">🏦</span>
+                                <span className={`text-xs font-bold ${selectedPayMethod === 'spei' ? 'text-green-700' : 'text-gray-500'}`}>SPEI</span>
+                                {selectedPayMethod === 'spei' && <span className="w-1.5 h-1.5 rounded-full bg-green-500" />}
+                              </button>
+                            )}
                           </div>
+                          {selectedPayMethod === 'oxxo' && <p className="text-xs text-orange-600 text-center">Paga en efectivo en cualquier OXXO • Expira en 2 días</p>}
+                          {selectedPayMethod === 'spei' && <p className="text-xs text-green-600 text-center">Transferencia instantánea desde cualquier banco • CLABE única</p>}
+                          {selectedPayMethod === 'card' && <p className="text-xs text-blue-600 text-center">Visa, Mastercard, Amex • Débito y crédito • Pago seguro</p>}
                         </div>
                       )}
 
