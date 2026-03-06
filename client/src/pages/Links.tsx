@@ -21,12 +21,20 @@ import {
   Link2,
   Mail,
   MessageCircle,
+  MoreVertical,
   Plus,
   QrCode,
   Search,
   Trash2,
   XCircle,
 } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 function formatCurrency(amount: number | string, currency = "MXN") {
   return new Intl.NumberFormat("es-MX", { style: "currency", currency }).format(Number(amount));
@@ -66,6 +74,10 @@ export default function Links() {
   const [showArchived, setShowArchived] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [selectMode, setSelectMode] = useState(false);
+  // Modal PIN para eliminar pagados
+  const [pinModal, setPinModal] = useState<{ mode: 'single' | 'bulk'; linkId?: number; ids?: number[] } | null>(null);
+  const [pinValue, setPinValue] = useState("");
+  const [pinError, setPinError] = useState("");
   const qrRef = useRef<HTMLDivElement>(null);
   const utils = trpc.useUtils();
 
@@ -77,8 +89,23 @@ export default function Links() {
   });
 
   const deleteLink = trpc.paymentLinks.delete.useMutation({
-    onSuccess: () => { utils.paymentLinks.list.invalidate(); utils.transactions.stats.invalidate(); toast.success("Enlace eliminado"); },
-    onError: (err) => toast.error(err.message),
+    onSuccess: () => {
+      utils.paymentLinks.list.invalidate();
+      utils.transactions.stats.invalidate();
+      setPinModal(null);
+      setPinValue("");
+      setPinError("");
+      toast.success("Enlace eliminado");
+    },
+    onError: (err) => {
+      if (err.message === 'PIN incorrecto.') {
+        setPinError('PIN incorrecto. Verifica tu PIN de seguridad.');
+      } else {
+        setPinModal(null);
+        setPinValue("");
+        toast.error(err.message);
+      }
+    },
   });
 
   const archiveLink = trpc.paymentLinks.archive.useMutation({
@@ -95,9 +122,20 @@ export default function Links() {
       utils.transactions.stats.invalidate();
       setSelectedIds(new Set());
       setSelectMode(false);
+      setPinModal(null);
+      setPinValue("");
+      setPinError("");
       toast.success("Enlaces eliminados correctamente");
     },
-    onError: (err) => toast.error(err.message),
+    onError: (err) => {
+      if (err.message === 'PIN incorrecto.') {
+        setPinError('PIN incorrecto. Verifica tu PIN de seguridad.');
+      } else {
+        setPinModal(null);
+        setPinValue("");
+        toast.error(err.message);
+      }
+    },
   });
 
   const bulkArchive = trpc.paymentLinks.bulkArchive.useMutation({
@@ -106,6 +144,14 @@ export default function Links() {
       setSelectedIds(new Set());
       setSelectMode(false);
       toast.success(vars.archived ? "Enlaces archivados" : "Enlaces restaurados");
+    },
+    onError: (err) => toast.error(err.message),
+  });
+
+  const duplicateLink = trpc.paymentLinks.duplicate.useMutation({
+    onSuccess: () => {
+      utils.paymentLinks.list.invalidate();
+      toast.success("Enlace duplicado correctamente");
     },
     onError: (err) => toast.error(err.message),
   });
@@ -206,11 +252,33 @@ export default function Links() {
   const handleBulkDelete = () => {
     const ids = Array.from(selectedIds);
     const paidCount = filtered.filter((l) => selectedIds.has(l.id) && l.status === "paid").length;
-    const msg = paidCount > 0
-      ? `¿Eliminar ${ids.length - paidCount} enlace(s)? Los ${paidCount} enlace(s) pagados NO se eliminarán.`
-      : `¿Eliminar ${ids.length} enlace(s) permanentemente? Esta acción no se puede deshacer.`;
-    if (confirm(msg)) {
-      bulkDelete.mutate({ ids });
+    if (paidCount > 0) {
+      // Hay pagados: mostrar modal de PIN
+      setPinValue("");
+      setPinError("");
+      setPinModal({ mode: 'bulk', ids });
+    } else {
+      if (confirm(`¿Eliminar ${ids.length} enlace(s) permanentemente? Esta acción no se puede deshacer.`)) {
+        bulkDelete.mutate({ ids });
+      }
+    }
+  };
+
+  const handleDeleteSinglePaid = (linkId: number) => {
+    setPinValue("");
+    setPinError("");
+    setPinModal({ mode: 'single', linkId });
+  };
+
+  const handlePinConfirm = () => {
+    if (pinValue.length !== 4) {
+      setPinError('El PIN debe ser exactamente 4 dígitos.');
+      return;
+    }
+    if (pinModal?.mode === 'bulk' && pinModal.ids) {
+      bulkDelete.mutate({ ids: pinModal.ids, pin: pinValue });
+    } else if (pinModal?.mode === 'single' && pinModal.linkId) {
+      deleteLink.mutate({ id: pinModal.linkId, pin: pinValue });
     }
   };
 
@@ -529,37 +597,36 @@ export default function Links() {
                                 >
                                   <ExternalLink className="w-4 h-4" />
                                 </a>
-                                <button
-                                  onClick={() => handleOpenEdit(link as LinkItem)}
-                                  className="p-1.5 rounded-lg hover:bg-amber-50 text-gray-500 hover:text-amber-600 transition-all"
-                                  title="Editar enlace"
-                                >
-                                  <Edit2 className="w-4 h-4" />
-                                </button>
-                                <button
-                                  onClick={() => archiveLink.mutate({ id: link.id, archived: true })}
-                                  className="p-1.5 rounded-lg hover:bg-amber-50 text-gray-400 hover:text-amber-500 transition-all"
-                                  title="Archivar enlace"
-                                >
-                                  <Archive className="w-4 h-4" />
-                                </button>
-                                <button
-                                  onClick={() => { if (confirm("¿Cancelar este enlace?")) cancelLink.mutate({ id: link.id }); }}
-                                  className="p-1.5 rounded-lg hover:bg-red-50 text-gray-400 hover:text-red-500 transition-all"
-                                  title="Cancelar enlace"
-                                >
-                                  <XCircle className="w-4 h-4" />
-                                </button>
-                                <button
-                                  onClick={() => { if (confirm("¿Eliminar este enlace permanentemente? Esta acción no se puede deshacer.")) deleteLink.mutate({ id: link.id }); }}
-                                  className="p-1.5 rounded-lg hover:bg-red-100 text-gray-400 hover:text-red-600 transition-all"
-                                  title="Eliminar enlace"
-                                >
-                                  <Trash2 className="w-4 h-4" />
-                                </button>
+                                {/* Menú 3 puntos para acciones adicionales */}
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <button className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-all" title="Más opciones">
+                                      <MoreVertical className="w-4 h-4" />
+                                    </button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="end" className="w-48">
+                                    <DropdownMenuItem onClick={() => handleOpenEdit(link as LinkItem)}>
+                                      <Edit2 className="w-4 h-4 mr-2" /> Editar enlace
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => duplicateLink.mutate({ id: link.id })} disabled={duplicateLink.isPending}>
+                                      <Copy className="w-4 h-4 mr-2" /> Duplicar enlace
+                                    </DropdownMenuItem>
+                                    <DropdownMenuSeparator />
+                                    <DropdownMenuItem onClick={() => archiveLink.mutate({ id: link.id, archived: true })} className="text-amber-600">
+                                      <Archive className="w-4 h-4 mr-2" /> Archivar
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => { if (confirm("\u00bfCancelar este enlace?")) cancelLink.mutate({ id: link.id }); }} className="text-orange-600">
+                                      <XCircle className="w-4 h-4 mr-2" /> Cancelar enlace
+                                    </DropdownMenuItem>
+                                    <DropdownMenuSeparator />
+                                    <DropdownMenuItem onClick={() => { if (confirm("\u00bfEliminar este enlace permanentemente? Esta acción no se puede deshacer.")) deleteLink.mutate({ id: link.id }); }} className="text-red-600">
+                                      <Trash2 className="w-4 h-4 mr-2" /> Eliminar
+                                    </DropdownMenuItem>
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
                               </>
                             ) : (
-                              // Cancelado/expirado/pagado: archivar y eliminar (no pagados)
+                              // Cancelado/expirado/pagado: archivar, duplicar y eliminar
                               <div className="flex items-center gap-1">
                                 {link.status === "paid" && (
                                   <span className="text-xs text-green-600 font-medium flex items-center gap-1 mr-1">
@@ -574,15 +641,29 @@ export default function Links() {
                                 >
                                   <Archive className="w-4 h-4" />
                                 </button>
-                                {link.status !== "paid" && (
-                                  <button
-                                    onClick={() => { if (confirm("¿Eliminar este enlace permanentemente?")) deleteLink.mutate({ id: link.id }); }}
-                                    className="p-1.5 rounded-lg hover:bg-red-100 text-gray-400 hover:text-red-600 transition-all"
-                                    title="Eliminar enlace"
-                                  >
-                                    <Trash2 className="w-4 h-4" />
-                                  </button>
-                                )}
+                                {/* Menú 3 puntos para pagados/cancelados */}
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <button className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-all" title="Más opciones">
+                                      <MoreVertical className="w-4 h-4" />
+                                    </button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="end" className="w-48">
+                                    <DropdownMenuItem onClick={() => duplicateLink.mutate({ id: link.id })} disabled={duplicateLink.isPending}>
+                                      <Copy className="w-4 h-4 mr-2" /> Duplicar enlace
+                                    </DropdownMenuItem>
+                                    <DropdownMenuSeparator />
+                                    {link.status === "paid" ? (
+                                      <DropdownMenuItem onClick={() => handleDeleteSinglePaid(link.id)} className="text-red-600">
+                                        <Trash2 className="w-4 h-4 mr-2" /> Eliminar (requiere PIN)
+                                      </DropdownMenuItem>
+                                    ) : (
+                                      <DropdownMenuItem onClick={() => { if (confirm("\u00bfEliminar este enlace permanentemente?")) deleteLink.mutate({ id: link.id }); }} className="text-red-600">
+                                        <Trash2 className="w-4 h-4 mr-2" /> Eliminar
+                                      </DropdownMenuItem>
+                                    )}
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
                               </div>
                             )}
                           </div>
@@ -629,6 +710,54 @@ export default function Links() {
               </div>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal PIN para eliminar pagados */}
+      <Dialog open={!!pinModal} onOpenChange={() => { setPinModal(null); setPinValue(""); setPinError(""); }}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-red-600">
+              <Trash2 className="w-5 h-5" />
+              Confirmar eliminación
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
+              <p className="text-sm text-amber-800 font-medium">
+                {pinModal?.mode === 'bulk'
+                  ? `Estás eliminando ${pinModal.ids?.length} enlace(s), incluyendo enlace(s) pagados.`
+                  : 'Estás eliminando un enlace pagado.'}
+              </p>
+              <p className="text-xs text-amber-700 mt-1">Esta acción no se puede deshacer. El historial de transacciones se conservará.</p>
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-sm font-medium">Ingresa tu PIN de seguridad (4 dígitos)</Label>
+              <Input
+                type="password"
+                inputMode="numeric"
+                maxLength={4}
+                placeholder="••••"
+                value={pinValue}
+                onChange={(e) => { setPinValue(e.target.value.replace(/\D/g, '').slice(0, 4)); setPinError(''); }}
+                onKeyDown={(e) => { if (e.key === 'Enter') handlePinConfirm(); }}
+                className={`text-center text-2xl tracking-[0.5em] border-gray-200 ${pinError ? 'border-red-400' : ''}`}
+                autoFocus
+              />
+              {pinError && <p className="text-xs text-red-600">{pinError}</p>}
+              <p className="text-xs text-gray-400">Configura tu PIN en Ajustes &gt; Seguridad si aún no lo tienes.</p>
+            </div>
+          </div>
+          <DialogFooter className="gap-2 mt-2">
+            <Button variant="outline" onClick={() => { setPinModal(null); setPinValue(""); setPinError(""); }}>Cancelar</Button>
+            <Button
+              className="bg-red-500 hover:bg-red-600 text-white"
+              onClick={handlePinConfirm}
+              disabled={pinValue.length !== 4 || deleteLink.isPending || bulkDelete.isPending}
+            >
+              {(deleteLink.isPending || bulkDelete.isPending) ? 'Eliminando...' : 'Eliminar definitivamente'}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 

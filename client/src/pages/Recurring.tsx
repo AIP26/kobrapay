@@ -46,6 +46,9 @@ import {
   AlertTriangle,
   ExternalLink,
   Loader2,
+  Copy,
+  Link2,
+  Send,
 } from "lucide-react";
 
 // ─── Tipos ────────────────────────────────────────────────────────────────────
@@ -110,13 +113,22 @@ function NewSubscriptionModal({ open, onClose }: { open: boolean; onClose: () =>
     customerName: "",
   });
 
+  const [createdLink, setCreatedLink] = useState<{ url: string; email: string; emailSent: boolean } | null>(null);
+
   const createMutation = trpc.subscriptions.create.useMutation({
     onSuccess: (data) => {
-      toast.success("Suscripción creada. Redirigiendo al checkout de Stripe...");
       utils.subscriptions.list.invalidate();
-      onClose();
       if (data.checkoutUrl) {
-        window.open(data.checkoutUrl, "_blank");
+        setCreatedLink({
+          url: data.checkoutUrl,
+          email: form.customerEmail,
+          emailSent: data.emailSent ?? false,
+        });
+        if (data.emailSent) {
+          toast.success(`✅ Link enviado a ${form.customerEmail}`);
+        } else {
+          toast.success("Suscripción creada. Copia el link y envíaselo al cliente.");
+        }
       }
     },
     onError: (e) => toast.error(e.message),
@@ -254,11 +266,57 @@ function NewSubscriptionModal({ open, onClose }: { open: boolean; onClose: () =>
             </div>
           )}
         </div>
+        {/* Resultado: link generado */}
+        {createdLink && (
+          <div className="border-t pt-4 space-y-3">
+            <div className={`flex items-center gap-2 p-3 rounded-lg text-sm font-medium ${
+              createdLink.emailSent ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-amber-50 text-amber-700 border border-amber-200'
+            }`}>
+              {createdLink.emailSent ? (
+                <><CheckCircle2 className="w-4 h-4 flex-shrink-0" /> Link enviado por email a <strong>{createdLink.email}</strong></>
+              ) : (
+                <><Mail className="w-4 h-4 flex-shrink-0" /> Copia este link y envíaselo al cliente</>  
+              )}
+            </div>
+            <div className="flex gap-2">
+              <Input
+                readOnly
+                value={createdLink.url}
+                className="text-xs font-mono bg-gray-50 text-gray-600 border-gray-200"
+              />
+              <Button
+                size="sm"
+                variant="outline"
+                className="flex-shrink-0 border-gray-200"
+                onClick={() => { navigator.clipboard.writeText(createdLink.url); toast.success('Link copiado'); }}
+              >
+                <Copy className="w-4 h-4" />
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                className="flex-shrink-0 border-gray-200"
+                onClick={() => window.open(createdLink.url, '_blank')}
+                title="Abrir link"
+              >
+                <ExternalLink className="w-4 h-4" />
+              </Button>
+            </div>
+          </div>
+        )}
         <DialogFooter>
-          <Button variant="outline" onClick={onClose}>Cancelar</Button>
-          <Button onClick={handleSubmit} disabled={createMutation.isPending}>
-            {createMutation.isPending ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Creando...</> : <><ExternalLink className="w-4 h-4 mr-2" />Crear y Enviar Link</>}
-          </Button>
+          {!createdLink ? (
+            <>
+              <Button variant="outline" onClick={onClose}>Cancelar</Button>
+              <Button onClick={handleSubmit} disabled={createMutation.isPending}>
+                {createMutation.isPending ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Creando...</> : <><Send className="w-4 h-4 mr-2" />Crear y Enviar Link al Cliente</>}
+              </Button>
+            </>
+          ) : (
+            <Button onClick={() => { setCreatedLink(null); onClose(); }} className="w-full bg-cyan-500 hover:bg-cyan-400 text-white">
+              <CheckCircle2 className="w-4 h-4 mr-2" /> Listo
+            </Button>
+          )}
         </DialogFooter>
       </DialogContent>
     </Dialog>

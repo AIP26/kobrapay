@@ -98,7 +98,7 @@ import { systemRouter } from "./_core/systemRouter";
 import { isSuperAdmin, protectedProcedure, publicProcedure, router } from "./_core/trpc";
 import { securityRouter } from "./routers/security";
 import { notifyOwner } from "./_core/notification";
-import { sendOtpEmail, sendPaymentReceipt, sendWelcomeEmail, sendInvoiceEmail, sendRefundNotification } from "./_core/email";
+import { sendOtpEmail, sendPaymentReceipt, sendWelcomeEmail, sendInvoiceEmail, sendRefundNotification, sendSubscriptionInviteEmail } from "./_core/email";
 import { storagePut } from "./storage";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "", {
@@ -1059,8 +1059,47 @@ export const appRouter = router({
         return { success: true };
       }),
 
-    delete: protectedProcedure
+    duplicate: protectedProcedure
       .input(z.object({ id: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        const links = await getPaymentLinksByUser(ctx.user.id);
+        const original = links.find((l) => l.id === input.id);
+        if (!original) throw new TRPCError({ code: 'NOT_FOUND', message: 'Enlace no encontrado' });
+        const { nanoid: _nanoid } = await import('nanoid');
+        const token = _nanoid(21);
+        const settings = await getVendorSettings(ctx.user.id);
+        const commissionRate = parseFloat(String(settings?.commissionRate || '0'));
+        const amount = parseFloat(String(original.amount));
+        const { commissionAmount, netAmount } = calculateCommission(amount, commissionRate);
+        const newLink = await createPaymentLink({
+          userId: ctx.user.id,
+          token,
+          clientName: original.clientName,
+          clientEmail: original.clientEmail ?? null,
+          clientPhone: original.clientPhone ?? null,
+          amount: String(amount),
+          currency: original.currency,
+          description: original.description,
+          expiresAt: undefined,
+          requireOtp: original.requireOtp ?? false,
+          requireSelfie: original.requireSelfie ?? false,
+          requireSignature: original.requireSignature ?? false,
+          requireIdUpload: original.requireIdUpload ?? false,
+          chargebackProtectionText: original.chargebackProtectionText ?? '',
+          usdExchangeRate: String(original.usdExchangeRate ?? '0'),
+          commissionRate: String(commissionRate),
+          commissionAmount: String(commissionAmount),
+          msiOptions: original.msiOptions ?? null,
+          allowedPaymentMethods: original.allowedPaymentMethods ?? null,
+          tipEnabled: original.tipEnabled ?? false,
+          tipSuggestions: original.tipSuggestions ?? null,
+          countryCode: original.countryCode ?? 'MX',
+        });
+        return { ...newLink, netAmount };
+      }),
+
+    delete: protectedProcedure
+      .input(z.object({ id: z.number(), pin: z.string().length(4).optional() }))
       .mutation(async ({ ctx, input }) => {
         const { getDb: _getDb } = await import('./db');
         const db = await _getDb();
@@ -1071,28 +1110,53 @@ export const appRouter = router({
           .where(and(eq(plTable.id, input.id), eq(plTable.userId, ctx.user.id)))
           .limit(1);
         if (!link) throw new TRPCError({ code: "NOT_FOUND" });
+        // Si el enlace está pagado, requerir PIN
         if (link.status === 'paid') {
-          throw new TRPCError({ code: "BAD_REQUEST", message: "No se pueden eliminar enlaces pagados. Tienen historial de transacciones." });
+          if (!input.pin) {
+            throw new TRPCError({ code: "BAD_REQUEST", message: "PIN_REQUIRED" });
+          }
+          const settings = await getVendorSettings(ctx.user.id);
+          if (!settings?.deletePin) {
+            throw new TRPCError({ code: 'BAD_REQUEST', message: 'No tienes un PIN configurado. Ve a Ajustes > Seguridad para configurarlo.' });
+          }
+          if (settings.deletePin !== input.pin) {
+            throw new TRPCError({ code: 'UNAUTHORIZED', message: 'PIN incorrecto.' });
+          }
         }
         await db.delete(plTable).where(and(eq(plTable.id, input.id), eq(plTable.userId, ctx.user.id)));
         return { success: true };
       }),
 
-    // Eliminar múltiples enlaces (solo los que no están pagados)
+    // Eliminar múltiples enlaces (pagados requieren PIN)
     bulkDelete: protectedProcedure
-      .input(z.object({ ids: z.array(z.number()).min(1).max(100) }))
+      .input(z.object({ ids: z.array(z.number()).min(1).max(100), pin: z.string().length(4).optional() }))
       .mutation(async ({ ctx, input }) => {
         const { getDb: _getDb } = await import('./db');
         const db = await _getDb();
         if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
         const { paymentLinks: plTable } = await import('../drizzle/schema');
-        const { eq, and, inArray, ne } = await import('drizzle-orm');
+        const { eq, and, inArray } = await import('drizzle-orm');
+        // Verificar cuántos de los seleccionados están pagados
+        const selectedLinks = await db.select().from(plTable).where(
+          and(eq(plTable.userId, ctx.user.id), inArray(plTable.id, input.ids))
+        );
+        const paidLinks = selectedLinks.filter(l => l.status === 'paid');
+        if (paidLinks.length > 0) {
+          // Hay pagados: requerir PIN
+          if (!input.pin) {
+            throw new TRPCError({ code: "BAD_REQUEST", message: "PIN_REQUIRED" });
+          }
+          const settings = await getVendorSettings(ctx.user.id);
+          if (!settings?.deletePin) {
+            throw new TRPCError({ code: 'BAD_REQUEST', message: 'No tienes un PIN configurado. Ve a Ajustes > Seguridad para configurarlo.' });
+          }
+          if (settings.deletePin !== input.pin) {
+            throw new TRPCError({ code: 'UNAUTHORIZED', message: 'PIN incorrecto.' });
+          }
+        }
+        // Eliminar todos los seleccionados (pagados y no pagados)
         await db.delete(plTable).where(
-          and(
-            eq(plTable.userId, ctx.user.id),
-            inArray(plTable.id, input.ids),
-            ne(plTable.status, 'paid')
-          )
+          and(eq(plTable.userId, ctx.user.id), inArray(plTable.id, input.ids))
         );
         return { success: true };
       }),
@@ -3766,7 +3830,27 @@ export const appRouter = router({
           cancelAtPeriodEnd: false,
         });
 
-        return { subscription: sub, checkoutUrl: session.url };
+        // 6. Obtener nombre del negocio del vendedor
+        const settings = await getVendorSettings(ctx.user.id);
+        const businessName = settings?.businessName || ctx.user.name || 'KobraPay';
+
+        // 7. Enviar email al cliente con el link de checkout (no abrir para el admin)
+        let emailSent = false;
+        if (session.url) {
+          emailSent = await sendSubscriptionInviteEmail({
+            customerEmail: input.customerEmail,
+            customerName: input.customerName || null,
+            planName: input.name,
+            amount: Math.round(input.amount * 100),
+            currency: input.currency,
+            interval: input.interval,
+            intervalCount: input.intervalCount,
+            checkoutUrl: session.url,
+            businessName,
+          });
+        }
+
+        return { subscription: sub, checkoutUrl: session.url, emailSent };
       }),
 
     cancel: protectedProcedure

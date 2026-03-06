@@ -976,3 +976,87 @@ export async function sendRefundNotification(data: {
     return false;
   }
 }
+
+// ─── Email de invitación de suscripción al cliente ────────────────────────────
+export async function sendSubscriptionInviteEmail(data: {
+  customerEmail: string;
+  customerName?: string | null;
+  planName: string;
+  amount: number; // en centavos
+  currency: string;
+  interval: string;
+  intervalCount: number;
+  checkoutUrl: string;
+  businessName: string;
+}): Promise<boolean> {
+  const resend = getResend();
+  if (!resend) {
+    console.log(`[Subscription Invite] URL para ${data.customerEmail}: ${data.checkoutUrl}`);
+    return false;
+  }
+
+  const amountFormatted = new Intl.NumberFormat("es-MX", {
+    style: "currency",
+    currency: data.currency.toUpperCase(),
+  }).format(data.amount / 100);
+
+  const intervalMap: Record<string, string> = {
+    day: "diario", week: "semanal", month: "mensual", year: "anual",
+  };
+  const intervalLabel = intervalMap[data.interval] ?? data.interval;
+  const freqLabel = data.intervalCount === 1
+    ? intervalLabel
+    : `cada ${data.intervalCount} ${intervalLabel === "mensual" ? "meses" : intervalLabel === "semanal" ? "semanas" : "días"}`;
+
+  const html = `<!DOCTYPE html>
+<html lang="es">
+<head><meta charset="UTF-8"><title>Suscripción ${data.planName}</title></head>
+<body style="margin:0;padding:0;background:#f4f4f5;font-family:'Helvetica Neue',Arial,sans-serif;">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f4f5;padding:40px 0;">
+  <tr><td align="center">
+    <table width="580" cellpadding="0" cellspacing="0" style="background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.08);">
+      <tr><td style="background:linear-gradient(135deg,#0D1B35,#1A3050);padding:28px 40px;">
+        <h1 style="margin:0;color:#fff;font-size:22px;font-weight:800;">🔄 ${data.businessName} te invita a suscribirte</h1>
+        <p style="margin:6px 0 0;color:rgba(255,255,255,0.75);font-size:14px;">Procesado de forma segura por KobraPay · kobrapay.mx</p>
+      </td></tr>
+      <tr><td style="padding:32px 40px;">
+        <p style="color:#374151;font-size:15px;margin:0 0 20px;">
+          Hola${data.customerName ? ` <strong>${data.customerName}</strong>` : ""}, <strong>${data.businessName}</strong> te ha enviado una invitación para suscribirte al plan:
+        </p>
+        <table width="100%" cellpadding="12" cellspacing="0" style="background:#f9fafb;border-radius:8px;border:1px solid #e5e7eb;margin-bottom:24px;">
+          <tr><td style="color:#6b7280;font-size:13px;width:40%;">Plan</td><td style="color:#111827;font-weight:700;font-size:15px;">${data.planName}</td></tr>
+          <tr style="border-top:1px solid #e5e7eb;"><td style="color:#6b7280;font-size:13px;">Monto</td><td style="color:#00A876;font-weight:800;font-size:20px;">${amountFormatted}</td></tr>
+          <tr style="border-top:1px solid #e5e7eb;"><td style="color:#6b7280;font-size:13px;">Frecuencia</td><td style="color:#111827;font-size:14px;">${freqLabel.charAt(0).toUpperCase() + freqLabel.slice(1)}</td></tr>
+        </table>
+        <p style="color:#6b7280;font-size:13px;margin:0 0 16px;">Haz clic en el botón para ingresar tu tarjeta de forma segura y activar tu suscripción:</p>
+        <div style="text-align:center;margin:24px 0;">
+          <a href="${data.checkoutUrl}" style="background:#00C896;color:#0D1B35;padding:14px 32px;border-radius:8px;text-decoration:none;font-weight:800;font-size:16px;display:inline-block;">
+            ✅ Activar mi suscripción
+          </a>
+        </div>
+        <p style="color:#9ca3af;font-size:12px;text-align:center;margin:16px 0 0;">
+          Este enlace es de uso único y expira en 24 horas. Si no solicitaste esta suscripción, puedes ignorar este correo.
+        </p>
+      </td></tr>
+      <tr><td style="background:#f9fafb;padding:16px 40px;text-align:center;border-top:1px solid #f3f4f6;">
+        <p style="margin:0;color:#9ca3af;font-size:12px;">Procesado de forma segura por <strong style="color:#00A876;">KobraPay</strong> · kobrapay.mx</p>
+      </td></tr>
+    </table>
+  </td></tr>
+</table>
+</body></html>`;
+
+  try {
+    const { error } = await resend.emails.send({
+      from: `KobraPay <${ENV.fromEmail}>`,
+      to: data.customerEmail,
+      subject: `🔄 Invitación de suscripción: ${data.planName} — ${amountFormatted} ${freqLabel}`,
+      html,
+    });
+    if (error) { console.error("[Email] Error al enviar invitación de suscripción:", error); return false; }
+    return true;
+  } catch (err) {
+    console.error("[Email] Excepción al enviar invitación de suscripción:", err);
+    return false;
+  }
+}
