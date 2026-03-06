@@ -183,7 +183,7 @@ export const appRouter = router({
           email: input.email,
           loginMethod: 'email',
           role: 'user',
-          accountStatus: 'active',
+          accountStatus: 'pending',
           isActive: true,
           onboardingCompleted: false,
           emailVerified: false,
@@ -191,12 +191,14 @@ export const appRouter = router({
           passwordHash,
           lastSignedIn: new Date(),
         });
-        // Enviar email de bienvenida/verificación
+        // Notificar al superadmin de nuevo registro pendiente
         try {
-          const origin = ctx.req.headers.origin || ctx.req.headers.referer?.split('/').slice(0,3).join('/') || 'https://payprocess-tm7gpbte.manus.space';
-          await sendWelcomeEmail({ to: input.email, name: input.name, businessName: input.name });
-        } catch { /* no bloquear el registro si el email falla */ }
-        return { success: true, message: 'Cuenta creada. Revisa tu correo para verificar tu cuenta.' };
+          await notifyOwner({
+            title: `👤 Nuevo registro pendiente: ${input.name}`,
+            content: `${input.name} (${input.email}) se registró en KobraPay y está esperando aprobación. Ve a Registros para aprobar o rechazar la cuenta.`,
+          });
+        } catch { /* no bloquear el registro si la notificación falla */ }
+        return { success: true, message: 'Solicitud enviada. El equipo de KobraPay revisará tu cuenta y te notificará por email.' };
       }),
 
     loginEmail: publicProcedure
@@ -218,9 +220,13 @@ export const appRouter = router({
           throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Correo o contraseña incorrectos' });
         }
         const user = found[0];
-        if (!user.isActive || user.accountStatus === 'blocked') {
-          throw new TRPCError({ code: 'FORBIDDEN', message: 'Tu cuenta está bloqueada. Contacta a soporte.' });
+        if (!user.isActive) {
+          throw new TRPCError({ code: 'FORBIDDEN', message: 'Tu cuenta está inactiva. Contacta a soporte.' });
         }
+        if (user.accountStatus === 'blocked') {
+          throw new TRPCError({ code: 'FORBIDDEN', message: 'Tu cuenta ha sido bloqueada. Contacta a soporte@kobrapay.mx.' });
+        }
+        // Cuentas pending pueden iniciar sesión pero verán la pantalla de espera (DashboardLayout lo maneja)
         const valid = await bcrypt.compare(input.password, user.passwordHash as string);
         if (!valid) throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Correo o contraseña incorrectos' });
         // Actualizar lastSignedIn
