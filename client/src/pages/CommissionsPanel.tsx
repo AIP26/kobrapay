@@ -24,8 +24,9 @@ import {
   Clock,
   Handshake,
   Star,
+  Search,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import {
   BarChart,
@@ -78,6 +79,10 @@ export default function CommissionsPanel() {
   const canAccess = isSuperAdmin || isAdmin;
   const [drillDown, setDrillDown] = useState<DrillDownType>(null);
   const [selectedTx, setSelectedTx] = useState<TxDetail | null>(null);
+  // Filtros para drill-down de transacciones
+  const [txSearch, setTxSearch] = useState("");
+  const [txDateFrom, setTxDateFrom] = useState("");
+  const [txDateTo, setTxDateTo] = useState("");
 
   const { data, isLoading } = trpc.commissions.summary.useQuery(undefined, {
     enabled: canAccess,
@@ -146,29 +151,124 @@ export default function CommissionsPanel() {
   const generateCommissionReport = async () => {
     setGeneratingPdf(true);
     try {
+      const { jsPDF } = await import("jspdf");
+      const autoTable = (await import("jspdf-autotable")).default;
       const now = new Date();
       const dateStr = now.toLocaleDateString("es-MX", { dateStyle: "full" });
-      const rows = clients
-        .slice().sort((a, b) => b.totalCommission - a.totalCommission)
-        .map((c, i) => `<tr style="background:${i % 2 === 0 ? "#fff" : "#f9fafb"}"><td style="padding:8px 12px;font-size:13px;border-bottom:1px solid #e5e7eb;">${i + 1}</td><td style="padding:8px 12px;font-size:13px;border-bottom:1px solid #e5e7eb;font-weight:600;">${c.businessName || c.name}</td><td style="padding:8px 12px;font-size:13px;border-bottom:1px solid #e5e7eb;">${c.commissionRate}%</td><td style="padding:8px 12px;font-size:13px;border-bottom:1px solid #e5e7eb;">${c.totalTransactions}</td><td style="padding:8px 12px;font-size:13px;border-bottom:1px solid #e5e7eb;">${fmt(c.totalVolume)}</td><td style="padding:8px 12px;font-size:13px;border-bottom:1px solid #e5e7eb;font-weight:700;color:#059669;">${fmt(c.totalCommission)}</td><td style="padding:8px 12px;font-size:13px;border-bottom:1px solid #e5e7eb;"><span style="background:${c.status === "active" ? "#d1fae5" : "#fee2e2"};color:${c.status === "active" ? "#065f46" : "#991b1b"};padding:2px 8px;border-radius:9999px;font-size:11px;font-weight:600;">${c.status === "active" ? "Activo" : "Suspendido"}</span></td></tr>`)
-        .join("");
-      const monthlyRows = (data?.monthly ?? []).map(m => {
-        const [year, mo] = m.month.split("-");
+      const monthStr = now.toLocaleDateString("es-MX", { month: "long", year: "numeric" });
+      const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+      const pageW = doc.internal.pageSize.getWidth();
+      // ── Membrete KobraPay ──────────────────────────────────────────────────────
+      doc.setFillColor(0, 200, 83); // verde KobraPay
+      doc.rect(0, 0, pageW, 28, "F");
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(20);
+      doc.setFont("helvetica", "bold");
+      doc.text("KobraPay", 14, 12);
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "normal");
+      doc.text("Plataforma de Cobros Digitales · kobrapay.mx", 14, 19);
+      doc.setFontSize(10);
+      doc.text(`Reporte de Comisiones — ${monthStr}`, pageW - 14, 12, { align: "right" });
+      doc.text(`Generado: ${dateStr}`, pageW - 14, 19, { align: "right" });
+      // ── Línea separadora ──────────────────────────────────────────────────────
+      doc.setDrawColor(0, 200, 83);
+      doc.setLineWidth(0.5);
+      doc.line(14, 32, pageW - 14, 32);
+      // ── Resumen de KPIs ───────────────────────────────────────────────────────
+      doc.setTextColor(30, 30, 30);
+      doc.setFontSize(13);
+      doc.setFont("helvetica", "bold");
+      doc.text("Resumen del Período", 14, 40);
+      const kpis = [
+        { label: "Total Comisiones", value: fmt(totalEarned), color: [5, 150, 105] as [number, number, number] },
+        { label: "Transacciones", value: totalTx.toLocaleString(), color: [30, 30, 30] as [number, number, number] },
+        { label: "Clientes Activos", value: activeClients.toLocaleString(), color: [30, 30, 30] as [number, number, number] },
+        { label: "Comisión Promedio", value: `${avgCommission.toFixed(2)}%`, color: [30, 30, 30] as [number, number, number] },
+      ];
+      const boxW = (pageW - 28 - 9) / 4;
+      kpis.forEach((kpi, i) => {
+        const x = 14 + i * (boxW + 3);
+        doc.setFillColor(248, 250, 252);
+        doc.roundedRect(x, 44, boxW, 18, 2, 2, "F");
+        doc.setFontSize(7);
+        doc.setFont("helvetica", "normal");
+        doc.setTextColor(107, 114, 128);
+        doc.text(kpi.label, x + boxW / 2, 50, { align: "center" });
+        doc.setFontSize(10);
+        doc.setFont("helvetica", "bold");
+        doc.setTextColor(...kpi.color);
+        doc.text(kpi.value, x + boxW / 2, 57, { align: "center" });
+      });
+      // ── Tabla de clientes ─────────────────────────────────────────────────────
+      doc.setTextColor(30, 30, 30);
+      doc.setFontSize(11);
+      doc.setFont("helvetica", "bold");
+      doc.text("Desglose por Negocio", 14, 72);
+      const sortedClients = [...clients].sort((a, b) => b.totalCommission - a.totalCommission);
+      autoTable(doc, {
+        startY: 75,
+        head: [["#", "Negocio", "Comisión %", "Transacciones", "Volumen", "Tu Comisión", "Estatus"]],
+        body: sortedClients.map((c, i) => [
+          i + 1,
+          c.businessName || c.name,
+          `${c.commissionRate}%`,
+          c.totalTransactions,
+          fmt(c.totalVolume),
+          fmt(c.totalCommission),
+          c.status === "active" ? "Activo" : "Suspendido",
+        ]),
+        headStyles: { fillColor: [0, 200, 83], textColor: 255, fontSize: 8, fontStyle: "bold" },
+        bodyStyles: { fontSize: 8, textColor: [30, 30, 30] },
+        alternateRowStyles: { fillColor: [248, 250, 252] },
+        columnStyles: {
+          0: { cellWidth: 8, halign: "center" },
+          2: { halign: "center" },
+          3: { halign: "center" },
+          4: { halign: "right" },
+          5: { halign: "right", textColor: [5, 150, 105], fontStyle: "bold" },
+          6: { halign: "center" },
+        },
+        margin: { left: 14, right: 14 },
+      });
+      // ── Historial mensual ─────────────────────────────────────────────────────
+      if (data?.monthly?.length) {
+        const finalY = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable?.finalY ?? 120;
+        doc.setFontSize(11);
+        doc.setFont("helvetica", "bold");
+        doc.setTextColor(30, 30, 30);
+        doc.text("Historial Mensual", 14, finalY + 10);
         const MONTHS = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
-        return `<tr><td style="padding:6px 12px;font-size:12px;border-bottom:1px solid #e5e7eb;">${MONTHS[parseInt(mo)-1]} ${year}</td><td style="padding:6px 12px;font-size:12px;border-bottom:1px solid #e5e7eb;font-weight:700;color:#059669;">${fmt(m.amount)}</td></tr>`;
-      }).join("");
-      const html = `<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>Reporte de Comisiones KobraPay</title><style>@media print{body{margin:0;}}body{font-family:Arial,sans-serif;padding:32px;color:#111;max-width:900px;margin:0 auto;}</style></head><body><div style="text-align:center;margin-bottom:28px;border-bottom:2px solid #00c853;padding-bottom:16px;"><h1 style="color:#00c853;font-size:26px;margin:0;font-weight:800;">KobraPay</h1><h2 style="font-size:18px;margin:6px 0 4px;color:#111;">Reporte de Comisiones</h2><p style="color:#6b7280;font-size:13px;margin:0;">Generado el ${dateStr}</p></div><div style="display:flex;gap:20px;margin-bottom:24px;"><div style="flex:1;background:#f0fdf4;border-radius:8px;padding:14px 18px;"><p style="font-size:11px;color:#6b7280;margin:0 0 4px;">Total Comisiones Ganadas</p><p style="font-size:22px;font-weight:800;color:#059669;margin:0;">${fmt(totalEarned)}</p></div><div style="flex:1;background:#f9fafb;border-radius:8px;padding:14px 18px;"><p style="font-size:11px;color:#6b7280;margin:0 0 4px;">Total Transacciones</p><p style="font-size:22px;font-weight:800;margin:0;">${totalTx}</p></div><div style="flex:1;background:#f9fafb;border-radius:8px;padding:14px 18px;"><p style="font-size:11px;color:#6b7280;margin:0 0 4px;">Clientes Activos</p><p style="font-size:22px;font-weight:800;margin:0;">${activeClients}</p></div><div style="flex:1;background:#f9fafb;border-radius:8px;padding:14px 18px;"><p style="font-size:11px;color:#6b7280;margin:0 0 4px;">Comisión Promedio</p><p style="font-size:22px;font-weight:800;margin:0;">${avgCommission.toFixed(1)}%</p></div></div><h3 style="font-size:15px;font-weight:700;margin:0 0 10px;color:#111;">Desglose por Negocio</h3><table width="100%" style="border-collapse:collapse;font-family:Arial,sans-serif;margin-bottom:28px;"><thead><tr style="background:#f0fdf4;"><th style="padding:8px 12px;font-size:11px;text-align:left;color:#6b7280;">#</th><th style="padding:8px 12px;font-size:11px;text-align:left;color:#6b7280;">Negocio</th><th style="padding:8px 12px;font-size:11px;text-align:left;color:#6b7280;">Comisión %</th><th style="padding:8px 12px;font-size:11px;text-align:left;color:#6b7280;">Transacciones</th><th style="padding:8px 12px;font-size:11px;text-align:left;color:#6b7280;">Volumen</th><th style="padding:8px 12px;font-size:11px;text-align:left;color:#6b7280;">Tu Comisión</th><th style="padding:8px 12px;font-size:11px;text-align:left;color:#6b7280;">Estatus</th></tr></thead><tbody>${rows || '<tr><td colspan="7" style="padding:12px;text-align:center;color:#9ca3af;">Sin clientes registrados</td></tr>'}</tbody></table>${data?.monthly?.length ? `<h3 style="font-size:15px;font-weight:700;margin:0 0 10px;color:#111;">Historial Mensual</h3><table width="40%" style="border-collapse:collapse;font-family:Arial,sans-serif;"><thead><tr style="background:#f9fafb;"><th style="padding:6px 12px;font-size:11px;text-align:left;color:#6b7280;">Mes</th><th style="padding:6px 12px;font-size:11px;text-align:left;color:#6b7280;">Comisiones</th></tr></thead><tbody>${monthlyRows}</tbody></table>` : ""}<div style="margin-top:32px;text-align:center;color:#9ca3af;font-size:11px;border-top:1px solid #e5e7eb;padding-top:12px;">KobraPay · kobrapay.mx · Reporte generado automáticamente</div></body></html>`;
-      const blob = new Blob([html], { type: "text/html;charset=utf-8" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `Comisiones_KobraPay_${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}.html`;
-      document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+        autoTable(doc, {
+          startY: finalY + 13,
+          head: [["Mes", "Comisiones Generadas"]],
+          body: [...data.monthly].reverse().map(m => {
+            const [year, mo] = m.month.split("-");
+            return [`${MONTHS[parseInt(mo)-1]} ${year}`, fmt(m.amount)];
+          }),
+          headStyles: { fillColor: [0, 200, 83], textColor: 255, fontSize: 9, fontStyle: "bold" },
+          bodyStyles: { fontSize: 9 },
+          columnStyles: { 1: { halign: "right", textColor: [5, 150, 105], fontStyle: "bold" } },
+          tableWidth: 80,
+          margin: { left: 14 },
+        });
+      }
+      // ── Footer ────────────────────────────────────────────────────────────────
+      const pageCount = doc.getNumberOfPages();
+      for (let i = 1; i <= pageCount; i++) {
+        doc.setPage(i);
+        doc.setFontSize(7);
+        doc.setFont("helvetica", "normal");
+        doc.setTextColor(156, 163, 175);
+        doc.text(`KobraPay · kobrapay.mx · Reporte generado automáticamente · Página ${i} de ${pageCount}`, pageW / 2, doc.internal.pageSize.getHeight() - 8, { align: "center" });
+      }
+      doc.save(`Comisiones_KobraPay_${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}.pdf`);
       const { toast } = await import("sonner");
-      toast.success("Reporte descargado", { description: "Abre el archivo HTML e imprime como PDF (Ctrl+P)." });
-    } catch {
+      toast.success("Reporte PDF descargado", { description: `Comisiones_KobraPay_${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"00")}.pdf` });
+    } catch (err) {
+      console.error(err);
       const { toast } = await import("sonner");
-      toast.error("Error al generar el reporte");
+      toast.error("Error al generar el reporte PDF");
     } finally {
       setGeneratingPdf(false);
     }
@@ -271,6 +371,21 @@ export default function CommissionsPanel() {
                 createdAt: Date;
                 clientName: string;
               }> })?.transactions ?? [];
+              // Filtrar por búsqueda y fechas
+              const filteredTxList = txList.filter(tx => {
+                const q = txSearch.toLowerCase();
+                const matchSearch = !txSearch || (
+                  (tx.payerName || "").toLowerCase().includes(q) ||
+                  (tx.payerEmail || "").toLowerCase().includes(q) ||
+                  (tx.clientName || "").toLowerCase().includes(q) ||
+                  (tx.operationNumber || "").toLowerCase().includes(q)
+                );
+                const txDate = new Date(tx.createdAt);
+                const matchFrom = !txDateFrom || txDate >= new Date(txDateFrom);
+                const matchTo = !txDateTo || txDate <= new Date(txDateTo + "T23:59:59");
+                return matchSearch && matchFrom && matchTo;
+              });
+              const filteredCommission = filteredTxList.reduce((s, tx) => s + parseFloat(tx.commissionAmount), 0);
               return (
                 <>
                   <div className="grid grid-cols-2 gap-3 mb-4">
@@ -283,10 +398,48 @@ export default function CommissionsPanel() {
                       <p className="text-2xl font-bold text-emerald-700 mt-1">{fmt(totalEarned)}</p>
                     </div>
                   </div>
-                  <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Transacciones exitosas ({txList.length})</h3>
-                  {txList.length === 0 ? (
-                    <p className="text-gray-400 text-sm text-center py-8">Sin transacciones aún</p>
-                  ) : txList.map((tx) => (
+                  {/* Filtros de búsqueda y fechas */}
+                  <div className="space-y-2 mb-4">
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
+                      <input
+                        type="text"
+                        value={txSearch}
+                        onChange={e => setTxSearch(e.target.value)}
+                        placeholder="Buscar por nombre, email, negocio o #operación..."
+                        className="w-full pl-8 pr-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-300"
+                      />
+                    </div>
+                    <div className="flex gap-2">
+                      <div className="flex-1">
+                        <label className="text-xs text-gray-400 block mb-1">Desde</label>
+                        <input type="date" value={txDateFrom} onChange={e => setTxDateFrom(e.target.value)}
+                          className="w-full px-2 py-1.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-300" />
+                      </div>
+                      <div className="flex-1">
+                        <label className="text-xs text-gray-400 block mb-1">Hasta</label>
+                        <input type="date" value={txDateTo} onChange={e => setTxDateTo(e.target.value)}
+                          className="w-full px-2 py-1.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-300" />
+                      </div>
+                      {(txSearch || txDateFrom || txDateTo) && (
+                        <div className="flex items-end">
+                          <button onClick={() => { setTxSearch(""); setTxDateFrom(""); setTxDateTo(""); }}
+                            className="px-2 py-1.5 text-xs text-gray-500 border border-gray-200 rounded-lg hover:bg-gray-50">
+                            Limpiar
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                    {(txSearch || txDateFrom || txDateTo) && (
+                      <p className="text-xs text-emerald-600 font-medium">
+                        {filteredTxList.length} resultado{filteredTxList.length !== 1 ? "s" : ""} · Comisiones: {fmt(filteredCommission)}
+                      </p>
+                    )}
+                  </div>
+                  <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Transacciones exitosas ({filteredTxList.length})</h3>
+                  {filteredTxList.length === 0 ? (
+                    <p className="text-gray-400 text-sm text-center py-8">{txSearch || txDateFrom || txDateTo ? "Sin resultados para este filtro" : "Sin transacciones aún"}</p>
+                  ) : filteredTxList.map((tx) => (
                     <div
                       key={tx.id}
                       className="p-3 rounded-lg border border-gray-100 hover:bg-emerald-50 hover:border-emerald-200 cursor-pointer space-y-1.5 transition-colors"

@@ -991,3 +991,13 @@
 - [x] FAQ en landing page (ya existía con 13 preguntas)
 - [x] Manuales PDF en Help.tsx (ya existían y accesibles vía CDN)
 - [x] Stripe live activado (sk_live, pk_live, whsec confirmados)
+
+## Sesión Mar 5, 2026 - Mejoras Panel de Comisiones y PayPage
+
+- [x] Selector de método de pago OXXO/SPEI/Tarjeta en PayPage (visual + flujos completos)
+- [x] Filtro de búsqueda por nombre/email/negocio/#operación en drill-down de transacciones
+- [x] Filtro de fechas (desde/hasta) en drill-down de transacciones del panel de comisiones
+- [x] Contador de resultados con total de comisiones filtradas
+- [x] Reporte PDF real con jsPDF + jspdf-autotable (membrete KobraPay, KPIs, tabla de clientes, historial mensual, footer con paginación)
+- [x] System prompts de IA actualizados con información correcta de KobraPay
+- [x] Pitch deck empresarial v2 completado (9 slides)
