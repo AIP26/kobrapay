@@ -1078,6 +1078,55 @@ export const appRouter = router({
         return { success: true };
       }),
 
+    // Eliminar múltiples enlaces (solo los que no están pagados)
+    bulkDelete: protectedProcedure
+      .input(z.object({ ids: z.array(z.number()).min(1).max(100) }))
+      .mutation(async ({ ctx, input }) => {
+        const { getDb: _getDb } = await import('./db');
+        const db = await _getDb();
+        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+        const { paymentLinks: plTable } = await import('../drizzle/schema');
+        const { eq, and, inArray, ne } = await import('drizzle-orm');
+        await db.delete(plTable).where(
+          and(
+            eq(plTable.userId, ctx.user.id),
+            inArray(plTable.id, input.ids),
+            ne(plTable.status, 'paid')
+          )
+        );
+        return { success: true };
+      }),
+
+    // Archivar/desarchivar múltiples enlaces
+    bulkArchive: protectedProcedure
+      .input(z.object({ ids: z.array(z.number()).min(1).max(100), archived: z.boolean() }))
+      .mutation(async ({ ctx, input }) => {
+        const { getDb: _getDb } = await import('./db');
+        const db = await _getDb();
+        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+        const { paymentLinks: plTable } = await import('../drizzle/schema');
+        const { eq, and, inArray } = await import('drizzle-orm');
+        await db.update(plTable)
+          .set({ archived: input.archived })
+          .where(and(eq(plTable.userId, ctx.user.id), inArray(plTable.id, input.ids)));
+        return { success: true };
+      }),
+
+    // Archivar/desarchivar un solo enlace
+    archive: protectedProcedure
+      .input(z.object({ id: z.number(), archived: z.boolean() }))
+      .mutation(async ({ ctx, input }) => {
+        const { getDb: _getDb } = await import('./db');
+        const db = await _getDb();
+        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+        const { paymentLinks: plTable } = await import('../drizzle/schema');
+        const { eq, and } = await import('drizzle-orm');
+        await db.update(plTable)
+          .set({ archived: input.archived })
+          .where(and(eq(plTable.id, input.id), eq(plTable.userId, ctx.user.id)));
+        return { success: true };
+      }),
+
     getByToken: publicProcedure
       .input(z.object({ token: z.string() }))
       .query(async ({ input }) => {

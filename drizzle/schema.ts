@@ -161,11 +161,12 @@ export const paymentLinks = mysqlTable("payment_links", {
   tipSuggestions: text("tipSuggestions"),
   // País del cobro (ISO 3166-1 alpha-2: MX, US, CA, ES, CO, etc.)
   countryCode: varchar("countryCode", { length: 2 }).default("MX"),
+  // Archivado: ocultar de la lista principal sin eliminar permanentemente
+  archived: boolean("archived").default(false).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
-
-export type PaymentLink = typeof paymentLinks.$inferSelect;
+export type PaymentLink = typeof paymentLinks.$inferSelect;;
 export type InsertPaymentLink = typeof paymentLinks.$inferInsert;
 
 /**
