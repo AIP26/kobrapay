@@ -110,9 +110,9 @@
 
 ## Fase 5 - Cobros Recurrentes y Programados
 - [x] Página de Cobros Recurrentes (UI con casos de uso y roadmap)
-- [ ] Crear enlace de pago recurrente (diario/semanal/mensual) - próxima fase
+- [x] Crear enlace de pago recurrente (diario/semanal/mensual)
 - [ ] Programar cobro para fecha futura específica - próxima fase
-- [ ] Panel de suscripciones activas del comercio - próxima fase
+- [x] Panel de suscripciones activas del comercio
 
 ## Fase 6 - Widget Embebible + Reportes PDF
 - [x] Widget embebible: código HTML/JS para sitios externos
@@ -136,8 +136,8 @@
 - [x] Aplicar logo en Home.tsx (landing page)
 - [x] Aplicar logo en PayPage.tsx (página de pago pública)
 - [x] Actualizar nombre "PagaFácil" → "KobraPay" en todos los archivos
-- [ ] Actualizar favicon con ícono KobraPay
-- [ ] Actualizar título de la app en settings
+- [x] Actualizar favicon con ícono KobraPay
+- [x] Actualizar título de la app en settings
 
 ### Módulo Aclaraciones (Contracargos)
 - [x] Tabla chargebacks en DB (transacción, estatus, monto, afectación, documentos)
@@ -186,12 +186,12 @@
 ## Fase 10 - Mejoras Críticas de UX y Funcionalidad
 
 ### Email al crear enlace de pago + Base de datos de clientes
-- [ ] Agregar campo "Email del cliente" al formulario de crear enlace de pago
-- [ ] Guardar email del cliente en payment_links al crear
-- [ ] Tabla customers en BD: nombre, email, teléfono, total pagado, fecha primer pago
-- [ ] Al completar un pago, crear/actualizar registro del cliente automáticamente
-- [ ] Página "Mis Clientes" con tabla y buscador por nombre/email
-- [ ] Al hacer click en cliente, ver historial de todas sus compras
+- [x] Agregar campo "Email del cliente" al formulario de crear enlace de pago
+- [x] Guardar email del cliente en payment_links al crear
+- [x] Tabla customers en BD: nombre, email, teléfono, total pagado, fecha primer pago
+- [x] Al completar un pago, crear/actualizar registro del cliente automáticamente
+- [x] Página "Mis Clientes" con tabla y buscador por nombre/email
+- [x] Al hacer click en cliente, ver historial de todas sus compras
 
 ### OTP por email (arreglar)
 - [ ] Integrar servicio de email real (Resend o SendGrid) para enviar OTP
@@ -1015,23 +1015,23 @@
 - [x] Auditoría de seguridad: rate limiting, validación de inputs, permisos por rol - 61 tests pasando
 - [x] Verificar que las transferencias SPEI funcionan correctamente (mx_bank_transfer + CLABE)
 - [x] Verificar flujo completo de pagos con tarjeta, OXXO y SPEI en PayPage
-- [ ] Guardar checkpoint final de producción
+- [x] Guardar checkpoint final de producción
 
 ## Blindaje Anti-Contracargos + Comisiones Asociados (Mar 5, 2026)
-- [ ] Checkbox obligatorio de consentimiento antes de pagar en PayPage (timestamp + IP + email + nombre)
-- [ ] Tabla payment_consents en BD para guardar evidencia de consentimiento
-- [ ] Descripción clara del cargo en Stripe (nombre del negocio + descripción del servicio)
-- [ ] PDF de evidencia de pago con políticas, monto, fecha, nombre y aceptación del checkbox
-- [ ] Mejorar página de éxito con resumen completo (monto, nombre, servicio, fecha)
-- [ ] Sección de evidencia en panel de contracargos (ver consentimiento + IP + timestamp por transacción)
-- [ ] Sistema de comisiones automáticas para asociados (0.3% por pago de cliente referido)
-- [ ] Tabla associate_earnings en BD para historial de ganancias por pago
-- [ ] Campo referredByAssociateCommissionId en vendor_settings para vincular cliente con asociado
-- [ ] Webhook Stripe: calcular y acumular comisión del asociado automáticamente
-- [ ] Historial de ganancias por pago en panel del asociado (tab Comisiones)
-- [ ] Panel de liquidación de asociados para superadmin (/dashboard/associate-liquidation)
-- [ ] Botón "Liquidación Asociados" en menú del superadmin
-- [ ] Reembolso: cliente recibe 100% del monto cobrado (negocio absorbe comisión)
+- [x] Checkbox obligatorio de consentimiento antes de pagar en PayPage (timestamp + IP + email + nombre)
+- [x] Tabla payment_consents en BD para guardar evidencia de consentimiento
+- [x] Descripción clara del cargo en Stripe (nombre del negocio + descripción del servicio)
+- [x] PDF de evidencia de pago con políticas, monto, fecha, nombre y aceptación del checkbox
+- [x] Mejorar página de éxito con resumen completo (monto, nombre, servicio, fecha)
+- [x] Sección de evidencia en panel de contracargos (ver consentimiento + IP + timestamp por transacción)
+- [x] Sistema de comisiones automáticas para asociados (0.3% por pago de cliente referido)
+- [x] Tabla associate_earnings en BD para historial de ganancias por pago
+- [x] Campo referredByAssociateCommissionId en vendor_settings para vincular cliente con asociado
+- [x] Webhook Stripe: calcular y acumular comisión del asociado automáticamente
+- [x] Historial de ganancias por pago en panel del asociado (tab Comisiones)
+- [x] Panel de liquidación de asociados para superadmin (/dashboard/associate-liquidation)
+- [x] Botón "Liquidación Asociados" en menú del superadmin
+- [x] Reembolso: cliente recibe 100% del monto cobrado (negocio absorbe comisión)
 
 ## Sesión Mar 5, 2026 - Blindaje Anti-Contracargos y Comisiones de Asociados
 

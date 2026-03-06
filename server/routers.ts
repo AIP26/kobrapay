@@ -3892,6 +3892,52 @@ export const appRouter = router({
         await updateSubscription(input.id, ctx.user.id, { status: "active" });
         return { success: true };
       }),
+
+    resendLink: protectedProcedure
+      .input(z.object({ id: z.number(), origin: z.string().optional() }))
+      .mutation(async ({ ctx, input }) => {
+        const sub = await getSubscriptionById(input.id, ctx.user.id);
+        if (!sub) throw new TRPCError({ code: "NOT_FOUND" });
+        if (sub.status !== "incomplete") throw new TRPCError({ code: "BAD_REQUEST", message: "Solo se puede reenviar el link de suscripciones pendientes" });
+
+        // Crear nueva sesión de checkout con el mismo precio
+        const origin = input.origin || "https://kobrapay.mx";
+        const customerId: string | undefined = sub.stripeCustomerId ?? undefined;
+        const priceId: string = sub.stripePriceId ?? '';
+        const session = await stripe.checkout.sessions.create({
+          customer: customerId,
+          mode: "subscription",
+          line_items: [{ price: priceId, quantity: 1 }],
+          success_url: `${origin}/dashboard/recurring?success=1`,
+          cancel_url: `${origin}/dashboard/recurring?canceled=1`,
+          allow_promotion_codes: true,
+          metadata: {
+            user_id: String(ctx.user.id),
+            customer_email: sub.customerEmail,
+            customer_name: sub.customerName || "",
+          },
+        });
+
+        // Intentar reenviar email
+        const settings = await getVendorSettings(ctx.user.id);
+        const businessName = settings?.businessName || ctx.user.name || 'KobraPay';
+        let emailSent = false;
+        if (session.url) {
+          emailSent = await sendSubscriptionInviteEmail({
+            customerEmail: sub.customerEmail,
+            customerName: sub.customerName || null,
+            planName: sub.name,
+            amount: sub.amount,
+            currency: sub.currency,
+            interval: sub.interval,
+            intervalCount: sub.intervalCount,
+            checkoutUrl: session.url,
+            businessName,
+          });
+        }
+
+        return { checkoutUrl: session.url, emailSent };
+      }),
   }),
 
   // ─── Nómina ───────────────────────────────────────────────────────────────

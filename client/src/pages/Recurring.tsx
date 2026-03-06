@@ -328,6 +328,22 @@ function SubscriptionCard({ sub, onAction }: { sub: Subscription; onAction: (act
   const isActive = sub.status === "active" && !sub.cancelAtPeriodEnd;
   const isPaused = sub.status === "paused";
   const isCanceled = sub.status === "canceled" || sub.cancelAtPeriodEnd;
+  const isPending = sub.status === "incomplete";
+  const [copiedId, setCopiedId] = useState<number | null>(null);
+
+  const resendMutation = trpc.subscriptions.resendLink.useMutation({
+    onSuccess: (data) => {
+      if (data.emailSent) {
+        toast.success(`Link reenviado a ${sub.customerEmail}`);
+      } else if (data.checkoutUrl) {
+        navigator.clipboard.writeText(data.checkoutUrl);
+        setCopiedId(sub.id);
+        setTimeout(() => setCopiedId(null), 2000);
+        toast.success('Link copiado al portapapeles');
+      }
+    },
+    onError: (e) => toast.error(e.message),
+  });
 
   return (
     <Card className="hover:shadow-md transition-shadow">
@@ -361,6 +377,25 @@ function SubscriptionCard({ sub, onAction }: { sub: Subscription; onAction: (act
           {/* Acciones */}
           {!isCanceled && (
             <div className="flex gap-2 flex-shrink-0">
+              {isPending && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="text-blue-600 hover:text-blue-700 border-blue-200 hover:bg-blue-50"
+                  onClick={() => resendMutation.mutate({ id: sub.id, origin: window.location.origin })}
+                  disabled={resendMutation.isPending}
+                  title="Reenviar link al cliente"
+                >
+                  {resendMutation.isPending ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : copiedId === sub.id ? (
+                    <CheckCircle2 className="w-4 h-4" />
+                  ) : (
+                    <Send className="w-4 h-4" />
+                  )}
+                  <span className="ml-1 text-xs hidden sm:inline">Reenviar</span>
+                </Button>
+              )}
               {isActive && (
                 <Button size="sm" variant="outline" onClick={() => onAction("pause", sub.id)} title="Pausar">
                   <Pause className="w-4 h-4" />
