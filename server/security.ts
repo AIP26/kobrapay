@@ -6,6 +6,8 @@ import type { Express, Request, Response, NextFunction } from "express";
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
 import slowDown from "express-slow-down";
+import hpp from "hpp";
+import compression from "compression";
 
 // ─── In-memory store for failed login attempts (use Redis in production) ───────
 const failedAttempts = new Map<string, { count: number; blockedUntil?: number }>();
@@ -255,12 +257,110 @@ export function auditMiddleware(req: Request, res: Response, next: NextFunction)
   next();
 }
 
+// ─── HTTP Parameter Pollution prevention ──────────────────────────────────────
+export function setupHPP(app: Express): void {
+  app.use(hpp({
+    whitelist: ['ids', 'statuses', 'types'], // Allow array params for these
+  }));
+}
+
+// ─── Request size validation ───────────────────────────────────────────────────
+export function validateRequestSize(maxSizeMB = 10) {
+  return (req: Request, res: Response, next: NextFunction) => {
+    const contentLength = parseInt(req.headers['content-length'] || '0', 10);
+    if (contentLength > maxSizeMB * 1024 * 1024) {
+      logAudit({
+        ip: getClientIp(req),
+        action: 'REQUEST_TOO_LARGE',
+        resource: req.path,
+        statusCode: 413,
+        severity: 'warning',
+        details: `Content-Length: ${contentLength} bytes`,
+      });
+      return res.status(413).json({ error: 'Solicitud demasiado grande', code: 'PAYLOAD_TOO_LARGE' });
+    }
+    next();
+  };
+}
+
+// ─── SQL Injection pattern detection ──────────────────────────────────────────
+const SQL_INJECTION_PATTERNS = [
+  /('|(\')|--|;|\*|\/\*|\*\/|xp_|exec\s|execute\s|insert\s|select\s|delete\s|update\s|drop\s|create\s|alter\s|union\s)/i,
+];
+
+export function detectSQLInjection(value: string): boolean {
+  return SQL_INJECTION_PATTERNS.some(pattern => pattern.test(value));
+}
+
+// ─── Suspicious request detection middleware ───────────────────────────────────
+export function suspiciousRequestDetector(req: Request, res: Response, next: NextFunction): void {
+  const ip = getClientIp(req);
+  const userAgent = req.headers['user-agent'] || '';
+  const url = req.url;
+
+  // Detect common attack patterns in URL
+  const attackPatterns = [
+    /\.\.\//, // Path traversal
+    /<script/i, // XSS in URL
+    /union.*select/i, // SQL injection
+    /exec\s*\(/i, // Code injection
+    /\/etc\/passwd/i, // File inclusion
+    /\/proc\/self/i, // Linux proc traversal
+    /\x00/, // Null byte injection
+    /base64_decode/i, // PHP code injection
+    /eval\s*\(/i, // JS eval injection
+  ];
+
+  const isAttack = attackPatterns.some(p => p.test(url));
+  if (isAttack) {
+    logAudit({
+      ip,
+      action: 'ATTACK_DETECTED',
+      resource: url.slice(0, 200),
+      statusCode: 400,
+      severity: 'critical',
+      userAgent,
+      details: `Suspicious pattern detected in URL`,
+    });
+    return void res.status(400).json({ error: 'Solicitud inválida', code: 'INVALID_REQUEST' });
+  }
+
+  // Detect scanner/bot user agents
+  const scannerPatterns = /sqlmap|nikto|nmap|masscan|zgrab|nuclei|dirbuster|gobuster|wfuzz|burpsuite/i;
+  if (scannerPatterns.test(userAgent)) {
+    logAudit({
+      ip,
+      action: 'SCANNER_DETECTED',
+      resource: url.slice(0, 200),
+      statusCode: 403,
+      severity: 'critical',
+      userAgent,
+      details: `Security scanner detected: ${userAgent.slice(0, 100)}`,
+    });
+    return void res.status(403).json({ error: 'Acceso denegado', code: 'FORBIDDEN' });
+  }
+
+  next();
+}
+
 // ─── Register all security middleware ─────────────────────────────────────────
 export function registerSecurityMiddleware(app: Express): void {
+  // 0. Compression (before everything for performance)
+  app.use(compression());
+
   // 1. Security headers (must be first)
   setupSecurityHeaders(app);
 
-  // 2. Rate limiting
+  // 2. HTTP Parameter Pollution prevention
+  setupHPP(app);
+
+  // 3. Suspicious request detection (before rate limiting)
+  app.use(suspiciousRequestDetector);
+
+  // 4. Request size validation
+  app.use(validateRequestSize(10));
+
+  // 5. Rate limiting
   app.use("/api/oauth", authRateLimit);
   // Rate limit estricto para endpoints de pago (30 intentos por 10 min por IP)
   app.use("/api/trpc/transactions.createIntent", paymentRateLimit);
@@ -272,8 +372,8 @@ export function registerSecurityMiddleware(app: Express): void {
   app.use("/api/trpc", generalRateLimit);
   app.use("/api/trpc", speedLimiter);
 
-  // 3. Audit logging
+  // 6. Audit logging
   app.use(auditMiddleware);
 
-  console.log("[Security] All security middleware registered");
+  console.log("[Security] All security middleware registered (v2 - enhanced)");
 }

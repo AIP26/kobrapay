@@ -730,7 +730,7 @@ export const appRouter = router({
       };
     }),
 
-    // Detalle de un cliente con sus transacciones, estadísticas y permisos
+    // Detalle COMPLETO de un cliente: perfil, vendorSettings, asociado referidor, transacciones, permisos
     getDetail: protectedProcedure
       .input(z.object({ id: z.number() }))
       .query(async ({ ctx, input }) => {
@@ -743,34 +743,125 @@ export const appRouter = router({
         const totalCommission = succeededTxs.reduce((s, t) => s + parseFloat(String(t.commissionAmount || 0)), 0);
         const totalNet = succeededTxs.reduce((s, t) => s + parseFloat(String(t.netAmount || 0)), 0);
         const links = client.userId ? await getPaymentLinksByUser(client.userId) : [];
-        // Obtener permisos actuales del cliente
+        // Perfil extendido del cliente
         const clientProfile = client.userId ? await getUserProfile(client.userId) : null;
+        // Cuenta de usuario (role, accountStatus, lastSignedIn)
+        const userAccount = client.userId ? await getUserById(client.userId) : null;
+        // Configuracion del negocio (vendorSettings)
+        const vendorConfig = client.userId ? await getVendorSettings(client.userId) : null;
+        // Asociado referidor (si tiene)
+        let referringAssociate: {
+          commissionRecordId: number; associateId: number;
+          associateName: string; associateEmail: string;
+          commissionRate: number; status: string;
+        } | null = null;
+        if (client.userId) {
+          const { getAssociateCommissionForClient } = await import("./db");
+          const ac = await getAssociateCommissionForClient(client.userId);
+          if (ac) {
+            const assocUser = await getUserById(ac.associateUserId);
+            referringAssociate = {
+              commissionRecordId: ac.id,
+              associateId: ac.associateUserId,
+              associateName: assocUser?.name || assocUser?.email || `Asociado #${ac.associateUserId}`,
+              associateEmail: assocUser?.email || "",
+              commissionRate: parseFloat(String(ac.commissionRate)),
+              status: ac.status,
+            };
+          }
+        }
+        // Lista de asociados disponibles para asignar (solo superadmin)
+        let availableAssociates: { id: number; commissionRecordId: number; name: string; email: string }[] = [];
+        if (ctx.isSuperAdmin) {
+          const db2 = await import("./db").then(m => m.getDb ? m.getDb() : null);
+          if (db2) {
+            const { users: usersTable, associateCommissions: acTable } = await import("../drizzle/schema");
+            const { eq } = await import("drizzle-orm");
+            const assocs = await db2.select().from(usersTable).where(eq(usersTable.role, "associate"));
+            const acRecords = await db2.select().from(acTable);
+            availableAssociates = assocs.map(a => {
+              const rec = acRecords.find(r => r.associateUserId === a.id);
+              return { id: a.id, commissionRecordId: rec?.id ?? 0, name: a.name || a.email || "", email: a.email || "" };
+            }).filter(a => a.commissionRecordId > 0);
+          }
+        }
         return {
           client,
           permissions: clientProfile?.permissions || null,
           accountType: clientProfile?.accountType || "business",
+          profile: clientProfile ? {
+            fullName: clientProfile.fullName, birthDate: clientProfile.birthDate,
+            curp: clientProfile.curp, rfc: clientProfile.rfc, phone: clientProfile.phone,
+            businessName: clientProfile.businessName, businessType: clientProfile.businessType,
+            razonSocial: clientProfile.razonSocial, direccionFiscal: clientProfile.direccionFiscal,
+            codigoPostal: clientProfile.codigoPostal, ciudad: clientProfile.ciudad,
+            estado: clientProfile.estado, sitioWeb: clientProfile.sitioWeb,
+            clabe: clientProfile.clabe, banco: clientProfile.banco,
+            titularCuenta: clientProfile.titularCuenta, avatarUrl: clientProfile.avatarUrl,
+            profileCompleted: clientProfile.profileCompleted,
+          } : null,
+          userAccount: userAccount ? {
+            role: userAccount.role, accountStatus: userAccount.accountStatus,
+            lastSignedIn: userAccount.lastSignedIn, createdAt: userAccount.createdAt,
+            emailVerified: userAccount.emailVerified, onboardingCompleted: userAccount.onboardingCompleted,
+          } : null,
+          vendorConfig: vendorConfig ? {
+            businessName: vendorConfig.businessName, businessEmail: vendorConfig.businessEmail,
+            businessPhone: vendorConfig.businessPhone, businessCountry: vendorConfig.businessCountry,
+            stripeConnectStatus: vendorConfig.stripeConnectStatus,
+            stripeConnectChargesEnabled: vendorConfig.stripeConnectChargesEnabled,
+            commissionRate: parseFloat(String(vendorConfig.commissionRate)),
+            businessSlug: vendorConfig.businessSlug, websiteUrl: vendorConfig.websiteUrl,
+            publicProfileEnabled: vendorConfig.publicProfileEnabled,
+          } : null,
+          referringAssociate,
+          availableAssociates,
           stats: {
-            totalTransactions: txs.length,
-            succeededTransactions: succeededTxs.length,
-            totalVolume,
-            totalCommission,
-            totalNet,
+            totalTransactions: txs.length, succeededTransactions: succeededTxs.length,
+            totalVolume, totalCommission, totalNet,
             totalLinks: links.length,
             activeLinks: links.filter((l) => l.status === "pending").length,
+            paidLinks: links.filter((l) => l.status === "paid").length,
           },
           recentTransactions: txs.slice(0, 20).map((t) => ({
-            id: t.id,
-            operationNumber: t.operationNumber,
-            payerName: t.payerName,
-            payerEmail: t.payerEmail,
+            id: t.id, operationNumber: t.operationNumber,
+            payerName: t.payerName, payerEmail: t.payerEmail,
             amount: parseFloat(String(t.amount || 0)),
             commissionAmount: parseFloat(String(t.commissionAmount || 0)),
             netAmount: parseFloat(String(t.netAmount || 0)),
             commissionRate: parseFloat(String(t.commissionRate || 0)),
-            status: t.status,
-            createdAt: t.createdAt,
+            status: t.status, createdAt: t.createdAt,
+          })),
+          recentLinks: links.slice(0, 10).map((l) => ({
+            id: l.id, token: l.token, clientName: l.clientName,
+            amount: parseFloat(String(l.amount || 0)),
+            status: l.status, createdAt: l.createdAt, paidAt: l.paidAt,
           })),
         };
+      }),
+
+    // Asignar o desasignar asociado referidor a un cliente
+    assignAssociate: protectedProcedure
+      .input(z.object({
+        clientId: z.number(),
+        associateCommissionId: z.number().nullable(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        if (ctx.user.role !== "admin" && !ctx.isSuperAdmin) throw new TRPCError({ code: "FORBIDDEN" });
+        const client = await getPlatformClientById(input.clientId);
+        if (!client) throw new TRPCError({ code: "NOT_FOUND" });
+        if (!client.userId) throw new TRPCError({ code: "BAD_REQUEST", message: "El cliente aun no tiene cuenta activa" });
+        const db = await import("./db").then(m => m.getDb ? m.getDb() : null);
+        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+        const { vendorSettings: vs } = await import("../drizzle/schema");
+        const { eq } = await import("drizzle-orm");
+        const existing = await db.select().from(vs).where(eq(vs.userId, client.userId)).limit(1);
+        if (existing.length > 0) {
+          await db.update(vs).set({ referredByAssociateCommissionId: input.associateCommissionId } as any).where(eq(vs.userId, client.userId));
+        } else {
+          await db.insert(vs).values({ userId: client.userId, referredByAssociateCommissionId: input.associateCommissionId } as any);
+        }
+        return { success: true };
       }),
 
     // Actualizar permisos de un cliente

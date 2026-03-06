@@ -33,9 +33,11 @@ import {
   Info,
   Eye,
   MessageSquare,
+  FileDown,
 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { generateChargebackEvidencePdf } from "@/lib/chargebackPdf";
 
 type CBStatus = "open" | "under_review" | "won" | "lost" | "closed";
 
@@ -381,17 +383,36 @@ export default function Chargebacks() {
               )}
             </div>
           )}
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setDetailCb(null)}>Cerrar</Button>
-            {isAdmin && (
-              <Button
-                onClick={handleUpdateStatus}
-                disabled={updateStatusMutation.isPending}
-                className="bg-orange-600 hover:bg-orange-700 text-white"
-              >
-                {updateStatusMutation.isPending ? "Guardando..." : "Actualizar estado"}
-              </Button>
-            )}
+          <DialogFooter className="flex-wrap gap-2 sm:justify-between">
+            <Button
+              variant="outline"
+              className="gap-1.5 text-cyan-700 border-cyan-200 hover:bg-cyan-50"
+              onClick={() => {
+                if (!detailCb) return;
+                generateChargebackEvidencePdf({
+                  ...detailCb,
+                  businessName: user?.name || "",
+                  businessEmail: user?.email || "",
+                  userName: user?.name || "",
+                });
+                toast.success("PDF de evidencia descargado");
+              }}
+            >
+              <FileDown className="w-4 h-4" />
+              Descargar PDF Evidencia
+            </Button>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => setDetailCb(null)}>Cerrar</Button>
+              {isAdmin && (
+                <Button
+                  onClick={handleUpdateStatus}
+                  disabled={updateStatusMutation.isPending}
+                  className="bg-orange-600 hover:bg-orange-700 text-white"
+                >
+                  {updateStatusMutation.isPending ? "Guardando..." : "Actualizar estado"}
+                </Button>
+              )}
+            </div>
           </DialogFooter>
         </DialogContent>
       </Dialog>

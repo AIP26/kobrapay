@@ -229,7 +229,36 @@ function CreateClientDialog({ onSuccess }: { onSuccess: () => void }) {
 
 // ─── Panel de detalle de un cliente ─────────────────────────────────────────
 function ClientDetailPanel({ clientId, onBack }: { clientId: number; onBack: () => void }) {
-  const { data, isLoading } = trpc.clients.getDetail.useQuery({ id: clientId });
+  const { data, isLoading, refetch } = trpc.clients.getDetail.useQuery({ id: clientId });
+  const utils = trpc.useUtils();
+
+  // Edición de comisión
+  const [editingCommission, setEditingCommission] = useState(false);
+  const [commissionValue, setCommissionValue] = useState("");
+  const updateClient = trpc.clients.update.useMutation({
+    onSuccess: () => {
+      toast.success("Comisión actualizada");
+      setEditingCommission(false);
+      utils.clients.getDetail.invalidate({ id: clientId });
+      utils.clients.list.invalidate();
+    },
+    onError: (e) => toast.error(e.message),
+  });
+
+  // Asignación de asociado
+  const [assigningAssociate, setAssigningAssociate] = useState(false);
+  const [selectedAssocCommId, setSelectedAssocCommId] = useState<string>("");
+  const assignAssociate = trpc.clients.assignAssociate.useMutation({
+    onSuccess: () => {
+      toast.success("Asociado asignado correctamente");
+      setAssigningAssociate(false);
+      utils.clients.getDetail.invalidate({ id: clientId });
+    },
+    onError: (e) => toast.error(e.message),
+  });
+
+  // Tabs
+  const [activeTab, setActiveTab] = useState<"resumen" | "perfil" | "negocio" | "asociado" | "permisos" | "transacciones">("resumen");
 
   if (isLoading) {
     return (
@@ -238,320 +267,576 @@ function ClientDetailPanel({ clientId, onBack }: { clientId: number; onBack: () 
           <ArrowLeft className="w-4 h-4" /> Volver a clientes
         </button>
         <div className="animate-pulse space-y-3">
-          {[1, 2, 3].map((i) => <div key={i} className="h-16 bg-gray-100 rounded-xl" />)}
+          {[1, 2, 3, 4].map((i) => <div key={i} className="h-20 bg-gray-100 rounded-xl" />)}
         </div>
       </div>
     );
   }
-
   if (!data) return null;
 
-  const { client, stats, recentTransactions } = data;
+  const { client, stats, recentTransactions, recentLinks, profile, userAccount, vendorConfig, referringAssociate, availableAssociates, permissions } = data;
   const cfg = statusConfig[client.status] ?? statusConfig.pending;
   const StatusIcon = cfg.icon;
   const initials = client.name.split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2);
+  const currentCommission = parseFloat(String(client.commissionRate ?? 7));
 
-  return <ClientDetailContent
-    clientId={clientId}
-    client={client}
-    stats={stats}
-    recentTransactions={recentTransactions}
-    permissions={data.permissions}
-    cfg={cfg}
-    StatusIcon={StatusIcon}
-    initials={initials}
-    onBack={onBack}
-  />;
-}
-
-interface TxRecord {
-  id: number;
-  operationNumber: string | null;
-  payerName: string | null;
-  payerEmail: string | null;
-  amount: number;
-  commissionAmount: number;
-  netAmount: number;
-  commissionRate: number;
-  status: string;
-  createdAt: Date | string | null;
-}
-interface ClientRecord {
-  id: number;
-  name: string;
-  email: string;
-  businessName?: string | null;
-  phone?: string | null;
-  commissionRate?: string | number | null;
-  status: string;
-}
-interface StatsRecord {
-  totalTransactions: number;
-  succeededTransactions: number;
-  totalVolume: number;
-  totalCommission: number;
-  totalNet: number;
-  totalLinks: number;
-  activeLinks: number;
-}
-function ClientDetailContent({
-  clientId, client, stats, recentTransactions, permissions, cfg, StatusIcon, initials, onBack
-}: {
-  clientId: number;
-  client: ClientRecord;
-  stats: StatsRecord;
-  recentTransactions: TxRecord[];
-  permissions: string | null;
-  cfg: { label: string; color: string; icon: React.ElementType };
-  StatusIcon: React.ElementType;
-  initials: string;
-  onBack: () => void;
-}) {
+  // Permisos
   const parsePerms = (raw: string | null): Record<string, boolean> => {
-    if (!raw) {
-      // Por defecto todos los permisos activos
-      return Object.fromEntries(ALL_PERMISSIONS.map(p => [p.key, true]));
-    }
+    if (!raw) return Object.fromEntries(ALL_PERMISSIONS.map(p => [p.key, true]));
     try { return JSON.parse(raw) as Record<string, boolean>; } catch { return {}; }
   };
   const [localPerms, setLocalPerms] = useState<Record<string, boolean>>(() => parsePerms(permissions));
   const [permsDirty, setPermsDirty] = useState(false);
-  const utils = trpc.useUtils();
   const updatePerms = trpc.clients.updatePermissions.useMutation({
-    onSuccess: () => {
-      toast.success("Permisos actualizados correctamente");
-      setPermsDirty(false);
-      utils.clients.getDetail.invalidate({ id: clientId });
-    },
+    onSuccess: () => { toast.success("Permisos actualizados"); setPermsDirty(false); utils.clients.getDetail.invalidate({ id: clientId }); },
     onError: () => toast.error("Error al guardar permisos"),
   });
   const togglePerm = (key: string) => {
     setLocalPerms(prev => { const next = { ...prev, [key]: !prev[key] }; setPermsDirty(true); return next; });
   };
-  const savePerms = () => {
-    updatePerms.mutate({ clientId: client.id as number, permissions: JSON.stringify(localPerms) });
-  };
+
+  const TABS = [
+    { id: "resumen", label: "Resumen" },
+    { id: "perfil", label: "Perfil" },
+    { id: "negocio", label: "Negocio" },
+    { id: "asociado", label: "Asociado" },
+    { id: "permisos", label: "Permisos" },
+    { id: "transacciones", label: "Transacciones" },
+  ] as const;
 
   return (
     <div className="space-y-5">
-      {/* Back button */}
-      <button
-        onClick={onBack}
-        className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700 transition-colors"
-      >
-        <ArrowLeft className="w-4 h-4" />
-        Volver a clientes
+      {/* Back */}
+      <button onClick={onBack} className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700 transition-colors">
+        <ArrowLeft className="w-4 h-4" /> Volver a clientes
       </button>
 
-      {/* Client header */}
+      {/* Header card */}
       <Card className="border-gray-200 shadow-sm">
         <CardContent className="p-5">
-          <div className="flex items-start gap-4">
+          <div className="flex items-start gap-4 flex-wrap">
             <div className="w-14 h-14 bg-gradient-to-br from-cyan-400 to-blue-500 rounded-2xl flex items-center justify-center flex-shrink-0">
-              <span className="text-white text-lg font-bold">{initials}</span>
+              {profile?.avatarUrl
+                ? <img src={profile.avatarUrl} alt={client.name} className="w-14 h-14 rounded-2xl object-cover" />
+                : <span className="text-white text-lg font-bold">{initials}</span>}
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-3 flex-wrap">
                 <h2 className="text-lg font-bold text-gray-800">{client.name}</h2>
                 <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium ${cfg.color}`}>
-                  <StatusIcon className="w-3 h-3" />
-                  {cfg.label}
+                  <StatusIcon className="w-3 h-3" />{cfg.label}
                 </span>
+                {userAccount?.role && (
+                  <span className="text-xs px-2 py-0.5 rounded-full bg-purple-100 text-purple-700 font-medium">{userAccount.role}</span>
+                )}
               </div>
-              {client.businessName && (
+              {(client.businessName || vendorConfig?.businessName) && (
                 <p className="text-sm text-gray-500 flex items-center gap-1 mt-0.5">
-                  <Building2 className="w-3.5 h-3.5" />
-                  {client.businessName}
+                  <Building2 className="w-3.5 h-3.5" />{client.businessName || vendorConfig?.businessName}
                 </p>
               )}
               <div className="flex items-center gap-4 mt-1.5 flex-wrap">
-                <span className="text-xs text-gray-400 flex items-center gap-1">
-                  <Mail className="w-3 h-3" />{client.email}
-                </span>
-                {client.phone && (
-                  <span className="text-xs text-gray-400 flex items-center gap-1">
-                    <Phone className="w-3 h-3" />{client.phone}
-                  </span>
+                <span className="text-xs text-gray-400 flex items-center gap-1"><Mail className="w-3 h-3" />{client.email}</span>
+                {client.phone && <span className="text-xs text-gray-400 flex items-center gap-1"><Phone className="w-3 h-3" />{client.phone}</span>}
+                {userAccount?.lastSignedIn && (
+                  <span className="text-xs text-gray-400">Último acceso: {formatDate(userAccount.lastSignedIn)}</span>
                 )}
               </div>
             </div>
-            <div className="flex items-center gap-1.5 px-3 py-1.5 bg-cyan-50 rounded-lg flex-shrink-0">
-              <Percent className="w-3.5 h-3.5 text-cyan-600" />
-              <span className="text-sm font-bold text-cyan-700">
-                {parseFloat(String(client.commissionRate ?? 7)).toFixed(1)}%
-              </span>
+            {/* Comisión editable */}
+            <div className="flex-shrink-0">
+              {editingCommission ? (
+                <div className="flex items-center gap-2">
+                  <input
+                    type="number" min="0" max="100" step="0.1"
+                    value={commissionValue}
+                    onChange={e => setCommissionValue(e.target.value)}
+                    className="w-20 text-sm border border-cyan-300 rounded-lg px-2 py-1.5 text-center focus:outline-none focus:ring-2 focus:ring-cyan-400"
+                    autoFocus
+                  />
+                  <span className="text-sm text-gray-500">%</span>
+                  <Button size="sm" className="bg-cyan-500 hover:bg-cyan-400 text-white h-8 px-3"
+                    disabled={updateClient.isPending}
+                    onClick={() => updateClient.mutate({ id: client.id as number, commissionRate: parseFloat(commissionValue) })}>
+                    {updateClient.isPending ? "..." : "✓"}
+                  </Button>
+                  <Button size="sm" variant="ghost" className="h-8 px-2 text-gray-400" onClick={() => setEditingCommission(false)}>✕</Button>
+                </div>
+              ) : (
+                <button
+                  onClick={() => { setCommissionValue(currentCommission.toFixed(1)); setEditingCommission(true); }}
+                  className="flex items-center gap-1.5 px-3 py-2 bg-cyan-50 hover:bg-cyan-100 rounded-xl transition-colors group"
+                  title="Clic para editar comisión"
+                >
+                  <Percent className="w-3.5 h-3.5 text-cyan-600" />
+                  <span className="text-sm font-bold text-cyan-700">{currentCommission.toFixed(1)}%</span>
+                  <span className="text-xs text-cyan-400 group-hover:text-cyan-600 ml-1">editar</span>
+                </button>
+              )}
             </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* Stats grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {[
-          { label: "Transacciones exitosas", value: stats.succeededTransactions, icon: CheckCircle2, iconColor: "text-green-600", iconBg: "bg-green-100" },
-          { label: "Volumen total cobrado", value: formatCurrency(stats.totalVolume), icon: DollarSign, iconColor: "text-blue-600", iconBg: "bg-blue-100" },
-          { label: "Tu comisión total", value: formatCurrency(stats.totalCommission), icon: TrendingUp, iconColor: "text-cyan-600", iconBg: "bg-cyan-100" },
-          { label: "Neto del cliente", value: formatCurrency(stats.totalNet), icon: BarChart3, iconColor: "text-purple-600", iconBg: "bg-purple-100" },
-        ].map(({ label, value, icon: Icon, iconColor, iconBg }) => (
-          <Card key={label} className="border-gray-200 shadow-sm">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs text-gray-500 font-medium">{label}</p>
-                  <p className="text-lg font-bold text-gray-800 mt-0.5">{value}</p>
-                </div>
-                <div className={`w-9 h-9 ${iconBg} rounded-xl flex items-center justify-center`}>
-                  <Icon className={`w-4.5 h-4.5 ${iconColor}`} />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+      {/* Tabs */}
+      <div className="flex gap-1 bg-gray-100 rounded-xl p-1 overflow-x-auto">
+        {TABS.map(tab => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id)}
+            className={`flex-shrink-0 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+              activeTab === tab.id ? "bg-white text-gray-800 shadow-sm" : "text-gray-500 hover:text-gray-700"
+            }`}
+          >{tab.label}</button>
         ))}
       </div>
 
-      {/* Extra stats */}
-      <div className="grid grid-cols-2 gap-4">
-        <Card className="border-gray-200 shadow-sm">
-          <CardContent className="p-4 flex items-center gap-3">
-            <div className="w-9 h-9 bg-indigo-100 rounded-xl flex items-center justify-center">
-              <Link2 className="w-4 h-4 text-indigo-600" />
-            </div>
-            <div>
-              <p className="text-xs text-gray-500">Enlaces de pago</p>
-              <p className="text-base font-bold text-gray-800">{stats.totalLinks} total · {stats.activeLinks} pendientes</p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="border-gray-200 shadow-sm">
-          <CardContent className="p-4 flex items-center gap-3">
-            <div className="w-9 h-9 bg-orange-100 rounded-xl flex items-center justify-center">
-              <AlertCircle className="w-4 h-4 text-orange-600" />
-            </div>
-            <div>
-              <p className="text-xs text-gray-500">Todas las transacciones</p>
-              <p className="text-base font-bold text-gray-800">{stats.totalTransactions} registros</p>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Permisos del cliente */}
-      <Card className="border-gray-200 shadow-sm">
-        <CardHeader className="pb-3 border-b border-gray-100">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-base font-semibold text-gray-800 flex items-center gap-2">
-              <Shield className="w-4 h-4 text-cyan-500" />
-              Accesos y Permisos
-            </CardTitle>
-            {permsDirty && (
-              <Button
-                onClick={savePerms}
-                disabled={updatePerms.isPending}
-                size="sm"
-                className="bg-cyan-500 hover:bg-cyan-400 text-white gap-1.5"
-              >
-                <Save className="w-3.5 h-3.5" />
-                {updatePerms.isPending ? "Guardando..." : "Guardar cambios"}
-              </Button>
-            )}
-          </div>
-          <p className="text-xs text-gray-500 mt-1">Activa o desactiva los m\u00f3dulos que este negocio puede usar en su panel.</p>
-        </CardHeader>
-        <CardContent className="p-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {ALL_PERMISSIONS.map(({ key, label, description }) => {
-              const enabled = localPerms[key] !== false;
-              return (
-                <button
-                  key={key}
-                  onClick={() => togglePerm(key)}
-                  className={`flex items-start gap-3 p-3 rounded-xl border text-left transition-all ${
-                    enabled
-                      ? "border-cyan-200 bg-cyan-50/50 hover:bg-cyan-50"
-                      : "border-gray-200 bg-gray-50/50 hover:bg-gray-50 opacity-60"
-                  }`}
-                >
-                  <div className={`mt-0.5 w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 ${
-                    enabled ? "bg-cyan-500" : "bg-gray-300"
-                  }`}>
-                    {enabled ? (
-                      <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                      </svg>
-                    ) : (
-                      <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                      </svg>
-                    )}
+      {/* ── TAB: RESUMEN ── */}
+      {activeTab === "resumen" && (
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            {[
+              { label: "Transacciones exitosas", value: stats.succeededTransactions, icon: CheckCircle2, iconColor: "text-green-600", iconBg: "bg-green-100" },
+              { label: "Volumen total cobrado", value: formatCurrency(stats.totalVolume), icon: DollarSign, iconColor: "text-blue-600", iconBg: "bg-blue-100" },
+              { label: "Tu comisión total", value: formatCurrency(stats.totalCommission), icon: TrendingUp, iconColor: "text-cyan-600", iconBg: "bg-cyan-100" },
+              { label: "Neto del cliente", value: formatCurrency(stats.totalNet), icon: BarChart3, iconColor: "text-purple-600", iconBg: "bg-purple-100" },
+            ].map(({ label, value, icon: Icon, iconColor, iconBg }) => (
+              <Card key={label} className="border-gray-200 shadow-sm">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-xs text-gray-500 font-medium">{label}</p>
+                      <p className="text-lg font-bold text-gray-800 mt-0.5">{value}</p>
+                    </div>
+                    <div className={`w-9 h-9 ${iconBg} rounded-xl flex items-center justify-center`}>
+                      <Icon className={`w-4 h-4 ${iconColor}`} />
+                    </div>
                   </div>
-                  <div className="min-w-0">
-                    <p className={`text-xs font-semibold ${ enabled ? "text-cyan-800" : "text-gray-500" }`}>{label}</p>
-                    <p className="text-xs text-gray-400 mt-0.5 leading-tight">{description}</p>
-                  </div>
-                </button>
-              );
-            })}
+                </CardContent>
+              </Card>
+            ))}
           </div>
-          {permsDirty && (
-            <div className="mt-4 flex justify-end">
-              <Button
-                onClick={savePerms}
-                disabled={updatePerms.isPending}
-                className="bg-cyan-500 hover:bg-cyan-400 text-white gap-1.5"
-              >
-                <Save className="w-4 h-4" />
-                {updatePerms.isPending ? "Guardando..." : "Guardar permisos"}
-              </Button>
-            </div>
+          <div className="grid grid-cols-2 gap-4">
+            <Card className="border-gray-200 shadow-sm">
+              <CardContent className="p-4 flex items-center gap-3">
+                <div className="w-9 h-9 bg-indigo-100 rounded-xl flex items-center justify-center"><Link2 className="w-4 h-4 text-indigo-600" /></div>
+                <div>
+                  <p className="text-xs text-gray-500">Enlaces de pago</p>
+                  <p className="text-base font-bold text-gray-800">{stats.totalLinks} total · {stats.activeLinks} pendientes · {(stats as any).paidLinks ?? 0} pagados</p>
+                </div>
+              </CardContent>
+            </Card>
+            <Card className="border-gray-200 shadow-sm">
+              <CardContent className="p-4 flex items-center gap-3">
+                <div className="w-9 h-9 bg-orange-100 rounded-xl flex items-center justify-center"><AlertCircle className="w-4 h-4 text-orange-600" /></div>
+                <div>
+                  <p className="text-xs text-gray-500">Total de transacciones</p>
+                  <p className="text-base font-bold text-gray-800">{stats.totalTransactions} registros</p>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+          {/* Últimas transacciones */}
+          {recentTransactions && recentTransactions.length > 0 && (
+            <Card className="border-gray-200 shadow-sm">
+              <CardHeader className="pb-3 border-b border-gray-100">
+                <CardTitle className="text-base font-semibold text-gray-800 flex items-center gap-2">
+                  <CreditCard className="w-4 h-4 text-cyan-500" />Últimas transacciones
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-0">
+                <div className="divide-y divide-gray-100">
+                  {recentTransactions.slice(0, 5).map((tx) => {
+                    const txCfg = txStatusConfig[tx.status] ?? { label: tx.status, color: "bg-gray-100 text-gray-600" };
+                    return (
+                      <div key={tx.id} className="flex items-center gap-4 px-5 py-3 hover:bg-gray-50/50 transition-colors">
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-gray-800 truncate">{tx.payerName || "—"}</p>
+                          <p className="text-xs text-gray-400">{tx.operationNumber} · {formatDate(tx.createdAt)}</p>
+                        </div>
+                        <div className="text-right flex-shrink-0">
+                          <p className="text-sm font-bold text-gray-800">{formatCurrency(tx.amount)}</p>
+                          <p className="text-xs text-cyan-600">Comisión: {formatCurrency(tx.commissionAmount)}</p>
+                        </div>
+                        <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${txCfg.color} flex-shrink-0`}>{txCfg.label}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+                {recentTransactions.length > 5 && (
+                  <div className="px-5 py-3 border-t border-gray-100">
+                    <button onClick={() => setActiveTab("transacciones")} className="text-xs text-cyan-600 hover:text-cyan-700 font-medium">
+                      Ver todas las transacciones ({recentTransactions.length}) →
+                    </button>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           )}
-        </CardContent>
-      </Card>
+          {/* Últimos enlaces */}
+          {recentLinks && recentLinks.length > 0 && (
+            <Card className="border-gray-200 shadow-sm">
+              <CardHeader className="pb-3 border-b border-gray-100">
+                <CardTitle className="text-base font-semibold text-gray-800 flex items-center gap-2">
+                  <Link2 className="w-4 h-4 text-indigo-500" />Últimos enlaces de pago
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-0">
+                <div className="divide-y divide-gray-100">
+                  {recentLinks.slice(0, 5).map((l: any) => {
+                    const lCfg = txStatusConfig[l.status] ?? { label: l.status, color: "bg-gray-100 text-gray-600" };
+                    return (
+                      <div key={l.id} className="flex items-center gap-4 px-5 py-3 hover:bg-gray-50/50 transition-colors">
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-gray-800 truncate">{l.clientName}</p>
+                          <p className="text-xs text-gray-400">{formatDate(l.createdAt)}</p>
+                        </div>
+                        <p className="text-sm font-bold text-gray-800 flex-shrink-0">{formatCurrency(l.amount)}</p>
+                        <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${lCfg.color} flex-shrink-0`}>{lCfg.label}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+          {/* KYC */}
+          <ClientKYCSection clientEmail={client.email} />
+        </div>
+      )}
 
-      {/* Expediente KYC */}
-      <ClientKYCSection clientEmail={client.email} />
-      {/* Recent transactions */}
-      <Card className="border-gray-200 shadow-sm">
-        <CardHeader className="pb-3 border-b border-gray-100">
-          <CardTitle className="text-base font-semibold text-gray-800 flex items-center gap-2">
-            <CreditCard className="w-4 h-4 text-cyan-500" />
-            Últimas 20 transacciones
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="p-0">
-          {recentTransactions.length === 0 ? (
-            <div className="text-center py-10">
-              <CreditCard className="w-8 h-8 text-gray-300 mx-auto mb-2" />
-              <p className="text-sm text-gray-400">Este cliente aún no tiene transacciones</p>
-            </div>
-          ) : (
-            <div className="divide-y divide-gray-100">
-              {recentTransactions.map((tx) => {
-                const txCfg = txStatusConfig[tx.status] ?? { label: tx.status, color: "bg-gray-100 text-gray-600" };
-                return (
-                  <div key={tx.id} className="flex items-center gap-4 px-5 py-3 hover:bg-gray-50/50 transition-colors">
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-gray-800 truncate">
-                        {tx.payerName || "—"}
-                      </p>
-                      <p className="text-xs text-gray-400">{tx.operationNumber} · {formatDate(tx.createdAt)}</p>
+      {/* ── TAB: PERFIL ── */}
+      {activeTab === "perfil" && (
+        <Card className="border-gray-200 shadow-sm">
+          <CardHeader className="pb-3 border-b border-gray-100">
+            <CardTitle className="text-base font-semibold text-gray-800">Perfil Personal y Fiscal</CardTitle>
+          </CardHeader>
+          <CardContent className="p-5">
+            {!profile ? (
+              <div className="text-center py-10">
+                <Users className="w-8 h-8 text-gray-300 mx-auto mb-2" />
+                <p className="text-sm text-gray-400">Este cliente aún no ha completado su perfil</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {[
+                  { label: "Nombre completo", value: profile.fullName },
+                  { label: "Teléfono", value: profile.phone },
+                  { label: "Fecha de nacimiento", value: profile.birthDate },
+                  { label: "CURP", value: profile.curp },
+                  { label: "RFC", value: profile.rfc },
+                  { label: "Nombre del negocio", value: profile.businessName },
+                  { label: "Tipo de negocio", value: profile.businessType },
+                  { label: "Razón social", value: profile.razonSocial },
+                  { label: "Dirección fiscal", value: profile.direccionFiscal },
+                  { label: "Código postal", value: profile.codigoPostal },
+                  { label: "Ciudad", value: profile.ciudad },
+                  { label: "Estado", value: profile.estado },
+                  { label: "Sitio web", value: profile.sitioWeb },
+                ].map(({ label, value }) => value ? (
+                  <div key={label} className="bg-gray-50 rounded-xl p-3">
+                    <p className="text-xs text-gray-400 font-medium mb-0.5">{label}</p>
+                    <p className="text-sm text-gray-800 font-medium">{value}</p>
+                  </div>
+                ) : null)}
+                {/* Datos bancarios */}
+                {(profile.clabe || profile.banco) && (
+                  <div className="sm:col-span-2 bg-cyan-50 rounded-xl p-4 border border-cyan-100">
+                    <p className="text-xs font-semibold text-cyan-700 mb-2">Datos bancarios (SPEI)</p>
+                    <div className="grid grid-cols-2 gap-3">
+                      {profile.clabe && <div><p className="text-xs text-gray-400">CLABE</p><p className="text-sm font-mono font-bold text-gray-800">{profile.clabe}</p></div>}
+                      {profile.banco && <div><p className="text-xs text-gray-400">Banco</p><p className="text-sm font-medium text-gray-800">{profile.banco}</p></div>}
+                      {profile.titularCuenta && <div><p className="text-xs text-gray-400">Titular</p><p className="text-sm font-medium text-gray-800">{profile.titularCuenta}</p></div>}
                     </div>
-                    <div className="text-right flex-shrink-0">
-                      <p className="text-sm font-bold text-gray-800">{formatCurrency(tx.amount)}</p>
-                      <p className="text-xs text-cyan-600">Comisión: {formatCurrency(tx.commissionAmount)}</p>
+                  </div>
+                )}
+                <div className="sm:col-span-2 flex items-center gap-2">
+                  <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${profile.profileCompleted ? "bg-green-100 text-green-700" : "bg-amber-100 text-amber-700"}`}>
+                    {profile.profileCompleted ? "✓ Perfil completado" : "⚠ Perfil incompleto"}
+                  </span>
+                  {userAccount?.emailVerified !== undefined && (
+                    <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${userAccount.emailVerified ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"}`}>
+                      {userAccount.emailVerified ? "✓ Email verificado" : "Email no verificado"}
+                    </span>
+                  )}
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* ── TAB: NEGOCIO ── */}
+      {activeTab === "negocio" && (
+        <Card className="border-gray-200 shadow-sm">
+          <CardHeader className="pb-3 border-b border-gray-100">
+            <CardTitle className="text-base font-semibold text-gray-800">Configuración del Negocio</CardTitle>
+          </CardHeader>
+          <CardContent className="p-5">
+            {!vendorConfig ? (
+              <div className="text-center py-10">
+                <Building2 className="w-8 h-8 text-gray-300 mx-auto mb-2" />
+                <p className="text-sm text-gray-400">Sin configuración de negocio aún</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {[
+                    { label: "Nombre del negocio", value: vendorConfig.businessName },
+                    { label: "Email del negocio", value: vendorConfig.businessEmail },
+                    { label: "Teléfono del negocio", value: vendorConfig.businessPhone },
+                    { label: "País de operación", value: vendorConfig.businessCountry },
+                    { label: "Slug (URL pública)", value: vendorConfig.businessSlug ? `kobrapay.mx/p/${vendorConfig.businessSlug}` : null },
+                    { label: "Sitio web", value: vendorConfig.websiteUrl },
+                  ].map(({ label, value }) => value ? (
+                    <div key={label} className="bg-gray-50 rounded-xl p-3">
+                      <p className="text-xs text-gray-400 font-medium mb-0.5">{label}</p>
+                      <p className="text-sm text-gray-800 font-medium">{value}</p>
                     </div>
-                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${txCfg.color} flex-shrink-0`}>
-                      {txCfg.label}
+                  ) : null)}
+                </div>
+                {/* Stripe Connect */}
+                <div className="bg-gradient-to-r from-violet-50 to-purple-50 rounded-xl p-4 border border-purple-100">
+                  <p className="text-xs font-semibold text-purple-700 mb-2">Stripe Connect</p>
+                  <div className="flex items-center gap-3 flex-wrap">
+                    <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${
+                      vendorConfig.stripeConnectStatus === "active" ? "bg-green-100 text-green-700" :
+                      vendorConfig.stripeConnectStatus === "pending" ? "bg-amber-100 text-amber-700" :
+                      "bg-gray-100 text-gray-500"
+                    }`}>
+                      Estado: {vendorConfig.stripeConnectStatus}
+                    </span>
+                    <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${vendorConfig.stripeConnectChargesEnabled ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"}`}>
+                      {vendorConfig.stripeConnectChargesEnabled ? "✓ Cobros habilitados" : "✗ Cobros no habilitados"}
+                    </span>
+                    <span className="text-xs px-2.5 py-1 rounded-full font-medium bg-cyan-100 text-cyan-700">
+                      Comisión plataforma: {vendorConfig.commissionRate?.toFixed(2)}%
                     </span>
                   </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${vendorConfig.publicProfileEnabled ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"}`}>
+                    {vendorConfig.publicProfileEnabled ? "✓ Perfil público activo" : "Perfil público inactivo"}
+                  </span>
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* ── TAB: ASOCIADO ── */}
+      {activeTab === "asociado" && (
+        <Card className="border-gray-200 shadow-sm">
+          <CardHeader className="pb-3 border-b border-gray-100">
+            <CardTitle className="text-base font-semibold text-gray-800 flex items-center gap-2">
+              <Users className="w-4 h-4 text-cyan-500" />
+              Asociado Referidor
+            </CardTitle>
+            <p className="text-xs text-gray-500 mt-1">
+              Indica qué asociado refirió a este cliente. Cuando el cliente procesa pagos, el asociado recibe su comisión automáticamente.
+            </p>
+          </CardHeader>
+          <CardContent className="p-5">
+            {referringAssociate ? (
+              <div className="space-y-4">
+                <div className="bg-gradient-to-r from-cyan-50 to-blue-50 rounded-xl p-4 border border-cyan-100">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-gradient-to-br from-cyan-400 to-blue-500 rounded-xl flex items-center justify-center flex-shrink-0">
+                      <span className="text-white text-sm font-bold">
+                        {referringAssociate.associateName.charAt(0).toUpperCase()}
+                      </span>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-bold text-gray-800">{referringAssociate.associateName}</p>
+                      <p className="text-xs text-gray-500">{referringAssociate.associateEmail}</p>
+                    </div>
+                    <div className="text-right flex-shrink-0">
+                      <p className="text-xs text-gray-400">Comisión del asociado</p>
+                      <p className="text-lg font-bold text-cyan-600">{referringAssociate.commissionRate?.toFixed(1)}%</p>
+                    </div>
+                  </div>
+                  <div className="mt-3 flex items-center gap-2 flex-wrap">
+                    <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${
+                      referringAssociate.status === "active" ? "bg-green-100 text-green-700" : "bg-amber-100 text-amber-700"
+                    }`}>
+                      Estado: {referringAssociate.status}
+                    </span>
+                    <span className="text-xs text-gray-400">ID registro: #{referringAssociate.commissionRecordId}</span>
+                  </div>
+                </div>
+                {availableAssociates && availableAssociates.length > 0 && (
+                  <div>
+                    {!assigningAssociate ? (
+                      <div className="flex gap-2">
+                        <Button size="sm" variant="outline" onClick={() => { setAssigningAssociate(true); setSelectedAssocCommId(String(referringAssociate.commissionRecordId)); }}
+                          className="text-xs">Cambiar asociado</Button>
+                        <Button size="sm" variant="outline" onClick={() => assignAssociate.mutate({ clientId: client.id as number, associateCommissionId: null })}
+                          disabled={assignAssociate.isPending}
+                          className="text-xs text-red-500 border-red-200 hover:bg-red-50">
+                          {assignAssociate.isPending ? "..." : "Quitar asociado"}
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <select
+                          value={selectedAssocCommId}
+                          onChange={e => setSelectedAssocCommId(e.target.value)}
+                          className="flex-1 text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-cyan-400"
+                        >
+                          <option value="">— Seleccionar asociado —</option>
+                          {availableAssociates.map((a: any) => (
+                            <option key={a.commissionRecordId} value={String(a.commissionRecordId)}>
+                              {a.name} ({a.email})
+                            </option>
+                          ))}
+                        </select>
+                        <Button size="sm" className="bg-cyan-500 hover:bg-cyan-400 text-white"
+                          disabled={!selectedAssocCommId || assignAssociate.isPending}
+                          onClick={() => assignAssociate.mutate({ clientId: client.id as number, associateCommissionId: parseInt(selectedAssocCommId) })}>
+                          {assignAssociate.isPending ? "..." : "Guardar"}
+                        </Button>
+                        <Button size="sm" variant="ghost" onClick={() => setAssigningAssociate(false)}>Cancelar</Button>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div className="text-center py-8">
+                  <Users className="w-10 h-10 text-gray-300 mx-auto mb-3" />
+                  <p className="text-sm font-medium text-gray-500">Sin asociado asignado</p>
+                  <p className="text-xs text-gray-400 mt-1">Este cliente no tiene un asociado referidor</p>
+                </div>
+                {!client.userId ? (
+                  <p className="text-xs text-center text-amber-600 bg-amber-50 rounded-lg p-3">
+                    ⚠ El cliente debe tener cuenta activa para asignarle un asociado
+                  </p>
+                ) : availableAssociates && availableAssociates.length > 0 ? (
+                  <div>
+                    {!assigningAssociate ? (
+                      <Button size="sm" className="w-full bg-cyan-500 hover:bg-cyan-400 text-white" onClick={() => setAssigningAssociate(true)}>
+                        + Asignar asociado referidor
+                      </Button>
+                    ) : (
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <select
+                          value={selectedAssocCommId}
+                          onChange={e => setSelectedAssocCommId(e.target.value)}
+                          className="flex-1 text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-cyan-400"
+                        >
+                          <option value="">— Seleccionar asociado —</option>
+                          {availableAssociates.map((a: any) => (
+                            <option key={a.commissionRecordId} value={String(a.commissionRecordId)}>
+                              {a.name} ({a.email})
+                            </option>
+                          ))}
+                        </select>
+                        <Button size="sm" className="bg-cyan-500 hover:bg-cyan-400 text-white"
+                          disabled={!selectedAssocCommId || assignAssociate.isPending}
+                          onClick={() => assignAssociate.mutate({ clientId: client.id as number, associateCommissionId: parseInt(selectedAssocCommId) })}>
+                          {assignAssociate.isPending ? "Asignando..." : "Asignar"}
+                        </Button>
+                        <Button size="sm" variant="ghost" onClick={() => setAssigningAssociate(false)}>Cancelar</Button>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <p className="text-xs text-center text-gray-400 bg-gray-50 rounded-lg p-3">
+                    No hay asociados registrados en la plataforma
+                  </p>
+                )}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* ── TAB: PERMISOS ── */}
+      {activeTab === "permisos" && (
+        <Card className="border-gray-200 shadow-sm">
+          <CardHeader className="pb-3 border-b border-gray-100">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-base font-semibold text-gray-800 flex items-center gap-2">
+                <Shield className="w-4 h-4 text-cyan-500" />Accesos y Permisos
+              </CardTitle>
+              {permsDirty && (
+                <Button onClick={() => updatePerms.mutate({ clientId: client.id as number, permissions: JSON.stringify(localPerms) })}
+                  disabled={updatePerms.isPending} size="sm" className="bg-cyan-500 hover:bg-cyan-400 text-white gap-1.5">
+                  <Save className="w-3.5 h-3.5" />{updatePerms.isPending ? "Guardando..." : "Guardar cambios"}
+                </Button>
+              )}
+            </div>
+            <p className="text-xs text-gray-500 mt-1">Activa o desactiva los módulos que este negocio puede usar en su panel.</p>
+          </CardHeader>
+          <CardContent className="p-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {ALL_PERMISSIONS.map(({ key, label, description }) => {
+                const enabled = localPerms[key] !== false;
+                return (
+                  <button key={key} onClick={() => togglePerm(key)}
+                    className={`flex items-start gap-3 p-3 rounded-xl border text-left transition-all ${
+                      enabled ? "border-cyan-200 bg-cyan-50/50 hover:bg-cyan-50" : "border-gray-200 bg-gray-50/50 hover:bg-gray-50 opacity-60"
+                    }`}>
+                    <div className={`mt-0.5 w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 ${enabled ? "bg-cyan-500" : "bg-gray-300"}`}>
+                      {enabled
+                        ? <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+                        : <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>}
+                    </div>
+                    <div className="min-w-0">
+                      <p className={`text-xs font-semibold ${enabled ? "text-cyan-800" : "text-gray-500"}`}>{label}</p>
+                      <p className="text-xs text-gray-400 mt-0.5 leading-tight">{description}</p>
+                    </div>
+                  </button>
                 );
               })}
             </div>
-          )}
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* ── TAB: TRANSACCIONES ── */}
+      {activeTab === "transacciones" && (
+        <Card className="border-gray-200 shadow-sm">
+          <CardHeader className="pb-3 border-b border-gray-100">
+            <CardTitle className="text-base font-semibold text-gray-800 flex items-center gap-2">
+              <CreditCard className="w-4 h-4 text-cyan-500" />Todas las transacciones ({recentTransactions?.length ?? 0})
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-0">
+            {!recentTransactions || recentTransactions.length === 0 ? (
+              <div className="text-center py-10">
+                <CreditCard className="w-8 h-8 text-gray-300 mx-auto mb-2" />
+                <p className="text-sm text-gray-400">Este cliente aún no tiene transacciones</p>
+              </div>
+            ) : (
+              <div className="divide-y divide-gray-100">
+                {recentTransactions.map((tx) => {
+                  const txCfg = txStatusConfig[tx.status] ?? { label: tx.status, color: "bg-gray-100 text-gray-600" };
+                  return (
+                    <div key={tx.id} className="flex items-center gap-4 px-5 py-3 hover:bg-gray-50/50 transition-colors">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-gray-800 truncate">{tx.payerName || "—"}</p>
+                        <p className="text-xs text-gray-400">{tx.operationNumber} · {formatDate(tx.createdAt)}</p>
+                      </div>
+                      <div className="text-right flex-shrink-0">
+                        <p className="text-sm font-bold text-gray-800">{formatCurrency(tx.amount)}</p>
+                        <p className="text-xs text-cyan-600">Comisión: {formatCurrency(tx.commissionAmount)}</p>
+                      </div>
+                      <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${txCfg.color} flex-shrink-0`}>{txCfg.label}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }
+
 // ─── Expediente KYC del cliente ─────────────────────────────────────────────────────
 function ClientKYCSection({ clientEmail }: { clientEmail: string }) {
   const { data: contracts = [], isLoading } = trpc.contracts.getByClientEmail.useQuery({ clientEmail });
@@ -901,7 +1186,7 @@ export default function Clients() {
                       const initials = client.name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
 
                       return (
-                        <div key={client.id} className="flex items-center gap-4 px-5 py-4 hover:bg-gray-50/50 transition-colors">
+                        <div key={client.id} className="flex items-center gap-4 px-5 py-4 hover:bg-cyan-50/40 transition-colors cursor-pointer" onClick={() => setSelectedClientId(client.id)}>
                           {/* Avatar */}
                           <div className="w-10 h-10 bg-gradient-to-br from-cyan-400 to-blue-500 rounded-xl flex items-center justify-center flex-shrink-0">
                             <span className="text-white text-sm font-bold">{initials}</span>
@@ -950,7 +1235,7 @@ export default function Clients() {
                             {/* Toggle status */}
                             {client.status === "active" ? (
                               <button
-                                onClick={() => updateClient.mutate({ id: client.id, status: "suspended" })}
+                                onClick={(e) => { e.stopPropagation(); updateClient.mutate({ id: client.id, status: "suspended" }); }}
                                 className="text-xs text-red-500 hover:text-red-700 hover:underline transition-colors"
                                 title="Suspender cliente"
                               >
@@ -958,7 +1243,7 @@ export default function Clients() {
                               </button>
                             ) : client.status === "suspended" ? (
                               <button
-                                onClick={() => updateClient.mutate({ id: client.id, status: "active" })}
+                                onClick={(e) => { e.stopPropagation(); updateClient.mutate({ id: client.id, status: "active" }); }}
                                 className="text-xs text-green-600 hover:text-green-700 hover:underline transition-colors"
                                 title="Activar cliente"
                               >
