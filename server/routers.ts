@@ -2822,7 +2822,18 @@ export const appRouter = router({
         const txs = await getTransactionsByUser(ctx.user.id);
         const tx = cb.transactionId ? txs.find(t => t.id === cb.transactionId) : null;
         const vendorCfg = await getVendorSettings(ctx.user.id);
-        // Construir evidencia para Stripe
+        // Construir evidencia de texto para Stripe
+        const consentText = consent ? [
+          `CONSENTIMIENTO EXPLÍCITO DEL PAGADOR:`,
+          `  - Nombre: ${consent.payerName}`,
+          `  - Email: ${consent.payerEmail}`,
+          `  - Teléfono: ${consent.payerPhone || 'N/A'}`,
+          `  - IP del dispositivo: ${consent.ipAddress || 'N/A'}`,
+          `  - Timestamp de aceptación: ${new Date(consent.consentAt).toLocaleString('es-MX')}`,
+          `  - Monto aceptado: $${consent.amountAccepted} ${consent.currency}`,
+          `  - User-Agent: ${consent.userAgent || 'N/A'}`,
+          `  - Términos aceptados: ${consent.termsSnapshot ? 'Sí — ' + consent.termsSnapshot.substring(0, 300) : 'Sí'}`,
+        ].join('\n') : 'Sin registro de consentimiento digital';
         const evidencePayload: Record<string, string> = {
           product_description: (tx?.metadata ? (() => { try { return JSON.parse(String(tx.metadata)).description || ''; } catch { return ''; } })() : '') || 'Servicio procesado a través de KobraPay',
           customer_name: tx?.payerName || consent?.payerName || 'Cliente',
@@ -2836,19 +2847,35 @@ export const appRouter = router({
             `Fecha de pago: ${tx ? new Date(tx.createdAt).toLocaleString('es-MX') : 'N/A'}`,
             `N° Operación: ${tx?.operationNumber || 'N/A'}`,
             `Stripe PI: ${tx?.stripePaymentIntentId || 'N/A'}`,
-            consent ? [
-              `CONSENTIMIENTO EXPLÍCITO DEL PAGADOR:`,
-              `  - Nombre: ${consent.payerName}`,
-              `  - Email: ${consent.payerEmail}`,
-              `  - IP: ${consent.ipAddress || 'N/A'}`,
-              `  - Timestamp: ${new Date(consent.consentAt).toLocaleString('es-MX')}`,
-              `  - Monto aceptado: $${consent.amountAccepted} ${consent.currency}`,
-              `  - Términos aceptados: ${consent.termsSnapshot ? 'Sí (snapshot guardado)' : 'Sí'}`,
-            ].join('\n') : 'Sin registro de consentimiento digital',
+            `Selfie del pagador: ${tx?.selfieUrl ? 'Disponible — ' + tx.selfieUrl : 'No disponible'}`,
+            `Identificación del pagador: ${tx?.idDocumentUrl ? 'Disponible — ' + tx.idDocumentUrl : 'No disponible'}`,
+            consentText,
           ].join('\n'),
         };
-        // Enviar a Stripe
+        // Subir archivos de evidencia (selfie + ID) a Stripe si están disponibles
         const stripe = new (await import('stripe')).default(process.env.STRIPE_SECRET_KEY || '', { apiVersion: '2026-02-25.clover' as any });
+        if (tx?.selfieUrl) {
+          try {
+            const selfieResp = await fetch(tx.selfieUrl);
+            const selfieBuffer = Buffer.from(await selfieResp.arrayBuffer());
+            const selfieFile = await stripe.files.create({
+              purpose: 'dispute_evidence',
+              file: { data: selfieBuffer, name: 'selfie_pagador.jpg', type: 'image/jpeg' },
+            });
+            (evidencePayload as any).customer_signature = selfieFile.id;
+          } catch { /* selfie no crítica */ }
+        }
+        if (tx?.idDocumentUrl) {
+          try {
+            const idResp = await fetch(tx.idDocumentUrl);
+            const idBuffer = Buffer.from(await idResp.arrayBuffer());
+            const idFile = await stripe.files.create({
+              purpose: 'dispute_evidence',
+              file: { data: idBuffer, name: 'identificacion_pagador.jpg', type: 'image/jpeg' },
+            });
+            (evidencePayload as any).uncategorized_file = idFile.id;
+          } catch { /* ID no crítico */ }
+        }
         await stripe.disputes.update(cb.stripeDisputeId, {
           evidence: evidencePayload as any,
           submit: true,

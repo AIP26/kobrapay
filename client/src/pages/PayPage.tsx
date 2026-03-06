@@ -123,6 +123,7 @@ function PaymentForm({ token }: { token: string }) {
   const uploadIdDocument = trpc.identity.uploadIdDocument.useMutation();
   const createIntent = trpc.payments.createIntent.useMutation();
   const confirmPayment = trpc.payments.confirmPayment.useMutation();
+  const saveConsentMutation = trpc.chargebacks.saveConsent.useMutation();
 
   useEffect(() => {
     return () => {
@@ -526,6 +527,25 @@ function PaymentForm({ token }: { token: string }) {
         return;
       }
       if (paymentIntent?.status === "succeeded") {
+        // Guardar consentimiento en BD para evidencia anti-contracargos
+        try {
+          await saveConsentMutation.mutateAsync({
+            paymentToken: token,
+            payerName: `${customer.firstName} ${customer.lastName}`.trim(),
+            payerEmail: customer.email,
+            payerPhone: customer.phone || undefined,
+            ipAddress: '', // El servidor captura la IP real desde x-forwarded-for
+            userAgent: navigator.userAgent,
+            serviceDescription: linkData?.description || '',
+            amountAccepted: String(amount),
+            currency: currency || 'MXN',
+            termsSnapshot: `Acepto los términos y condiciones de KobraPay. Monto: $${amount} ${currency || 'MXN'}. Descripción: ${linkData?.description || ''}. Fecha: ${new Date().toLocaleString('es-MX')}. User-Agent: ${navigator.userAgent.substring(0, 200)}`,
+            consentAt: consentTimestamp || Date.now(),
+          });
+        } catch {
+          // No bloquear el pago si falla guardar el consentimiento
+          console.warn('No se pudo guardar el consentimiento en BD');
+        }
         const result = await confirmPayment.mutateAsync({ paymentIntentId, token });
         if (result.success) {
           setSuccessData({
