@@ -1727,3 +1727,85 @@ export async function getChargebackByDisputeId(stripeDisputeId: string): Promise
     .limit(1);
   return results[0] || null;
 }
+
+// ─── Lista Negra de Pagadores ────────────────────────────────────────────────
+
+/**
+ * Verifica si un email está en la lista negra del usuario.
+ */
+export async function isPayerBlacklisted(userId: number, email: string): Promise<boolean> {
+  const db = await getDb();
+  if (!db) return false;
+  const { payerBlacklist } = await import('../drizzle/schema');
+  const emailLower = email.toLowerCase().trim();
+  const results = await db.select({ id: payerBlacklist.id }).from(payerBlacklist)
+    .where(and(
+      eq(payerBlacklist.userId, userId),
+      eq(payerBlacklist.type, 'email'),
+      eq(payerBlacklist.value, emailLower),
+      eq(payerBlacklist.isActive, true)
+    )).limit(1);
+  return results.length > 0;
+}
+
+/**
+ * Agrega un pagador a la lista negra.
+ */
+export async function addPayerToBlacklist(data: {
+  userId: number;
+  type: 'email' | 'card_last4';
+  value: string;
+  reason?: string;
+  chargebackId?: number;
+  transactionId?: number;
+  payerName?: string;
+  chargebackAmount?: number;
+}): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  const { payerBlacklist } = await import('../drizzle/schema');
+  const normalizedValue = data.value.toLowerCase().trim();
+  const existing = await db.select({ id: payerBlacklist.id }).from(payerBlacklist)
+    .where(and(
+      eq(payerBlacklist.userId, data.userId),
+      eq(payerBlacklist.type, data.type),
+      eq(payerBlacklist.value, normalizedValue),
+      eq(payerBlacklist.isActive, true)
+    )).limit(1);
+  if (existing.length > 0) return;
+  await db.insert(payerBlacklist).values({
+    userId: data.userId,
+    type: data.type,
+    value: normalizedValue,
+    reason: data.reason,
+    chargebackId: data.chargebackId,
+    transactionId: data.transactionId,
+    payerName: data.payerName,
+    chargebackAmount: data.chargebackAmount,
+    isActive: true,
+  });
+}
+
+/**
+ * Lista todos los pagadores bloqueados de un usuario.
+ */
+export async function getPayerBlacklist(userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  const { payerBlacklist } = await import('../drizzle/schema');
+  return db.select().from(payerBlacklist)
+    .where(eq(payerBlacklist.userId, userId))
+    .orderBy(desc(payerBlacklist.createdAt));
+}
+
+/**
+ * Elimina (desactiva) una entrada de la lista negra.
+ */
+export async function removeFromBlacklist(id: number, userId: number): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  const { payerBlacklist } = await import('../drizzle/schema');
+  await db.update(payerBlacklist)
+    .set({ isActive: false })
+    .where(and(eq(payerBlacklist.id, id), eq(payerBlacklist.userId, userId)));
+}

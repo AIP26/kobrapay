@@ -20,6 +20,7 @@ import Chargebacks from "./pages/Chargebacks";
 import Invoices from "./pages/Invoices";
 import Reader from "./pages/Reader";
 import SecurityAudit from "./pages/SecurityAudit";
+import Blacklist from "./pages/Blacklist";
 import Payers from "./pages/Payers";
 import Staff from "./pages/Staff";
 import Catalog from "./pages/Catalog";
@@ -118,6 +119,7 @@ function Router() {
       <Route path="/dashboard/invoices" component={Invoices} />
       <Route path="/dashboard/reader" component={Reader} />
       <Route path="/dashboard/security" component={SecurityAudit} />
+      <Route path="/dashboard/blacklist" component={Blacklist} />
       <Route path="/dashboard/payers" component={Payers} />
       <Route path="/dashboard/staff" component={Staff} />
       <Route path="/dashboard/catalog" component={Catalog} />

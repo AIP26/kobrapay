@@ -1062,3 +1062,5 @@
 - [x] Menú no se filtra en modo impersonación - corregido: isSuperAdmin ahora solo reconoce al dueño real por OWNER_OPEN_ID
 - [x] Cuadros del panel (Mis Ventas) ahora son clickeables y filtran la tabla al hacer click
 - [x] Barra de impersonación mejorada: gradiente naranja visible, botón blanco prominente 'Volver a mi cuenta'
+- [x] Lista negra de pagadores (bloquear email/tarjeta con contracargo previo)
+- [x] Alertas automáticas de contracargo vía webhook con notificación al owner

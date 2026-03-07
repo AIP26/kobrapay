@@ -41,6 +41,7 @@ import {
   Pill,
   ClipboardList,
   ShieldCheck,
+  ShieldBan,
   Wallet,
   Bot,
   LifeBuoy,
@@ -197,6 +198,7 @@ const NAV_GROUPS = [
       { href: "/dashboard/quote-logs", icon: Mail, label: "Cotizaciones", superAdminOnly: true },
       // Seguridad SÍ visible para clientes (admin)
       { href: "/dashboard/security", icon: Shield, label: "Seguridad" },
+      { href: "/dashboard/blacklist", icon: ShieldBan, label: "Lista Negra" },
       { href: "/dashboard/impersonate", icon: Eye, label: "Ver como Cliente", superAdminOnly: true },
       { href: "/dashboard/associate-liquidation", icon: TrendingUp, label: "Liquidación Asociados", superAdminOnly: true },
     ],

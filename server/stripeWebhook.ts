@@ -16,6 +16,7 @@ import {
   getAssociateCommissionForClient,
   recordAssociateEarning,
   linkConsentToTransaction,
+  addPayerToBlacklist,
 } from "./db";
 import { notifyOwner } from "./_core/notification";
 import { createNotification } from "./db";
@@ -240,6 +241,40 @@ export function registerStripeWebhook(app: express.Application) {
                   title: `⚠️ Contracargo recibido: $${(dispute.amount / 100).toFixed(2)} ${dispute.currency.toUpperCase()}`,
                   content: `Se abrió una disputa (${reasonEs}) por $${(dispute.amount / 100).toFixed(2)} ${dispute.currency.toUpperCase()}. ID Stripe: ${dispute.id}. Tienes hasta el ${dispute.evidence_details?.due_by ? new Date(dispute.evidence_details.due_by * 1000).toLocaleDateString("es-MX") : "fecha límite"} para responder.`,
                 });
+                // Notificar al usuario afectado en su panel
+                try {
+                  const dueByDate = dispute.evidence_details?.due_by
+                    ? new Date(dispute.evidence_details.due_by * 1000).toLocaleDateString('es-MX')
+                    : 'próximamente';
+                  await createNotification({
+                    userId: tx.userId,
+                    type: 'chargeback_alert',
+                    title: `⚠️ Contracargo recibido: $${(dispute.amount / 100).toFixed(2)} ${dispute.currency.toUpperCase()}`,
+                    message: `Motivo: ${reasonEs}. Tienes hasta el ${dueByDate} para responder con evidencia. Ve a Aclaraciones para gestionarlo.`,
+                    actionUrl: '/dashboard/chargebacks',
+                  });
+                } catch (_) {}
+                // Agregar pagador a lista negra automáticamente
+                try {
+                  const txDetails = await getTransactionByPaymentIntent(
+                    typeof dispute.payment_intent === 'string' ? dispute.payment_intent : ''
+                  );
+                  if (txDetails?.payerEmail) {
+                    await addPayerToBlacklist({
+                      userId: tx.userId,
+                      type: 'email',
+                      value: txDetails.payerEmail,
+                      reason: `Contracargo automático: ${reasonEs}`,
+                      chargebackId: undefined,
+                      transactionId: tx.id,
+                      payerName: txDetails.payerName || undefined,
+                      chargebackAmount: dispute.amount,
+                    });
+                    console.log(`[Webhook] Pagador ${txDetails.payerEmail} agregado a lista negra por contracargo`);
+                  }
+                } catch (blErr) {
+                  console.error('[Webhook] Error agregando a lista negra:', blErr);
+                }
               }
             } catch (err) {
               console.error("[Stripe Webhook] Error al crear chargeback:", err);

@@ -1575,6 +1575,20 @@ export const appRouter = router({
         if (link.requireIdUpload && !input.idDocumentUrl) {
           throw new TRPCError({ code: "BAD_REQUEST", message: "Se requiere cargar identificación" });
         }
+        // Verificar lista negra de pagadores
+        try {
+          const { isPayerBlacklisted } = await import('./db');
+          const blocked = await isPayerBlacklisted(link.userId, input.payerEmail);
+          if (blocked) {
+            throw new TRPCError({
+              code: "FORBIDDEN",
+              message: "No es posible procesar este pago. Contacta al comercio para más información.",
+            });
+          }
+        } catch (e) {
+          if (e instanceof TRPCError) throw e;
+          console.error('[Checkout] Error verificando lista negra:', e);
+        }
         const amount = parseFloat(String(link.amount));
         const commissionRate = parseFloat(String(link.commissionRate || 0));
         const { commissionAmount, netAmount } = calculateCommission(amount, commissionRate);
@@ -8374,6 +8388,39 @@ Responde SIEMPRE en español mexicano, de forma amigable, clara y práctica. Si 
       ctx.res.clearCookie('kobrapay_superadmin_restore', cookieOptions);
       return { success: true };
     }),
+  }),
+
+  // ─── Lista Negra de Pagadores ────────────────────────────────────────────
+  blacklist: router({
+    list: protectedProcedure.query(async ({ ctx }) => {
+      const { getPayerBlacklist } = await import('./db');
+      return getPayerBlacklist(ctx.user.id);
+    }),
+    add: protectedProcedure
+      .input(z.object({
+        type: z.enum(['email', 'card_last4']),
+        value: z.string().min(1).max(320),
+        reason: z.string().max(255).optional(),
+        payerName: z.string().max(255).optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const { addPayerToBlacklist } = await import('./db');
+        await addPayerToBlacklist({
+          userId: ctx.user.id,
+          type: input.type,
+          value: input.value,
+          reason: input.reason,
+          payerName: input.payerName,
+        });
+        return { success: true };
+      }),
+    remove: protectedProcedure
+      .input(z.object({ id: z.number().int().positive() }))
+      .mutation(async ({ ctx, input }) => {
+        const { removeFromBlacklist } = await import('./db');
+        await removeFromBlacklist(input.id, ctx.user.id);
+        return { success: true };
+      }),
   }),
 
 });

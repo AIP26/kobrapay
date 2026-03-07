@@ -1328,3 +1328,31 @@ export const paymentConsents = mysqlTable("payment_consents", {
 });
 export type PaymentConsent = typeof paymentConsents.$inferSelect;
 export type InsertPaymentConsent = typeof paymentConsents.$inferInsert;
+
+// ─── Lista Negra de Pagadores (Anti-Contracargos) ─────────────────────────────
+// Bloquea emails o tarjetas que han generado contracargos previos.
+// Cuando un pagador intenta pagar con un email/tarjeta en esta lista, el cobro se rechaza.
+export const payerBlacklist = mysqlTable("payer_blacklist", {
+  id: int("id").autoincrement().primaryKey(),
+  // El usuario admin/cliente dueño de esta entrada
+  userId: int("userId").notNull().references(() => users.id),
+  // Tipo de bloqueo: email del pagador o últimos 4 dígitos de tarjeta
+  type: mysqlEnum("type", ["email", "card_last4"]).notNull(),
+  // Valor bloqueado (email o últimos 4 dígitos)
+  value: varchar("value", { length: 320 }).notNull(),
+  // Razón del bloqueo
+  reason: varchar("reason", { length: 255 }),
+  // ID del contracargo que originó este bloqueo (opcional)
+  chargebackId: int("chargebackId").references(() => chargebacks.id),
+  // ID de la transacción que originó este bloqueo (opcional)
+  transactionId: int("transactionId").references(() => transactions.id),
+  // Nombre del pagador bloqueado (para referencia)
+  payerName: varchar("payerName", { length: 255 }),
+  // Monto del contracargo en centavos (para referencia)
+  chargebackAmount: int("chargebackAmount"),
+  isActive: boolean("isActive").default(true).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type PayerBlacklist = typeof payerBlacklist.$inferSelect;
+export type InsertPayerBlacklist = typeof payerBlacklist.$inferInsert;
