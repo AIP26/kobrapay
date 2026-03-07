@@ -1079,6 +1079,7 @@ export default function Sales() {
               icon: TrendingUp,
               iconColor: "text-green-600",
               iconBg: "bg-green-100",
+              filterValue: "succeeded",
             },
             {
               label: "Ventas exitosas",
@@ -1086,6 +1087,7 @@ export default function Sales() {
               icon: CheckCircle2,
               iconColor: "text-emerald-600",
               iconBg: "bg-emerald-100",
+              filterValue: "succeeded",
             },
             {
               label: "Pendientes",
@@ -1093,6 +1095,7 @@ export default function Sales() {
               icon: Clock,
               iconColor: "text-amber-600",
               iconBg: "bg-amber-100",
+              filterValue: "pending",
             },
             {
               label: "Total enlaces",
@@ -1100,9 +1103,14 @@ export default function Sales() {
               icon: BarChart3,
               iconColor: "text-blue-600",
               iconBg: "bg-blue-100",
+              filterValue: "all",
             },
-          ].map(({ label, value, icon: Icon, iconColor, iconBg }) => (
-            <Card key={label} className="border-gray-200 shadow-sm">
+          ].map(({ label, value, icon: Icon, iconColor, iconBg, filterValue }) => (
+            <Card
+              key={label}
+              className={`border-gray-200 shadow-sm cursor-pointer hover:shadow-md hover:border-gray-300 transition-all ${filterValue && filter === filterValue ? 'ring-2 ring-emerald-400 border-emerald-300' : ''}`}
+              onClick={() => filterValue && setFilter(filterValue as typeof filter)}
+            >
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div>

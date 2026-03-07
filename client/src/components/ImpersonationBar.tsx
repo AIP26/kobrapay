@@ -1,6 +1,6 @@
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
-import { Eye, LogOut, AlertTriangle } from "lucide-react";
+import { Eye, ArrowLeft, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 /**
@@ -31,24 +31,33 @@ export default function ImpersonationBar() {
   if (!hasRestoreCookie) return null;
 
   return (
-    <div className="fixed top-0 left-0 right-0 z-[9999] bg-amber-500 text-white px-4 py-2 flex items-center justify-between shadow-lg">
-      <div className="flex items-center gap-2 text-sm font-medium">
-        <Eye className="w-4 h-4" />
-        <span>Modo Impersonación activo</span>
-        <AlertTriangle className="w-4 h-4 ml-1" />
-        <span className="font-normal opacity-90">Estás viendo la plataforma como este usuario. Las acciones afectan su cuenta real.</span>
+    <div
+      className="fixed top-0 left-0 right-0 z-[9999] flex items-center justify-between px-4 py-2.5 shadow-lg"
+      style={{ background: "linear-gradient(90deg, #d97706 0%, #b45309 100%)" }}
+    >
+      {/* Izquierda: ícono + texto */}
+      <div className="flex items-center gap-2.5 text-white">
+        <Eye className="w-5 h-5 flex-shrink-0" />
+        <div>
+          <p className="text-sm font-bold leading-tight">Modo Impersonación Activo</p>
+          <p className="text-xs opacity-80 leading-tight">
+            Estás viendo la plataforma como este cliente. Las acciones afectan su cuenta real.
+          </p>
+        </div>
+        <AlertTriangle className="w-4 h-4 ml-1 opacity-70 flex-shrink-0" />
       </div>
+
+      {/* Derecha: botón de regreso prominente */}
       <Button
         size="sm"
-        variant="outline"
-        className="border-white/40 text-white hover:bg-amber-600 hover:text-white bg-amber-600/30 gap-1.5 text-xs"
+        className="bg-white text-amber-700 hover:bg-amber-50 font-bold gap-2 px-4 shadow-md flex-shrink-0"
         onClick={() => restoreSession.mutate()}
         disabled={restoreSession.isPending}
       >
         {restoreSession.isPending ? (
-          <div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+          <div className="w-4 h-4 border-2 border-amber-700/30 border-t-amber-700 rounded-full animate-spin" />
         ) : (
-          <LogOut className="w-3 h-3" />
+          <ArrowLeft className="w-4 h-4" />
         )}
         Volver a mi cuenta
       </Button>

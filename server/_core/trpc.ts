@@ -12,11 +12,11 @@ export const router = t.router;
 export const publicProcedure = t.procedure;
 
 // ─── Helper: check if user is the platform owner (superadmin) ─────────────────
-// Reconoce al superadmin por OWNER_OPEN_ID O por role='admin' en la BD
-export function isSuperAdmin(userOpenId: string, userRole?: string): boolean {
+// El superadmin es ÚNICAMENTE el dueño de la plataforma identificado por OWNER_OPEN_ID.
+// Los clientes con role='admin' son administradores de su propio negocio, NO superadmin.
+export function isSuperAdmin(userOpenId: string, _userRole?: string): boolean {
+  // Solo el dueño real de la plataforma (OWNER_OPEN_ID) es superadmin
   if (ENV.ownerOpenId && userOpenId === ENV.ownerOpenId) return true;
-  // Si OWNER_OPEN_ID no está configurado o no coincide, el rol 'admin' también es superadmin
-  if (userRole === 'admin') return true;
   return false;
 }
 
@@ -57,13 +57,13 @@ export const adminProcedure = t.procedure.use(
       ctx: {
         ...ctx,
         user: ctx.user,
-           isSuperAdmin: superAdmin,
-    },
-  });
+        isSuperAdmin: superAdmin,
+      },
+    });
   }),
 );
 
-// ─── Require superadmin onlyy (platform owner) ────────────────────────────────
+// ─── Require superadmin only (platform owner) ────────────────────────────────
 export const superAdminProcedure = t.procedure.use(
   t.middleware(async opts => {
     const { ctx, next } = opts;

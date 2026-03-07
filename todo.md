@@ -1059,3 +1059,6 @@
 - [x] Error React #310 en página "Ver como Cliente" (ImpersonateClient) - crash al cargar (hooks movidos antes de early return)
 - [x] Limitar menú lateral para clientes (rol admin): solo mostrar módulos de su negocio, ocultar herramientas de superadmin
 - [x] Mostrar barra naranja de impersonación cuando superadmin ve como cliente
+- [x] Menú no se filtra en modo impersonación - corregido: isSuperAdmin ahora solo reconoce al dueño real por OWNER_OPEN_ID
+- [x] Cuadros del panel (Mis Ventas) ahora son clickeables y filtran la tabla al hacer click
+- [x] Barra de impersonación mejorada: gradiente naranja visible, botón blanco prominente 'Volver a mi cuenta'
