@@ -40,11 +40,12 @@ export default function LoginEmail() {
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 bg-cyan-400 rounded-xl flex items-center justify-center">
-              <span className="text-gray-900 font-black text-lg">K</span>
-            </div>
-            <span className="text-white font-bold text-2xl">KobraPay</span>
+          <div className="inline-flex items-center justify-center mb-2">
+            <img
+              src="https://d2xsxph8kpxj0f.cloudfront.net/310519663381362445/Tm7GPbTEGgvmgj5v2qy4Z4/kobrapay_logo_pro_white_fd2cc62e.png"
+              alt="KobraPay"
+              className="h-12 w-auto object-contain"
+            />
           </div>
           <p className="text-gray-400 text-sm">Cobra fácil, cobra global</p>
         </div>
