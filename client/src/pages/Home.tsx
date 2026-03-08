@@ -589,26 +589,46 @@ export default function Home() {
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] bg-emerald-500/6 rounded-full blur-3xl" />
           </div>
           <div className="relative max-w-md w-full">
-            <div className="inline-flex items-center gap-2 bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 rounded-full px-3 py-1 text-xs font-medium mb-6">
-              <Zap className="w-3 h-3" />
-              La plataforma de cobros para negocios mexicanos
+            <div className="flex items-center gap-2 mb-5">
+              <span className="inline-flex items-center gap-1.5 bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 rounded-full px-3 py-1 text-xs font-semibold">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                Lanzamiento oficial 2025
+              </span>
+              <span className="inline-flex items-center gap-1 bg-white/5 text-gray-400 border border-white/10 rounded-full px-3 py-1 text-xs">
+                <Zap className="w-3 h-3 text-yellow-400" />
+                Procesado por Stripe
+              </span>
             </div>
-            <h1 className="text-3xl lg:text-4xl font-extrabold text-white mb-4 leading-tight">
-              Cobra más rápido,<br />
-              <span className="bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent">sin complicaciones</span>
+            <h1 className="text-3xl lg:text-5xl font-extrabold text-white mb-4 leading-tight">
+              Cobra con tarjeta<br />
+              <span className="bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent">en 2 minutos</span>
             </h1>
-            <p className="text-sm text-gray-400 mb-7 leading-relaxed">
-              Genera enlaces de cobro personalizados, compártelos por WhatsApp o email, y recibe pagos con tarjeta de forma segura. Sin hardware, sin contratos.
+            <p className="text-sm text-gray-400 mb-5 leading-relaxed">
+              Genera un enlace de pago, compártelo por WhatsApp y recibe el dinero. Sin hardware, sin contratos, sin mensualidad. Solo pagas cuando cobras.
             </p>
+            <div className="flex items-center gap-4 mb-6">
+              <div className="text-center">
+                <p className="text-xl font-black text-white">3.5%</p>
+                <p className="text-xs text-gray-500">Comisión mínima</p>
+              </div>
+              <div className="w-px h-8 bg-white/10" />
+              <div className="text-center">
+                <p className="text-xl font-black text-emerald-400">2 min</p>
+                <p className="text-xs text-gray-500">Para tu primer cobro</p>
+              </div>
+              <div className="w-px h-8 bg-white/10" />
+              <div className="text-center">
+                <p className="text-xl font-black text-cyan-400">24h</p>
+                <p className="text-xs text-gray-500">Aprobación de cuenta</p>
+              </div>
+            </div>
             <div className="flex flex-col sm:flex-row gap-2.5">
-              <Button size="sm" asChild className="bg-emerald-500 hover:bg-emerald-400 text-white px-6 h-10">
-                <a href={getLoginUrl("/dashboard")}>Comenzar gratis <ArrowRight className="w-3.5 h-3.5 ml-1.5" /></a>
+              <Button size="sm" asChild className="bg-emerald-500 hover:bg-emerald-400 text-white px-6 h-11 text-sm font-bold shadow-lg shadow-emerald-500/20">
+                <a href={getLoginUrl("/complete-profile")}>Crear cuenta gratis <ArrowRight className="w-3.5 h-3.5 ml-1.5" /></a>
               </Button>
-              {isAuthenticated && (
-                <Button size="sm" variant="outline" asChild className="px-6 h-10 border-white/20 text-white hover:bg-white/10">
-                  <Link href="/dashboard">Ver mi panel</Link>
-                </Button>
-              )}
+              <Button size="sm" variant="outline" asChild className="px-6 h-11 border-white/20 text-white hover:bg-white/10 text-sm">
+                <a href="#simulador">Ver mis comisiones</a>
+              </Button>
             </div>
             <div className="mt-8 space-y-2.5">
               <p className="text-xs text-gray-500 font-medium">Aceptamos todos los métodos de pago:</p>
@@ -728,6 +748,38 @@ export default function Home() {
         </div>
       </section>
 
+      {/* Cómo Funciona */}
+      <section className="py-20 border-t border-white/5">
+        <div className="container max-w-4xl mx-auto">
+          <div className="text-center mb-12">
+            <span className="text-xs font-semibold tracking-widest text-emerald-400 uppercase">Simple y rápido</span>
+            <h2 className="text-2xl lg:text-3xl font-bold text-white mt-2 mb-3">Empieza a cobrar en 3 pasos</h2>
+            <p className="text-gray-400 text-sm">Sin hardware, sin contratos, sin mensualidad.</p>
+          </div>
+          <div className="grid md:grid-cols-3 gap-6">
+            {[
+              { step: "01", title: "Crea tu cuenta", desc: "Regístrate en menos de 5 minutos con tu nombre, datos de tu negocio y RFC. Aprobación en menos de 24 horas.", icon: "👤", color: "emerald" },
+              { step: "02", title: "Genera tu enlace", desc: "Escribe el monto, descripción y el correo de tu cliente. En segundos tienes un enlace listo para compartir por WhatsApp.", icon: "🔗", color: "cyan" },
+              { step: "03", title: "Recibe el pago", desc: "Tu cliente paga con tarjeta desde su celular. Tú ves el pago en tiempo real en tu panel y recibes el comprobante automáticamente.", icon: "💰", color: "emerald" },
+            ].map((item) => (
+              <div key={item.step} className="relative bg-white/5 border border-white/10 rounded-2xl p-6 hover:border-white/20 transition-all">
+                <div className="flex items-center gap-3 mb-4">
+                  <span className={`text-3xl font-black ${item.color === 'emerald' ? 'text-emerald-500/30' : 'text-cyan-500/30'}`}>{item.step}</span>
+                  <span className="text-2xl">{item.icon}</span>
+                </div>
+                <h3 className="font-bold text-white text-lg mb-2">{item.title}</h3>
+                <p className="text-gray-400 text-sm leading-relaxed">{item.desc}</p>
+              </div>
+            ))}
+          </div>
+          <div className="text-center mt-10">
+            <a href={getLoginUrl("/complete-profile")} className="inline-flex items-center gap-2 bg-emerald-500 hover:bg-emerald-400 text-white font-bold py-3 px-8 rounded-2xl transition-colors shadow-lg shadow-emerald-500/20">
+              Empezar ahora — es gratis <ArrowRight className="w-4 h-4" />
+            </a>
+          </div>
+        </div>
+      </section>
+
       {/* Features interactivas */}
       <section className="py-20 border-t border-white/5">
         <div className="container">
@@ -760,7 +812,7 @@ export default function Home() {
       </section>
 
       {/* Simulador de Comisiones */}
-      <section className="py-20 border-t border-white/5">
+      <section id="simulador" className="py-20 border-t border-white/5">
         <div className="container max-w-5xl mx-auto">
           <div className="text-center mb-10">
             <h2 className="text-2xl lg:text-3xl font-bold text-white mb-3">Simula cuanto te cobraremos</h2>
@@ -787,14 +839,30 @@ export default function Home() {
       </section>
 
       {/* CTA */}
-      <section className="py-20 border-t border-white/5">
-        <div className="container text-center max-w-2xl mx-auto">
-          <img src={KOBRAPAY_ICON} alt="KobraPay" className="w-16 h-16 mx-auto mb-6 object-contain" />
-          <h2 className="text-2xl lg:text-3xl font-bold text-white mb-4">Empieza a cobrar hoy mismo</h2>
-          <p className="text-gray-400 mb-8">Crea tu cuenta y genera tu primer enlace de pago en menos de 2 minutos. Sin costos fijos, solo pagas por transacción exitosa.</p>
-          <Button size="lg" asChild className="bg-emerald-500 hover:bg-emerald-400 text-white text-base px-10 h-12">
-            <a href={getLoginUrl("/dashboard")}>Crear cuenta gratis <ArrowRight className="w-4 h-4 ml-2" /></a>
-          </Button>
+      <section className="py-24 border-t border-white/5 relative overflow-hidden">
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[300px] bg-emerald-500/8 rounded-full blur-3xl" />
+        </div>
+        <div className="container text-center max-w-2xl mx-auto relative">
+          <div className="inline-flex items-center gap-2 bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 rounded-full px-4 py-1.5 text-xs font-semibold mb-6">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+            Sin costo de registro — solo pagas cuando cobras
+          </div>
+          <h2 className="text-3xl lg:text-4xl font-extrabold text-white mb-4">Tu negocio merece cobrar<br /><span className="bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent">como los grandes</span></h2>
+          <p className="text-gray-400 mb-8 text-sm leading-relaxed">Crea tu cuenta en 5 minutos y genera tu primer enlace de pago hoy mismo.<br />Sin hardware, sin contratos, sin mensualidad.</p>
+          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+            <Button size="lg" asChild className="bg-emerald-500 hover:bg-emerald-400 text-white text-base px-10 h-12 font-bold shadow-xl shadow-emerald-500/25">
+              <a href={getLoginUrl("/complete-profile")}>Crear cuenta gratis <ArrowRight className="w-4 h-4 ml-2" /></a>
+            </Button>
+            <Button size="lg" variant="outline" asChild className="h-12 px-8 border-white/20 text-white hover:bg-white/10">
+              <a href="mailto:soporte@kobrapay.mx">Hablar con ventas</a>
+            </Button>
+          </div>
+          <div className="mt-8 flex items-center justify-center gap-6 text-xs text-gray-500">
+            <span className="flex items-center gap-1.5"><CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" /> Sin mensualidad</span>
+            <span className="flex items-center gap-1.5"><CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" /> Aprobación en 24h</span>
+            <span className="flex items-center gap-1.5"><CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" /> Soporte en español</span>
+          </div>
         </div>
       </section>
 

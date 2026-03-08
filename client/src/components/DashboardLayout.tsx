@@ -84,6 +84,51 @@ const ITEM_PERMISSION_MAP: Record<string, string> = {
   "/dashboard/settings": "canAccessSettings",
 };
 
+// Rutas básicas que todo cliente admin ve por defecto (sin necesidad de permisos adicionales)
+const ADMIN_BASIC_ROUTES = new Set([
+  "/dashboard",
+  "/dashboard/sales",
+  "/dashboard/report",
+  "/dashboard/business-advisor",
+  "/dashboard/create",
+  "/dashboard/links",
+  "/dashboard/recurring",
+  "/dashboard/chargebacks",
+  "/dashboard/invoices",
+  "/dashboard/payers",
+  "/dashboard/expedientes",
+  "/dashboard/connect",
+  "/dashboard/transfers",
+  "/dashboard/my-deposits",
+  "/dashboard/security",
+  "/dashboard/blacklist",
+  "/dashboard/help",
+  "/dashboard/support",
+  "/dashboard/settings",
+]);
+
+// Módulos avanzados que el superadmin puede habilitar por cliente
+const ADMIN_ADVANCED_PERMISSION_MAP: Record<string, string> = {
+  // Empresa
+  "/dashboard/hr": "canManageHR",
+  "/dashboard/staff": "canManageStaff",
+  "/dashboard/checador": "canManageStaff",
+  "/dashboard/nomina": "canManageNomina",
+  "/dashboard/proveedores": "canManageProveedores",
+  // Sector Salud
+  "/dashboard/module-access": "canUseSectorSalud",
+  "/dashboard/module-manager": "canUseSectorSalud",
+  "/dashboard/assistant-panel": "canUseSectorSalud",
+  "/dashboard/medical": "canUseSectorSalud",
+  "/dashboard/prescriptions": "canUseSectorSalud",
+  "/dashboard/farmacia": "canUseSectorSalud",
+  // Herramientas
+  "/dashboard/pos": "canManagePOS",
+  "/dashboard/widget": "canUseWidget",
+  "/dashboard/catalog": "canManageCatalog",
+  "/dashboard/reader": "canUseReader",
+};
+
 // ─── Grupos del sidebar ───────────────────────────────────────────────────────
 // Rutas esenciales para clientes normales (rol user sin permisos especiales)
 const USER_ESSENTIAL_ROUTES = new Set([
@@ -420,11 +465,20 @@ function Sidebar({
       return permissions[permKey] === true;
     }
 
-    // Para admin (clientes de la plataforma): mostrar todo lo que no sea superAdminOnly
-    // (ya filtrado arriba). Aplicar permisos adicionales si están configurados.
-    const permKey = ITEM_PERMISSION_MAP[href];
-    if (!permKey) return true; // sin restricción de permiso = siempre visible para admin
-    return permissions[permKey] !== false;
+    // Para admin (clientes de la plataforma): solo rutas básicas por defecto
+    // Los módulos avanzados (Empresa, Sector Salud, Herramientas) solo si el superadmin los habilitó
+    if (isAdmin && !isSuperAdmin) {
+      // Rutas básicas siempre visibles
+      if (ADMIN_BASIC_ROUTES.has(href)) return true;
+      // Módulos avanzados: requieren permiso explícito del superadmin
+      const advancedPermKey = ADMIN_ADVANCED_PERMISSION_MAP[href];
+      if (advancedPermKey) return permissions[advancedPermKey] === true;
+      // Cualquier otra ruta no mapeada: oculta para clientes admin
+      return false;
+    }
+
+    // Fallback: mostrar todo
+    return true;
   };
 
   return (

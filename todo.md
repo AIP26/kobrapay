@@ -1064,3 +1064,10 @@
 - [x] Barra de impersonación mejorada: gradiente naranja visible, botón blanco prominente 'Volver a mi cuenta'
 - [x] Lista negra de pagadores (bloquear email/tarjeta con contracargo previo)
 - [x] Alertas automáticas de contracargo vía webhook con notificación al owner
+
+## Preparación para Lanzamiento
+- [ ] Botón Atrás en Lista Negra y páginas internas sin navegación de regreso
+- [ ] Panel reducido para clientes (rol admin) — solo módulos básicos visibles
+- [ ] Email de bienvenida al registrarse en KobraPay
+- [ ] Email de recibo profesional con logo KobraPay al completar pago
+- [ ] Mejorar landing page con precios/planes y CTA más agresivo

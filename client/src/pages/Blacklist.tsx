@@ -21,7 +21,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ShieldBan, Plus, Trash2, Mail, CreditCard, AlertTriangle, Search } from "lucide-react";
+import { ShieldBan, Plus, Trash2, Mail, CreditCard, AlertTriangle, Search, ArrowLeft } from "lucide-react";
+import { useLocation } from "wouter";
 
 export default function Blacklist() {
   const [search, setSearch] = useState("");
@@ -82,8 +83,18 @@ export default function Blacklist() {
     addMutation.mutate({ type: newType, value: newValue.trim(), reason: newReason.trim() || undefined, payerName: newPayerName.trim() || undefined });
   };
 
+  const [, navigate] = useLocation();
+
   return (
     <div className="p-6 max-w-4xl mx-auto">
+      {/* Botón Atrás */}
+      <button
+        onClick={() => navigate("/dashboard")}
+        className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-4 transition-colors"
+      >
+        <ArrowLeft className="w-4 h-4" />
+        Volver al Panel
+      </button>
       {/* Header */}
       <div className="flex items-center gap-3 mb-2">
         <div className="p-2 rounded-lg bg-red-500/10">
