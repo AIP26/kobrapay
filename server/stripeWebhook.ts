@@ -20,7 +20,7 @@ import {
 } from "./db";
 import { notifyOwner } from "./_core/notification";
 import { createNotification } from "./db";
-import { sendRecurringPaymentEmail, sendPaymentReceipt } from "./_core/email";
+import { sendRecurringPaymentEmail, sendPaymentReceipt, sendVendorPaymentEmail } from "./_core/email";
 import { getVendorSettings } from "./db";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "", {
@@ -176,6 +176,28 @@ export function registerStripeWebhook(app: express.Application) {
                   }
                 } catch (emailErr) {
                   console.error("[Webhook] Error enviando comprobante al pagador:", emailErr);
+                }
+                // Enviar notificación por email al vendedor
+                try {
+                  const vendor = await getUserById(userId);
+                  if (vendor?.email) {
+                    await sendVendorPaymentEmail({
+                      vendorEmail: vendor.email,
+                      vendorName: vendor.name || "Vendedor",
+                      payerName: pi.metadata?.payerName || "Cliente",
+                      payerEmail: pi.metadata?.payerEmail || "",
+                      amount: link.amount,
+                      currency: link.currency || "MXN",
+                      description: link.description || "Pago",
+                      transactionId: pi.id,
+                      cardBrand,
+                      cardLast4,
+                      paidAt: new Date(),
+                    });
+                    console.log(`[Webhook] Notificación de pago enviada al vendedor ${vendor.email}`);
+                  }
+                } catch (vendorEmailErr) {
+                  console.error("[Webhook] Error enviando notificación al vendedor:", vendorEmailErr);
                 }
               }
             }

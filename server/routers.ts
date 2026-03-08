@@ -91,6 +91,7 @@ import {
   updateAttendanceRecord,
   deleteAttendanceRecord,
   createAbsenceRecord,
+  getUserByOpenId,
 } from "./db";
 import { COOKIE_NAME } from "@shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
@@ -98,7 +99,8 @@ import { systemRouter } from "./_core/systemRouter";
 import { isSuperAdmin, protectedProcedure, publicProcedure, router } from "./_core/trpc";
 import { securityRouter } from "./routers/security";
 import { notifyOwner } from "./_core/notification";
-import { sendOtpEmail, sendPaymentReceipt, sendWelcomeEmail, sendInvoiceEmail, sendRefundNotification, sendSubscriptionInviteEmail } from "./_core/email";
+import { sendOtpEmail, sendPaymentReceipt, sendWelcomeEmail, sendInvoiceEmail, sendRefundNotification, sendSubscriptionInviteEmail, sendNewRegistrationEmail } from "./_core/email";
+import { ENV } from "./_core/env";
 import { storagePut } from "./storage";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "", {
@@ -191,13 +193,25 @@ export const appRouter = router({
           passwordHash,
           lastSignedIn: new Date(),
         });
-        // Notificar al superadmin de nuevo registro pendiente
+        // Notificar al superadmin de nuevo registro pendiente (push + email)
         try {
           await notifyOwner({
             title: `👤 Nuevo registro pendiente: ${input.name}`,
             content: `${input.name} (${input.email}) se registró en KobraPay y está esperando aprobación. Ve a Registros para aprobar o rechazar la cuenta.`,
           });
         } catch { /* no bloquear el registro si la notificación falla */ }
+        // Enviar email al owner
+        try {
+          const owner = await getUserByOpenId(ENV.ownerOpenId);
+          if (owner?.email) {
+            await sendNewRegistrationEmail({
+              ownerEmail: owner.email,
+              newUserName: input.name,
+              newUserEmail: input.email,
+              registeredAt: new Date(),
+            });
+          }
+        } catch { /* no bloquear el registro si el email falla */ }
         return { success: true, message: 'Solicitud enviada. El equipo de KobraPay revisará tu cuenta y te notificará por email.' };
       }),
 

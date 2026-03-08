@@ -1060,3 +1060,121 @@ export async function sendSubscriptionInviteEmail(data: {
     return false;
   }
 }
+
+// ─── Notificación de pago al vendedor ────────────────────────────────────────
+export async function sendVendorPaymentEmail(data: {
+  vendorEmail: string;
+  vendorName: string;
+  payerName: string;
+  payerEmail: string;
+  amount: string | number;
+  currency: string;
+  description: string;
+  transactionId: string;
+  cardBrand?: string | null;
+  cardLast4?: string | null;
+  paidAt: Date;
+}): Promise<boolean> {
+  const resend = getResend();
+  if (!resend) return false;
+  const amountFormatted = new Intl.NumberFormat("es-MX", { style: "currency", currency: data.currency || "MXN" }).format(parseFloat(String(data.amount)));
+  const dateFormatted = new Intl.DateTimeFormat("es-MX", { dateStyle: "full", timeStyle: "short", timeZone: "America/Mexico_City" }).format(data.paidAt);
+  const cardInfo = data.cardBrand && data.cardLast4 ? `${data.cardBrand.charAt(0).toUpperCase() + data.cardBrand.slice(1)} \u2022\u2022\u2022\u2022 ${data.cardLast4}` : "Tarjeta de cr\u00e9dito/d\u00e9bito";
+  const html = `<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>Pago recibido</title></head>
+<body style="margin:0;padding:0;background:#f4f4f5;font-family:'Helvetica Neue',Arial,sans-serif;">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f4f5;padding:40px 0;"><tr><td align="center">
+<table width="600" cellpadding="0" cellspacing="0" style="background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.08);">
+<tr><td style="background:linear-gradient(135deg,#00c853,#00bcd4);padding:28px 40px;">
+  <p style="margin:0;color:#fff;font-size:13px;opacity:0.85;">KobraPay</p>
+  <h1 style="margin:6px 0 0;color:#fff;font-size:26px;font-weight:800;">\uD83D\uDCB0 Pago recibido</h1>
+</td></tr>
+<tr><td style="padding:32px 40px;">
+  <p style="color:#374151;font-size:15px;margin:0 0 24px;">Hola <strong>${data.vendorName}</strong>, recibiste un nuevo pago en KobraPay.</p>
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;margin-bottom:24px;"><tr><td style="text-align:center;padding:20px;">
+    <p style="margin:0;color:#15803d;font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:1px;">Monto recibido</p>
+    <p style="margin:8px 0 0;color:#15803d;font-size:40px;font-weight:900;">${amountFormatted}</p>
+  </td></tr></table>
+  <table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #e5e7eb;border-radius:10px;overflow:hidden;margin-bottom:24px;">
+    <tr><td style="background:#f9fafb;padding:10px 16px;border-bottom:1px solid #e5e7eb;"><p style="margin:0;color:#6b7280;font-size:12px;font-weight:600;text-transform:uppercase;">Detalles del pago</p></td></tr>
+    <tr><td style="padding:0 16px;"><table width="100%" cellpadding="0" cellspacing="0">
+      <tr><td style="padding:10px 0;border-bottom:1px solid #f3f4f6;color:#6b7280;font-size:13px;">Pagador</td><td style="padding:10px 0;border-bottom:1px solid #f3f4f6;text-align:right;color:#111827;font-size:13px;font-weight:600;">${data.payerName}</td></tr>
+      <tr><td style="padding:10px 0;border-bottom:1px solid #f3f4f6;color:#6b7280;font-size:13px;">Email</td><td style="padding:10px 0;border-bottom:1px solid #f3f4f6;text-align:right;color:#111827;font-size:13px;">${data.payerEmail}</td></tr>
+      <tr><td style="padding:10px 0;border-bottom:1px solid #f3f4f6;color:#6b7280;font-size:13px;">Concepto</td><td style="padding:10px 0;border-bottom:1px solid #f3f4f6;text-align:right;color:#111827;font-size:13px;">${data.description}</td></tr>
+      <tr><td style="padding:10px 0;border-bottom:1px solid #f3f4f6;color:#6b7280;font-size:13px;">M\u00e9todo</td><td style="padding:10px 0;border-bottom:1px solid #f3f4f6;text-align:right;color:#111827;font-size:13px;">${cardInfo}</td></tr>
+      <tr><td style="padding:10px 0;border-bottom:1px solid #f3f4f6;color:#6b7280;font-size:13px;">Fecha</td><td style="padding:10px 0;border-bottom:1px solid #f3f4f6;text-align:right;color:#111827;font-size:13px;">${dateFormatted}</td></tr>
+      <tr><td style="padding:10px 0;color:#6b7280;font-size:13px;">ID transacci\u00f3n</td><td style="padding:10px 0;text-align:right;color:#9ca3af;font-size:11px;font-family:monospace;">${data.transactionId.slice(0, 24)}...</td></tr>
+    </table></td></tr>
+  </table>
+  <div style="text-align:center;margin-top:24px;">
+    <a href="https://kobrapay.mx/dashboard/sales" style="display:inline-block;background:#00c853;color:#fff;font-weight:700;font-size:15px;padding:14px 36px;border-radius:10px;text-decoration:none;">Ver en mi panel \u2192</a>
+  </div>
+</td></tr>
+<tr><td style="background:#1a1a2e;padding:20px 40px;text-align:center;">
+  <p style="margin:0;color:#9ca3af;font-size:12px;">Procesado por <strong style="color:#00c853;">KobraPay</strong> \u00b7 kobrapay.mx</p>
+</td></tr>
+</table></td></tr></table></body></html>`;
+  try {
+    const { error } = await resend.emails.send({
+      from: `KobraPay <${ENV.fromEmail}>`,
+      to: data.vendorEmail,
+      subject: `\uD83D\uDCB0 Pago recibido: ${amountFormatted} de ${data.payerName}`,
+      html,
+    });
+    if (error) { console.error("[Email] Error al enviar notificaci\u00f3n al vendedor:", error); return false; }
+    return true;
+  } catch (err) {
+    console.error("[Email] Excepci\u00f3n al enviar notificaci\u00f3n al vendedor:", err);
+    return false;
+  }
+}
+
+// ─── Email de nuevo registro al superadmin ───────────────────────────────────
+export async function sendNewRegistrationEmail(data: {
+  ownerEmail: string;
+  newUserName: string;
+  newUserEmail: string;
+  registeredAt: Date;
+}): Promise<boolean> {
+  const resend = getResend();
+  if (!resend) return false;
+  const dateFormatted = new Intl.DateTimeFormat("es-MX", { dateStyle: "full", timeStyle: "short", timeZone: "America/Mexico_City" }).format(data.registeredAt);
+  const html = `<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>Nuevo registro</title></head>
+<body style="margin:0;padding:0;background:#f4f4f5;font-family:'Helvetica Neue',Arial,sans-serif;">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f4f5;padding:40px 0;"><tr><td align="center">
+<table width="600" cellpadding="0" cellspacing="0" style="background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.08);">
+<tr><td style="background:linear-gradient(135deg,#1a1a2e,#0f3460);padding:28px 40px;">
+  <p style="margin:0;color:#00c853;font-size:13px;font-weight:700;">KobraPay \u00b7 Admin</p>
+  <h1 style="margin:6px 0 0;color:#fff;font-size:24px;font-weight:800;">\uD83D\uDC64 Nuevo registro pendiente</h1>
+</td></tr>
+<tr><td style="padding:32px 40px;">
+  <p style="color:#374151;font-size:15px;margin:0 0 20px;">Un nuevo usuario se ha registrado en KobraPay y est\u00e1 esperando aprobaci\u00f3n.</p>
+  <table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #e5e7eb;border-radius:10px;overflow:hidden;margin-bottom:24px;">
+    <tr><td style="background:#f9fafb;padding:10px 16px;border-bottom:1px solid #e5e7eb;"><p style="margin:0;color:#6b7280;font-size:12px;font-weight:600;text-transform:uppercase;">Datos del solicitante</p></td></tr>
+    <tr><td style="padding:0 16px;"><table width="100%" cellpadding="0" cellspacing="0">
+      <tr><td style="padding:10px 0;border-bottom:1px solid #f3f4f6;color:#6b7280;font-size:13px;">Nombre</td><td style="padding:10px 0;border-bottom:1px solid #f3f4f6;text-align:right;color:#111827;font-size:13px;font-weight:600;">${data.newUserName}</td></tr>
+      <tr><td style="padding:10px 0;border-bottom:1px solid #f3f4f6;color:#6b7280;font-size:13px;">Email</td><td style="padding:10px 0;border-bottom:1px solid #f3f4f6;text-align:right;color:#111827;font-size:13px;">${data.newUserEmail}</td></tr>
+      <tr><td style="padding:10px 0;color:#6b7280;font-size:13px;">Fecha</td><td style="padding:10px 0;text-align:right;color:#111827;font-size:13px;">${dateFormatted}</td></tr>
+    </table></td></tr>
+  </table>
+  <div style="text-align:center;margin-top:24px;">
+    <a href="https://kobrapay.mx/dashboard/registrations" style="display:inline-block;background:#00c853;color:#fff;font-weight:700;font-size:15px;padding:14px 36px;border-radius:10px;text-decoration:none;">Revisar solicitud \u2192</a>
+  </div>
+</td></tr>
+<tr><td style="background:#1a1a2e;padding:20px 40px;text-align:center;">
+  <p style="margin:0;color:#9ca3af;font-size:12px;">Panel de administraci\u00f3n de <strong style="color:#00c853;">KobraPay</strong> \u00b7 kobrapay.mx</p>
+</td></tr>
+</table></td></tr></table></body></html>`;
+  try {
+    const { error } = await resend.emails.send({
+      from: `KobraPay Admin <${ENV.fromEmail}>`,
+      to: data.ownerEmail,
+      subject: `\uD83D\uDC64 Nuevo registro: ${data.newUserName} espera aprobaci\u00f3n`,
+      html,
+    });
+    if (error) { console.error("[Email] Error al enviar notificaci\u00f3n de registro:", error); return false; }
+    return true;
+  } catch (err) {
+    console.error("[Email] Excepci\u00f3n al enviar notificaci\u00f3n de registro:", err);
+    return false;
+  }
+}
