@@ -742,7 +742,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   };
 
   return (
-    <div className="flex h-screen bg-gray-50 overflow-hidden">
+    <div className="flex h-screen bg-[#0a0f1e] overflow-hidden">
       {/* Barra de impersonación — visible cuando superadmin está viendo como cliente */}
       <ImpersonationBar />
       {/* Desktop Sidebar — altura fija h-screen */}
@@ -763,10 +763,10 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       {/* Main Content */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         {/* Top Bar */}
-        <header className="h-14 flex items-center gap-3 px-4 bg-white border-b border-gray-200 flex-shrink-0">
+        <header className="h-14 flex items-center gap-3 px-4 bg-[#0d1526] border-b border-[#1e2d4a] flex-shrink-0">
           <button
             onClick={() => setSidebarOpen(true)}
-            className="lg:hidden text-gray-500 hover:text-gray-700 transition-colors"
+            className="lg:hidden text-gray-400 hover:text-gray-200 transition-colors"
           >
             <Menu className="w-5 h-5" />
           </button>
