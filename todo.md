@@ -1071,3 +1071,10 @@
 - [ ] Email de bienvenida al registrarse en KobraPay
 - [ ] Email de recibo profesional con logo KobraPay al completar pago
 - [ ] Mejorar landing page con precios/planes y CTA más agresivo
+
+## Correcciones y Mejoras para Lanzamiento (Mar 2026)
+- [ ] Corregir nombre "Procesador de Pagos" → "KobraPay" en pantalla de login OAuth
+- [ ] Corregir ícono en pantalla de login OAuth (logo KobraPay)
+- [ ] Página de onboarding para clientes nuevos aprobados (guía paso a paso)
+- [ ] Notificaciones email al owner para nuevos registros y pagos importantes
+- [ ] Cambiar todos los botones de login/CTA para apuntar a /login (propio de KobraPay) en lugar del OAuth de Manus

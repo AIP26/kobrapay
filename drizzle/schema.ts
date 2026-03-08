@@ -39,6 +39,7 @@ export const users = mysqlTable("users", {
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
   lastSignedIn: timestamp("lastSignedIn").defaultNow().notNull(),
   onboardingCompleted: boolean("onboardingCompleted").default(false).notNull(),
+  welcomeShown: boolean("welcomeShown").default(false).notNull(),
 });
 
 export type User = typeof users.$inferSelect;

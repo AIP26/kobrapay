@@ -6392,6 +6392,16 @@ Responde SOLO con JSON válido:
         }
         return { success: true };
       }),
+
+    markWelcomeShown: protectedProcedure.mutation(async ({ ctx }) => {
+      const { getDb } = await import("./db");
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+      const { users } = await import("../drizzle/schema");
+      const { eq } = await import("drizzle-orm");
+      await db.update(users).set({ welcomeShown: true }).where(eq(users.id, ctx.user.id));
+      return { success: true };
+    }),
   }),
 
   // ─────────────────────────────────────────────────────────────────────────

@@ -624,7 +624,7 @@ export default function Home() {
             </div>
             <div className="flex flex-col sm:flex-row gap-2.5">
               <Button size="sm" asChild className="bg-emerald-500 hover:bg-emerald-400 text-white px-6 h-11 text-sm font-bold shadow-lg shadow-emerald-500/20">
-                <a href={getLoginUrl("/complete-profile")}>Crear cuenta gratis <ArrowRight className="w-3.5 h-3.5 ml-1.5" /></a>
+                <a href="/register">Crear cuenta gratis <ArrowRight className="w-3.5 h-3.5 ml-1.5" /></a>
               </Button>
               <Button size="sm" variant="outline" asChild className="px-6 h-11 border-white/20 text-white hover:bg-white/10 text-sm">
                 <a href="#simulador">Ver mis comisiones</a>
@@ -681,7 +681,7 @@ export default function Home() {
                     Ingresa a tu panel con tu cuenta existente.
                   </p>
                   <a
-                    href={getLoginUrl("/dashboard")}
+                    href="/login"
                     className="w-full flex items-center justify-center gap-2 bg-emerald-500 hover:bg-emerald-400 text-white font-semibold py-2.5 px-5 rounded-lg transition-colors mb-3 text-sm"
                   >
                     <Shield className="w-3.5 h-3.5" />
@@ -689,7 +689,7 @@ export default function Home() {
                   </a>
                   <div className="flex items-center gap-2 my-3">
                     <div className="flex-1 h-px bg-white/10" />
-                    <span className="text-xs text-gray-600">Acceso seguro con OAuth</span>
+                    <span className="text-xs text-gray-600">Acceso seguro</span>
                     <div className="flex-1 h-px bg-white/10" />
                   </div>
                   <div className="space-y-2">
@@ -714,7 +714,7 @@ export default function Home() {
                     Crea tu cuenta y empieza a cobrar en minutos.
                   </p>
                   <a
-                    href={getLoginUrl("/complete-profile")}
+                    href="/register"
                     className="w-full flex items-center justify-center gap-2 bg-emerald-500 hover:bg-emerald-400 text-white font-semibold py-2.5 px-5 rounded-lg transition-colors mb-3 text-sm"
                   >
                     <ArrowRight className="w-3.5 h-3.5" />
@@ -773,7 +773,7 @@ export default function Home() {
             ))}
           </div>
           <div className="text-center mt-10">
-            <a href={getLoginUrl("/complete-profile")} className="inline-flex items-center gap-2 bg-emerald-500 hover:bg-emerald-400 text-white font-bold py-3 px-8 rounded-2xl transition-colors shadow-lg shadow-emerald-500/20">
+            <a href="/register" className="inline-flex items-center gap-2 bg-emerald-500 hover:bg-emerald-400 text-white font-bold py-3 px-8 rounded-2xl transition-colors shadow-lg shadow-emerald-500/20">
               Empezar ahora — es gratis <ArrowRight className="w-4 h-4" />
             </a>
           </div>
@@ -852,7 +852,7 @@ export default function Home() {
           <p className="text-gray-400 mb-8 text-sm leading-relaxed">Crea tu cuenta en 5 minutos y genera tu primer enlace de pago hoy mismo.<br />Sin hardware, sin contratos, sin mensualidad.</p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <Button size="lg" asChild className="bg-emerald-500 hover:bg-emerald-400 text-white text-base px-10 h-12 font-bold shadow-xl shadow-emerald-500/25">
-              <a href={getLoginUrl("/complete-profile")}>Crear cuenta gratis <ArrowRight className="w-4 h-4 ml-2" /></a>
+              <a href="/register">Crear cuenta gratis <ArrowRight className="w-4 h-4 ml-2" /></a>
             </Button>
             <Button size="lg" variant="outline" asChild className="h-12 px-8 border-white/20 text-white hover:bg-white/10">
               <a href="mailto:soporte@kobrapay.mx">Hablar con ventas</a>

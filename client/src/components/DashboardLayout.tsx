@@ -602,6 +602,20 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   // isSuperAdmin y role del usuario (disponible desde auth.me)
   const userRole = (user as Record<string, unknown>)?.role as string | undefined;
   const userIsSuperAdmin = (user as Record<string, unknown>)?.isSuperAdmin === true;
+  // Redirigir al welcome screen si es cliente admin recién aprobado y no ha visto la bienvenida
+  useEffect(() => {
+    if (
+      isAuthenticated &&
+      !loading &&
+      userRole === 'admin' &&
+      !userIsSuperAdmin &&
+      (user as Record<string, unknown>)?.welcomeShown === false &&
+      location !== "/welcome"
+    ) {
+      window.location.href = "/welcome";
+    }
+  }, [isAuthenticated, loading, user, userRole, userIsSuperAdmin, location]);
+
   // Redirigir a /onboarding si no ha completado la encuesta
   // EXCLUIR: superadmin, asistente, admin
   useEffect(() => {

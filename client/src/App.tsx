@@ -59,6 +59,7 @@ import AssistantAdvisor from "./pages/AssistantAdvisor";
 import AdminAdvisor from "./pages/AdminAdvisor";
 import AssociateDashboard from "./pages/AssociateDashboard";
 import OnboardingSurvey from "./pages/OnboardingSurvey";
+import Welcome from "./pages/Welcome";
 import Support from "./pages/Support";
 import Brochure from "./pages/Brochure";
 import Transfers from "./pages/Transfers";
@@ -143,6 +144,7 @@ function Router() {
       <Route path="/dashboard/stripe-connect" component={StripeConnect} />
       <Route path="/dashboard/connect" component={StripeConnect} />
       <Route path="/onboarding" component={OnboardingSurvey} />
+      <Route path="/welcome" component={Welcome} />
       <Route path="/dashboard/advisor" component={Advisor} />
       <Route path="/dashboard/assistant-advisor" component={AssistantAdvisor} />
       <Route path="/dashboard/business-advisor" component={AdminAdvisor} />
