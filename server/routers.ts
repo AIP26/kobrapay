@@ -8414,6 +8414,75 @@ Responde SIEMPRE en español mexicano, de forma amigable, clara y práctica. Si 
     }),
   }),
 
+  // ─── Registro Público de Asociados ────────────────────────────────────────
+  associatePublic: router({
+    register: publicProcedure
+      .input(z.object({
+        name: z.string().min(2).max(100),
+        email: z.string().email(),
+        password: z.string().min(8).max(128),
+        phone: z.string().min(10).max(32),
+        city: z.string().min(2).max(100),
+        state: z.string().min(2).max(100),
+        bio: z.string().max(500).optional(),
+        experience: z.string().max(255).optional(),
+        bankName: z.string().max(100).optional(),
+        clabe: z.string().length(18).optional(),
+        bankAccountHolder: z.string().max(255).optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const bcrypt = await import('bcryptjs');
+        const crypto = await import('crypto');
+        const { getDb } = await import('./db');
+        const db = await getDb();
+        if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
+        const { users, associateProfiles } = await import('../drizzle/schema');
+        const { eq } = await import('drizzle-orm');
+        const existing = await db.select({ id: users.id })
+          .from(users).where(eq(users.email, input.email)).limit(1);
+        if (existing.length > 0) {
+          throw new TRPCError({ code: 'CONFLICT', message: 'Ya existe una cuenta con este correo electrónico' });
+        }
+        const passwordHash = await bcrypt.hash(input.password, 12);
+        const openId = `email_${crypto.randomBytes(16).toString('hex')}`;
+        await db.insert(users).values({
+          openId,
+          name: input.name,
+          email: input.email,
+          loginMethod: 'email',
+          role: 'associate',
+          accountStatus: 'active',
+          isActive: true,
+          onboardingCompleted: false,
+          emailVerified: false,
+          passwordHash,
+          lastSignedIn: new Date(),
+        });
+        const newUser = await db.select({ id: users.id })
+          .from(users).where(eq(users.email, input.email)).limit(1);
+        if (newUser.length > 0) {
+          await db.insert(associateProfiles).values({
+            userId: newUser[0].id,
+            phone: input.phone,
+            city: input.city,
+            state: input.state,
+            bio: input.bio,
+            experience: input.experience,
+            bankName: input.bankName,
+            clabe: input.clabe,
+            bankAccountHolder: input.bankAccountHolder,
+          });
+        }
+        try {
+          await notifyOwner({
+            title: `🤝 Nuevo asociado: ${input.name}`,
+            content: `${input.name} (${input.email}) se registró como asociado desde ${input.city}, ${input.state}.`,
+          });
+        } catch { /* no bloquear */ }
+        return { success: true, message: 'Cuenta de asociado creada. Ya puedes iniciar sesión.' };
+      }),
+  }),
+
   // ─── Lista Negra de Pagadores ────────────────────────────────────────────
   blacklist: router({
     list: protectedProcedure.query(async ({ ctx }) => {
@@ -8446,7 +8515,5 @@ Responde SIEMPRE en español mexicano, de forma amigable, clara y práctica. Si 
         return { success: true };
       }),
   }),
-
 });
 export type AppRouter = typeof appRouter;
-

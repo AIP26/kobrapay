@@ -1357,3 +1357,74 @@ export const payerBlacklist = mysqlTable("payer_blacklist", {
 });
 export type PayerBlacklist = typeof payerBlacklist.$inferSelect;
 export type InsertPayerBlacklist = typeof payerBlacklist.$inferInsert;
+
+// ─── API Keys (para integración de e-commerce) ────────────────────────────────
+/**
+ * API Keys para que los negocios integren KobraPay en sus plataformas externas
+ */
+export const apiKeys = mysqlTable("api_keys", {
+  id: int("id").primaryKey().autoincrement(),
+  userId: int("userId").notNull().references(() => users.id),
+  name: varchar("name", { length: 255 }).notNull(),
+  keyHash: varchar("keyHash", { length: 255 }).notNull().unique(),
+  keyPrefix: varchar("keyPrefix", { length: 20 }).notNull(),
+  environment: mysqlEnum("environment", ["live", "test"]).default("live").notNull(),
+  permissions: varchar("permissions", { length: 255 }).default("checkout").notNull(),
+  lastUsedAt: timestamp("lastUsedAt"),
+  requestCount: int("requestCount").default(0).notNull(),
+  isActive: boolean("isActive").default(true).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type ApiKey = typeof apiKeys.$inferSelect;
+export type InsertApiKey = typeof apiKeys.$inferInsert;
+
+// ─── API Checkout Sessions ─────────────────────────────────────────────────────
+export const apiCheckoutSessions = mysqlTable("api_checkout_sessions", {
+  id: int("id").primaryKey().autoincrement(),
+  apiKeyId: int("apiKeyId").notNull().references(() => apiKeys.id),
+  userId: int("userId").notNull().references(() => users.id),
+  sessionId: varchar("sessionId", { length: 100 }).notNull().unique(),
+  amount: int("amount").notNull(),
+  currency: varchar("currency", { length: 10 }).default("MXN").notNull(),
+  description: varchar("description", { length: 500 }).notNull(),
+  customerEmail: varchar("customerEmail", { length: 320 }),
+  customerName: varchar("customerName", { length: 255 }),
+  successUrl: varchar("successUrl", { length: 1000 }).notNull(),
+  cancelUrl: varchar("cancelUrl", { length: 1000 }).notNull(),
+  checkoutUrl: varchar("checkoutUrl", { length: 1000 }),
+  metadata: text("metadata"),
+  status: mysqlEnum("status", ["pending", "completed", "expired", "cancelled"]).default("pending").notNull(),
+  transactionId: int("transactionId").references(() => transactions.id),
+  expiresAt: timestamp("expiresAt").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type ApiCheckoutSession = typeof apiCheckoutSessions.$inferSelect;
+export type InsertApiCheckoutSession = typeof apiCheckoutSessions.$inferInsert;
+
+// ─── Perfil Profesional del Asociado ─────────────────────────────────────────
+/**
+ * Datos profesionales y bancarios del asociado para liquidación de comisiones
+ */
+export const associateProfiles = mysqlTable("associate_profiles", {
+  id: int("id").primaryKey().autoincrement(),
+  userId: int("userId").notNull().unique().references(() => users.id),
+  // Datos personales
+  phone: varchar("phone", { length: 32 }),
+  city: varchar("city", { length: 100 }),
+  state: varchar("state", { length: 100 }),
+  bio: text("bio"),
+  experience: varchar("experience", { length: 255 }),
+  // Datos bancarios para pago de comisiones
+  bankName: varchar("bankName", { length: 100 }),
+  clabe: varchar("clabe", { length: 18 }),
+  bankAccountHolder: varchar("bankAccountHolder", { length: 255 }),
+  // Estadísticas
+  totalClientsReferred: int("totalClientsReferred").default(0).notNull(),
+  totalCommissionEarned: decimal("totalCommissionEarned", { precision: 14, scale: 2 }).default("0.00").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type AssociateProfile = typeof associateProfiles.$inferSelect;
+export type InsertAssociateProfile = typeof associateProfiles.$inferInsert;

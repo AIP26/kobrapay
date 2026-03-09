@@ -114,11 +114,17 @@ export default function LoginEmail() {
               </Button>
             </form>
 
-            <div className="mt-6 pt-5 border-t border-gray-700">
+            <div className="mt-6 pt-5 border-t border-gray-700 space-y-3">
               <p className="text-center text-gray-400 text-sm">
                 ¿No tienes cuenta?{" "}
                 <Link href="/register" className="text-cyan-400 hover:text-cyan-300 font-medium transition-colors">
                   Regístrate gratis
+                </Link>
+              </p>
+              <p className="text-center text-gray-500 text-xs">
+                ¿Quieres ser asociado?{" "}
+                <Link href="/register-associate" className="text-emerald-400 hover:text-emerald-300 font-medium transition-colors">
+                  Únete como asociado →
                 </Link>
               </p>
             </div>

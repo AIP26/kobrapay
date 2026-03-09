@@ -174,12 +174,13 @@ function FeatureModal({ feature, onClose }: { feature: typeof FEATURES[0]; onClo
 const KOBRAPAY_LOGO = "https://d2xsxph8kpxj0f.cloudfront.net/310519663381362445/Tm7GPbTEGgvmgj5v2qy4Z4/kobrapay_logo_pro_white_fd2cc62e.png";
 const KOBRAPAY_ICON = "https://d2xsxph8kpxj0f.cloudfront.net/310519663381362445/Tm7GPbTEGgvmgj5v2qy4Z4/kobrapay_logo_pro_white_fd2cc62e.png";
 
-// Planes todo incluido (KobraPay + Stripe + IVA ya absorbidos en el %)
+// Planes KobraPay — tasa base SIN IVA + cargo fijo por transacción
+// Stripe cobra 3.6% + $3 MXN; KobraPay cubre eso + su margen + comisión de asociado (0.30%)
 const VOLUME_TIERS = [
-  { label: "Express", min: 0, max: 50000, totalRate: 3.5, color: "emerald" },
-  { label: "Connect", min: 50001, max: 150000, totalRate: 3.1, color: "cyan" },
-  { label: "Custom", min: 150001, max: 500000, totalRate: 2.7, color: "violet" },
-  { label: "Enterprise", min: 500001, max: 9999999, totalRate: 2.5, color: "amber" },
+  { label: "Starter",    min: 0,       max: 50000,   totalRate: 4.5, fixedFee: 5, color: "emerald" },
+  { label: "Pro",        min: 50001,   max: 150000,  totalRate: 4.2, fixedFee: 5, color: "cyan" },
+  { label: "Business",  min: 150001,  max: 500000,  totalRate: 3.9, fixedFee: 4, color: "violet" },
+  { label: "Enterprise",min: 500001,  max: 9999999, totalRate: 3.5, fixedFee: 0, color: "amber" },
 ];
 
 const FAQ_ITEMS = [
@@ -294,12 +295,12 @@ function PublicQuoteCalculator() {
   const simSymbol = countryData?.currencySymbol || "$";
   const simVatRate = countryData?.taxRate ?? 0.16; // IVA del país
   const vatLabel = countryData?.taxName || "IVA";
-  // KobraPay: tasa del plan + IVA encima (modelo estándar México, igual que Mercado Pago, Clip, etc.)
-  // tier.totalRate es la tasa base SIN IVA (ej. Express 3.5%, Connect 3.1%, Custom 2.7%, Enterprise 2.5%)
+  // KobraPay: tasa del plan + cargo fijo + IVA encima (igual que Clip, Conekta, Mercado Pago)
   const kpBaseRate = tier.totalRate; // tasa base del plan (sin IVA)
-  const kpCommission = singleAmount * (kpBaseRate / 100); // comisión base
+  const kpFixedFee = (tier as any).fixedFee ?? 0; // cargo fijo en MXN
+  const kpCommission = singleAmount * (kpBaseRate / 100) + kpFixedFee; // comisión base + fijo
   const kpVatAmount = kpCommission * simVatRate; // IVA sobre la comisión
-  const kpNote = `${kpBaseRate.toFixed(1)}% + ${vatLabel}`;
+  const kpNote = kpFixedFee > 0 ? `${kpBaseRate.toFixed(1)}% + $${kpFixedFee} + ${vatLabel}` : `${kpBaseRate.toFixed(1)}% + ${vatLabel}`;
   const totalFees = kpCommission + kpVatAmount; // comisión + IVA
   const netReceived = singleAmount - totalFees;
   // Formatear moneda del país
@@ -308,9 +309,11 @@ function PublicQuoteCalculator() {
   // Competencia: tasa base + cargo fijo + IVA (calculado correctamente)
   // El IVA se aplica sobre (tasa% * monto + cargo fijo)
   const competitors = [
-    { name: "Mercado Pago", baseRate: 3.29, fixedBase: 0, note: "3.29% + IVA" },
-    { name: "PayPal",       baseRate: 3.5,  fixedBase: 4, note: "3.5% + $4 + IVA" },
-    { name: "Clip",         baseRate: 3.6,  fixedBase: 0, note: "3.6% + IVA" },
+    { name: "Mercado Pago",   baseRate: 3.29, fixedBase: 0,   note: "3.29% + IVA" },
+    { name: "Clip",           baseRate: 3.60, fixedBase: 0,   note: "3.6% + IVA" },
+    { name: "PayPal MX",      baseRate: 3.50, fixedBase: 4,   note: "3.5% + $4 + IVA" },
+    { name: "Conekta",        baseRate: 2.90, fixedBase: 3,   note: "2.9% + $3 + IVA" },
+    { name: "Stripe directo", baseRate: 3.60, fixedBase: 3,   note: "3.6% + $3 + IVA" },
   ];
 
   return (
@@ -351,7 +354,7 @@ function PublicQuoteCalculator() {
                 tier.color === "cyan" ? "text-cyan-400" :
                 tier.color === "violet" ? "text-violet-400" : "text-amber-400"
               }`}>Plan {tier.label}</span>
-              <span className="text-white font-black text-2xl">{tier.totalRate}%</span>
+              <span className="text-white font-black text-2xl">{tier.totalRate}%{(tier as any).fixedFee > 0 ? ` + $${(tier as any).fixedFee}` : ''}</span>
             </div>
             <p className="text-gray-400 text-xs">Comisión KobraPay para este volumen mensual</p>
             {nextTier && (
@@ -592,7 +595,7 @@ export default function Home() {
             <div className="flex items-center gap-2 mb-5">
               <span className="inline-flex items-center gap-1.5 bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 rounded-full px-3 py-1 text-xs font-semibold">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                Lanzamiento oficial 2025
+                Lanzamiento oficial 2026
               </span>
               <span className="inline-flex items-center gap-1 bg-white/5 text-gray-400 border border-white/10 rounded-full px-3 py-1 text-xs">
                 <Zap className="w-3 h-3 text-yellow-400" />
@@ -857,6 +860,9 @@ export default function Home() {
             <Button size="lg" variant="outline" asChild className="h-12 px-8 border-white/20 text-white hover:bg-white/10">
               <a href="mailto:soporte@kobrapay.mx">Hablar con ventas</a>
             </Button>
+            <Button size="lg" variant="outline" asChild className="h-12 px-8 border-cyan-500/40 text-cyan-400 hover:bg-cyan-500/10">
+              <a href="/register-associate">Ser Asociado</a>
+            </Button>
           </div>
           <div className="mt-8 flex items-center justify-center gap-6 text-xs text-gray-500">
             <span className="flex items-center gap-1.5"><CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" /> Sin mensualidad</span>
@@ -878,11 +884,13 @@ export default function Home() {
             Pagos procesados con Stripe · SSL 256-bit cifrado
           </div>
           <div className="flex items-center gap-3 text-sm text-gray-500">
-            <span>© 2025 KobraPay</span>
+            <span>© 2026 KobraPay</span>
             <span>·</span>
             <Link href="/terminos" className="hover:text-gray-300 transition-colors">Términos de Uso</Link>
             <span>·</span>
             <Link href="/privacidad" className="hover:text-gray-300 transition-colors">Privacidad</Link>
+            <span>·</span>
+            <Link href="/register-associate" className="hover:text-cyan-400 transition-colors">Programa de Asociados</Link>
           </div>
         </div>
       </footer>

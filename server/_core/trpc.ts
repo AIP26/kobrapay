@@ -12,11 +12,13 @@ export const router = t.router;
 export const publicProcedure = t.procedure;
 
 // ─── Helper: check if user is the platform owner (superadmin) ─────────────────
-// El superadmin es ÚNICAMENTE el dueño de la plataforma identificado por OWNER_OPEN_ID.
-// Los clientes con role='admin' son administradores de su propio negocio, NO superadmin.
-export function isSuperAdmin(userOpenId: string, _userRole?: string): boolean {
-  // Solo el dueño real de la plataforma (OWNER_OPEN_ID) es superadmin
+// El superadmin es el dueño de la plataforma (OWNER_OPEN_ID) o cualquier usuario
+// con role='superadmin' en la base de datos.
+export function isSuperAdmin(userOpenId: string, userRole?: string): boolean {
+  // El dueño real de la plataforma (OWNER_OPEN_ID) siempre es superadmin
   if (ENV.ownerOpenId && userOpenId === ENV.ownerOpenId) return true;
+  // También reconocer usuarios con role='superadmin' en la BD
+  if (userRole === 'superadmin') return true;
   return false;
 }
 

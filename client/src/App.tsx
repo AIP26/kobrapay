@@ -40,6 +40,7 @@ import Legal from "./pages/Legal";
 import Colaboradores from "./pages/Colaboradores";
 import LoginEmail from "./pages/LoginEmail";
 import RegisterEmail from "./pages/RegisterEmail";
+import RegisterAssociate from "./pages/RegisterAssociate";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import HR from "./pages/HR";
@@ -168,6 +169,7 @@ function Router() {
       <Route path="/dashboard/colaboradores" component={Colaboradores} />
       <Route path="/login" component={LoginEmail} />
       <Route path="/register" component={RegisterEmail} />
+      <Route path="/register-associate" component={RegisterAssociate} />
       <Route path="/forgot-password" component={ForgotPassword} />
       <Route path="/reset-password" component={ResetPassword} />
       <Route path="/legal" component={Legal} />
