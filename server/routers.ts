@@ -116,10 +116,33 @@ function generateOtpCode(): string {
 
 
 // Helper: calcular comisión
-function calculateCommission(amount: number, commissionRate: number) {
-  const commissionAmount = (amount * commissionRate) / 100;
-  const netAmount = amount - commissionAmount;
-  return { commissionAmount, netAmount };
+// Modelo de precios KobraPay (TARIFAS REALES VERIFICADAS):
+//   - Stripe cobra: 3.6% del monto + $3 MXN fijos (tarifa real México, verificada en dashboard Stripe)
+//   - KobraPay cobra: 0.6% del monto + $0.50 MXN fijos + IVA 16% sobre esa parte
+//   - El vendedor recibe: monto - stripe_fee - kobrapay_fee_con_iva
+// Suma efectiva: ~4.2% + $3.50 MXN + IVA sobre la parte KobraPay
+function calculateCommission(
+  amount: number,
+  _commissionRate: number,
+  stripeFeeRate = 3.6,
+  stripeFeeFixed = 3,
+  kobrapayRate = 0.6,
+  kobrapayFixed = 0.50,
+  ivaRate = 16
+) {
+  const stripeFee = parseFloat(((amount * stripeFeeRate) / 100 + stripeFeeFixed).toFixed(2));
+  const kobrapayBase = parseFloat(((amount * kobrapayRate) / 100 + kobrapayFixed).toFixed(2));
+  const kobrapayIva = parseFloat(((kobrapayBase * ivaRate) / 100).toFixed(2));
+  const kobrapayFee = parseFloat((kobrapayBase + kobrapayIva).toFixed(2));
+  const netAmount = parseFloat((amount - stripeFee - kobrapayFee).toFixed(2));
+  return {
+    commissionAmount: kobrapayFee,  // lo que cobra KobraPay (con IVA)
+    kobrapayBase,                   // comisión KobraPay antes de IVA
+    kobrapayIva,                    // IVA sobre comisión KobraPay
+    kobrapayFee,                    // total KobraPay (base + IVA)
+    stripeFee,
+    netAmount,
+  };
 }
 
 export const appRouter = router({
@@ -623,12 +646,31 @@ export const appRouter = router({
         }
 
         // Crear link de onboarding
-        const accountLink = await stripeClient.accountLinks.create({
-          account: accountId,
-          refresh_url: `${input.returnUrl}?connect=refresh`,
-          return_url: `${input.returnUrl}?connect=success`,
-          type: 'account_onboarding',
-        });
+        let accountLink;
+        try {
+          accountLink = await stripeClient.accountLinks.create({
+            account: accountId,
+            refresh_url: `${input.returnUrl}?connect=refresh`,
+            return_url: `${input.returnUrl}?connect=success`,
+            type: 'account_onboarding',
+          });
+        } catch (stripeErr: any) {
+          // Error de perfil de plataforma no configurado en Stripe Dashboard
+          if (
+            stripeErr?.message?.includes('platform-profile') ||
+            stripeErr?.message?.includes('managing losses') ||
+            stripeErr?.code === 'platform_profile_incomplete'
+          ) {
+            throw new TRPCError({
+              code: 'PRECONDITION_FAILED',
+              message: 'PLATFORM_PROFILE_REQUIRED',
+            });
+          }
+          throw new TRPCError({
+            code: 'INTERNAL_SERVER_ERROR',
+            message: stripeErr?.message || 'Error al crear enlace de Stripe Connect',
+          });
+        }
 
         return { url: accountLink.url, accountId };
       }),

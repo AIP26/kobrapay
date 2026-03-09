@@ -1463,3 +1463,24 @@ export const webhookDeliveryLogs = mysqlTable("webhook_delivery_logs", {
 });
 export type WebhookDeliveryLog = typeof webhookDeliveryLogs.$inferSelect;
 export type InsertWebhookDeliveryLog = typeof webhookDeliveryLogs.$inferInsert;
+
+// ─── Planes de Precios (editables por superadmin, reflejados en landing) ──────
+export const pricingPlans = mysqlTable("pricing_plans", {
+  id: int("id").primaryKey().autoincrement(),
+  planKey: varchar("plan_key", { length: 50 }).notNull().unique(),
+  name: varchar("name", { length: 100 }).notNull(),
+  description: varchar("description", { length: 255 }),
+  totalRate: decimal("total_rate", { precision: 5, scale: 2 }).notNull(),
+  fixedFee: decimal("fixed_fee", { precision: 8, scale: 2 }).default("3.50").notNull(),
+  minVolume: int("min_volume").default(0).notNull(),
+  maxVolume: int("max_volume").default(0).notNull(),
+  color: varchar("color", { length: 30 }).default("cyan").notNull(),
+  features: text("features").notNull().default('[]'),
+  badge: varchar("badge", { length: 50 }),
+  sortOrder: int("sort_order").default(0).notNull(),
+  isActive: boolean("is_active").default(true).notNull(),
+  updatedAt: bigint("updated_at", { mode: "number" }).notNull(),
+  updatedBy: int("updated_by"),
+});
+export type PricingPlan = typeof pricingPlans.$inferSelect;
+export type InsertPricingPlan = typeof pricingPlans.$inferInsert;

@@ -79,6 +79,10 @@ export default function CreateLink() {
     netAmount?: number;
     commissionRate?: number;
     commissionAmount?: number;
+    stripeFee?: number;
+    kobrapayBase?: number;
+    kobrapayIva?: number;
+    kobrapayFee?: number;
   } | null>(null);
   const [copied, setCopied] = useState(false);
   const qrRef = useRef<HTMLDivElement>(null);
@@ -99,6 +103,10 @@ export default function CreateLink() {
           netAmount: data.netAmount,
           commissionRate: parseFloat(String(data.commissionRate || 0)),
           commissionAmount: parseFloat(String(data.commissionAmount || 0)),
+          stripeFee: parseFloat(String((data as any).stripeFee || 0)),
+          kobrapayBase: parseFloat(String((data as any).kobrapayBase || 0)),
+          kobrapayIva: parseFloat(String((data as any).kobrapayIva || 0)),
+          kobrapayFee: parseFloat(String((data as any).kobrapayFee || 0)),
         });
         toast.success("¡Enlace de pago creado exitosamente!");
       }
@@ -207,10 +215,13 @@ export default function CreateLink() {
     }));
   }
 
-  const commissionRate = parseFloat(String(settings?.commissionRate || 0));
   const previewAmount = parseFloat(form.amount) || 0;
-  const previewCommission = previewAmount * commissionRate / 100;
-  const previewNet = previewAmount - previewCommission;
+  // Modelo de precios: Stripe 3.6%+$3 MXN (tarifa real México), KobraPay 0.6%+$0.50 MXN + IVA 16%
+  const previewStripeFee = previewAmount > 0 ? parseFloat(((previewAmount * 3.6) / 100 + 3).toFixed(2)) : 0;
+  const previewKobrapayBase = previewAmount > 0 ? parseFloat(((previewAmount * 0.6) / 100 + 0.50).toFixed(2)) : 0;
+  const previewKobrapayIva = parseFloat(((previewKobrapayBase * 16) / 100).toFixed(2));
+  const previewKobrapayFee = parseFloat((previewKobrapayBase + previewKobrapayIva).toFixed(2));
+  const previewNet = parseFloat((previewAmount - previewStripeFee - previewKobrapayFee).toFixed(2));
   const previewUsd = form.usdExchangeRate && parseFloat(form.usdExchangeRate) > 0
     ? (previewAmount / parseFloat(form.usdExchangeRate)).toFixed(2)
     : null;
