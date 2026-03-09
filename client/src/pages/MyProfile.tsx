@@ -173,8 +173,8 @@ export default function MyProfile() {
             disabled={uploadAvatarMutation.isPending}
           >
             {uploadAvatarMutation.isPending
-              ? <Loader2 className="h-6 w-6 text-white animate-spin" />
-              : <Camera className="h-6 w-6 text-white" />
+              ? <Loader2 className="h-6 w-6 text-foreground animate-spin" />
+              : <Camera className="h-6 w-6 text-foreground" />
             }
           </button>
           <input
@@ -490,7 +490,7 @@ function NegocioSection({
               )}
               {uploadingLogo && (
                 <div className="absolute inset-0 bg-black/40 rounded-xl flex items-center justify-center">
-                  <Loader2 className="h-6 w-6 text-white animate-spin" />
+                  <Loader2 className="h-6 w-6 text-foreground animate-spin" />
                 </div>
               )}
             </div>
@@ -810,7 +810,7 @@ const COURSE_CATEGORIES: Record<string, { label: string; emoji: string; color: s
   sales:     { label: "Ventas",            emoji: "📈", color: "bg-green-100 text-green-800" },
   books:     { label: "Libros",            emoji: "📚", color: "bg-yellow-100 text-yellow-800" },
   health:    { label: "Salud & Bienestar", emoji: "🌿", color: "bg-emerald-100 text-emerald-800" },
-  other:     { label: "Otros",             emoji: "🎓", color: "bg-gray-100 text-gray-800" },
+  other:     { label: "Otros",             emoji: "🎓", color: "bg-gray-100 text-foreground" },
 };
 
 // ─── Sección: Perfil Profesional (Cursos Completados) ─────────────────────────
@@ -872,7 +872,7 @@ function CapacitacionesSection() {
                       <span className="text-2xl shrink-0">{cat.emoji}</span>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <h3 className="font-semibold text-gray-900">{course.title}</h3>
+                          <h3 className="font-semibold text-foreground">{course.title}</h3>
                           <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${cat.color}`}>{cat.label}</span>
                           {course.ownerId === null && (
                             <span className="text-xs bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full font-medium">KobraPay</span>
@@ -883,18 +883,18 @@ function CapacitacionesSection() {
                           </span>
                         </div>
                         {course.description && (
-                          <p className="text-gray-500 text-sm mt-1 line-clamp-2">{course.description}</p>
+                          <p className="text-muted-foreground text-sm mt-1 line-clamp-2">{course.description}</p>
                         )}
                         <div className="flex items-center gap-4 mt-2 flex-wrap">
                           {item.completedAt && (
-                            <span className="text-xs text-gray-400">
+                            <span className="text-xs text-muted-foreground">
                               📅 {new Date(item.completedAt).toLocaleDateString("es-MX", {
                                 day: "numeric", month: "long", year: "numeric"
                               })}
                             </span>
                           )}
                           {course.durationMinutes && (
-                            <span className="text-xs text-gray-400">⏱ {course.durationMinutes} min</span>
+                            <span className="text-xs text-muted-foreground">⏱ {course.durationMinutes} min</span>
                           )}
                           {item.evidenceUrl && (
                             <a

@@ -47,9 +47,9 @@ function SectorTemplateApplier() {
             <span className="text-xl leading-none mt-0.5">{tpl.icon}</span>
             <div>
               <p className={`text-xs font-semibold ${
-                selectedTemplate === tpl.id ? "text-emerald-700" : "text-gray-700"
+                selectedTemplate === tpl.id ? "text-emerald-700" : "text-foreground"
               }`}>{tpl.name}</p>
-              <p className="text-xs text-gray-400 mt-0.5 leading-tight line-clamp-2">{tpl.description}</p>
+              <p className="text-xs text-muted-foreground mt-0.5 leading-tight line-clamp-2">{tpl.description}</p>
             </div>
           </button>
         ))}
@@ -57,7 +57,7 @@ function SectorTemplateApplier() {
       {selectedTemplate && (
         <div className="flex gap-3 items-end">
           <div className="flex-1 space-y-1">
-            <Label className="text-xs font-medium text-gray-600">ID del cliente</Label>
+            <Label className="text-xs font-medium text-muted-foreground">ID del cliente</Label>
             <Input
               type="number"
               value={clientId}
@@ -67,7 +67,7 @@ function SectorTemplateApplier() {
             />
           </div>
           <Button
-            className="bg-emerald-600 hover:bg-emerald-700 text-white h-9 px-4 text-sm"
+            className="bg-emerald-600 hover:bg-emerald-700 text-foreground h-9 px-4 text-sm"
             onClick={() => applyMutation.mutate({ clientId: parseInt(clientId), templateId: selectedTemplate })}
             disabled={!clientId || applyMutation.isPending}
           >
@@ -315,7 +315,7 @@ function ModuleAccessAdminInner() {
           <TabsTrigger value="requests" className="flex items-center gap-1.5">
             <Clock className="w-4 h-4" /> Solicitudes
             {pendingRequests.length > 0 && (
-              <Badge className="ml-1 h-5 px-1.5 text-xs bg-amber-500 text-white">{pendingRequests.length}</Badge>
+              <Badge className="ml-1 h-5 px-1.5 text-xs bg-amber-500 text-foreground">{pendingRequests.length}</Badge>
             )}
           </TabsTrigger>
           <TabsTrigger value="active" className="flex items-center gap-1.5">

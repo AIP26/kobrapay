@@ -70,10 +70,10 @@ function AISupportChat() {
       {/* Header */}
       <div className="flex items-center gap-3 p-4 border-b border-gray-100 bg-gradient-to-r from-emerald-50 to-teal-50">
         <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center shadow">
-          <Bot className="w-5 h-5 text-white" />
+          <Bot className="w-5 h-5 text-foreground" />
         </div>
         <div>
-          <h3 className="font-bold text-gray-900">Asistente de Soporte KobraPay</h3>
+          <h3 className="font-bold text-foreground">Asistente de Soporte KobraPay</h3>
           <div className="flex items-center gap-1.5">
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
             <span className="text-xs text-emerald-600 font-medium">En línea · Respuesta inmediata</span>
@@ -92,12 +92,12 @@ function AISupportChat() {
             <div className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 ${
               msg.role === "assistant" ? "bg-emerald-100" : "bg-gray-100"
             }`}>
-              {msg.role === "assistant" ? <Bot className="w-4 h-4 text-emerald-600" /> : <User className="w-4 h-4 text-gray-600" />}
+              {msg.role === "assistant" ? <Bot className="w-4 h-4 text-emerald-600" /> : <User className="w-4 h-4 text-muted-foreground" />}
             </div>
             <div className={`max-w-[80%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed ${
               msg.role === "user"
-                ? "bg-emerald-600 text-white rounded-tr-sm"
-                : "bg-gray-100 text-gray-800 rounded-tl-sm"
+                ? "bg-emerald-600 text-foreground rounded-tr-sm"
+                : "bg-gray-100 text-foreground rounded-tl-sm"
             }`}>
               {msg.content}
             </div>
@@ -150,7 +150,7 @@ function AISupportChat() {
           <Button
             onClick={sendMessage}
             disabled={!input.trim() || loading}
-            className="bg-emerald-600 hover:bg-emerald-700 text-white"
+            className="bg-emerald-600 hover:bg-emerald-700 text-foreground"
             size="icon"
           >
             <Send className="w-4 h-4" />
@@ -205,9 +205,9 @@ function TicketForm({ onSuccess }: { onSuccess: () => void }) {
     <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 space-y-4">
       <div className="flex items-center gap-2">
         <Ticket className="w-5 h-5 text-blue-600" />
-        <h3 className="font-bold text-gray-900">Crear Ticket de Soporte</h3>
+        <h3 className="font-bold text-foreground">Crear Ticket de Soporte</h3>
       </div>
-      <p className="text-sm text-gray-500">Si el asistente IA no pudo resolver tu problema, crea un ticket y nuestro equipo te atenderá.</p>
+      <p className="text-sm text-muted-foreground">Si el asistente IA no pudo resolver tu problema, crea un ticket y nuestro equipo te atenderá.</p>
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-1.5">
@@ -255,7 +255,7 @@ function TicketForm({ onSuccess }: { onSuccess: () => void }) {
         <Button
           type="submit"
           disabled={createMutation.isPending}
-          className="bg-blue-600 hover:bg-blue-700 text-white w-full"
+          className="bg-blue-600 hover:bg-blue-700 text-foreground w-full"
         >
           {createMutation.isPending ? "Enviando..." : "Enviar Ticket"}
         </Button>
@@ -308,9 +308,9 @@ function FeedbackForm({ onSuccess }: { onSuccess: () => void }) {
     <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 space-y-4">
       <div className="flex items-center gap-2">
         <HeartHandshake className="w-5 h-5 text-purple-600" />
-        <h3 className="font-bold text-gray-900">Buzón de Sugerencias</h3>
+        <h3 className="font-bold text-foreground">Buzón de Sugerencias</h3>
       </div>
-      <p className="text-sm text-gray-500">Tu opinión nos ayuda a mejorar KobraPay. Comparte sugerencias, reporta errores o solicita nuevas funciones.</p>
+      <p className="text-sm text-muted-foreground">Tu opinión nos ayuda a mejorar KobraPay. Comparte sugerencias, reporta errores o solicita nuevas funciones.</p>
 
       <form onSubmit={handleSubmit} className="space-y-4">
         {/* Tipo */}
@@ -327,10 +327,10 @@ function FeedbackForm({ onSuccess }: { onSuccess: () => void }) {
                   className={`flex items-center gap-2 p-3 rounded-xl border text-left transition-all text-sm ${
                     form.type === t.value
                       ? "bg-purple-50 border-purple-300 text-purple-800"
-                      : "bg-gray-50 border-gray-200 text-gray-600 hover:border-gray-300"
+                      : "bg-gray-50 border-gray-200 text-muted-foreground hover:border-gray-300"
                   }`}
                 >
-                  <Icon className={`w-4 h-4 flex-shrink-0 ${form.type === t.value ? "text-purple-600" : "text-gray-400"}`} />
+                  <Icon className={`w-4 h-4 flex-shrink-0 ${form.type === t.value ? "text-purple-600" : "text-muted-foreground"}`} />
                   <span className="font-medium text-xs">{t.label}</span>
                 </button>
               );
@@ -349,15 +349,15 @@ function FeedbackForm({ onSuccess }: { onSuccess: () => void }) {
                 onClick={() => setForm(p => ({ ...p, rating: p.rating === n ? 0 : n }))}
                 className={`w-10 h-10 rounded-xl border-2 transition-all font-bold text-sm ${
                   form.rating >= n
-                    ? "bg-amber-400 border-amber-400 text-white"
-                    : "bg-gray-50 border-gray-200 text-gray-400 hover:border-amber-200"
+                    ? "bg-amber-400 border-amber-400 text-foreground"
+                    : "bg-gray-50 border-gray-200 text-muted-foreground hover:border-amber-200"
                 }`}
               >
                 <Star className={`w-4 h-4 mx-auto ${form.rating >= n ? "fill-white" : ""}`} />
               </button>
             ))}
             {form.rating > 0 && (
-              <span className="text-sm text-gray-500 self-center ml-1">{form.rating}/5</span>
+              <span className="text-sm text-muted-foreground self-center ml-1">{form.rating}/5</span>
             )}
           </div>
         </div>
@@ -382,7 +382,7 @@ function FeedbackForm({ onSuccess }: { onSuccess: () => void }) {
         <Button
           type="submit"
           disabled={sendMutation.isPending}
-          className="bg-purple-600 hover:bg-purple-700 text-white w-full"
+          className="bg-purple-600 hover:bg-purple-700 text-foreground w-full"
         >
           {sendMutation.isPending ? "Enviando..." : "Enviar mensaje"}
         </Button>
@@ -400,11 +400,11 @@ function MyTickets() {
     open: { label: "Abierto", color: "text-blue-600 bg-blue-50 border-blue-200", icon: Clock },
     in_progress: { label: "En proceso", color: "text-amber-600 bg-amber-50 border-amber-200", icon: RefreshCw },
     resolved: { label: "Resuelto", color: "text-emerald-600 bg-emerald-50 border-emerald-200", icon: CheckCircle },
-    closed: { label: "Cerrado", color: "text-gray-500 bg-gray-50 border-gray-200", icon: XCircle },
+    closed: { label: "Cerrado", color: "text-muted-foreground bg-gray-50 border-gray-200", icon: XCircle },
   };
 
   const PRIORITY_CONFIG: Record<string, { label: string; color: string }> = {
-    low: { label: "Baja", color: "text-gray-500" },
+    low: { label: "Baja", color: "text-muted-foreground" },
     medium: { label: "Media", color: "text-amber-600" },
     high: { label: "Alta", color: "text-red-600" },
   };
@@ -412,7 +412,7 @@ function MyTickets() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <RefreshCw className="w-6 h-6 text-gray-400 animate-spin" />
+        <RefreshCw className="w-6 h-6 text-muted-foreground animate-spin" />
       </div>
     );
   }
@@ -420,9 +420,9 @@ function MyTickets() {
   if (tickets.length === 0) {
     return (
       <div className="bg-white rounded-2xl border border-gray-200 p-8 text-center">
-        <Ticket className="w-10 h-10 text-gray-300 mx-auto mb-3" />
-        <p className="text-gray-500 font-medium">No tienes tickets de soporte</p>
-        <p className="text-sm text-gray-400 mt-1">Cuando crees un ticket, aparecerá aquí</p>
+        <Ticket className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
+        <p className="text-muted-foreground font-medium">No tienes tickets de soporte</p>
+        <p className="text-sm text-muted-foreground mt-1">Cuando crees un ticket, aparecerá aquí</p>
       </div>
     );
   }
@@ -430,7 +430,7 @@ function MyTickets() {
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <h3 className="font-bold text-gray-900">Mis Tickets ({tickets.length})</h3>
+        <h3 className="font-bold text-foreground">Mis Tickets ({tickets.length})</h3>
         <Button variant="outline" size="sm" onClick={() => refetch()}>
           <RefreshCw className="w-4 h-4 mr-1" /> Actualizar
         </Button>
@@ -450,21 +450,21 @@ function MyTickets() {
               <StatusIcon className={`w-5 h-5 flex-shrink-0 ${status.color.split(" ")[0]}`} />
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <p className="font-medium text-gray-900 text-sm truncate">{ticket.subject}</p>
+                  <p className="font-medium text-foreground text-sm truncate">{ticket.subject}</p>
                   <Badge className={`text-xs border ${status.color}`} variant="outline">{status.label}</Badge>
                   <span className={`text-xs font-medium ${priority.color}`}>{priority.label}</span>
                 </div>
-                <p className="text-xs text-gray-400 mt-0.5">
+                <p className="text-xs text-muted-foreground mt-0.5">
                   {new Date(ticket.createdAt).toLocaleDateString("es-MX", { day: "2-digit", month: "short", year: "numeric" })}
                 </p>
               </div>
-              {isExpanded ? <ChevronDown className="w-4 h-4 text-gray-400 flex-shrink-0" /> : <ChevronRight className="w-4 h-4 text-gray-400 flex-shrink-0" />}
+              {isExpanded ? <ChevronDown className="w-4 h-4 text-muted-foreground flex-shrink-0" /> : <ChevronRight className="w-4 h-4 text-muted-foreground flex-shrink-0" />}
             </button>
             {isExpanded && (
               <div className="px-4 pb-4 border-t border-gray-100 pt-3 space-y-3">
                 <div>
-                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Tu descripción</p>
-                  <p className="text-sm text-gray-700 whitespace-pre-wrap">{ticket.description}</p>
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">Tu descripción</p>
+                  <p className="text-sm text-foreground whitespace-pre-wrap">{ticket.description}</p>
                 </div>
                 {ticket.resolution && (
                   <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-3">
@@ -499,10 +499,10 @@ export default function Support() {
   ];
 
   const TAB_COLORS: Record<string, string> = {
-    emerald: "bg-emerald-600 text-white",
-    blue: "bg-blue-600 text-white",
-    purple: "bg-purple-600 text-white",
-    gray: "bg-gray-700 text-white",
+    emerald: "bg-emerald-600 text-foreground",
+    blue: "bg-blue-600 text-foreground",
+    purple: "bg-purple-600 text-foreground",
+    gray: "bg-gray-700 text-foreground",
   };
 
   if (!user) return null;
@@ -513,11 +513,11 @@ export default function Support() {
         {/* Header */}
         <div className="flex items-center gap-3">
           <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center shadow-lg">
-            <HeartHandshake className="w-6 h-6 text-white" />
+            <HeartHandshake className="w-6 h-6 text-foreground" />
           </div>
           <div>
-            <h1 className="text-xl font-bold text-gray-900">Centro de Soporte</h1>
-            <p className="text-sm text-gray-500">Asistente IA, tickets y buzón de sugerencias</p>
+            <h1 className="text-xl font-bold text-foreground">Centro de Soporte</h1>
+            <p className="text-sm text-muted-foreground">Asistente IA, tickets y buzón de sugerencias</p>
           </div>
         </div>
 
@@ -534,7 +534,7 @@ export default function Support() {
                 className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all ${
                   isActive
                     ? TAB_COLORS[tab.color]
-                    : "bg-white border border-gray-200 text-gray-600 hover:border-gray-300"
+                    : "bg-white border border-gray-200 text-muted-foreground hover:border-gray-300"
                 }`}
               >
                 <Icon className="w-4 h-4" />
@@ -552,9 +552,9 @@ export default function Support() {
 
         {/* Info */}
         <div className="bg-gray-50 rounded-2xl border border-gray-200 p-4 flex items-start gap-3">
-          <AlertCircle className="w-5 h-5 text-gray-400 flex-shrink-0 mt-0.5" />
-          <div className="text-sm text-gray-500">
-            <strong className="text-gray-700">Horario de atención humana:</strong> Lunes a Viernes 9am–6pm (hora CDMX).
+          <AlertCircle className="w-5 h-5 text-muted-foreground flex-shrink-0 mt-0.5" />
+          <div className="text-sm text-muted-foreground">
+            <strong className="text-foreground">Horario de atención humana:</strong> Lunes a Viernes 9am–6pm (hora CDMX).
             El asistente IA está disponible las 24 horas. Para urgencias escríbenos a{" "}
             <a href="mailto:soporte@kobrapay.mx" className="text-emerald-600 hover:underline">soporte@kobrapay.mx</a>
           </div>

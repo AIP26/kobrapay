@@ -50,10 +50,10 @@ export default function BusinessProfile() {
 
   if (loadingProfile) {
     return (
-      <div className="min-h-screen bg-[#0f1420] flex items-center justify-center">
+      <div className="min-h-screen bg-card flex items-center justify-center">
         <div className="text-center">
           <div className="w-12 h-12 border-4 border-cyan-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-gray-400 text-sm">Cargando perfil...</p>
+          <p className="text-muted-foreground text-sm">Cargando perfil...</p>
         </div>
       </div>
     );
@@ -61,17 +61,17 @@ export default function BusinessProfile() {
 
   if (!profile) {
     return (
-      <div className="min-h-screen bg-[#0f1420] flex items-center justify-center px-4">
+      <div className="min-h-screen bg-card flex items-center justify-center px-4">
         <div className="text-center max-w-md">
-          <div className="w-20 h-20 bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-6">
-            <Globe className="w-10 h-10 text-gray-600" />
+          <div className="w-20 h-20 bg-muted rounded-full flex items-center justify-center mx-auto mb-6">
+            <Globe className="w-10 h-10 text-muted-foreground" />
           </div>
-          <h1 className="text-2xl font-bold text-white mb-3">Perfil no encontrado</h1>
-          <p className="text-gray-400 mb-6">
-            El negocio <strong className="text-white">@{slug}</strong> no existe o no tiene perfil público activo.
+          <h1 className="text-2xl font-bold text-foreground mb-3">Perfil no encontrado</h1>
+          <p className="text-muted-foreground mb-6">
+            El negocio <strong className="text-foreground">@{slug}</strong> no existe o no tiene perfil público activo.
           </p>
           <Link href="/">
-            <Button className="bg-cyan-500 hover:bg-cyan-400 text-white">
+            <Button className="bg-cyan-500 hover:bg-cyan-400 text-foreground">
               Ir a KobraPay
             </Button>
           </Link>
@@ -81,28 +81,28 @@ export default function BusinessProfile() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0f1420]">
+    <div className="min-h-screen bg-card">
       {/* Header KobraPay */}
-      <header className="border-b border-white/10 bg-[#0f1420]/95 backdrop-blur-sm sticky top-0 z-40">
+      <header className="border-b border-border bg-card/95 backdrop-blur-sm sticky top-0 z-40">
         <div className="max-w-4xl mx-auto px-4 flex items-center justify-between h-14">
           <Link href="/">
             <div className="flex items-center gap-2 cursor-pointer">
               <div className="w-7 h-7 bg-cyan-500 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-xs">K</span>
+                <span className="text-foreground font-bold text-xs">K</span>
               </div>
-              <span className="font-bold text-white text-sm">KobraPay</span>
+              <span className="font-bold text-foreground text-sm">KobraPay</span>
             </div>
           </Link>
           <div className="flex items-center gap-2">
             <Shield className="w-3.5 h-3.5 text-emerald-400" />
-            <span className="text-xs text-gray-400">Pagos seguros con SSL</span>
+            <span className="text-xs text-muted-foreground">Pagos seguros con SSL</span>
           </div>
         </div>
       </header>
 
       <main className="max-w-4xl mx-auto px-4 py-10">
         {/* Perfil del negocio */}
-        <div className="bg-white/5 border border-white/10 rounded-3xl p-8 mb-8">
+        <div className="bg-white/5 border border-border rounded-3xl p-8 mb-8">
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6">
             {/* Logo / Avatar */}
             <div className="flex-shrink-0">
@@ -110,11 +110,11 @@ export default function BusinessProfile() {
                 <img
                   src={profile.logoUrl}
                   alt={profile.businessName || "Logo"}
-                  className="w-20 h-20 rounded-2xl object-cover border border-white/20"
+                  className="w-20 h-20 rounded-2xl object-cover border border-border"
                 />
               ) : (
-                <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-cyan-500 to-cyan-700 flex items-center justify-center border border-white/20">
-                  <span className="text-white font-bold text-3xl">
+                <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-cyan-500 to-cyan-700 flex items-center justify-center border border-border">
+                  <span className="text-foreground font-bold text-3xl">
                     {(profile.businessName || "N")[0].toUpperCase()}
                   </span>
                 </div>
@@ -124,7 +124,7 @@ export default function BusinessProfile() {
             {/* Info */}
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-3 flex-wrap mb-2">
-                <h1 className="text-2xl font-bold text-white">{profile.businessName}</h1>
+                <h1 className="text-2xl font-bold text-foreground">{profile.businessName}</h1>
                 <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30 text-xs">
                   <CheckCircle2 className="w-3 h-3 mr-1" />
                   Verificado
@@ -132,10 +132,10 @@ export default function BusinessProfile() {
               </div>
 
               {profile.publicBio && (
-                <p className="text-gray-300 text-sm mb-3 leading-relaxed">{profile.publicBio}</p>
+                <p className="text-muted-foreground text-sm mb-3 leading-relaxed">{profile.publicBio}</p>
               )}
 
-              <div className="flex flex-wrap items-center gap-3 text-xs text-gray-400">
+              <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
                 <div className="flex items-center gap-1">
                   <MapPin className="w-3.5 h-3.5 text-cyan-400" />
                   <span>{countryConfig.flag} {countryConfig.name}</span>
@@ -167,12 +167,12 @@ export default function BusinessProfile() {
         {/* Links de pago activos */}
         <div>
           <div className="flex items-center justify-between mb-5">
-            <h2 className="text-lg font-bold text-white flex items-center gap-2">
+            <h2 className="text-lg font-bold text-foreground flex items-center gap-2">
               <ShoppingCart className="w-5 h-5 text-cyan-400" />
               Cobros disponibles
             </h2>
             {links && links.length > 0 && (
-              <Badge variant="outline" className="text-gray-400 border-white/20 text-xs">
+              <Badge variant="outline" className="text-muted-foreground border-border text-xs">
                 {links.length} activo{links.length !== 1 ? "s" : ""}
               </Badge>
             )}
@@ -185,22 +185,22 @@ export default function BusinessProfile() {
               ))}
             </div>
           ) : !links || links.length === 0 ? (
-            <div className="bg-white/5 border border-white/10 rounded-2xl p-10 text-center">
-              <ShoppingCart className="w-10 h-10 text-gray-600 mx-auto mb-3" />
-              <p className="text-gray-400 text-sm">No hay cobros activos en este momento.</p>
-              <p className="text-gray-500 text-xs mt-1">Vuelve más tarde o contacta al negocio directamente.</p>
+            <div className="bg-white/5 border border-border rounded-2xl p-10 text-center">
+              <ShoppingCart className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
+              <p className="text-muted-foreground text-sm">No hay cobros activos en este momento.</p>
+              <p className="text-muted-foreground text-xs mt-1">Vuelve más tarde o contacta al negocio directamente.</p>
             </div>
           ) : (
             <div className="space-y-3">
               {links.map((link) => (
                 <div
                   key={link.id}
-                  className="bg-white/5 border border-white/10 rounded-2xl p-5 hover:border-cyan-500/40 hover:bg-white/8 transition-all group"
+                  className="bg-white/5 border border-border rounded-2xl p-5 hover:border-cyan-500/40 hover:bg-white/8 transition-all group"
                 >
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1 flex-wrap">
-                        <h3 className="text-white font-semibold text-sm truncate">
+                        <h3 className="text-foreground font-semibold text-sm truncate">
                           {link.description || "Cobro de " + profile.businessName}
                         </h3>
                         {link.expiresAt && (
@@ -210,7 +210,7 @@ export default function BusinessProfile() {
                           </div>
                         )}
                       </div>
-                      <div className="flex items-center gap-3 text-xs text-gray-400">
+                      <div className="flex items-center gap-3 text-xs text-muted-foreground">
                         <div className="flex items-center gap-1">
                           <CreditCard className="w-3.5 h-3.5 text-cyan-400" />
                           <span>Tarjeta de crédito / débito</span>
@@ -223,13 +223,13 @@ export default function BusinessProfile() {
                       </div>
                     </div>
                     <div className="flex-shrink-0 flex flex-col items-end gap-2">
-                      <span className="text-xl font-bold text-white">
+                      <span className="text-xl font-bold text-foreground">
                         {formatCurrency(link.amount, link.currency || "MXN")}
                       </span>
                       <Link href={`/pay/${link.token}`}>
                         <Button
                           size="sm"
-                          className="bg-cyan-500 hover:bg-cyan-400 text-white text-xs gap-1.5 group-hover:shadow-lg group-hover:shadow-cyan-500/20 transition-all"
+                          className="bg-cyan-500 hover:bg-cyan-400 text-foreground text-xs gap-1.5 group-hover:shadow-lg group-hover:shadow-cyan-500/20 transition-all"
                         >
                           Pagar ahora
                           <ArrowRight className="w-3.5 h-3.5" />
@@ -244,23 +244,23 @@ export default function BusinessProfile() {
         </div>
 
         {/* Footer */}
-        <div className="mt-12 pt-6 border-t border-white/10 text-center">
+        <div className="mt-12 pt-6 border-t border-border text-center">
           <div className="flex items-center justify-center gap-2 mb-2">
             <Shield className="w-4 h-4 text-emerald-400" />
-            <span className="text-xs text-gray-400">Todos los pagos son procesados de forma segura por</span>
+            <span className="text-xs text-muted-foreground">Todos los pagos son procesados de forma segura por</span>
           </div>
           <div className="flex items-center justify-center gap-4">
             <Link href="/">
               <span className="text-xs font-bold text-cyan-400 hover:text-cyan-300 cursor-pointer">KobraPay</span>
             </Link>
-            <span className="text-gray-600">·</span>
-            <span className="text-xs text-gray-500">Powered by Stripe</span>
-            <span className="text-gray-600">·</span>
-            <span className="text-xs text-gray-500">SSL 256-bit</span>
+            <span className="text-muted-foreground">·</span>
+            <span className="text-xs text-muted-foreground">Powered by Stripe</span>
+            <span className="text-muted-foreground">·</span>
+            <span className="text-xs text-muted-foreground">SSL 256-bit</span>
           </div>
           <div className="mt-3 flex items-center justify-center gap-3 flex-wrap">
             {["VISA", "MC", "AMEX"].map((brand) => (
-              <span key={brand} className="bg-white/10 text-white text-xs font-bold px-2 py-0.5 rounded border border-white/10">
+              <span key={brand} className="bg-white/10 text-foreground text-xs font-bold px-2 py-0.5 rounded border border-border">
                 {brand}
               </span>
             ))}

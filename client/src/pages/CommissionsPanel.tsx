@@ -103,7 +103,7 @@ export default function CommissionsPanel() {
     return (
       <DashboardLayout title="Comisiones">
         <div className="flex items-center justify-center h-64">
-          <p className="text-gray-400 text-sm">Cargando...</p>
+          <p className="text-muted-foreground text-sm">Cargando...</p>
         </div>
       </DashboardLayout>
     );
@@ -114,9 +114,9 @@ export default function CommissionsPanel() {
       <DashboardLayout title="Comisiones">
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
-            <DollarSign className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-            <p className="text-gray-500 font-medium">Acceso restringido</p>
-            <p className="text-sm text-gray-400">Solo el administrador puede ver este panel</p>
+            <DollarSign className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
+            <p className="text-muted-foreground font-medium">Acceso restringido</p>
+            <p className="text-sm text-muted-foreground">Solo el administrador puede ver este panel</p>
           </div>
         </div>
       </DashboardLayout>
@@ -298,8 +298,8 @@ export default function CommissionsPanel() {
           {/* Header */}
           <div className="sticky top-0 bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between z-10">
             <div>
-              <h2 className="font-bold text-gray-900 text-lg">{titles[drillDown]}</h2>
-              <p className="text-xs text-gray-400 mt-0.5">
+              <h2 className="font-bold text-foreground text-lg">{titles[drillDown]}</h2>
+              <p className="text-xs text-muted-foreground mt-0.5">
                 {drillDown === "comisiones" && `Total: ${fmt(totalEarned)}`}
                 {drillDown === "transacciones" && `${totalTx.toLocaleString()} transacciones`}
                 {drillDown === "clientes" && `${activeClients} de ${clients.length} activos`}
@@ -308,7 +308,7 @@ export default function CommissionsPanel() {
             </div>
             <button
               onClick={() => setDrillDown(null)}
-              className="p-2 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600"
+              className="p-2 rounded-lg hover:bg-gray-100 text-muted-foreground hover:text-muted-foreground"
             >
               <X className="w-5 h-5" />
             </button>
@@ -320,7 +320,7 @@ export default function CommissionsPanel() {
               <>
                 {data?.monthly && data.monthly.length > 0 && (
                   <div className="mb-4">
-                    <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Historial mensual</h3>
+                    <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3">Historial mensual</h3>
                     <div className="space-y-2">
                       {[...data.monthly].reverse().map(m => {
                         const [year, mo] = m.month.split("-");
@@ -328,7 +328,7 @@ export default function CommissionsPanel() {
                         const pct = totalEarned > 0 ? (m.amount / totalEarned) * 100 : 0;
                         return (
                           <div key={m.month} className="flex items-center gap-3">
-                            <span className="text-xs text-gray-500 w-16 flex-shrink-0">{MONTHS[parseInt(mo)-1]} {year.slice(2)}</span>
+                            <span className="text-xs text-muted-foreground w-16 flex-shrink-0">{MONTHS[parseInt(mo)-1]} {year.slice(2)}</span>
                             <div className="flex-1 bg-gray-100 rounded-full h-2">
                               <div className="bg-emerald-500 h-2 rounded-full" style={{ width: `${Math.min(pct, 100)}%` }} />
                             </div>
@@ -339,15 +339,15 @@ export default function CommissionsPanel() {
                     </div>
                   </div>
                 )}
-                <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Por cliente</h3>
+                <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3">Por cliente</h3>
                 {sortedByCommission.length === 0 ? (
-                  <p className="text-gray-400 text-sm text-center py-8">Sin datos aún</p>
+                  <p className="text-muted-foreground text-sm text-center py-8">Sin datos aún</p>
                 ) : sortedByCommission.map((c, i) => (
                   <div key={c.clientId} className="flex items-center gap-3 p-3 rounded-lg border border-gray-100 hover:bg-gray-50">
-                    <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${i === 0 ? "bg-amber-100 text-amber-700" : i === 1 ? "bg-gray-200 text-gray-600" : "bg-gray-100 text-gray-500"}`}>{i+1}</div>
+                    <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${i === 0 ? "bg-amber-100 text-amber-700" : i === 1 ? "bg-gray-200 text-muted-foreground" : "bg-gray-100 text-muted-foreground"}`}>{i+1}</div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-gray-900 truncate">{c.businessName || c.name}</p>
-                      <p className="text-xs text-gray-400">{c.commissionRate}% · {c.totalTransactions} txs</p>
+                      <p className="text-sm font-medium text-foreground truncate">{c.businessName || c.name}</p>
+                      <p className="text-xs text-muted-foreground">{c.commissionRate}% · {c.totalTransactions} txs</p>
                     </div>
                     <p className="text-sm font-bold text-emerald-600">{fmt(c.totalCommission)}</p>
                   </div>
@@ -401,7 +401,7 @@ export default function CommissionsPanel() {
                   {/* Filtros de búsqueda y fechas */}
                   <div className="space-y-2 mb-4">
                     <div className="relative">
-                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
                       <input
                         type="text"
                         value={txSearch}
@@ -412,19 +412,19 @@ export default function CommissionsPanel() {
                     </div>
                     <div className="flex gap-2">
                       <div className="flex-1">
-                        <label className="text-xs text-gray-400 block mb-1">Desde</label>
+                        <label className="text-xs text-muted-foreground block mb-1">Desde</label>
                         <input type="date" value={txDateFrom} onChange={e => setTxDateFrom(e.target.value)}
                           className="w-full px-2 py-1.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-300" />
                       </div>
                       <div className="flex-1">
-                        <label className="text-xs text-gray-400 block mb-1">Hasta</label>
+                        <label className="text-xs text-muted-foreground block mb-1">Hasta</label>
                         <input type="date" value={txDateTo} onChange={e => setTxDateTo(e.target.value)}
                           className="w-full px-2 py-1.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-300" />
                       </div>
                       {(txSearch || txDateFrom || txDateTo) && (
                         <div className="flex items-end">
                           <button onClick={() => { setTxSearch(""); setTxDateFrom(""); setTxDateTo(""); }}
-                            className="px-2 py-1.5 text-xs text-gray-500 border border-gray-200 rounded-lg hover:bg-gray-50">
+                            className="px-2 py-1.5 text-xs text-muted-foreground border border-gray-200 rounded-lg hover:bg-gray-50">
                             Limpiar
                           </button>
                         </div>
@@ -436,9 +436,9 @@ export default function CommissionsPanel() {
                       </p>
                     )}
                   </div>
-                  <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Transacciones exitosas ({filteredTxList.length})</h3>
+                  <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3">Transacciones exitosas ({filteredTxList.length})</h3>
                   {filteredTxList.length === 0 ? (
-                    <p className="text-gray-400 text-sm text-center py-8">{txSearch || txDateFrom || txDateTo ? "Sin resultados para este filtro" : "Sin transacciones aún"}</p>
+                    <p className="text-muted-foreground text-sm text-center py-8">{txSearch || txDateFrom || txDateTo ? "Sin resultados para este filtro" : "Sin transacciones aún"}</p>
                   ) : filteredTxList.map((tx) => (
                     <div
                       key={tx.id}
@@ -447,20 +447,20 @@ export default function CommissionsPanel() {
                     >
                       <div className="flex items-start justify-between gap-2">
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-semibold text-gray-900 truncate">{tx.payerName || "Pagador desconocido"}</p>
-                          <p className="text-xs text-gray-400 truncate">{tx.payerEmail || "—"}</p>
+                          <p className="text-sm font-semibold text-foreground truncate">{tx.payerName || "Pagador desconocido"}</p>
+                          <p className="text-xs text-muted-foreground truncate">{tx.payerEmail || "—"}</p>
                         </div>
                         <div className="text-right flex-shrink-0">
-                          <p className="text-sm font-bold text-gray-900">{fmt(parseFloat(tx.amount))}</p>
+                          <p className="text-sm font-bold text-foreground">{fmt(parseFloat(tx.amount))}</p>
                           <p className="text-xs text-emerald-600 font-medium">+{fmt(parseFloat(tx.commissionAmount))} comisión</p>
                         </div>
                       </div>
-                      <div className="flex items-center gap-3 text-xs text-gray-400">
+                      <div className="flex items-center gap-3 text-xs text-muted-foreground">
                         <span className="bg-gray-100 px-2 py-0.5 rounded font-mono">{tx.clientName}</span>
                         {tx.cardBrand && <span>{tx.cardBrand.toUpperCase()} ···{tx.cardLast4}</span>}
                         {tx.operationNumber && <span>#{tx.operationNumber}</span>}
                         <span className="ml-auto">{new Date(tx.createdAt).toLocaleDateString("es-MX", { day: "2-digit", month: "short", year: "numeric" })}</span>
-                        <ChevronRight className="w-3.5 h-3.5 text-gray-300" />
+                        <ChevronRight className="w-3.5 h-3.5 text-muted-foreground" />
                       </div>
                     </div>
                   ))}
@@ -485,17 +485,17 @@ export default function CommissionsPanel() {
                     <p className="text-xl font-bold text-red-700 mt-1">{clients.filter(c => c.status === "suspended").length}</p>
                   </div>
                 </div>
-                <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Todos los clientes</h3>
+                <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3">Todos los clientes</h3>
                 {clients.length === 0 ? (
-                  <p className="text-gray-400 text-sm text-center py-8">Sin clientes registrados</p>
+                  <p className="text-muted-foreground text-sm text-center py-8">Sin clientes registrados</p>
                 ) : clients.map(c => (
                   <div key={c.clientId} className="flex items-center gap-3 p-3 rounded-lg border border-gray-100 hover:bg-gray-50">
                     <div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center flex-shrink-0">
                       <span className="text-xs font-bold text-purple-700">{(c.businessName || c.name || "?")[0].toUpperCase()}</span>
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-gray-900 truncate">{c.businessName || c.name}</p>
-                      <p className="text-xs text-gray-400">{c.email}</p>
+                      <p className="text-sm font-medium text-foreground truncate">{c.businessName || c.name}</p>
+                      <p className="text-xs text-muted-foreground">{c.email}</p>
                     </div>
                     <Badge
                       className={c.status === "active" ? "bg-green-100 text-green-700 border-green-200" : c.status === "suspended" ? "bg-red-100 text-red-700 border-red-200" : "bg-yellow-100 text-yellow-700 border-yellow-200"}
@@ -516,18 +516,18 @@ export default function CommissionsPanel() {
                   <p className="text-3xl font-bold text-orange-700 mt-1">{avgCommission.toFixed(2)}%</p>
                   <p className="text-xs text-orange-500 mt-1">Calculado sobre {clients.length} clientes</p>
                 </div>
-                <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Tasa por cliente</h3>
+                <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3">Tasa por cliente</h3>
                 {sortedByRate.length === 0 ? (
-                  <p className="text-gray-400 text-sm text-center py-8">Sin datos aún</p>
+                  <p className="text-muted-foreground text-sm text-center py-8">Sin datos aún</p>
                 ) : sortedByRate.map(c => (
                   <div key={c.clientId} className="flex items-center gap-3 p-3 rounded-lg border border-gray-100 hover:bg-gray-50">
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-gray-900 truncate">{c.businessName || c.name}</p>
-                      <p className="text-xs text-gray-400">{c.totalTransactions} transacciones · {fmt(c.totalVolume)} volumen</p>
+                      <p className="text-sm font-medium text-foreground truncate">{c.businessName || c.name}</p>
+                      <p className="text-xs text-muted-foreground">{c.totalTransactions} transacciones · {fmt(c.totalVolume)} volumen</p>
                     </div>
                     <div className="text-right">
                       <p className="text-sm font-bold text-orange-600">{c.commissionRate}%</p>
-                      <p className="text-xs text-gray-400">{fmt(c.totalCommission)}</p>
+                      <p className="text-xs text-muted-foreground">{fmt(c.totalCommission)}</p>
                     </div>
                   </div>
                 ))}
@@ -553,7 +553,7 @@ export default function CommissionsPanel() {
           onClick={e => e.stopPropagation()}
         >
           {/* Header */}
-          <div className="bg-gradient-to-r from-emerald-500 to-cyan-500 px-6 py-5 text-white">
+          <div className="bg-gradient-to-r from-emerald-500 to-cyan-500 px-6 py-5 text-foreground">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
                 <CheckCircle2 className="w-5 h-5" />
@@ -571,39 +571,39 @@ export default function CommissionsPanel() {
 
           {/* Desglose financiero */}
           <div className="px-6 py-4 border-b border-gray-100">
-            <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Desglose financiero</h3>
+            <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3">Desglose financiero</h3>
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
-                <span className="text-gray-500">Monto cobrado</span>
-                <span className="font-semibold text-gray-900">{fmt(amount)}</span>
+                <span className="text-muted-foreground">Monto cobrado</span>
+                <span className="font-semibold text-foreground">{fmt(amount)}</span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-gray-500">Comisión KobraPay</span>
+                <span className="text-muted-foreground">Comisión KobraPay</span>
                 <span className="font-semibold text-emerald-600">+{fmt(commission)}</span>
               </div>
               <div className="flex justify-between text-sm border-t border-dashed border-gray-200 pt-2 mt-2">
-                <span className="text-gray-500">Neto al cliente</span>
-                <span className="font-bold text-gray-900">{fmt(net)}</span>
+                <span className="text-muted-foreground">Neto al cliente</span>
+                <span className="font-bold text-foreground">{fmt(net)}</span>
               </div>
             </div>
           </div>
 
           {/* Datos del pagador */}
           <div className="px-6 py-4 border-b border-gray-100">
-            <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Datos del pagador</h3>
+            <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3">Datos del pagador</h3>
             <div className="space-y-2">
               <div className="flex items-center gap-3 text-sm">
-                <User className="w-4 h-4 text-gray-400 flex-shrink-0" />
-                <span className="text-gray-700">{selectedTx.payerName || "No registrado"}</span>
+                <User className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                <span className="text-foreground">{selectedTx.payerName || "No registrado"}</span>
               </div>
               <div className="flex items-center gap-3 text-sm">
-                <Mail className="w-4 h-4 text-gray-400 flex-shrink-0" />
-                <span className="text-gray-700">{selectedTx.payerEmail || "No registrado"}</span>
+                <Mail className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                <span className="text-foreground">{selectedTx.payerEmail || "No registrado"}</span>
               </div>
               {selectedTx.cardBrand && (
                 <div className="flex items-center gap-3 text-sm">
-                  <CreditCard className="w-4 h-4 text-gray-400 flex-shrink-0" />
-                  <span className="text-gray-700">{selectedTx.cardBrand.toUpperCase()} •••• {selectedTx.cardLast4}</span>
+                  <CreditCard className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                  <span className="text-foreground">{selectedTx.cardBrand.toUpperCase()} •••• {selectedTx.cardLast4}</span>
                 </div>
               )}
             </div>
@@ -611,24 +611,24 @@ export default function CommissionsPanel() {
 
           {/* Datos de la operación */}
           <div className="px-6 py-4">
-            <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Datos de la operación</h3>
+            <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3">Datos de la operación</h3>
             <div className="space-y-2">
               <div className="flex items-center gap-3 text-sm">
-                <Building2 className="w-4 h-4 text-gray-400 flex-shrink-0" />
-                <span className="text-gray-500">Cliente KobraPay:</span>
-                <span className="font-medium text-gray-700">{selectedTx.clientName}</span>
+                <Building2 className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                <span className="text-muted-foreground">Cliente KobraPay:</span>
+                <span className="font-medium text-foreground">{selectedTx.clientName}</span>
               </div>
               {selectedTx.operationNumber && (
                 <div className="flex items-center gap-3 text-sm">
-                  <Hash className="w-4 h-4 text-gray-400 flex-shrink-0" />
-                  <span className="text-gray-500">No. Operación:</span>
-                  <span className="font-mono text-gray-700 text-xs bg-gray-100 px-2 py-0.5 rounded">{selectedTx.operationNumber}</span>
+                  <Hash className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                  <span className="text-muted-foreground">No. Operación:</span>
+                  <span className="font-mono text-foreground text-xs bg-gray-100 px-2 py-0.5 rounded">{selectedTx.operationNumber}</span>
                 </div>
               )}
               <div className="flex items-center gap-3 text-sm">
-                <Clock className="w-4 h-4 text-gray-400 flex-shrink-0" />
-                <span className="text-gray-500">Fecha:</span>
-                <span className="text-gray-700">{new Date(selectedTx.createdAt).toLocaleString("es-MX")}</span>
+                <Clock className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                <span className="text-muted-foreground">Fecha:</span>
+                <span className="text-foreground">{new Date(selectedTx.createdAt).toLocaleString("es-MX")}</span>
               </div>
             </div>
           </div>
@@ -643,8 +643,8 @@ export default function CommissionsPanel() {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Panel de Comisiones</h1>
-            <p className="text-sm text-gray-500 mt-1">
+            <h1 className="text-2xl font-bold text-foreground">Panel de Comisiones</h1>
+            <p className="text-sm text-muted-foreground mt-1">
               Ingresos de la plataforma por comisiones de clientes
             </p>
           </div>
@@ -668,7 +668,7 @@ export default function CommissionsPanel() {
               className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all ${
                 activeCommTab === "mine"
                   ? "bg-white text-emerald-700 shadow-sm border border-emerald-200"
-                  : "text-gray-500 hover:text-gray-700 hover:bg-gray-50"
+                  : "text-muted-foreground hover:text-foreground hover:bg-gray-50"
               }`}
             >
               <DollarSign className="w-4 h-4" />
@@ -691,7 +691,7 @@ export default function CommissionsPanel() {
                   className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all ${
                     isActive
                       ? "bg-white text-amber-700 shadow-sm border border-amber-200"
-                      : "text-gray-500 hover:text-gray-700 hover:bg-gray-50"
+                      : "text-muted-foreground hover:text-foreground hover:bg-gray-50"
                   }`}
                 >
                   <Handshake className="w-4 h-4" />
@@ -737,9 +737,9 @@ export default function CommissionsPanel() {
               {isLoading ? (
                 <div className="h-8 bg-gray-100 animate-pulse rounded w-24 mb-1" />
               ) : (
-                <p className="text-2xl font-bold text-gray-900">{fmtShort(totalEarned)}</p>
+                <p className="text-2xl font-bold text-foreground">{fmtShort(totalEarned)}</p>
               )}
-              <p className="text-xs text-gray-500">Total comisiones</p>
+              <p className="text-xs text-muted-foreground">Total comisiones</p>
             </CardContent>
           </Card>
 
@@ -758,9 +758,9 @@ export default function CommissionsPanel() {
               {isLoading ? (
                 <div className="h-8 bg-gray-100 animate-pulse rounded w-16 mb-1" />
               ) : (
-                <p className="text-2xl font-bold text-gray-900">{totalTx.toLocaleString()}</p>
+                <p className="text-2xl font-bold text-foreground">{totalTx.toLocaleString()}</p>
               )}
-              <p className="text-xs text-gray-500">Transacciones exitosas</p>
+              <p className="text-xs text-muted-foreground">Transacciones exitosas</p>
             </CardContent>
           </Card>
 
@@ -779,9 +779,9 @@ export default function CommissionsPanel() {
               {isLoading ? (
                 <div className="h-8 bg-gray-100 animate-pulse rounded w-12 mb-1" />
               ) : (
-                <p className="text-2xl font-bold text-gray-900">{activeClients}</p>
+                <p className="text-2xl font-bold text-foreground">{activeClients}</p>
               )}
-              <p className="text-xs text-gray-500">Clientes activos</p>
+              <p className="text-xs text-muted-foreground">Clientes activos</p>
             </CardContent>
           </Card>
 
@@ -800,9 +800,9 @@ export default function CommissionsPanel() {
               {isLoading ? (
                 <div className="h-8 bg-gray-100 animate-pulse rounded w-16 mb-1" />
               ) : (
-                <p className="text-2xl font-bold text-gray-900">{avgCommission.toFixed(1)}%</p>
+                <p className="text-2xl font-bold text-foreground">{avgCommission.toFixed(1)}%</p>
               )}
-              <p className="text-xs text-gray-500">Comisión promedio</p>
+              <p className="text-xs text-muted-foreground">Comisión promedio</p>
             </CardContent>
           </Card>
         </div>
@@ -812,7 +812,7 @@ export default function CommissionsPanel() {
           {/* Monthly chart */}
           <Card className="lg:col-span-2">
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+              <CardTitle className="text-sm font-semibold text-foreground flex items-center gap-2">
                 <Calendar className="w-4 h-4 text-emerald-500" />
                 Comisiones por mes (últimos 12 meses)
               </CardTitle>
@@ -821,7 +821,7 @@ export default function CommissionsPanel() {
               {isLoading ? (
                 <div className="h-48 bg-gray-50 animate-pulse rounded-lg" />
               ) : chartData.length === 0 ? (
-                <div className="h-48 flex items-center justify-center text-gray-400 text-sm">
+                <div className="h-48 flex items-center justify-center text-muted-foreground text-sm">
                   Sin datos de comisiones aún
                 </div>
               ) : (
@@ -854,7 +854,7 @@ export default function CommissionsPanel() {
           {/* Top 5 clients */}
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+              <CardTitle className="text-sm font-semibold text-foreground flex items-center gap-2">
                 <Building2 className="w-4 h-4 text-cyan-500" />
                 Top clientes por comisión
               </CardTitle>
@@ -867,29 +867,29 @@ export default function CommissionsPanel() {
                   ))}
                 </div>
               ) : top5.length === 0 ? (
-                <div className="text-center py-8 text-gray-400 text-sm">Sin datos</div>
+                <div className="text-center py-8 text-muted-foreground text-sm">Sin datos</div>
               ) : (
                 <div className="divide-y divide-gray-50">
                   {top5.map((c, i) => (
                     <div key={c.clientId} className="flex items-center gap-3 px-4 py-3">
                       <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${
                         i === 0 ? "bg-amber-100 text-amber-700" :
-                        i === 1 ? "bg-gray-100 text-gray-600" :
-                        "bg-gray-50 text-gray-500"
+                        i === 1 ? "bg-gray-100 text-muted-foreground" :
+                        "bg-gray-50 text-muted-foreground"
                       }`}>
                         {i + 1}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-gray-900 truncate">
+                        <p className="text-sm font-medium text-foreground truncate">
                           {c.businessName || c.name}
                         </p>
-                        <p className="text-xs text-gray-400">{c.totalTransactions} transacciones</p>
+                        <p className="text-xs text-muted-foreground">{c.totalTransactions} transacciones</p>
                       </div>
                       <div className="text-right">
                         <p className="text-sm font-semibold text-emerald-600">
                           {fmtShort(c.totalCommission)}
                         </p>
-                        <p className="text-xs text-gray-400">{c.commissionRate}%</p>
+                        <p className="text-xs text-muted-foreground">{c.commissionRate}%</p>
                       </div>
                     </div>
                   ))}
@@ -902,8 +902,8 @@ export default function CommissionsPanel() {
         {/* Full client table */}
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-              <Users className="w-4 h-4 text-gray-500" />
+            <CardTitle className="text-sm font-semibold text-foreground flex items-center gap-2">
+              <Users className="w-4 h-4 text-muted-foreground" />
               Detalle por cliente
               {clients.length > 0 && (
                 <Badge variant="secondary" className="text-xs ml-1">{clients.length}</Badge>
@@ -922,7 +922,7 @@ export default function CommissionsPanel() {
                 ))}
               </div>
             ) : clients.length === 0 ? (
-              <div className="text-center py-12 text-gray-400 text-sm">
+              <div className="text-center py-12 text-muted-foreground text-sm">
                 No hay clientes registrados aún
               </div>
             ) : (
@@ -930,12 +930,12 @@ export default function CommissionsPanel() {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-gray-100 bg-gray-50/50">
-                      <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Cliente</th>
-                      <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Comisión</th>
-                      <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Volumen</th>
-                      <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Txs</th>
-                      <th className="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Estado</th>
-                      <th className="text-right px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Última tx</th>
+                      <th className="text-left px-6 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wide">Cliente</th>
+                      <th className="text-right px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wide">Comisión</th>
+                      <th className="text-right px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wide">Volumen</th>
+                      <th className="text-right px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wide">Txs</th>
+                      <th className="text-center px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wide">Estado</th>
+                      <th className="text-right px-6 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wide">Última tx</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-50">
@@ -943,19 +943,19 @@ export default function CommissionsPanel() {
                       <tr key={c.clientId} className="hover:bg-gray-50/50 transition-colors">
                         <td className="px-6 py-3.5">
                           <div>
-                            <p className="font-medium text-gray-900">{c.businessName || c.name}</p>
-                            <p className="text-xs text-gray-400">{c.email}</p>
+                            <p className="font-medium text-foreground">{c.businessName || c.name}</p>
+                            <p className="text-xs text-muted-foreground">{c.email}</p>
                           </div>
                         </td>
                         <td className="px-4 py-3.5 text-right">
                           <p className="font-semibold text-emerald-600">{fmt(c.totalCommission)}</p>
-                          <p className="text-xs text-gray-400">{c.commissionRate}% tasa</p>
+                          <p className="text-xs text-muted-foreground">{c.commissionRate}% tasa</p>
                         </td>
                         <td className="px-4 py-3.5 text-right">
-                          <p className="text-gray-700">{fmt(c.totalVolume)}</p>
+                          <p className="text-foreground">{fmt(c.totalVolume)}</p>
                         </td>
                         <td className="px-4 py-3.5 text-right">
-                          <p className="text-gray-700">{c.totalTransactions}</p>
+                          <p className="text-foreground">{c.totalTransactions}</p>
                         </td>
                         <td className="px-4 py-3.5 text-center">
                           <Badge
@@ -971,7 +971,7 @@ export default function CommissionsPanel() {
                             {c.status === "active" ? "Activo" : c.status === "suspended" ? "Suspendido" : "Pendiente"}
                           </Badge>
                         </td>
-                        <td className="px-6 py-3.5 text-right text-xs text-gray-400">
+                        <td className="px-6 py-3.5 text-right text-xs text-muted-foreground">
                           {c.lastTransactionAt
                             ? new Date(c.lastTransactionAt).toLocaleDateString("es-MX", { day: "2-digit", month: "short", year: "numeric" })
                             : "—"}
@@ -1002,11 +1002,11 @@ export default function CommissionsPanel() {
             <div className="flex items-center gap-3">
               <div className="p-2 bg-amber-100 rounded-lg"><TrendingUp className="w-5 h-5 text-amber-600" /></div>
               <div className="text-left">
-                <p className="font-bold text-gray-900">Comisión Escalonada para Asociados</p>
-                <p className="text-xs text-gray-500">Tabla de porcentajes 0.3%–5% según cartera de clientes</p>
+                <p className="font-bold text-foreground">Comisión Escalonada para Asociados</p>
+                <p className="text-xs text-muted-foreground">Tabla de porcentajes 0.3%–5% según cartera de clientes</p>
               </div>
             </div>
-            <ChevronRight className={`w-5 h-5 text-gray-400 transition-transform ${showTiers ? 'rotate-90' : ''}`} />
+            <ChevronRight className={`w-5 h-5 text-muted-foreground transition-transform ${showTiers ? 'rotate-90' : ''}`} />
           </button>
           {showTiers && (
             <div className="px-6 pb-6 space-y-4">
@@ -1014,11 +1014,11 @@ export default function CommissionsPanel() {
                 <table className="w-full text-sm">
                   <thead className="bg-gray-50">
                     <tr>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Nivel</th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Clientes</th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Comisión %</th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Descripción</th>
-                      <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">Acción</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Nivel</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Clientes</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Comisión %</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Descripción</th>
+                      <th className="px-4 py-3 text-right text-xs font-semibold text-muted-foreground uppercase tracking-wider">Acción</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100">
@@ -1029,38 +1029,38 @@ export default function CommissionsPanel() {
                             <td className="px-4 py-3" colSpan={4}>
                               <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                                 <div>
-                                  <label className="text-xs text-gray-500">Nivel</label>
+                                  <label className="text-xs text-muted-foreground">Nivel</label>
                                   <input className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm" value={tierForm.label} onChange={e => setTierForm(f => ({ ...f, label: e.target.value }))} placeholder="Ej: Bronce" />
                                 </div>
                                 <div>
-                                  <label className="text-xs text-gray-500">Mín. clientes</label>
+                                  <label className="text-xs text-muted-foreground">Mín. clientes</label>
                                   <input type="number" className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm" value={tierForm.minClients} onChange={e => setTierForm(f => ({ ...f, minClients: parseInt(e.target.value) || 1 }))} />
                                 </div>
                                 <div>
-                                  <label className="text-xs text-gray-500">Máx. clientes</label>
+                                  <label className="text-xs text-muted-foreground">Máx. clientes</label>
                                   <input type="number" className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm" value={tierForm.maxClients as number} onChange={e => setTierForm(f => ({ ...f, maxClients: e.target.value ? parseInt(e.target.value) : '' }))} placeholder="Vacío = sin límite" />
                                 </div>
                                 <div>
-                                  <label className="text-xs text-gray-500">Comisión %</label>
+                                  <label className="text-xs text-muted-foreground">Comisión %</label>
                                   <input type="number" step="0.1" className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm" value={tierForm.commissionPct} onChange={e => setTierForm(f => ({ ...f, commissionPct: parseFloat(e.target.value) || 0 }))} />
                                 </div>
                               </div>
                             </td>
                             <td className="px-4 py-3 text-right">
                               <div className="flex items-center justify-end gap-2">
-                                <button onClick={() => updateTierMutation.mutate({ id: tier.id, ...tierForm, maxClients: tierForm.maxClients === '' ? null : Number(tierForm.maxClients) })} className="text-xs bg-emerald-500 text-white px-3 py-1.5 rounded-lg hover:bg-emerald-600 font-medium">Guardar</button>
-                                <button onClick={() => setEditingTier(null)} className="text-xs bg-gray-100 text-gray-600 px-3 py-1.5 rounded-lg hover:bg-gray-200 font-medium">Cancelar</button>
+                                <button onClick={() => updateTierMutation.mutate({ id: tier.id, ...tierForm, maxClients: tierForm.maxClients === '' ? null : Number(tierForm.maxClients) })} className="text-xs bg-emerald-500 text-foreground px-3 py-1.5 rounded-lg hover:bg-emerald-600 font-medium">Guardar</button>
+                                <button onClick={() => setEditingTier(null)} className="text-xs bg-gray-100 text-muted-foreground px-3 py-1.5 rounded-lg hover:bg-gray-200 font-medium">Cancelar</button>
                               </div>
                             </td>
                           </>
                         ) : (
                           <>
-                            <td className="px-4 py-3 font-semibold text-gray-800">{tier.label}</td>
-                            <td className="px-4 py-3 text-gray-600">{tier.minClients}{tier.maxClients ? `–${tier.maxClients}` : '+'} clientes</td>
+                            <td className="px-4 py-3 font-semibold text-foreground">{tier.label}</td>
+                            <td className="px-4 py-3 text-muted-foreground">{tier.minClients}{tier.maxClients ? `–${tier.maxClients}` : '+'} clientes</td>
                             <td className="px-4 py-3">
                               <span className="bg-amber-100 text-amber-700 font-bold px-2.5 py-1 rounded-full text-sm">{parseFloat(String(tier.commissionPct)).toFixed(1)}%</span>
                             </td>
-                            <td className="px-4 py-3 text-gray-500 text-xs">{tier.description}</td>
+                            <td className="px-4 py-3 text-muted-foreground text-xs">{tier.description}</td>
                             <td className="px-4 py-3 text-right">
                               <button onClick={() => { setEditingTier(tier.id); setTierForm({ minClients: tier.minClients, maxClients: tier.maxClients ?? '', commissionPct: parseFloat(String(tier.commissionPct)), label: tier.label, description: tier.description ?? '' }); }} className="text-xs text-amber-600 hover:text-amber-800 font-medium">Editar</button>
                             </td>
@@ -1073,13 +1073,13 @@ export default function CommissionsPanel() {
               </div>
               {/* Formulario para agregar nuevo tier */}
               <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
-                <p className="text-sm font-semibold text-gray-700 mb-3">Agregar nuevo nivel</p>
+                <p className="text-sm font-semibold text-foreground mb-3">Agregar nuevo nivel</p>
                 <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
                   <input className="border border-gray-200 rounded-lg px-3 py-2 text-sm" placeholder="Nombre (ej: Oro)" value={tierForm.label} onChange={e => setTierForm(f => ({ ...f, label: e.target.value }))} />
                   <input type="number" className="border border-gray-200 rounded-lg px-3 py-2 text-sm" placeholder="Mín. clientes" value={tierForm.minClients} onChange={e => setTierForm(f => ({ ...f, minClients: parseInt(e.target.value) || 1 }))} />
                   <input type="number" className="border border-gray-200 rounded-lg px-3 py-2 text-sm" placeholder="Máx. (vacío=sin límite)" value={tierForm.maxClients as number} onChange={e => setTierForm(f => ({ ...f, maxClients: e.target.value ? parseInt(e.target.value) : '' }))} />
                   <input type="number" step="0.1" className="border border-gray-200 rounded-lg px-3 py-2 text-sm" placeholder="Comisión %" value={tierForm.commissionPct} onChange={e => setTierForm(f => ({ ...f, commissionPct: parseFloat(e.target.value) || 0 }))} />
-                  <button onClick={() => createTierMutation.mutate({ ...tierForm, maxClients: tierForm.maxClients === '' ? null : Number(tierForm.maxClients) })} disabled={!tierForm.label || createTierMutation.isPending} className="bg-amber-500 text-white rounded-lg px-4 py-2 text-sm font-semibold hover:bg-amber-600 disabled:opacity-50">
+                  <button onClick={() => createTierMutation.mutate({ ...tierForm, maxClients: tierForm.maxClients === '' ? null : Number(tierForm.maxClients) })} disabled={!tierForm.label || createTierMutation.isPending} className="bg-amber-500 text-foreground rounded-lg px-4 py-2 text-sm font-semibold hover:bg-amber-600 disabled:opacity-50">
                     {createTierMutation.isPending ? 'Guardando...' : '+ Agregar'}
                   </button>
                 </div>
@@ -1127,8 +1127,8 @@ function AssociateCommissionsSection() {
           <Handshake className="w-5 h-5 text-amber-600" />
         </div>
         <div>
-          <h2 className="text-lg font-bold text-gray-900">Comisiones de Asociados</h2>
-          <p className="text-xs text-gray-500">Gestiona y aprueba los clientes captados por tus asociados</p>
+          <h2 className="text-lg font-bold text-foreground">Comisiones de Asociados</h2>
+          <p className="text-xs text-muted-foreground">Gestiona y aprueba los clientes captados por tus asociados</p>
         </div>
       </div>
 
@@ -1145,8 +1145,8 @@ function AssociateCommissionsSection() {
               <div className={`w-9 h-9 rounded-xl ${color} flex items-center justify-center`}>
                 <Icon className="w-4 h-4" />
               </div>
-              <p className="text-2xl font-bold text-gray-900">{isLoading ? '...' : value}</p>
-              <p className="text-xs text-gray-500">{label}</p>
+              <p className="text-2xl font-bold text-foreground">{isLoading ? '...' : value}</p>
+              <p className="text-xs text-muted-foreground">{label}</p>
             </CardContent>
           </Card>
         ))}
@@ -1161,8 +1161,8 @@ function AssociateCommissionsSection() {
         <Card>
           <CardContent className="py-12 text-center">
             <Handshake className="w-12 h-12 text-gray-200 mx-auto mb-3" />
-            <p className="text-gray-500 font-medium">No hay asociados registrados aún</p>
-            <p className="text-sm text-gray-400">Los asociados aparecerán aquí cuando se registren en la plataforma</p>
+            <p className="text-muted-foreground font-medium">No hay asociados registrados aún</p>
+            <p className="text-sm text-muted-foreground">Los asociados aparecerán aquí cuando se registren en la plataforma</p>
           </CardContent>
         </Card>
       ) : (
@@ -1172,19 +1172,19 @@ function AssociateCommissionsSection() {
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-white font-bold text-sm">
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-foreground font-bold text-sm">
                       {(assoc.associate.name || assoc.associate.email || 'A')[0].toUpperCase()}
                     </div>
                     <div>
-                      <p className="font-semibold text-gray-900">{assoc.associate.name || assoc.associate.email}</p>
-                      <p className="text-xs text-gray-400">{assoc.associate.email}</p>
+                      <p className="font-semibold text-foreground">{assoc.associate.name || assoc.associate.email}</p>
+                      <p className="text-xs text-muted-foreground">{assoc.associate.email}</p>
                     </div>
                   </div>
                   <div className="text-right">
                     <p className="text-sm font-bold text-emerald-600">
                       {new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(assoc.totalEarned)}
                     </p>
-                    <p className="text-xs text-gray-400">{assoc.clients.length} clientes</p>
+                    <p className="text-xs text-muted-foreground">{assoc.clients.length} clientes</p>
                   </div>
                 </div>
               </CardHeader>
@@ -1194,20 +1194,20 @@ function AssociateCommissionsSection() {
                     <table className="w-full text-sm">
                       <thead>
                         <tr className="border-t border-b border-gray-100 bg-gray-50/50">
-                          <th className="text-left px-4 py-2.5 text-xs font-semibold text-gray-500 uppercase">Cliente</th>
-                          <th className="text-left px-4 py-2.5 text-xs font-semibold text-gray-500 uppercase">Plan</th>
-                          <th className="text-right px-4 py-2.5 text-xs font-semibold text-gray-500 uppercase">Comisión %</th>
-                          <th className="text-right px-4 py-2.5 text-xs font-semibold text-gray-500 uppercase">Ganado</th>
-                          <th className="text-center px-4 py-2.5 text-xs font-semibold text-gray-500 uppercase">Estado</th>
-                          <th className="text-center px-4 py-2.5 text-xs font-semibold text-gray-500 uppercase">Acciones</th>
+                          <th className="text-left px-4 py-2.5 text-xs font-semibold text-muted-foreground uppercase">Cliente</th>
+                          <th className="text-left px-4 py-2.5 text-xs font-semibold text-muted-foreground uppercase">Plan</th>
+                          <th className="text-right px-4 py-2.5 text-xs font-semibold text-muted-foreground uppercase">Comisión %</th>
+                          <th className="text-right px-4 py-2.5 text-xs font-semibold text-muted-foreground uppercase">Ganado</th>
+                          <th className="text-center px-4 py-2.5 text-xs font-semibold text-muted-foreground uppercase">Estado</th>
+                          <th className="text-center px-4 py-2.5 text-xs font-semibold text-muted-foreground uppercase">Acciones</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-gray-50">
                         {assoc.clients.map((client: Record<string, unknown>) => (
                           <tr key={client.id as number} className="hover:bg-gray-50/50">
                             <td className="px-4 py-3">
-                              <p className="font-medium text-gray-900">{client.clientName as string}</p>
-                              <p className="text-xs text-gray-400">{client.clientEmail as string}</p>
+                              <p className="font-medium text-foreground">{client.clientName as string}</p>
+                              <p className="text-xs text-muted-foreground">{client.clientEmail as string}</p>
                             </td>
                             <td className="px-4 py-3">
                               <Badge variant="outline" className="text-xs">
@@ -1215,7 +1215,7 @@ function AssociateCommissionsSection() {
                               </Badge>
                             </td>
                             <td className="px-4 py-3 text-right">
-                              <span className="font-semibold text-gray-700">{client.commissionRate as string}%</span>
+                              <span className="font-semibold text-foreground">{client.commissionRate as string}%</span>
                             </td>
                             <td className="px-4 py-3 text-right">
                               <span className="font-semibold text-emerald-600">
@@ -1228,7 +1228,7 @@ function AssociateCommissionsSection() {
                                 className={
                                   client.status === 'active' ? 'bg-green-50 text-green-700 border-green-200' :
                                   client.status === 'rejected' ? 'bg-red-50 text-red-700 border-red-200' :
-                                  client.status === 'inactive' ? 'bg-gray-50 text-gray-500 border-gray-200' :
+                                  client.status === 'inactive' ? 'bg-gray-50 text-muted-foreground border-gray-200' :
                                   'bg-amber-50 text-amber-700 border-amber-200'
                                 }
                               >
@@ -1242,7 +1242,7 @@ function AssociateCommissionsSection() {
                                 <div className="flex items-center justify-center gap-2">
                                   <button
                                     onClick={() => handleApprove(client.id as number)}
-                                    className="text-xs bg-emerald-500 text-white px-2.5 py-1 rounded-lg hover:bg-emerald-600 font-medium"
+                                    className="text-xs bg-emerald-500 text-foreground px-2.5 py-1 rounded-lg hover:bg-emerald-600 font-medium"
                                   >
                                     Aprobar
                                   </button>
@@ -1255,7 +1255,7 @@ function AssociateCommissionsSection() {
                                 </div>
                               )}
                               {client.status !== 'pending' && (
-                                <span className="text-xs text-gray-400">—</span>
+                                <span className="text-xs text-muted-foreground">—</span>
                               )}
                             </td>
                           </tr>
@@ -1299,30 +1299,30 @@ function AssociateTabContent({ assoc }: { assoc: { associate: { id: number; name
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-4 p-4 bg-amber-50 border border-amber-200 rounded-xl">
-        <div className="w-12 h-12 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-white font-bold text-lg">
+        <div className="w-12 h-12 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-foreground font-bold text-lg">
           {(assoc.associate.name || assoc.associate.email || 'A')[0].toUpperCase()}
         </div>
         <div className="flex-1">
-          <p className="font-bold text-gray-900 text-lg">{assoc.associate.name || assoc.associate.email}</p>
-          <p className="text-sm text-gray-500">{assoc.associate.email}</p>
+          <p className="font-bold text-foreground text-lg">{assoc.associate.name || assoc.associate.email}</p>
+          <p className="text-sm text-muted-foreground">{assoc.associate.email}</p>
         </div>
         <div className="text-right">
           <p className="text-2xl font-bold text-emerald-600">{fmt(assoc.totalEarned)}</p>
-          <p className="text-xs text-gray-400">Total comisiones ganadas</p>
+          <p className="text-xs text-muted-foreground">Total comisiones ganadas</p>
         </div>
         <div className="flex flex-col gap-1">
           {pendingCount > 0 && (
-            <div className="bg-amber-500 text-white text-xs font-bold px-2.5 py-1 rounded-full text-center">
+            <div className="bg-amber-500 text-foreground text-xs font-bold px-2.5 py-1 rounded-full text-center">
               {pendingCount} pendiente{pendingCount > 1 ? 's' : ''}
             </div>
           )}
           {preApprovedCount > 0 && (
-            <div className="bg-blue-500 text-white text-xs font-bold px-2.5 py-1 rounded-full text-center">
+            <div className="bg-blue-500 text-foreground text-xs font-bold px-2.5 py-1 rounded-full text-center">
               {preApprovedCount} pre-aprobado{preApprovedCount > 1 ? 's' : ''}
             </div>
           )}
           {activeCount > 0 && (
-            <div className="bg-emerald-500 text-white text-xs font-bold px-2.5 py-1 rounded-full text-center">
+            <div className="bg-emerald-500 text-foreground text-xs font-bold px-2.5 py-1 rounded-full text-center">
               {activeCount} activo{activeCount > 1 ? 's' : ''}
             </div>
           )}
@@ -1330,7 +1330,7 @@ function AssociateTabContent({ assoc }: { assoc: { associate: { id: number; name
       </div>
       {assoc.clients.length === 0 ? (
         <Card>
-          <CardContent className="py-10 text-center text-gray-400">
+          <CardContent className="py-10 text-center text-muted-foreground">
             <Users className="w-10 h-10 mx-auto mb-2 opacity-30" />
             <p>Este asociado aún no ha captado clientes</p>
           </CardContent>
@@ -1342,25 +1342,25 @@ function AssociateTabContent({ assoc }: { assoc: { associate: { id: number; name
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-gray-100 bg-gray-50/50">
-                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Cliente</th>
-                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Plan</th>
-                    <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Comisión %</th>
-                    <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Ganado</th>
-                    <th className="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Estado</th>
-                    <th className="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Acciones</th>
+                    <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase">Cliente</th>
+                    <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase">Plan</th>
+                    <th className="text-right px-4 py-3 text-xs font-semibold text-muted-foreground uppercase">Comisión %</th>
+                    <th className="text-right px-4 py-3 text-xs font-semibold text-muted-foreground uppercase">Ganado</th>
+                    <th className="text-center px-4 py-3 text-xs font-semibold text-muted-foreground uppercase">Estado</th>
+                    <th className="text-center px-4 py-3 text-xs font-semibold text-muted-foreground uppercase">Acciones</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-50">
                   {assoc.clients.map((client) => (
                     <tr key={client.id as number} className="hover:bg-gray-50/50">
                       <td className="px-4 py-3">
-                        <p className="font-medium text-gray-900">{client.clientName as string}</p>
-                        <p className="text-xs text-gray-400">{client.clientEmail as string}</p>
+                        <p className="font-medium text-foreground">{client.clientName as string}</p>
+                        <p className="text-xs text-muted-foreground">{client.clientEmail as string}</p>
                       </td>
                       <td className="px-4 py-3">
                         <Badge variant="outline" className="text-xs">{(client.assignedPlan as string) || 'Sin plan'}</Badge>
                       </td>
-                      <td className="px-4 py-3 text-right font-semibold text-gray-700">{client.commissionRate as string}%</td>
+                      <td className="px-4 py-3 text-right font-semibold text-foreground">{client.commissionRate as string}%</td>
                       <td className="px-4 py-3 text-right font-semibold text-emerald-600">
                         {fmt(parseFloat(String(client.totalCommissionEarned || '0')))}
                       </td>
@@ -1369,7 +1369,7 @@ function AssociateTabContent({ assoc }: { assoc: { associate: { id: number; name
                           client.status === 'active' ? 'bg-green-50 text-green-700 border-green-200' :
                           client.status === 'assistant_approved' ? 'bg-blue-50 text-blue-700 border-blue-200' :
                           client.status === 'rejected' ? 'bg-red-50 text-red-700 border-red-200' :
-                          client.status === 'inactive' ? 'bg-gray-50 text-gray-500 border-gray-200' :
+                          client.status === 'inactive' ? 'bg-gray-50 text-muted-foreground border-gray-200' :
                           'bg-amber-50 text-amber-700 border-amber-200'
                         }>
                           {client.status === 'active' ? 'Activo' :
@@ -1381,13 +1381,13 @@ function AssociateTabContent({ assoc }: { assoc: { associate: { id: number; name
                       <td className="px-4 py-3 text-center">
                         {client.status === 'assistant_approved' ? (
                           <div className="flex items-center justify-center gap-2">
-                            <button onClick={() => handleApprove(client.id as number)} className="text-xs bg-emerald-500 text-white px-2.5 py-1 rounded-lg hover:bg-emerald-600 font-medium">✅ Aprobar</button>
+                            <button onClick={() => handleApprove(client.id as number)} className="text-xs bg-emerald-500 text-foreground px-2.5 py-1 rounded-lg hover:bg-emerald-600 font-medium">✅ Aprobar</button>
                             <button onClick={() => handleReject(client.id as number)} className="text-xs bg-red-100 text-red-600 px-2.5 py-1 rounded-lg hover:bg-red-200 font-medium">Rechazar</button>
                           </div>
                         ) : client.status === 'pending' ? (
                           <span className="text-xs text-amber-600 font-medium">⏳ En revisión del asistente</span>
                         ) : (
-                          <span className="text-xs text-gray-400">—</span>
+                          <span className="text-xs text-muted-foreground">—</span>
                         )}
                       </td>
                     </tr>

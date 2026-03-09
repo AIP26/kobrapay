@@ -65,7 +65,7 @@ function ImageModal({ url, title, onClose }: { url: string; title: string; onClo
           <Button
             size="icon"
             variant="ghost"
-            className="absolute top-2 right-2 bg-black/50 hover:bg-black/70 text-white rounded-full"
+            className="absolute top-2 right-2 bg-black/50 hover:bg-black/70 text-foreground rounded-full"
             onClick={onClose}
           >
             <X className="w-4 h-4" />
@@ -109,7 +109,7 @@ function EvidenceCard({
             <span className="text-xs font-medium text-foreground">{title}</span>
           </div>
           {badge && (
-            <Badge variant="default" className="text-xs bg-green-600 text-white">
+            <Badge variant="default" className="text-xs bg-green-600 text-foreground">
               {badge}
             </Badge>
           )}
@@ -121,7 +121,7 @@ function EvidenceCard({
             className="w-full object-contain max-h-[160px] bg-gray-50"
           />
           <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all flex items-center justify-center">
-            <ZoomIn className="w-6 h-6 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+            <ZoomIn className="w-6 h-6 text-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
           </div>
         </div>
       </div>
@@ -533,7 +533,7 @@ export default function Expedientes() {
                           </Badge>
                         )}
                         {rec.selfieVerified && (
-                          <Badge className="text-xs gap-1 bg-green-600 text-white">
+                          <Badge className="text-xs gap-1 bg-green-600 text-foreground">
                             <ShieldCheck className="w-2.5 h-2.5" /> Verificado
                           </Badge>
                         )}

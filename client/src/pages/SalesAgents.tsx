@@ -54,12 +54,12 @@ export default function SalesAgents() {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Vendedores / Afiliados</h1>
-          <p className="text-gray-500 text-sm mt-1">Gestiona tu red de vendedores y sus comisiones</p>
+          <h1 className="text-2xl font-bold text-foreground">Vendedores / Afiliados</h1>
+          <p className="text-muted-foreground text-sm mt-1">Gestiona tu red de vendedores y sus comisiones</p>
         </div>
         <Dialog open={showCreate} onOpenChange={setShowCreate}>
           <DialogTrigger asChild>
-            <Button className="bg-cyan-700 hover:bg-cyan-800 text-white gap-2">
+            <Button className="bg-cyan-700 hover:bg-cyan-800 text-foreground gap-2">
               <Plus className="w-4 h-4" /> Nuevo Vendedor
             </Button>
           </DialogTrigger>
@@ -98,7 +98,7 @@ export default function SalesAgents() {
                 </Select>
                 {form.paymentCycle === "custom_day" && (
                   <div className="mt-2">
-                    <Label className="text-xs text-gray-500">Día del mes (1-28)</Label>
+                    <Label className="text-xs text-muted-foreground">Día del mes (1-28)</Label>
                     <Input
                       type="number" min={1} max={28}
                       value={form.paymentDay}
@@ -109,7 +109,7 @@ export default function SalesAgents() {
                 )}
               </div>
               <div className="col-span-2 border-t pt-3">
-                <p className="text-xs font-semibold text-gray-500 uppercase mb-2">Datos bancarios para pago</p>
+                <p className="text-xs font-semibold text-muted-foreground uppercase mb-2">Datos bancarios para pago</p>
               </div>
               <div>
                 <Label>Banco</Label>
@@ -129,7 +129,7 @@ export default function SalesAgents() {
               <Button
                 onClick={() => createMutation.mutate(form)}
                 disabled={createMutation.isPending || !form.name || !form.email}
-                className="flex-1 bg-cyan-700 hover:bg-cyan-800 text-white"
+                className="flex-1 bg-cyan-700 hover:bg-cyan-800 text-foreground"
               >
                 {createMutation.isPending ? "Guardando..." : "Registrar Vendedor"}
               </Button>
@@ -141,24 +141,24 @@ export default function SalesAgents() {
       {/* Stats */}
       <div className="grid grid-cols-3 gap-4 mb-6">
         <div className="bg-white rounded-xl border border-gray-200 p-4">
-          <p className="text-xs text-gray-500 uppercase font-semibold mb-1">Total Vendedores</p>
-          <p className="text-2xl font-bold text-gray-900">{agents.length}</p>
+          <p className="text-xs text-muted-foreground uppercase font-semibold mb-1">Total Vendedores</p>
+          <p className="text-2xl font-bold text-foreground">{agents.length}</p>
         </div>
         <div className="bg-white rounded-xl border border-gray-200 p-4">
-          <p className="text-xs text-gray-500 uppercase font-semibold mb-1">Activos</p>
+          <p className="text-xs text-muted-foreground uppercase font-semibold mb-1">Activos</p>
           <p className="text-2xl font-bold text-green-600">{agents.filter(a => a.isActive).length}</p>
         </div>
         <div className="bg-white rounded-xl border border-gray-200 p-4">
-          <p className="text-xs text-gray-500 uppercase font-semibold mb-1">Ciclo de pago</p>
-          <p className="text-sm font-semibold text-gray-700 mt-1">Semanal / Quincenal</p>
+          <p className="text-xs text-muted-foreground uppercase font-semibold mb-1">Ciclo de pago</p>
+          <p className="text-sm font-semibold text-foreground mt-1">Semanal / Quincenal</p>
         </div>
       </div>
 
       {/* Table */}
       <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
         {agents.length === 0 ? (
-          <div className="text-center py-16 text-gray-500">
-            <Users className="w-12 h-12 mx-auto mb-3 text-gray-300" />
+          <div className="text-center py-16 text-muted-foreground">
+            <Users className="w-12 h-12 mx-auto mb-3 text-muted-foreground" />
             <p className="font-medium">No hay vendedores registrados</p>
             <p className="text-sm">Agrega tu primer vendedor para empezar a crecer</p>
           </div>
@@ -166,23 +166,23 @@ export default function SalesAgents() {
           <table className="w-full">
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Vendedor</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Comisión</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Ciclo</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Código Referido</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Estado</th>
-                <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Acciones</th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase">Vendedor</th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase">Comisión</th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase">Ciclo</th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase">Código Referido</th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase">Estado</th>
+                <th className="text-right px-4 py-3 text-xs font-semibold text-muted-foreground uppercase">Acciones</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
               {agents.map(agent => (
                 <tr key={agent.id} className={`hover:bg-gray-50 ${selectedAgent === agent.id ? "bg-cyan-50" : ""}`}>
                   <td className="px-4 py-3">
-                    <p className="font-medium text-gray-900 text-sm">{agent.name}</p>
-                    <p className="text-xs text-gray-500">{agent.email}</p>
+                    <p className="font-medium text-foreground text-sm">{agent.name}</p>
+                    <p className="text-xs text-muted-foreground">{agent.email}</p>
                   </td>
                   <td className="px-4 py-3 text-sm font-semibold text-cyan-700">{agent.commissionRate}%</td>
-                  <td className="px-4 py-3 text-sm text-gray-600">{{
+                  <td className="px-4 py-3 text-sm text-muted-foreground">{{
                     weekly: "Semanal",
                     biweekly: "Quincenal",
                     monthly: "Mensual",
@@ -197,7 +197,7 @@ export default function SalesAgents() {
                     </div>
                   </td>
                   <td className="px-4 py-3">
-                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${agent.isActive ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"}`}>
+                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${agent.isActive ? "bg-green-100 text-green-700" : "bg-gray-100 text-muted-foreground"}`}>
                       {agent.isActive ? "Activo" : "Inactivo"}
                     </span>
                   </td>
@@ -220,7 +220,7 @@ export default function SalesAgents() {
       {/* Commission detail panel */}
       {selectedAgentData && (
         <div className="mt-6 bg-white rounded-xl border border-gray-200 p-6">
-          <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+          <h2 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2">
             <DollarSign className="w-5 h-5 text-cyan-700" />
             Comisiones — {selectedAgentData.name}
           </h2>
@@ -245,13 +245,13 @@ export default function SalesAgents() {
           {/* Datos bancarios */}
           {selectedAgentData.clabe && (
             <div className="mb-4 p-4 bg-gray-50 rounded-xl border border-gray-200">
-              <p className="text-xs font-semibold text-gray-500 uppercase mb-2 flex items-center gap-1">
+              <p className="text-xs font-semibold text-muted-foreground uppercase mb-2 flex items-center gap-1">
                 <CreditCard className="w-3 h-3" /> Datos para transferencia SPEI
               </p>
               <div className="grid grid-cols-3 gap-3 text-sm">
-                <div><span className="text-gray-500">Banco:</span> <strong>{selectedAgentData.bankName || "—"}</strong></div>
-                <div><span className="text-gray-500">CLABE:</span> <strong className="font-mono">{selectedAgentData.clabe}</strong></div>
-                <div><span className="text-gray-500">Titular:</span> <strong>{selectedAgentData.bankAccountHolder || selectedAgentData.name}</strong></div>
+                <div><span className="text-muted-foreground">Banco:</span> <strong>{selectedAgentData.bankName || "—"}</strong></div>
+                <div><span className="text-muted-foreground">CLABE:</span> <strong className="font-mono">{selectedAgentData.clabe}</strong></div>
+                <div><span className="text-muted-foreground">Titular:</span> <strong>{selectedAgentData.bankAccountHolder || selectedAgentData.name}</strong></div>
               </div>
             </div>
           )}
@@ -266,7 +266,7 @@ export default function SalesAgents() {
               <Button
                 onClick={() => markPaidMutation.mutate({ agentId: selectedAgentData.id, paymentReference: payRef })}
                 disabled={!payRef || markPaidMutation.isPending}
-                className="bg-green-600 hover:bg-green-700 text-white gap-2"
+                className="bg-green-600 hover:bg-green-700 text-foreground gap-2"
               >
                 <CheckCircle className="w-4 h-4" />
                 Marcar como Pagado
@@ -276,10 +276,10 @@ export default function SalesAgents() {
 
           {pendingCommissions.length > 0 && (
             <div className="mt-4">
-              <p className="text-sm font-semibold text-gray-700 mb-2">Comisiones pendientes ({pendingCommissions.length}):</p>
+              <p className="text-sm font-semibold text-foreground mb-2">Comisiones pendientes ({pendingCommissions.length}):</p>
               <div className="max-h-40 overflow-y-auto space-y-1">
                 {pendingCommissions.map((c: { id: number; commissionAmount: string | number; createdAt: Date | null }) => (
-                  <div key={c.id} className="flex justify-between text-xs text-gray-600 py-1 border-b border-gray-100">
+                  <div key={c.id} className="flex justify-between text-xs text-muted-foreground py-1 border-b border-gray-100">
                     <span>{c.createdAt ? new Date(c.createdAt).toLocaleDateString("es-MX") : "—"}</span>
                     <span className="font-semibold text-amber-600">${parseFloat(String(c.commissionAmount)).toFixed(2)} MXN</span>
                   </div>

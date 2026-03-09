@@ -46,7 +46,7 @@ const STATUS_CONFIG: Record<CBStatus, { label: string; color: string; icon: Reac
   under_review: { label: "En revisión", color: "bg-blue-100 text-blue-800", icon: <RefreshCw className="w-3 h-3" /> },
   won: { label: "Ganada", color: "bg-green-100 text-green-800", icon: <CheckCircle2 className="w-3 h-3" /> },
   lost: { label: "Perdida", color: "bg-red-100 text-red-800", icon: <XCircle className="w-3 h-3" /> },
-  closed: { label: "Cerrada", color: "bg-gray-100 text-gray-700", icon: <FileText className="w-3 h-3" /> },
+  closed: { label: "Cerrada", color: "bg-gray-100 text-foreground", icon: <FileText className="w-3 h-3" /> },
 };
 
 function fmt(n: number, currency = "MXN") {
@@ -125,10 +125,10 @@ export default function Chargebacks() {
       <div className="p-6 space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Aclaraciones / Contracargos</h1>
-            <p className="text-gray-500 text-sm mt-1">Gestiona disputas y contracargos de tus transacciones</p>
+            <h1 className="text-2xl font-bold text-foreground">Aclaraciones / Contracargos</h1>
+            <p className="text-muted-foreground text-sm mt-1">Gestiona disputas y contracargos de tus transacciones</p>
           </div>
-          <Button onClick={() => setShowCreate(true)} className="bg-orange-600 hover:bg-orange-700 text-white">
+          <Button onClick={() => setShowCreate(true)} className="bg-orange-600 hover:bg-orange-700 text-foreground">
             <Plus className="w-4 h-4 mr-2" /> Nueva Aclaración
           </Button>
         </div>
@@ -158,7 +158,7 @@ export default function Chargebacks() {
                 <div className="flex items-center gap-3">
                   {icon}
                   <div>
-                    <p className="text-xs text-gray-500">{label}</p>
+                    <p className="text-xs text-muted-foreground">{label}</p>
                     <p className={"text-2xl font-bold " + color}>{value}</p>
                   </div>
                 </div>
@@ -177,12 +177,12 @@ export default function Chargebacks() {
           </CardHeader>
           <CardContent>
             {isLoading ? (
-              <div className="text-center py-10 text-gray-400">Cargando...</div>
+              <div className="text-center py-10 text-muted-foreground">Cargando...</div>
             ) : chargebacks.length === 0 ? (
               <div className="text-center py-16">
-                <AlertTriangle className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                <p className="text-gray-500 font-medium">Sin aclaraciones registradas</p>
-                <p className="text-gray-400 text-sm mt-1">Cuando tengas contracargos o disputas, aparecerán aquí</p>
+                <AlertTriangle className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
+                <p className="text-muted-foreground font-medium">Sin aclaraciones registradas</p>
+                <p className="text-muted-foreground text-sm mt-1">Cuando tengas contracargos o disputas, aparecerán aquí</p>
                 <Button variant="outline" className="mt-4" onClick={() => setShowCreate(true)}>
                   <Plus className="w-4 h-4 mr-2" /> Registrar primera aclaración
                 </Button>
@@ -191,7 +191,7 @@ export default function Chargebacks() {
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="border-b text-gray-500">
+                    <tr className="border-b text-muted-foreground">
                       <th className="text-left py-2 px-3 font-medium">ID</th>
                       <th className="text-left py-2 px-3 font-medium">Fecha</th>
                       <th className="text-left py-2 px-3 font-medium">Monto</th>
@@ -206,14 +206,14 @@ export default function Chargebacks() {
                       const cfg = STATUS_CONFIG[st] || STATUS_CONFIG.open;
                       return (
                         <tr key={cb.id} className="border-b hover:bg-gray-50">
-                          <td className="py-3 px-3 font-mono text-xs text-gray-600">#{cb.id}</td>
-                          <td className="py-3 px-3 text-gray-600">
+                          <td className="py-3 px-3 font-mono text-xs text-muted-foreground">#{cb.id}</td>
+                          <td className="py-3 px-3 text-muted-foreground">
                             {new Date(cb.createdAt).toLocaleDateString("es-MX")}
                           </td>
-                          <td className="py-3 px-3 font-semibold text-gray-900">
+                          <td className="py-3 px-3 font-semibold text-foreground">
                             {fmt(cb.amount, cb.currency)}
                           </td>
-                          <td className="py-3 px-3 text-gray-600 max-w-[180px] truncate">
+                          <td className="py-3 px-3 text-muted-foreground max-w-[180px] truncate">
                             {cb.reasonEs || cb.reason || "Sin motivo"}
                           </td>
                           <td className="py-3 px-3">
@@ -296,7 +296,7 @@ export default function Chargebacks() {
             <Button
               onClick={handleSubmit}
               disabled={createMutation.isPending}
-              className="bg-orange-600 hover:bg-orange-700 text-white"
+              className="bg-orange-600 hover:bg-orange-700 text-foreground"
             >
               {createMutation.isPending ? "Guardando..." : "Registrar"}
             </Button>
@@ -318,21 +318,21 @@ export default function Chargebacks() {
               {/* Info de la aclaración */}
               <div className="bg-gray-50 rounded-xl p-4 space-y-2">
                 <div className="flex justify-between text-sm">
-                  <span className="text-gray-500">Monto en disputa</span>
-                  <span className="font-bold text-gray-900">{fmt(detailCb.amount)}</span>
+                  <span className="text-muted-foreground">Monto en disputa</span>
+                  <span className="font-bold text-foreground">{fmt(detailCb.amount)}</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-gray-500">Fecha de apertura</span>
-                  <span className="text-gray-700">{new Date(detailCb.createdAt).toLocaleDateString("es-MX", { year: "numeric", month: "long", day: "numeric" })}</span>
+                  <span className="text-muted-foreground">Fecha de apertura</span>
+                  <span className="text-foreground">{new Date(detailCb.createdAt).toLocaleDateString("es-MX", { year: "numeric", month: "long", day: "numeric" })}</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-gray-500">Motivo</span>
-                  <span className="text-gray-700">{detailCb.reasonEs || detailCb.reason || "Sin motivo"}</span>
+                  <span className="text-muted-foreground">Motivo</span>
+                  <span className="text-foreground">{detailCb.reasonEs || detailCb.reason || "Sin motivo"}</span>
                 </div>
                 {detailCb.resolvedAt && (
                   <div className="flex justify-between text-sm">
-                    <span className="text-gray-500">Fecha de resolución</span>
-                    <span className="text-gray-700">{new Date(detailCb.resolvedAt).toLocaleDateString("es-MX")}</span>
+                    <span className="text-muted-foreground">Fecha de resolución</span>
+                    <span className="text-foreground">{new Date(detailCb.resolvedAt).toLocaleDateString("es-MX")}</span>
                   </div>
                 )}
               </div>
@@ -340,8 +340,8 @@ export default function Chargebacks() {
               {/* Notas actuales */}
               {detailCb.notes && (
                 <div>
-                  <Label className="text-xs text-gray-500 uppercase">Notas registradas</Label>
-                  <p className="text-sm text-gray-700 mt-1 bg-blue-50 rounded-lg p-3">{detailCb.notes}</p>
+                  <Label className="text-xs text-muted-foreground uppercase">Notas registradas</Label>
+                  <p className="text-sm text-foreground mt-1 bg-blue-50 rounded-lg p-3">{detailCb.notes}</p>
                 </div>
               )}
 
@@ -407,7 +407,7 @@ export default function Chargebacks() {
                 <Button
                   onClick={handleUpdateStatus}
                   disabled={updateStatusMutation.isPending}
-                  className="bg-orange-600 hover:bg-orange-700 text-white"
+                  className="bg-orange-600 hover:bg-orange-700 text-foreground"
                 >
                   {updateStatusMutation.isPending ? "Guardando..." : "Actualizar estado"}
                 </Button>

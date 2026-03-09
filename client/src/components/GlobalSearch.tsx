@@ -130,12 +130,12 @@ export default function GlobalSearch() {
         "flex items-center gap-2 px-3 py-2 rounded-xl border transition-all",
         open
           ? "bg-white/10 border-emerald-500/50 ring-1 ring-emerald-500/30"
-          : "bg-white/5 border-white/10 hover:border-white/20"
+          : "bg-white/5 border-border hover:border-border"
       )}>
         {isFetching ? (
-          <Loader2 className="w-4 h-4 text-gray-400 flex-shrink-0 animate-spin" />
+          <Loader2 className="w-4 h-4 text-muted-foreground flex-shrink-0 animate-spin" />
         ) : (
-          <Search className="w-4 h-4 text-gray-400 flex-shrink-0" />
+          <Search className="w-4 h-4 text-muted-foreground flex-shrink-0" />
         )}
         <input
           ref={inputRef}
@@ -144,14 +144,14 @@ export default function GlobalSearch() {
           onChange={(e) => { setQuery(e.target.value); setOpen(true); }}
           onFocus={() => setOpen(true)}
           placeholder="Buscar ventas, clientes, páginas..."
-          className="flex-1 bg-transparent text-sm text-white placeholder-gray-500 outline-none min-w-0"
+          className="flex-1 bg-transparent text-sm text-foreground placeholder-gray-500 outline-none min-w-0"
         />
         {query ? (
-          <button onClick={handleClear} className="text-gray-500 hover:text-gray-300 flex-shrink-0">
+          <button onClick={handleClear} className="text-muted-foreground hover:text-muted-foreground flex-shrink-0">
             <X className="w-3.5 h-3.5" />
           </button>
         ) : (
-          <kbd className="hidden sm:flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] text-gray-500 border border-white/10 bg-white/5 flex-shrink-0">
+          <kbd className="hidden sm:flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] text-muted-foreground border border-border bg-white/5 flex-shrink-0">
             ⌘K
           </kbd>
         )}
@@ -159,19 +159,19 @@ export default function GlobalSearch() {
 
       {/* Results Dropdown */}
       {open && query.length >= 2 && (
-        <div className="absolute top-full left-0 right-0 mt-2 z-[200] rounded-xl border border-white/10 shadow-2xl overflow-hidden"
+        <div className="absolute top-full left-0 right-0 mt-2 z-[200] rounded-xl border border-border shadow-2xl overflow-hidden"
           style={{ background: "#1e2435" }}>
           {!hasResults && !isFetching ? (
             <div className="px-4 py-6 text-center">
-              <Search className="w-8 h-8 text-gray-600 mx-auto mb-2" />
-              <p className="text-sm text-gray-400">Sin resultados para <span className="text-white font-medium">"{query}"</span></p>
+              <Search className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
+              <p className="text-sm text-muted-foreground">Sin resultados para <span className="text-foreground font-medium">"{query}"</span></p>
             </div>
           ) : (
             <div className="py-1 max-h-[400px] overflow-y-auto">
               {/* Pages */}
               {(data?.pages || []).length > 0 && (
                 <div>
-                  <p className="px-3 py-1.5 text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Páginas</p>
+                  <p className="px-3 py-1.5 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Páginas</p>
                   {(data?.pages || []).map((item, i) => {
                     const Icon = TYPE_ICONS[item.type];
                     return (
@@ -181,10 +181,10 @@ export default function GlobalSearch() {
                           <Icon className="w-3.5 h-3.5 text-blue-400" />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm text-white font-medium truncate">{item.title}</p>
-                          <p className="text-xs text-gray-500 truncate">{item.subtitle}</p>
+                          <p className="text-sm text-foreground font-medium truncate">{item.title}</p>
+                          <p className="text-xs text-muted-foreground truncate">{item.subtitle}</p>
                         </div>
-                        <span className="text-[10px] text-gray-600 bg-white/5 px-1.5 py-0.5 rounded flex-shrink-0">
+                        <span className="text-[10px] text-muted-foreground bg-white/5 px-1.5 py-0.5 rounded flex-shrink-0">
                           {TYPE_LABELS[item.type]}
                         </span>
                       </button>
@@ -196,7 +196,7 @@ export default function GlobalSearch() {
               {/* Transactions */}
               {(data?.transactions || []).length > 0 && (
                 <div>
-                  <p className="px-3 py-1.5 text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Ventas</p>
+                  <p className="px-3 py-1.5 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Ventas</p>
                   {(data?.transactions || []).map((item, i) => {
                     const Icon = TYPE_ICONS[item.type];
                     return (
@@ -210,11 +210,11 @@ export default function GlobalSearch() {
                           )} />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm text-white font-medium truncate">{item.title}</p>
-                          <p className="text-xs text-gray-500 truncate">{item.subtitle}</p>
+                          <p className="text-sm text-foreground font-medium truncate">{item.title}</p>
+                          <p className="text-xs text-muted-foreground truncate">{item.subtitle}</p>
                         </div>
                         <div className="text-right flex-shrink-0">
-                          <p className={cn("text-xs font-semibold", STATUS_COLORS[item.status] || "text-gray-400")}>
+                          <p className={cn("text-xs font-semibold", STATUS_COLORS[item.status] || "text-muted-foreground")}>
                             {formatCurrency(item.amount, item.currency)}
                           </p>
                         </div>
@@ -227,7 +227,7 @@ export default function GlobalSearch() {
               {/* Links */}
               {(data?.links || []).length > 0 && (
                 <div>
-                  <p className="px-3 py-1.5 text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Links de Pago</p>
+                  <p className="px-3 py-1.5 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Links de Pago</p>
                   {(data?.links || []).map((item, i) => {
                     const Icon = TYPE_ICONS[item.type];
                     return (
@@ -237,14 +237,14 @@ export default function GlobalSearch() {
                           <Icon className="w-3.5 h-3.5 text-cyan-400" />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm text-white font-medium truncate">{item.title}</p>
-                          <p className="text-xs text-gray-500 truncate">{item.subtitle}</p>
+                          <p className="text-sm text-foreground font-medium truncate">{item.title}</p>
+                          <p className="text-xs text-muted-foreground truncate">{item.subtitle}</p>
                         </div>
                         <div className="text-right flex-shrink-0">
                           <p className="text-xs font-semibold text-cyan-400">
                             {formatCurrency(item.amount, item.currency)}
                           </p>
-                          <p className={cn("text-[10px]", STATUS_COLORS[item.status] || "text-gray-500")}>
+                          <p className={cn("text-[10px]", STATUS_COLORS[item.status] || "text-muted-foreground")}>
                             {item.status === "paid" ? "Pagado" : item.status === "pending" ? "Pendiente" : item.status}
                           </p>
                         </div>
@@ -257,7 +257,7 @@ export default function GlobalSearch() {
               {/* Customers */}
               {(data?.customers || []).length > 0 && (
                 <div>
-                  <p className="px-3 py-1.5 text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Pagadores</p>
+                  <p className="px-3 py-1.5 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Pagadores</p>
                   {(data?.customers || []).map((item, i) => {
                     const Icon = TYPE_ICONS[item.type];
                     return (
@@ -267,8 +267,8 @@ export default function GlobalSearch() {
                           <Icon className="w-3.5 h-3.5 text-purple-400" />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm text-white font-medium truncate">{item.title}</p>
-                          <p className="text-xs text-gray-500 truncate">{item.subtitle}</p>
+                          <p className="text-sm text-foreground font-medium truncate">{item.title}</p>
+                          <p className="text-xs text-muted-foreground truncate">{item.subtitle}</p>
                         </div>
                         {Number(item.amount) > 0 && (
                           <p className="text-xs font-semibold text-purple-400 flex-shrink-0">
@@ -282,10 +282,10 @@ export default function GlobalSearch() {
               )}
 
               {/* Footer hint */}
-              <div className="px-3 py-2 border-t border-white/5 flex items-center gap-2">
-                <kbd className="text-[10px] text-gray-600 bg-white/5 border border-white/10 px-1.5 py-0.5 rounded">Esc</kbd>
-                <span className="text-[10px] text-gray-600">para cerrar</span>
-                <span className="text-[10px] text-gray-600 ml-auto">Enter para navegar</span>
+              <div className="px-3 py-2 border-t border-border flex items-center gap-2">
+                <kbd className="text-[10px] text-muted-foreground bg-white/5 border border-border px-1.5 py-0.5 rounded">Esc</kbd>
+                <span className="text-[10px] text-muted-foreground">para cerrar</span>
+                <span className="text-[10px] text-muted-foreground ml-auto">Enter para navegar</span>
               </div>
             </div>
           )}

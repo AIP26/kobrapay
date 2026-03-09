@@ -113,9 +113,9 @@ export function NotificationBell() {
         className="relative p-2 rounded-lg hover:bg-gray-100 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
         aria-label="Notificaciones"
       >
-        <Bell className="w-5 h-5 text-gray-600" />
+        <Bell className="w-5 h-5 text-muted-foreground" />
         {unreadCount > 0 && (
-          <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1 leading-none">
+          <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] bg-red-500 text-foreground text-[10px] font-bold rounded-full flex items-center justify-center px-1 leading-none">
             {unreadCount > 99 ? "99+" : unreadCount}
           </span>
         )}
@@ -127,8 +127,8 @@ export function NotificationBell() {
           {/* Header */}
           <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 bg-gray-50">
             <div className="flex items-center gap-2">
-              <Bell className="w-4 h-4 text-gray-600" />
-              <span className="font-semibold text-gray-800 text-sm">Notificaciones</span>
+              <Bell className="w-4 h-4 text-muted-foreground" />
+              <span className="font-semibold text-foreground text-sm">Notificaciones</span>
               {unreadCount > 0 && (
                 <span className="bg-red-100 text-red-700 text-xs font-bold px-2 py-0.5 rounded-full">
                   {unreadCount} nueva{unreadCount !== 1 ? "s" : ""}
@@ -152,8 +152,8 @@ export function NotificationBell() {
             {notifications.length === 0 ? (
               <div className="py-12 text-center">
                 <Bell className="w-10 h-10 text-gray-200 mx-auto mb-3" />
-                <p className="text-gray-400 text-sm font-medium">Sin notificaciones</p>
-                <p className="text-gray-300 text-xs mt-1">Aquí aparecerán los nuevos registros y alertas</p>
+                <p className="text-muted-foreground text-sm font-medium">Sin notificaciones</p>
+                <p className="text-muted-foreground text-xs mt-1">Aquí aparecerán los nuevos registros y alertas</p>
               </div>
             ) : (
               notifications.map((notif) => (
@@ -172,18 +172,18 @@ export function NotificationBell() {
                   {/* Contenido */}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between gap-2">
-                      <p className={`text-sm leading-snug ${!notif.isRead ? "font-semibold text-gray-900" : "font-medium text-gray-700"}`}>
+                      <p className={`text-sm leading-snug ${!notif.isRead ? "font-semibold text-foreground" : "font-medium text-foreground"}`}>
                         {notif.title}
                       </p>
                       {!notif.isRead && (
                         <span className="flex-shrink-0 w-2 h-2 bg-blue-500 rounded-full mt-1" />
                       )}
                     </div>
-                    <p className="text-xs text-gray-500 mt-0.5 leading-relaxed line-clamp-2">
+                    <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed line-clamp-2">
                       {notif.message}
                     </p>
                     <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-                      <span className="text-[11px] text-gray-400">
+                      <span className="text-[11px] text-muted-foreground">
                         {timeAgo(new Date(notif.createdAt))}
                       </span>
                       {notif.actionUrl && (

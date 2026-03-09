@@ -37,12 +37,12 @@ function MetricCard({
   return (
     <div className={`bg-white rounded-xl border ${alert ? "border-red-300 bg-red-50" : "border-gray-200"} p-5 flex items-start gap-4 shadow-sm`}>
       <div className={`p-3 rounded-lg ${color}`}>
-        <Icon className="w-5 h-5 text-white" />
+        <Icon className="w-5 h-5 text-foreground" />
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-xs text-gray-500 font-medium uppercase tracking-wide">{label}</p>
-        <p className={`text-2xl font-bold mt-0.5 ${alert ? "text-red-600" : "text-gray-900"}`}>{value}</p>
-        {sub && <p className="text-xs text-gray-400 mt-0.5">{sub}</p>}
+        <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">{label}</p>
+        <p className={`text-2xl font-bold mt-0.5 ${alert ? "text-red-600" : "text-foreground"}`}>{value}</p>
+        {sub && <p className="text-xs text-muted-foreground mt-0.5">{sub}</p>}
       </div>
     </div>
   );
@@ -73,14 +73,14 @@ export default function SuperAdminMetrics() {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Panel de Métricas</h1>
-            <p className="text-sm text-gray-500 mt-0.5">
+            <h1 className="text-2xl font-bold text-foreground">Panel de Métricas</h1>
+            <p className="text-sm text-muted-foreground mt-0.5">
               Actualización automática cada 30 segundos · Última actualización: {lastUpdated}
             </p>
           </div>
           <button
             onClick={() => refetch()}
-            className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm font-medium hover:bg-emerald-700 transition-colors"
+            className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-foreground rounded-lg text-sm font-medium hover:bg-emerald-700 transition-colors"
           >
             <RefreshCw className="w-4 h-4" />
             Actualizar
@@ -107,7 +107,7 @@ export default function SuperAdminMetrics() {
 
             {/* Métricas del día */}
             <div>
-              <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">Hoy</h2>
+              <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">Hoy</h2>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                 <MetricCard
                   icon={DollarSign}
@@ -136,7 +136,7 @@ export default function SuperAdminMetrics() {
 
             {/* Métricas de la semana */}
             <div>
-              <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">Esta semana</h2>
+              <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">Esta semana</h2>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                 <MetricCard
                   icon={TrendingUp}
@@ -164,7 +164,7 @@ export default function SuperAdminMetrics() {
 
             {/* Métricas del mes */}
             <div>
-              <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">Este mes</h2>
+              <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">Este mes</h2>
               <div className="grid grid-cols-2 md:grid-cols-2 gap-4">
                 <MetricCard
                   icon={Users}
@@ -186,17 +186,17 @@ export default function SuperAdminMetrics() {
             {/* Top usuarios */}
             {data.topUsers.length > 0 && (
               <div>
-                <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">
+                <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
                   Top vendedores del mes
                 </h2>
                 <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
                   <table className="w-full text-sm">
                     <thead className="bg-gray-50 border-b border-gray-200">
                       <tr>
-                        <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">#</th>
-                        <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Usuario</th>
-                        <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Transacciones</th>
-                        <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Total vendido</th>
+                        <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase">#</th>
+                        <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase">Usuario</th>
+                        <th className="text-right px-4 py-3 text-xs font-semibold text-muted-foreground uppercase">Transacciones</th>
+                        <th className="text-right px-4 py-3 text-xs font-semibold text-muted-foreground uppercase">Total vendido</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100">
@@ -205,16 +205,16 @@ export default function SuperAdminMetrics() {
                           <td className="px-4 py-3">
                             <div className="flex items-center gap-1">
                               {i === 0 && <Crown className="w-4 h-4 text-amber-500" />}
-                              <span className={`font-bold ${i === 0 ? "text-amber-600" : "text-gray-400"}`}>
+                              <span className={`font-bold ${i === 0 ? "text-amber-600" : "text-muted-foreground"}`}>
                                 {i + 1}
                               </span>
                             </div>
                           </td>
                           <td className="px-4 py-3">
-                            <p className="font-medium text-gray-900">{u.name}</p>
-                            <p className="text-xs text-gray-400">{u.email}</p>
+                            <p className="font-medium text-foreground">{u.name}</p>
+                            <p className="text-xs text-muted-foreground">{u.email}</p>
                           </td>
-                          <td className="px-4 py-3 text-right text-gray-600">{u.count}</td>
+                          <td className="px-4 py-3 text-right text-muted-foreground">{u.count}</td>
                           <td className="px-4 py-3 text-right font-semibold text-emerald-600">
                             {fmt(parseFloat(u.total))}
                           </td>
@@ -227,7 +227,7 @@ export default function SuperAdminMetrics() {
             )}
           </>
         ) : (
-          <div className="text-center py-20 text-gray-400">
+          <div className="text-center py-20 text-muted-foreground">
             <Activity className="w-12 h-12 mx-auto mb-3 opacity-30" />
             <p>No se pudieron cargar las métricas.</p>
           </div>

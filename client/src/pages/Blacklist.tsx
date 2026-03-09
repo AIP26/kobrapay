@@ -150,7 +150,7 @@ export default function Blacklist() {
           />
         </div>
         <Button
-          className="mt-3 bg-red-600 hover:bg-red-700 text-white"
+          className="mt-3 bg-red-600 hover:bg-red-700 text-foreground"
           onClick={handleAdd}
           disabled={addMutation.isPending}
         >

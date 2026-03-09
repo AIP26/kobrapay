@@ -96,7 +96,7 @@ const COMMISSION_LAYERS = [
     who: "Stripe",
     rate: "2.7% + $0.05",
     desc: "Tarifa base de procesamiento de la red de tarjetas (Visa/Mastercard). Aplica en terminal física.",
-    color: "bg-gray-100 text-gray-700 border-gray-200",
+    color: "bg-gray-100 text-foreground border-gray-200",
     example: "$270 + $0.05 en $10,000",
   },
   {
@@ -162,20 +162,20 @@ function BrochureContent({ lastUpdated }: { lastUpdated: string }) {
     teal: "bg-teal-100 text-teal-700",
     rose: "bg-rose-100 text-rose-700",
     indigo: "bg-indigo-100 text-indigo-700",
-    slate: "bg-slate-100 text-slate-700",
+    slate: "bg-slate-100 text-foreground",
     yellow: "bg-yellow-100 text-yellow-700",
     pink: "bg-pink-100 text-pink-700",
     violet: "bg-violet-100 text-violet-700",
     cyan: "bg-cyan-100 text-cyan-700",
     orange: "bg-orange-100 text-orange-700",
-    gray: "bg-gray-100 text-gray-700",
+    gray: "bg-gray-100 text-foreground",
   };
 
   return (
     <div id="brochure-content" className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
 
       {/* ── Portada ── */}
-      <div className="bg-gradient-to-br from-gray-900 via-gray-800 to-emerald-900 text-white p-10 relative overflow-hidden">
+      <div className="bg-gradient-to-br from-gray-900 via-gray-800 to-emerald-900 text-foreground p-10 relative overflow-hidden">
         <div className="absolute inset-0 opacity-5">
           <div className="absolute top-0 right-0 w-96 h-96 rounded-full bg-emerald-400 blur-3xl" />
           <div className="absolute bottom-0 left-0 w-64 h-64 rounded-full bg-teal-400 blur-3xl" />
@@ -192,7 +192,7 @@ function BrochureContent({ lastUpdated }: { lastUpdated: string }) {
             La plataforma de pagos<br />
             <span className="text-emerald-400">más completa de México</span>
           </h2>
-          <p className="text-gray-300 text-lg max-w-2xl leading-relaxed">
+          <p className="text-muted-foreground text-lg max-w-2xl leading-relaxed">
             Todo lo que necesitas para cobrar, facturar, gestionar tu equipo y hacer crecer tu negocio.
             Sin mensualidades. Solo pagas una pequeña comisión cuando cobras.
           </p>
@@ -221,10 +221,10 @@ function BrochureContent({ lastUpdated }: { lastUpdated: string }) {
       <div className="p-8 bg-emerald-50 border-b border-emerald-100">
         <div className="flex items-center gap-3 mb-4">
           <div className="w-10 h-10 bg-emerald-600 rounded-xl flex items-center justify-center">
-            <Percent className="w-5 h-5 text-white" />
+            <Percent className="w-5 h-5 text-foreground" />
           </div>
           <div>
-            <h3 className="text-xl font-bold text-gray-900">Modelo 100% por comisión — Sin mensualidades</h3>
+            <h3 className="text-xl font-bold text-foreground">Modelo 100% por comisión — Sin mensualidades</h3>
             <p className="text-sm text-emerald-700">Solo pagas cuando cobras. Si no cobras, no pagas nada.</p>
           </div>
         </div>
@@ -243,40 +243,40 @@ function BrochureContent({ lastUpdated }: { lastUpdated: string }) {
         </div>
         {/* Ejemplo numérico */}
         <div className="bg-white rounded-xl border border-emerald-200 p-5">
-          <h4 className="font-bold text-gray-900 mb-3 flex items-center gap-2">
+          <h4 className="font-bold text-foreground mb-3 flex items-center gap-2">
             <DollarSign className="w-4 h-4 text-emerald-600" />
             Ejemplo real: Cobro de $10,000 MXN con terminal física
           </h4>
           <div className="space-y-2 text-sm">
             <div className="flex justify-between">
-              <span className="text-gray-600">Monto que cobra el negocio</span>
-              <span className="font-bold text-gray-900">$10,000.00</span>
+              <span className="text-muted-foreground">Monto que cobra el negocio</span>
+              <span className="font-bold text-foreground">$10,000.00</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-500">— Stripe (2.7% + $0.05)</span>
+              <span className="text-muted-foreground">— Stripe (2.7% + $0.05)</span>
               <span className="text-red-500">-$270.05</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-500">— KobraPay (~3.5%)</span>
+              <span className="text-muted-foreground">— KobraPay (~3.5%)</span>
               <span className="text-red-500">-$350.00</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-500">— Comisión del Asociado (0.2%)</span>
+              <span className="text-muted-foreground">— Comisión del Asociado (0.2%)</span>
               <span className="text-blue-500">-$20.00</span>
             </div>
             <div className="flex justify-between border-t border-gray-200 pt-2 mt-2">
-              <span className="font-bold text-gray-900">El negocio recibe</span>
+              <span className="font-bold text-foreground">El negocio recibe</span>
               <span className="font-black text-emerald-600 text-lg">$9,359.95</span>
             </div>
-            <p className="text-xs text-gray-400 text-center pt-1">Costo efectivo total: 6.4% — El asociado gana $20 por esa sola transacción</p>
+            <p className="text-xs text-muted-foreground text-center pt-1">Costo efectivo total: 6.4% — El asociado gana $20 por esa sola transacción</p>
           </div>
         </div>
       </div>
 
       {/* ── Por qué KobraPay ── */}
       <div className="p-8 bg-gray-50 border-b border-gray-100">
-        <h3 className="text-xl font-bold text-gray-900 mb-2">¿Por qué elegir KobraPay?</h3>
-        <p className="text-gray-600 mb-6">
+        <h3 className="text-xl font-bold text-foreground mb-2">¿Por qué elegir KobraPay?</h3>
+        <p className="text-muted-foreground mb-6">
           La única plataforma en México que combina pagos, facturación, gestión de equipo, nómina
           y herramientas especializadas por sector en un solo lugar. Sin mensualidades, sin múltiples proveedores.
         </p>
@@ -291,8 +291,8 @@ function BrochureContent({ lastUpdated }: { lastUpdated: string }) {
             return (
               <div key={stat.label} className="bg-white rounded-xl p-4 text-center border border-gray-200">
                 <Icon className="w-6 h-6 text-emerald-600 mx-auto mb-2" />
-                <p className="text-2xl font-black text-gray-900">{stat.value}</p>
-                <p className="text-xs text-gray-500 mt-0.5">{stat.label}</p>
+                <p className="text-2xl font-black text-foreground">{stat.value}</p>
+                <p className="text-xs text-muted-foreground mt-0.5">{stat.label}</p>
               </div>
             );
           })}
@@ -301,8 +301,8 @@ function BrochureContent({ lastUpdated }: { lastUpdated: string }) {
 
       {/* ── Funcionalidades ── */}
       <div className="p-8 border-b border-gray-100">
-        <h3 className="text-xl font-bold text-gray-900 mb-2">Funcionalidades incluidas</h3>
-        <p className="text-sm text-gray-500 mb-6">Todo incluido sin costo adicional. Activa solo lo que necesitas.</p>
+        <h3 className="text-xl font-bold text-foreground mb-2">Funcionalidades incluidas</h3>
+        <p className="text-sm text-muted-foreground mb-6">Todo incluido sin costo adicional. Activa solo lo que necesitas.</p>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {KOBRAPAY_FEATURES.map(feature => {
             const Icon = feature.icon;
@@ -313,8 +313,8 @@ function BrochureContent({ lastUpdated }: { lastUpdated: string }) {
                   <Icon className="w-4 h-4" />
                 </div>
                 <div>
-                  <p className="font-semibold text-gray-900 text-sm">{feature.title}</p>
-                  <p className="text-xs text-gray-500 mt-0.5 leading-relaxed">{feature.description}</p>
+                  <p className="font-semibold text-foreground text-sm">{feature.title}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">{feature.description}</p>
                 </div>
               </div>
             );
@@ -334,13 +334,13 @@ function BrochureContent({ lastUpdated }: { lastUpdated: string }) {
 
       {/* ── Sectores ── */}
       <div className="p-8 bg-gray-50 border-b border-gray-100">
-        <h3 className="text-xl font-bold text-gray-900 mb-2">¿Para qué tipo de negocio?</h3>
-        <p className="text-sm text-gray-500 mb-5">KobraPay funciona para cualquier negocio que cobre a sus clientes.</p>
+        <h3 className="text-xl font-bold text-foreground mb-2">¿Para qué tipo de negocio?</h3>
+        <p className="text-sm text-muted-foreground mb-5">KobraPay funciona para cualquier negocio que cobre a sus clientes.</p>
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
           {SECTORS.map(s => (
             <div key={s.name} className="bg-white rounded-xl border border-gray-200 p-3 flex items-center gap-2.5">
               <span className="text-xl">{s.icon}</span>
-              <span className="text-xs font-medium text-gray-700">{s.name}</span>
+              <span className="text-xs font-medium text-foreground">{s.name}</span>
             </div>
           ))}
         </div>
@@ -350,34 +350,34 @@ function BrochureContent({ lastUpdated }: { lastUpdated: string }) {
       <div className="p-8 border-b border-gray-100">
         <div className="flex items-center gap-3 mb-4">
           <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center">
-            <Layers className="w-5 h-5 text-white" />
+            <Layers className="w-5 h-5 text-foreground" />
           </div>
           <div>
-            <h3 className="text-xl font-bold text-gray-900">Programa de Asociados KobraPay</h3>
+            <h3 className="text-xl font-bold text-foreground">Programa de Asociados KobraPay</h3>
             <p className="text-sm text-blue-700">Gana ingresos recurrentes sin inversión inicial</p>
           </div>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
-            <h4 className="font-semibold text-gray-800 mb-3">¿Cómo gana el Asociado?</h4>
+            <h4 className="font-semibold text-foreground mb-3">¿Cómo gana el Asociado?</h4>
             <div className="bg-blue-50 rounded-xl border border-blue-200 p-4 space-y-3 text-sm">
               <p className="text-blue-900">
                 El asociado registra negocios en KobraPay. Por cada cobro que procese ese negocio,
                 el asociado recibe un porcentaje que él mismo define al cotizar al cliente.
               </p>
               <div className="bg-white rounded-lg p-3 border border-blue-100">
-                <p className="font-bold text-gray-900 mb-2">Ejemplo:</p>
-                <p className="text-gray-600">Un restaurante procesa $500,000/mes.</p>
-                <p className="text-gray-600">El asociado cobra 0.3% de margen.</p>
+                <p className="font-bold text-foreground mb-2">Ejemplo:</p>
+                <p className="text-muted-foreground">Un restaurante procesa $500,000/mes.</p>
+                <p className="text-muted-foreground">El asociado cobra 0.3% de margen.</p>
                 <p className="font-bold text-blue-700 mt-1">El asociado gana: $1,500/mes de ese solo cliente.</p>
-                <p className="text-xs text-gray-400 mt-1">Con 10 clientes similares: $15,000/mes recurrentes</p>
+                <p className="text-xs text-muted-foreground mt-1">Con 10 clientes similares: $15,000/mes recurrentes</p>
               </div>
             </div>
           </div>
           <div className="space-y-2">
-            <h4 className="font-semibold text-gray-800 mb-3">Beneficios del Asociado</h4>
+            <h4 className="font-semibold text-foreground mb-3">Beneficios del Asociado</h4>
             {ASSOCIATE_BENEFITS.map(b => (
-              <div key={b} className="flex items-center gap-2 text-sm text-gray-700">
+              <div key={b} className="flex items-center gap-2 text-sm text-foreground">
                 <ArrowRight className="w-4 h-4 text-emerald-500 flex-shrink-0" />
                 {b}
               </div>
@@ -388,7 +388,7 @@ function BrochureContent({ lastUpdated }: { lastUpdated: string }) {
 
       {/* ── Seguridad ── */}
       <div className="p-8 bg-gray-50 border-b border-gray-100">
-        <h3 className="text-xl font-bold text-gray-900 mb-4">Seguridad y Cumplimiento</h3>
+        <h3 className="text-xl font-bold text-foreground mb-4">Seguridad y Cumplimiento</h3>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {[
             { icon: Shield, title: "PCI DSS", desc: "Nivel 1 certificado" },
@@ -400,8 +400,8 @@ function BrochureContent({ lastUpdated }: { lastUpdated: string }) {
             return (
               <div key={item.title} className="bg-white rounded-xl p-4 text-center border border-gray-200">
                 <Icon className="w-6 h-6 text-emerald-600 mx-auto mb-2" />
-                <p className="font-bold text-gray-900 text-sm">{item.title}</p>
-                <p className="text-xs text-gray-500 mt-0.5">{item.desc}</p>
+                <p className="font-bold text-foreground text-sm">{item.title}</p>
+                <p className="text-xs text-muted-foreground mt-0.5">{item.desc}</p>
               </div>
             );
           })}
@@ -409,7 +409,7 @@ function BrochureContent({ lastUpdated }: { lastUpdated: string }) {
       </div>
 
       {/* ── CTA ── */}
-      <div className="p-8 bg-gradient-to-br from-emerald-600 to-teal-700 text-white text-center">
+      <div className="p-8 bg-gradient-to-br from-emerald-600 to-teal-700 text-foreground text-center">
         <h3 className="text-2xl font-bold mb-2">¿Listo para empezar?</h3>
         <p className="text-emerald-100 mb-4">
           Regístrate hoy y empieza a cobrar en menos de 24 horas.
@@ -511,11 +511,11 @@ export default function Brochure() {
         <div className="flex items-center justify-between flex-wrap gap-3">
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-gray-800 to-emerald-700 flex items-center justify-center shadow-lg">
-              <FileText className="w-6 h-6 text-white" />
+              <FileText className="w-6 h-6 text-foreground" />
             </div>
             <div>
-              <h1 className="text-xl font-bold text-gray-900">Brochure de Ventas</h1>
-              <p className="text-sm text-gray-500">Presentación completa para mostrar a tus clientes</p>
+              <h1 className="text-xl font-bold text-foreground">Brochure de Ventas</h1>
+              <p className="text-sm text-muted-foreground">Presentación completa para mostrar a tus clientes</p>
             </div>
           </div>
           <div className="flex gap-2 flex-wrap">
@@ -531,7 +531,7 @@ export default function Brochure() {
               size="sm"
               onClick={handleDownloadPDF}
               disabled={isGenerating}
-              className="bg-emerald-600 hover:bg-emerald-700 text-white gap-1.5"
+              className="bg-emerald-600 hover:bg-emerald-700 text-foreground gap-1.5"
             >
               <Download className="w-4 h-4" />
               {isGenerating ? "Generando..." : "Descargar PDF"}

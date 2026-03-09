@@ -26,7 +26,7 @@ export default function PaySuccess() {
                 <CheckCircle2 className="w-10 h-10 text-green-600" />
               </div>
               <div className="absolute -bottom-1 -right-1 w-8 h-8 bg-primary rounded-full flex items-center justify-center">
-                <CreditCard className="w-4 h-4 text-white" />
+                <CreditCard className="w-4 h-4 text-foreground" />
               </div>
             </div>
 

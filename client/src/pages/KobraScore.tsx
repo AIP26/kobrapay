@@ -7,7 +7,7 @@ function ScoreBadge({ score, level, color }: { score: number; level: string; col
   return (
     <div className="flex items-center gap-2">
       <div
-        className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm shrink-0"
+        className="w-10 h-10 rounded-full flex items-center justify-center text-foreground font-bold text-sm shrink-0"
         style={{ backgroundColor: color }}
       >
         {score}
@@ -29,7 +29,7 @@ function ScoreBar({ value, max, color }: { value: number; max: number; color: st
           style={{ width: `${pct}%`, backgroundColor: color }}
         />
       </div>
-      <span className="text-xs text-gray-500 w-10 text-right">{value}/{max}</span>
+      <span className="text-xs text-muted-foreground w-10 text-right">{value}/{max}</span>
     </div>
   );
 }
@@ -44,36 +44,36 @@ function ScoreDetailPanel({ userId, onClose }: { userId: number; onClose: () => 
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between">
-          <h3 className="text-lg font-bold text-gray-900">Detalle KobraScore</h3>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-xl leading-none">&times;</button>
+          <h3 className="text-lg font-bold text-foreground">Detalle KobraScore</h3>
+          <button onClick={onClose} className="text-muted-foreground hover:text-muted-foreground text-xl leading-none">&times;</button>
         </div>
 
         {isLoading ? (
-          <div className="text-center py-8 text-gray-400">Calculando score...</div>
+          <div className="text-center py-8 text-muted-foreground">Calculando score...</div>
         ) : data ? (
           <>
             {/* Score principal */}
             <div className="flex items-center gap-4 p-4 rounded-xl" style={{ backgroundColor: `${data.color}15` }}>
               <div
-                className="w-16 h-16 rounded-full flex items-center justify-center text-white font-bold text-2xl shrink-0"
+                className="w-16 h-16 rounded-full flex items-center justify-center text-foreground font-bold text-2xl shrink-0"
                 style={{ backgroundColor: data.color }}
               >
                 {data.score}
               </div>
               <div>
                 <p className="text-xl font-bold" style={{ color: data.color }}>{data.level}</p>
-                <p className="text-sm text-gray-600">{data.description}</p>
+                <p className="text-sm text-muted-foreground">{data.description}</p>
               </div>
             </div>
 
             {/* Desglose */}
             <div className="space-y-4">
-              <p className="text-sm font-semibold text-gray-700">Desglose del puntaje</p>
+              <p className="text-sm font-semibold text-foreground">Desglose del puntaje</p>
               {Object.values(data.breakdown).map((item) => (
                 <div key={item.label} className="space-y-1">
                   <div className="flex justify-between items-center">
-                    <span className="text-sm text-gray-700">{item.label}</span>
-                    <span className="text-xs text-gray-400">{item.detail}</span>
+                    <span className="text-sm text-foreground">{item.label}</span>
+                    <span className="text-xs text-muted-foreground">{item.detail}</span>
                   </div>
                   <ScoreBar value={item.score} max={item.max} color={data.color} />
                 </div>
@@ -89,7 +89,7 @@ function ScoreDetailPanel({ userId, onClose }: { userId: number; onClose: () => 
             </div>
           </>
         ) : (
-          <div className="text-center py-8 text-gray-400">No se pudo calcular el score.</div>
+          <div className="text-center py-8 text-muted-foreground">No se pudo calcular el score.</div>
         )}
       </div>
     </div>
@@ -123,7 +123,7 @@ export default function KobraScorePage() {
       <div className="max-w-5xl mx-auto space-y-6">
 
         {/* Header */}
-        <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl p-6 text-white">
+        <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl p-6 text-foreground">
           <div className="flex items-center gap-3 mb-1">
             <Star className="w-7 h-7" />
             <h1 className="text-xl font-bold">KobraScore</h1>
@@ -138,42 +138,42 @@ export default function KobraScorePage() {
           <div className="bg-white rounded-xl border border-gray-200 p-4 text-center">
             <div className="flex items-center justify-center gap-2 mb-1">
               <TrendingUp className="w-4 h-4 text-blue-500" />
-              <span className="text-xs text-gray-500">Score Promedio</span>
+              <span className="text-xs text-muted-foreground">Score Promedio</span>
             </div>
             <p className="text-3xl font-bold text-blue-600">{avgScore}</p>
-            <p className="text-xs text-gray-400 mt-0.5">de 100 puntos</p>
+            <p className="text-xs text-muted-foreground mt-0.5">de 100 puntos</p>
           </div>
           <div className="bg-white rounded-xl border border-gray-200 p-4 text-center">
             <div className="flex items-center justify-center gap-2 mb-1">
               <Users className="w-4 h-4 text-emerald-500" />
-              <span className="text-xs text-gray-500">Clientes Excelente</span>
+              <span className="text-xs text-muted-foreground">Clientes Excelente</span>
             </div>
             <p className="text-3xl font-bold text-emerald-600">{excellent}</p>
-            <p className="text-xs text-gray-400 mt-0.5">score ≥ 85</p>
+            <p className="text-xs text-muted-foreground mt-0.5">score ≥ 85</p>
           </div>
           <div className="bg-white rounded-xl border border-gray-200 p-4 text-center">
             <div className="flex items-center justify-center gap-2 mb-1">
               <AlertTriangle className="w-4 h-4 text-orange-500" />
-              <span className="text-xs text-gray-500">Requieren Atención</span>
+              <span className="text-xs text-muted-foreground">Requieren Atención</span>
             </div>
             <p className="text-3xl font-bold text-orange-500">{atRisk}</p>
-            <p className="text-xs text-gray-400 mt-0.5">score &lt; 25</p>
+            <p className="text-xs text-muted-foreground mt-0.5">score &lt; 25</p>
           </div>
         </div>
 
         {/* Tabla de clientes */}
         <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
           <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
-            <h3 className="font-semibold text-gray-900">Clientes y sus KobraScores</h3>
-            <span className="text-xs text-gray-400">{scores?.length ?? 0} clientes</span>
+            <h3 className="font-semibold text-foreground">Clientes y sus KobraScores</h3>
+            <span className="text-xs text-muted-foreground">{scores?.length ?? 0} clientes</span>
           </div>
 
           {isLoading ? (
-            <div className="p-8 text-center text-gray-400">Calculando scores...</div>
+            <div className="p-8 text-center text-muted-foreground">Calculando scores...</div>
           ) : !sorted.length ? (
             <div className="p-8 text-center">
-              <Star className="w-10 h-10 text-gray-300 mx-auto mb-2" />
-              <p className="text-gray-500 text-sm">Aún no tienes clientes para evaluar.</p>
+              <Star className="w-10 h-10 text-muted-foreground mx-auto mb-2" />
+              <p className="text-muted-foreground text-sm">Aún no tienes clientes para evaluar.</p>
             </div>
           ) : (
             <div className="overflow-x-auto">
@@ -181,7 +181,7 @@ export default function KobraScorePage() {
                 <thead className="bg-gray-50">
                   <tr>
                     <th
-                      className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase cursor-pointer hover:text-gray-700"
+                      className="text-left px-4 py-3 text-xs font-medium text-muted-foreground uppercase cursor-pointer hover:text-foreground"
                       onClick={() => toggleSort("name")}
                     >
                       <span className="flex items-center gap-1">
@@ -190,7 +190,7 @@ export default function KobraScorePage() {
                       </span>
                     </th>
                     <th
-                      className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase cursor-pointer hover:text-gray-700"
+                      className="text-left px-4 py-3 text-xs font-medium text-muted-foreground uppercase cursor-pointer hover:text-foreground"
                       onClick={() => toggleSort("score")}
                     >
                       <span className="flex items-center gap-1">
@@ -199,7 +199,7 @@ export default function KobraScorePage() {
                       </span>
                     </th>
                     <th
-                      className="text-right px-4 py-3 text-xs font-medium text-gray-500 uppercase cursor-pointer hover:text-gray-700"
+                      className="text-right px-4 py-3 text-xs font-medium text-muted-foreground uppercase cursor-pointer hover:text-foreground"
                       onClick={() => toggleSort("volume")}
                     >
                       <span className="flex items-center justify-end gap-1">
@@ -207,25 +207,25 @@ export default function KobraScorePage() {
                         {sortBy === "volume" ? (sortDir === "asc" ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />) : null}
                       </span>
                     </th>
-                    <th className="text-right px-4 py-3 text-xs font-medium text-gray-500 uppercase">Tx 90d</th>
-                    <th className="text-right px-4 py-3 text-xs font-medium text-gray-500 uppercase">Contracargos</th>
-                    <th className="text-right px-4 py-3 text-xs font-medium text-gray-500 uppercase">Detalle</th>
+                    <th className="text-right px-4 py-3 text-xs font-medium text-muted-foreground uppercase">Tx 90d</th>
+                    <th className="text-right px-4 py-3 text-xs font-medium text-muted-foreground uppercase">Contracargos</th>
+                    <th className="text-right px-4 py-3 text-xs font-medium text-muted-foreground uppercase">Detalle</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
                   {sorted.map((c) => (
                     <tr key={c.userId} className="hover:bg-gray-50">
                       <td className="px-4 py-3">
-                        <p className="font-medium text-gray-900">{c.name || "—"}</p>
-                        <p className="text-xs text-gray-400">{c.email}</p>
+                        <p className="font-medium text-foreground">{c.name || "—"}</p>
+                        <p className="text-xs text-muted-foreground">{c.email}</p>
                       </td>
                       <td className="px-4 py-3">
                         <ScoreBadge score={c.score} level={c.level} color={c.color} />
                       </td>
-                      <td className="px-4 py-3 text-right text-gray-700 font-medium">
+                      <td className="px-4 py-3 text-right text-foreground font-medium">
                         ${c.volume30d.toLocaleString("es-MX", { minimumFractionDigits: 0 })}
                       </td>
-                      <td className="px-4 py-3 text-right text-gray-600">{c.txCount90d}</td>
+                      <td className="px-4 py-3 text-right text-muted-foreground">{c.txCount90d}</td>
                       <td className="px-4 py-3 text-right">
                         {c.chargebackCount > 0 ? (
                           <span className="text-red-600 font-medium">{c.chargebackCount}</span>
@@ -251,7 +251,7 @@ export default function KobraScorePage() {
 
         {/* Leyenda */}
         <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
-          <p className="text-xs font-semibold text-gray-600 mb-3">Escala de KobraScore</p>
+          <p className="text-xs font-semibold text-muted-foreground mb-3">Escala de KobraScore</p>
           <div className="grid grid-cols-5 gap-2 text-center">
             {[
               { label: "Nuevo", range: "0–24", color: "#6b7280" },
@@ -263,7 +263,7 @@ export default function KobraScorePage() {
               <div key={s.label} className="flex flex-col items-center gap-1">
                 <div className="w-6 h-6 rounded-full" style={{ backgroundColor: s.color }} />
                 <p className="text-xs font-medium" style={{ color: s.color }}>{s.label}</p>
-                <p className="text-xs text-gray-400">{s.range}</p>
+                <p className="text-xs text-muted-foreground">{s.range}</p>
               </div>
             ))}
           </div>

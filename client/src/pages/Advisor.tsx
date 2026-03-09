@@ -94,8 +94,8 @@ export default function Advisor() {
     return (
       <DashboardLayout title="KobraPay Advisor">
         <div className="flex flex-col items-center justify-center h-64 text-center">
-          <Bot className="w-12 h-12 text-gray-300 mb-3" />
-          <p className="text-gray-500">Esta sección es exclusiva para el administrador de KobraPay.</p>
+          <Bot className="w-12 h-12 text-muted-foreground mb-3" />
+          <p className="text-muted-foreground">Esta sección es exclusiva para el administrador de KobraPay.</p>
         </div>
       </DashboardLayout>
     );
@@ -108,17 +108,17 @@ export default function Advisor() {
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-emerald-500 to-cyan-500 flex items-center justify-center shadow-lg">
-              <Bot className="w-6 h-6 text-white" />
+              <Bot className="w-6 h-6 text-foreground" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h1 className="text-2xl font-bold text-gray-900">KobraPay Advisor</h1>
+                <h1 className="text-2xl font-bold text-foreground">KobraPay Advisor</h1>
                 <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200 gap-1" variant="outline">
                   <Sparkles className="w-3 h-3" />
                   IA Privada
                 </Badge>
               </div>
-              <p className="text-sm text-gray-500 mt-0.5">Tu asesor estratégico personal — solo visible para ti</p>
+              <p className="text-sm text-muted-foreground mt-0.5">Tu asesor estratégico personal — solo visible para ti</p>
             </div>
           </div>
         </div>
@@ -136,7 +136,7 @@ export default function Advisor() {
               <div className={`p-1.5 rounded-lg ${color} flex-shrink-0`}>
                 <Icon className="w-4 h-4" />
               </div>
-              <span className="text-xs font-medium text-gray-700">{label}</span>
+              <span className="text-xs font-medium text-foreground">{label}</span>
             </button>
           ))}
         </div>
@@ -155,7 +155,7 @@ export default function Advisor() {
         </div>
 
         {/* Nota de privacidad */}
-        <p className="text-xs text-gray-400 text-center">
+        <p className="text-xs text-muted-foreground text-center">
           🔒 Esta conversación es privada y solo tú puedes verla. El Advisor conoce todos los detalles de KobraPay, precios y competencia.
         </p>
       </div>

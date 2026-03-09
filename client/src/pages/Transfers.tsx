@@ -122,10 +122,10 @@ export default function Transfers() {
                   En desarrollo activo
                 </Badge>
               </div>
-              <h1 className="text-3xl font-black text-white mb-3 leading-tight">
+              <h1 className="text-3xl font-black text-foreground mb-3 leading-tight">
                 Transferencias <span style={{ color: "#00c896" }}>KobraPay</span>
               </h1>
-              <p className="text-gray-300 text-base leading-relaxed max-w-xl">
+              <p className="text-muted-foreground text-base leading-relaxed max-w-xl">
                 Estamos construyendo el módulo de transferencias más completo de México: SPEI nacional, Wire internacional, tipo Zelle USA-México y cripto. Todo en un solo panel.
               </p>
               <div className="flex items-center gap-3 mt-6">
@@ -137,14 +137,14 @@ export default function Transfers() {
                   <Bell className="w-4 h-4" />
                   Notificarme cuando esté listo
                 </Button>
-                <span className="text-gray-400 text-xs">Sin compromiso · Gratis</span>
+                <span className="text-muted-foreground text-xs">Sin compromiso · Gratis</span>
               </div>
             </div>
             <div className="hidden md:flex flex-col items-center gap-3">
               <div className="w-24 h-24 rounded-2xl flex items-center justify-center" style={{ background: "rgba(0,200,150,0.15)", border: "1px solid rgba(0,200,150,0.3)" }}>
                 <ArrowLeftRight className="w-12 h-12" style={{ color: "#00c896" }} />
               </div>
-              <span className="text-xs text-gray-400 text-center">Cobra fácil,<br />cobra global</span>
+              <span className="text-xs text-muted-foreground text-center">Cobra fácil,<br />cobra global</span>
             </div>
           </div>
         </div>
@@ -159,8 +159,8 @@ export default function Transfers() {
                   <Icon className={`w-5 h-5 ${stat.color}`} />
                 </div>
                 <div>
-                  <p className="text-xs text-gray-500">{stat.label}</p>
-                  <p className="text-sm font-bold text-gray-800">{stat.value}</p>
+                  <p className="text-xs text-muted-foreground">{stat.label}</p>
+                  <p className="text-sm font-bold text-foreground">{stat.value}</p>
                 </div>
               </div>
             );
@@ -169,7 +169,7 @@ export default function Transfers() {
 
         {/* Tipos de transferencia */}
         <div>
-          <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+          <h2 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2">
             <Wallet className="w-5 h-5 text-emerald-500" />
             Tipos de transferencia disponibles
           </h2>
@@ -178,21 +178,21 @@ export default function Transfers() {
               const Icon = type.icon;
               return (
                 <div key={type.id} className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm hover:shadow-md transition-shadow">
-                  <div className={`bg-gradient-to-r ${type.gradient} px-5 py-4 text-white`}>
+                  <div className={`bg-gradient-to-r ${type.gradient} px-5 py-4 text-foreground`}>
                     <div className="flex items-center justify-between mb-2">
                       <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
-                        <Icon className="w-5 h-5 text-white" />
+                        <Icon className="w-5 h-5 text-foreground" />
                       </div>
                       <Badge className={`text-xs font-semibold border ${type.badgeClass}`}>
                         {type.badgeText}
                       </Badge>
                     </div>
                     <h3 className="font-bold text-lg">{type.title}</h3>
-                    <p className="text-white/80 text-sm">{type.subtitle}</p>
+                    <p className="text-foreground/80 text-sm">{type.subtitle}</p>
                   </div>
 
                   <div className="p-5 space-y-4">
-                    <p className="text-sm text-gray-600 italic border-l-4 border-gray-200 pl-3">
+                    <p className="text-sm text-muted-foreground italic border-l-4 border-gray-200 pl-3">
                       "{type.highlight}"
                     </p>
 
@@ -205,9 +205,9 @@ export default function Transfers() {
                         const DetailIcon = detail.icon;
                         return (
                           <div key={detail.label} className="bg-gray-50 rounded-xl p-2.5 text-center">
-                            <DetailIcon className="w-4 h-4 text-gray-400 mx-auto mb-1" />
-                            <p className="text-xs text-gray-400">{detail.label}</p>
-                            <p className="text-xs font-semibold text-gray-700 leading-tight mt-0.5">{detail.value}</p>
+                            <DetailIcon className="w-4 h-4 text-muted-foreground mx-auto mb-1" />
+                            <p className="text-xs text-muted-foreground">{detail.label}</p>
+                            <p className="text-xs font-semibold text-foreground leading-tight mt-0.5">{detail.value}</p>
                           </div>
                         );
                       })}
@@ -215,7 +215,7 @@ export default function Transfers() {
 
                     <div className="space-y-1.5">
                       {type.features.map((f) => (
-                        <div key={f} className="flex items-center gap-2 text-sm text-gray-600">
+                        <div key={f} className="flex items-center gap-2 text-sm text-muted-foreground">
                           <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
                           {f}
                         </div>
@@ -241,7 +241,7 @@ export default function Transfers() {
         <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
           <div className="px-6 py-4 border-b border-gray-100 flex items-center gap-2">
             <Star className="w-5 h-5 text-amber-500" />
-            <h3 className="font-semibold text-gray-900">Roadmap de Transferencias KobraPay</h3>
+            <h3 className="font-semibold text-foreground">Roadmap de Transferencias KobraPay</h3>
           </div>
           <div className="p-6">
             <div className="flex flex-col md:flex-row gap-0 overflow-x-auto">
@@ -254,14 +254,14 @@ export default function Transfers() {
                 <div key={i} className="flex items-center gap-0 min-w-0 flex-1">
                   <div className="flex flex-col items-center text-center flex-1 px-4 py-3">
                     <div className={`w-12 h-12 rounded-full ${item.color} flex items-center justify-center mb-3 shadow-lg`}>
-                      <span className="text-white font-bold text-xs">{i + 1}</span>
+                      <span className="text-foreground font-bold text-xs">{i + 1}</span>
                     </div>
-                    <Badge className="text-xs mb-2 bg-gray-100 text-gray-600">{item.phase}</Badge>
-                    <p className="text-sm font-bold text-gray-900">{item.title}</p>
-                    <p className="text-xs text-gray-500 mt-1 leading-relaxed">{item.desc}</p>
+                    <Badge className="text-xs mb-2 bg-gray-100 text-muted-foreground">{item.phase}</Badge>
+                    <p className="text-sm font-bold text-foreground">{item.title}</p>
+                    <p className="text-xs text-muted-foreground mt-1 leading-relaxed">{item.desc}</p>
                   </div>
                   {i < arr.length - 1 && (
-                    <ChevronRight className="w-5 h-5 text-gray-300 shrink-0 hidden md:block" />
+                    <ChevronRight className="w-5 h-5 text-muted-foreground shrink-0 hidden md:block" />
                   )}
                 </div>
               ))}
@@ -283,7 +283,7 @@ export default function Transfers() {
             <Button
               onClick={handleNotify}
               size="sm"
-              className="mt-3 gap-2 bg-amber-600 hover:bg-amber-700 text-white"
+              className="mt-3 gap-2 bg-amber-600 hover:bg-amber-700 text-foreground"
             >
               <Send className="w-3.5 h-3.5" />
               Quiero acceso anticipado

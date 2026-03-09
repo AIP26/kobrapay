@@ -15,7 +15,7 @@ import jsPDF from "jspdf";
 type ContractStatus = "draft" | "sent" | "signed" | "archived";
 
 const STATUS_LABELS: Record<ContractStatus, { label: string; color: string }> = {
-  draft: { label: "Borrador", color: "bg-gray-100 text-gray-700" },
+  draft: { label: "Borrador", color: "bg-gray-100 text-foreground" },
   sent: { label: "Enviado", color: "bg-blue-100 text-blue-700" },
   signed: { label: "Firmado", color: "bg-green-100 text-green-700" },
   archived: { label: "Archivado", color: "bg-yellow-100 text-yellow-700" },
@@ -289,20 +289,20 @@ function ContractPreviewModal({ contract, onClose }: { contract: ContractData; o
         </DialogHeader>
         <div className="bg-white border border-gray-200 rounded-lg p-8 text-sm font-serif" style={{ fontFamily: "Georgia, serif" }}>
           {/* Header */}
-          <div className="bg-cyan-700 text-white p-4 rounded-t-lg -mx-8 -mt-8 mb-6 text-center">
+          <div className="bg-cyan-700 text-foreground p-4 rounded-t-lg -mx-8 -mt-8 mb-6 text-center">
             <h1 className="text-xl font-bold tracking-wide">CONTRATO DE SERVICIOS</h1>
             <p className="text-cyan-200 text-xs mt-1">KobraPay — Plataforma de Procesamiento de Pagos Digitales</p>
           </div>
           <div className="flex justify-between items-center mb-6 bg-cyan-50 rounded p-3 text-xs">
             <span className="font-bold text-cyan-800">Contrato No. KP-{String(contract.id).padStart(5, "0")}</span>
-            <span className="text-gray-600">Fecha: {dateStr}</span>
+            <span className="text-muted-foreground">Fecha: {dateStr}</span>
           </div>
 
           {/* Parties */}
           <h2 className="text-cyan-700 font-bold text-sm uppercase border-b border-cyan-200 pb-1 mb-3">Comparecientes</h2>
           <p className="mb-2"><strong>EL PRESTADOR DE SERVICIOS:</strong> KobraPay, plataforma de procesamiento de pagos digitales, con domicilio en Ciudad de México.</p>
           <p className="mb-1"><strong>EL CLIENTE:</strong></p>
-          <ul className="ml-4 mb-4 space-y-0.5 text-gray-700">
+          <ul className="ml-4 mb-4 space-y-0.5 text-foreground">
             <li>Nombre: {contract.clientName}</li>
             {contract.businessName && <li>Negocio: {contract.businessName}</li>}
             {contract.clientRfc && <li>RFC: {contract.clientRfc}</li>}
@@ -315,7 +315,7 @@ function ContractPreviewModal({ contract, onClose }: { contract: ContractData; o
 
           {/* Clauses */}
           <h2 className="text-cyan-700 font-bold text-sm uppercase border-b border-cyan-200 pb-1 mb-3">Cláusulas del Contrato</h2>
-          <div className="space-y-3 text-gray-800">
+          <div className="space-y-3 text-foreground">
             <div>
               <p className="font-bold text-cyan-700 text-xs">PRIMERA. OBJETO</p>
               <p>KobraPay prestará al Cliente servicios de procesamiento de pagos en línea mediante enlaces de cobro, punto de venta digital, y herramientas de gestión financiera.</p>
@@ -355,7 +355,7 @@ function ContractPreviewModal({ contract, onClose }: { contract: ContractData; o
             {contract.customTerms && (
               <div className="bg-amber-50 border border-amber-200 rounded p-3">
                 <p className="font-bold text-amber-700 text-xs">TÉRMINOS ADICIONALES</p>
-                <p className="text-gray-700 whitespace-pre-wrap">{contract.customTerms}</p>
+                <p className="text-foreground whitespace-pre-wrap">{contract.customTerms}</p>
               </div>
             )}
             {/* Cláusula legal de firma electrónica */}
@@ -380,7 +380,7 @@ function ContractPreviewModal({ contract, onClose }: { contract: ContractData; o
               ) : (
                 <div className="border-b border-gray-400 mb-1 h-12"></div>
               )}
-              <p className="text-xs text-gray-500 font-semibold">KobraPay</p>
+              <p className="text-xs text-muted-foreground font-semibold">KobraPay</p>
               {contract.adminSignedAt && <p className="text-xs text-green-600">{new Date(contract.adminSignedAt).toLocaleDateString("es-MX")}</p>}
             </div>
             {/* Firma Cliente */}
@@ -390,7 +390,7 @@ function ContractPreviewModal({ contract, onClose }: { contract: ContractData; o
               ) : (
                 <div className="border-b border-gray-400 mb-1 h-12"></div>
               )}
-              <p className="text-xs text-gray-500 font-semibold">{contract.clientName}</p>
+              <p className="text-xs text-muted-foreground font-semibold">{contract.clientName}</p>
               {contract.signedAt && <p className="text-xs text-green-600">{new Date(contract.signedAt).toLocaleDateString("es-MX")}</p>}
             </div>
           </div>
@@ -403,7 +403,7 @@ function ContractPreviewModal({ contract, onClose }: { contract: ContractData; o
               </span>
             </div>
           )}
-          <p className="text-center text-xs text-gray-400 mt-6">KobraPay — kobrapay.mx | Documento generado electrónicamente</p>
+          <p className="text-center text-xs text-muted-foreground mt-6">KobraPay — kobrapay.mx | Documento generado electrónicamente</p>
         </div>
       </DialogContent>
     </Dialog>
@@ -492,7 +492,7 @@ function AdminSignModal({ contract, onClose, onSigned }: { contract: ContractDat
             <p className="text-xs text-cyan-600">{contract.clientEmail} · Comisión: {contract.commissionRate}%</p>
           </div>
           <div>
-            <p className="text-sm font-medium text-gray-700 mb-2">Firma digital (KobraPay)</p>
+            <p className="text-sm font-medium text-foreground mb-2">Firma digital (KobraPay)</p>
             <div className="border-2 border-dashed border-gray-300 rounded-xl overflow-hidden bg-gray-50">
               <canvas
                 ref={canvasRef}
@@ -524,7 +524,7 @@ function AdminSignModal({ contract, onClose, onSigned }: { contract: ContractDat
             <Button
               onClick={handleSign}
               disabled={!hasSigned || adminSignMutation.isPending}
-              className="flex-1 bg-cyan-700 hover:bg-cyan-800 text-white gap-2"
+              className="flex-1 bg-cyan-700 hover:bg-cyan-800 text-foreground gap-2"
             >
               <CheckCircle className="w-4 h-4" />
               {adminSignMutation.isPending ? "Firmando..." : "Confirmar Firma KobraPay"}
@@ -556,7 +556,7 @@ function ShareContractModal({ contract, signUrl, onClose }: { contract: Contract
         </DialogHeader>
         <div className="space-y-4 mt-2">
           <div>
-            <Label className="text-xs text-gray-500 mb-1 block">Enlace de firma</Label>
+            <Label className="text-xs text-muted-foreground mb-1 block">Enlace de firma</Label>
             <div className="flex gap-2">
               <Input value={signUrl} readOnly className="text-xs font-mono bg-gray-50" />
               <Button
@@ -569,7 +569,7 @@ function ShareContractModal({ contract, signUrl, onClose }: { contract: Contract
           </div>
           <div className="grid grid-cols-2 gap-3">
             <a href={whatsappUrl} target="_blank" rel="noopener noreferrer">
-              <Button className="w-full bg-green-600 hover:bg-green-700 text-white gap-2">
+              <Button className="w-full bg-green-600 hover:bg-green-700 text-foreground gap-2">
                 <MessageCircle className="w-4 h-4" /> WhatsApp
               </Button>
             </a>
@@ -579,7 +579,7 @@ function ShareContractModal({ contract, signUrl, onClose }: { contract: Contract
               </Button>
             </a>
           </div>
-          <p className="text-xs text-gray-500 text-center">
+          <p className="text-xs text-muted-foreground text-center">
             El cliente podrá revisar, subir su identificación y firmar digitalmente el contrato desde este enlace.
           </p>
         </div>
@@ -716,12 +716,12 @@ export default function Contracts() {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Contratos Digitales</h1>
-          <p className="text-gray-500 text-sm mt-1">Gestiona contratos con tus clientes — solo visible para ti</p>
+          <h1 className="text-2xl font-bold text-foreground">Contratos Digitales</h1>
+          <p className="text-muted-foreground text-sm mt-1">Gestiona contratos con tus clientes — solo visible para ti</p>
         </div>
         <Dialog open={showCreate} onOpenChange={(v) => { setShowCreate(v); if (!v) resetForm(); }}>
           <DialogTrigger asChild>
-            <Button className="bg-cyan-700 hover:bg-cyan-800 text-white gap-2">
+            <Button className="bg-cyan-700 hover:bg-cyan-800 text-foreground gap-2">
               <Plus className="w-4 h-4" /> Nuevo Contrato
             </Button>
           </DialogTrigger>
@@ -785,7 +785,7 @@ export default function Contracts() {
                 <Switch checked={form.includeExclusivityClause} onCheckedChange={v => setForm(f => ({ ...f, includeExclusivityClause: v }))} />
                 <div>
                   <p className="font-medium text-sm">Cláusula de exclusividad</p>
-                  <p className="text-xs text-gray-500">El cliente se compromete a usar únicamente KobraPay durante la vigencia del contrato</p>
+                  <p className="text-xs text-muted-foreground">El cliente se compromete a usar únicamente KobraPay durante la vigencia del contrato</p>
                 </div>
               </div>
               <div className="col-span-2">
@@ -799,7 +799,7 @@ export default function Contracts() {
             </div>
             <div className="flex gap-3 mt-4">
               <Button variant="outline" onClick={() => { setShowCreate(false); resetForm(); }} className="flex-1">Cancelar</Button>
-              <Button onClick={handleCreate} disabled={createMutation.isPending || !form.clientName || !form.clientEmail} className="flex-1 bg-cyan-700 hover:bg-cyan-800 text-white">
+              <Button onClick={handleCreate} disabled={createMutation.isPending || !form.clientName || !form.clientEmail} className="flex-1 bg-cyan-700 hover:bg-cyan-800 text-foreground">
                 {createMutation.isPending ? "Guardando..." : "Guardar Borrador"}
               </Button>
             </div>
@@ -821,7 +821,7 @@ export default function Contracts() {
               <div className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-medium ${color} mb-2`}>
                 {STATUS_ICONS[status]} {label}
               </div>
-              <p className="text-2xl font-bold text-gray-900">{count}</p>
+              <p className="text-2xl font-bold text-foreground">{count}</p>
             </button>
           );
         })}
@@ -830,7 +830,7 @@ export default function Contracts() {
       {/* Search & filter bar */}
       <div className="flex gap-3 mb-4">
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
             value={search}
             onChange={e => setSearch(e.target.value)}
@@ -838,7 +838,7 @@ export default function Contracts() {
             className="pl-9"
           />
           {search && (
-            <button onClick={() => setSearch("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+            <button onClick={() => setSearch("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-muted-foreground">
               <X className="w-4 h-4" />
             </button>
           )}
@@ -853,8 +853,8 @@ export default function Contracts() {
       {/* Table */}
       <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
         {filtered.length === 0 ? (
-          <div className="text-center py-16 text-gray-500">
-            <FileText className="w-12 h-12 mx-auto mb-3 text-gray-300" />
+          <div className="text-center py-16 text-muted-foreground">
+            <FileText className="w-12 h-12 mx-auto mb-3 text-muted-foreground" />
             <p className="font-medium">{contracts.length === 0 ? "No hay contratos aún" : "Sin resultados"}</p>
             <p className="text-sm">{contracts.length === 0 ? "Crea tu primer contrato para un cliente" : "Intenta con otro término de búsqueda"}</p>
           </div>
@@ -862,13 +862,13 @@ export default function Contracts() {
           <table className="w-full">
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Cliente</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Negocio</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Comisión</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Duración</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Estado</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Fecha</th>
-                <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Acciones</th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase">Cliente</th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase">Negocio</th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase">Comisión</th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase">Duración</th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase">Estado</th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase">Fecha</th>
+                <th className="text-right px-4 py-3 text-xs font-semibold text-muted-foreground uppercase">Acciones</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
@@ -879,12 +879,12 @@ export default function Contracts() {
                 return (
                   <tr key={contract.id} className={`hover:bg-gray-50 ${isSelected ? "bg-cyan-50" : ""}`}>
                     <td className="px-4 py-3">
-                      <p className="font-medium text-gray-900 text-sm">{contract.clientName}</p>
-                      <p className="text-xs text-gray-500">{contract.clientEmail}</p>
+                      <p className="font-medium text-foreground text-sm">{contract.clientName}</p>
+                      <p className="text-xs text-muted-foreground">{contract.clientEmail}</p>
                     </td>
-                    <td className="px-4 py-3 text-sm text-gray-600">{contract.businessName || "—"}</td>
+                    <td className="px-4 py-3 text-sm text-muted-foreground">{contract.businessName || "—"}</td>
                     <td className="px-4 py-3 text-sm font-semibold text-cyan-700">{contract.commissionRate}%</td>
-                    <td className="px-4 py-3 text-sm text-gray-600">
+                    <td className="px-4 py-3 text-sm text-muted-foreground">
                       {formatDuration(contract.contractDurationMonths)}
                     </td>
                     <td className="px-4 py-3">
@@ -892,7 +892,7 @@ export default function Contracts() {
                         {STATUS_ICONS[status]} {label}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-xs text-gray-500">
+                    <td className="px-4 py-3 text-xs text-muted-foreground">
                       {contract.createdAt ? new Date(contract.createdAt).toLocaleDateString("es-MX") : "—"}
                     </td>
                     <td className="px-4 py-3">
@@ -921,7 +921,7 @@ export default function Contracts() {
                           onClick={() => handleDownloadPDF(contract as ContractData)}
                           disabled={generatingPdf === contract.id}
                           title="Descargar PDF"
-                          className="text-gray-500 hover:text-gray-700"
+                          className="text-muted-foreground hover:text-foreground"
                         >
                           {generatingPdf === contract.id
                             ? <div className="w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" />
@@ -968,7 +968,7 @@ export default function Contracts() {
                           <Button
                             size="sm" variant="ghost"
                             onClick={() => updateMutation.mutate({ id: contract.id, status: "archived" })}
-                            className="text-gray-400 hover:text-gray-600"
+                            className="text-muted-foreground hover:text-muted-foreground"
                             title="Archivar"
                           >
                             <Archive className="w-4 h-4" />
@@ -998,7 +998,7 @@ export default function Contracts() {
       {selectedContractData && (
         <div className="mt-6 bg-white rounded-xl border border-gray-200 p-6">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+            <h2 className="text-lg font-bold text-foreground flex items-center gap-2">
               <FileText className="w-5 h-5 text-cyan-700" />
               Detalle — {selectedContractData.clientName}
             </h2>
@@ -1034,15 +1034,15 @@ export default function Contracts() {
           </div>
 
           <div className="grid grid-cols-3 gap-4 text-sm">
-            <div><span className="text-gray-500">Email:</span> <span className="font-medium">{selectedContractData.clientEmail}</span></div>
-            <div><span className="text-gray-500">Teléfono:</span> <span className="font-medium">{selectedContractData.clientPhone || "—"}</span></div>
-            <div><span className="text-gray-500">RFC:</span> <span className="font-medium">{selectedContractData.clientRfc || "—"}</span></div>
-            <div><span className="text-gray-500">CURP:</span> <span className="font-medium">{selectedContractData.clientCurp || "—"}</span></div>
-            <div><span className="text-gray-500">INE/Pasaporte:</span> <span className="font-medium">{selectedContractData.clientIneNumber || "—"}</span></div>
-            <div><span className="text-gray-500">Domicilio:</span> <span className="font-medium">{selectedContractData.clientAddress || "—"}</span></div>
-            <div><span className="text-gray-500">Comisión:</span> <span className="font-medium text-cyan-700">{selectedContractData.commissionRate}%</span></div>
-            <div><span className="text-gray-500">Duración:</span> <span className="font-medium">{formatDuration(selectedContractData.contractDurationMonths)}</span></div>
-            <div><span className="text-gray-500">Exclusividad:</span> <span className="font-medium">{selectedContractData.includeExclusivityClause ? "Sí" : "No"}</span></div>
+            <div><span className="text-muted-foreground">Email:</span> <span className="font-medium">{selectedContractData.clientEmail}</span></div>
+            <div><span className="text-muted-foreground">Teléfono:</span> <span className="font-medium">{selectedContractData.clientPhone || "—"}</span></div>
+            <div><span className="text-muted-foreground">RFC:</span> <span className="font-medium">{selectedContractData.clientRfc || "—"}</span></div>
+            <div><span className="text-muted-foreground">CURP:</span> <span className="font-medium">{selectedContractData.clientCurp || "—"}</span></div>
+            <div><span className="text-muted-foreground">INE/Pasaporte:</span> <span className="font-medium">{selectedContractData.clientIneNumber || "—"}</span></div>
+            <div><span className="text-muted-foreground">Domicilio:</span> <span className="font-medium">{selectedContractData.clientAddress || "—"}</span></div>
+            <div><span className="text-muted-foreground">Comisión:</span> <span className="font-medium text-cyan-700">{selectedContractData.commissionRate}%</span></div>
+            <div><span className="text-muted-foreground">Duración:</span> <span className="font-medium">{formatDuration(selectedContractData.contractDurationMonths)}</span></div>
+            <div><span className="text-muted-foreground">Exclusividad:</span> <span className="font-medium">{selectedContractData.includeExclusivityClause ? "Sí" : "No"}</span></div>
             {selectedContractData.signedAt && (
               <div className="col-span-3 flex items-center gap-2 p-3 bg-green-50 rounded-lg border border-green-200">
                 <CheckCircle className="w-4 h-4 text-green-600" />
@@ -1056,7 +1056,7 @@ export default function Contracts() {
           {/* Documentos subidos */}
           {(selectedContractData.ineUrl || selectedContractData.passportUrl || selectedContractData.addressProofUrl || selectedContractData.rfcDocUrl || selectedContractData.curpDocUrl) && (
             <div className="mt-4">
-              <p className="text-sm font-semibold text-gray-700 mb-2">Documentos recibidos:</p>
+              <p className="text-sm font-semibold text-foreground mb-2">Documentos recibidos:</p>
               <div className="flex flex-wrap gap-2">
                 {selectedContractData.ineUrl && <a href={selectedContractData.ineUrl} target="_blank" rel="noopener noreferrer" className="text-xs bg-cyan-50 text-cyan-700 border border-cyan-200 px-3 py-1 rounded-full hover:bg-cyan-100 flex items-center gap-1"><ExternalLink className="w-3 h-3" /> INE / Credencial</a>}
                 {selectedContractData.passportUrl && <a href={selectedContractData.passportUrl} target="_blank" rel="noopener noreferrer" className="text-xs bg-cyan-50 text-cyan-700 border border-cyan-200 px-3 py-1 rounded-full hover:bg-cyan-100 flex items-center gap-1"><ExternalLink className="w-3 h-3" /> Pasaporte</a>}
@@ -1069,7 +1069,7 @@ export default function Contracts() {
 
           {selectedContractData.signatureUrl && (
             <div className="mt-4">
-              <p className="text-sm font-semibold text-gray-700 mb-2">Firma digital del cliente:</p>
+              <p className="text-sm font-semibold text-foreground mb-2">Firma digital del cliente:</p>
               <img src={selectedContractData.signatureUrl} alt="Firma digital" className="border border-gray-200 rounded-lg max-h-24 bg-white" />
             </div>
           )}

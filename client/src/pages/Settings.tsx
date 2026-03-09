@@ -74,19 +74,19 @@ function PasswordSection() {
   return (
     <Card className="border-gray-200 shadow-sm">
       <CardHeader className="pb-3 border-b border-gray-100">
-        <CardTitle className="text-base font-semibold text-gray-800 flex items-center gap-2">
+        <CardTitle className="text-base font-semibold text-foreground flex items-center gap-2">
           <KeyRound className="w-4 h-4 text-emerald-600" />
           Cuenta y Seguridad
         </CardTitle>
-        <p className="text-sm text-gray-500">Actualiza tu información personal y contraseña de acceso.</p>
+        <p className="text-sm text-muted-foreground">Actualiza tu información personal y contraseña de acceso.</p>
       </CardHeader>
       <CardContent className="p-5 space-y-6">
         {/* Editar nombre */}
         <div className="space-y-3">
-          <p className="text-sm font-semibold text-gray-700">Información Personal</p>
+          <p className="text-sm font-semibold text-foreground">Información Personal</p>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <Label className="text-sm text-gray-700">Nombre completo</Label>
+              <Label className="text-sm text-foreground">Nombre completo</Label>
               <Input
                 value={profileName}
                 onChange={(e) => setProfileName(e.target.value)}
@@ -94,7 +94,7 @@ function PasswordSection() {
               />
             </div>
             <div className="space-y-1.5">
-              <Label className="text-sm text-gray-700">Teléfono</Label>
+              <Label className="text-sm text-foreground">Teléfono</Label>
               <Input
                 value={profilePhone}
                 onChange={(e) => setProfilePhone(e.target.value)}
@@ -115,11 +115,11 @@ function PasswordSection() {
         </div>
         {/* Cambiar contraseña */}
         <div className="space-y-3 pt-4 border-t border-gray-100">
-          <p className="text-sm font-semibold text-gray-700">Contraseña de Acceso</p>
-          <p className="text-xs text-gray-400">Si iniciaste sesión con Manus OAuth, deja el campo actual en blanco para crear una contraseña nueva.</p>
+          <p className="text-sm font-semibold text-foreground">Contraseña de Acceso</p>
+          <p className="text-xs text-muted-foreground">Si iniciaste sesión con Manus OAuth, deja el campo actual en blanco para crear una contraseña nueva.</p>
           <div className="space-y-3">
             <div className="space-y-1.5">
-              <Label className="text-sm text-gray-700">Contraseña actual</Label>
+              <Label className="text-sm text-foreground">Contraseña actual</Label>
               <div className="relative">
                 <Input
                   type={showCurrent ? "text" : "password"}
@@ -128,14 +128,14 @@ function PasswordSection() {
                   placeholder="Contraseña actual (dejar vacío si no tienes)"
                   className="pr-10"
                 />
-                <button type="button" onClick={() => setShowCurrent(v => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                <button type="button" onClick={() => setShowCurrent(v => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-muted-foreground">
                   {showCurrent ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
               </div>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
-                <Label className="text-sm text-gray-700">Nueva contraseña</Label>
+                <Label className="text-sm text-foreground">Nueva contraseña</Label>
                 <div className="relative">
                   <Input
                     type={showNew ? "text" : "password"}
@@ -144,13 +144,13 @@ function PasswordSection() {
                     placeholder="Mínimo 8 caracteres"
                     className="pr-10"
                   />
-                  <button type="button" onClick={() => setShowNew(v => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                  <button type="button" onClick={() => setShowNew(v => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-muted-foreground">
                     {showNew ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
                 </div>
               </div>
               <div className="space-y-1.5">
-                <Label className="text-sm text-gray-700">Confirmar contraseña</Label>
+                <Label className="text-sm text-foreground">Confirmar contraseña</Label>
                 <div className="relative">
                   <Input
                     type={showConfirm ? "text" : "password"}
@@ -159,7 +159,7 @@ function PasswordSection() {
                     placeholder="Repetir contraseña"
                     className="pr-10"
                   />
-                  <button type="button" onClick={() => setShowConfirm(v => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                  <button type="button" onClick={() => setShowConfirm(v => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-muted-foreground">
                     {showConfirm ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
                 </div>
@@ -169,7 +169,7 @@ function PasswordSection() {
               type="button"
               onClick={handleChangePassword}
               disabled={changePassword.isPending || !newPwd}
-              className="bg-emerald-600 hover:bg-emerald-500 text-white"
+              className="bg-emerald-600 hover:bg-emerald-500 text-foreground"
               size="sm"
             >
               <Lock className="w-3.5 h-3.5 mr-1.5" />
@@ -385,25 +385,25 @@ export default function Settings() {
         {/* Negocio */}
         <Card className="border-gray-200 shadow-sm">
           <CardHeader className="pb-3 border-b border-gray-100">
-            <CardTitle className="text-base font-semibold text-gray-800 flex items-center gap-2">
+            <CardTitle className="text-base font-semibold text-foreground flex items-center gap-2">
               <Building2 className="w-4 h-4 text-cyan-500" />
               Datos del Negocio
             </CardTitle>
           </CardHeader>
           <CardContent className="p-5 space-y-4">
             <div className="space-y-1.5">
-              <Label className="text-sm text-gray-700">Nombre del negocio *</Label>
+              <Label className="text-sm text-foreground">Nombre del negocio *</Label>
               <Input
                 placeholder="Mi Empresa S.A. de C.V."
                 {...register("businessName", { required: true })}
               />
-              <p className="text-xs text-gray-400">
+              <p className="text-xs text-muted-foreground">
                 Aparece en la pagina de pago que ven tus clientes
               </p>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
-                <Label className="text-sm text-gray-700">Email de contacto</Label>
+                <Label className="text-sm text-foreground">Email de contacto</Label>
                 <Input
                   type="email"
                   placeholder="contacto@minegocio.com"
@@ -411,7 +411,7 @@ export default function Settings() {
                 />
               </div>
               <div className="space-y-1.5">
-                <Label className="text-sm text-gray-700">Telefono</Label>
+                <Label className="text-sm text-foreground">Telefono</Label>
                 <Input placeholder="+52 55 1234 5678" {...register("businessPhone")} />
               </div>
             </div>
@@ -421,18 +421,18 @@ export default function Settings() {
         {/* País de Operación */}
         <Card className="border-cyan-200 shadow-sm">
           <CardHeader className="pb-3 border-b border-cyan-100">
-            <CardTitle className="text-base font-semibold text-gray-800 flex items-center gap-2">
+            <CardTitle className="text-base font-semibold text-foreground flex items-center gap-2">
               <Globe className="w-4 h-4 text-cyan-500" />
               País de Operación
             </CardTitle>
           </CardHeader>
           <CardContent className="p-5 space-y-4">
             <div className="space-y-1.5">
-              <Label className="text-sm text-gray-700">País donde opera tu negocio</Label>
+              <Label className="text-sm text-foreground">País donde opera tu negocio</Label>
               <select
                 value={businessCountry}
                 onChange={(e) => handleCountryChange(e.target.value)}
-                className="w-full h-10 px-3 rounded-md border border-gray-200 bg-white text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-cyan-400"
+                className="w-full h-10 px-3 rounded-md border border-gray-200 bg-white text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-cyan-400"
               >
                 {COUNTRIES.map((c) => (
                   <option key={c.code} value={c.code}>
@@ -440,7 +440,7 @@ export default function Settings() {
                   </option>
                 ))}
               </select>
-              <p className="text-xs text-gray-400">
+              <p className="text-xs text-muted-foreground">
                 Determina la moneda predeterminada, el impuesto aplicable y el marco legal de los contratos.
               </p>
             </div>
@@ -456,19 +456,19 @@ export default function Settings() {
               </div>
               <div className="grid grid-cols-3 gap-2 text-xs">
                 <div className="bg-white rounded-lg p-2 border border-cyan-100 text-center">
-                  <p className="text-gray-400">Moneda</p>
-                  <p className="font-semibold text-gray-800">{selectedCountry.currency}</p>
-                  <p className="text-gray-500">{selectedCountry.currencySymbol}</p>
+                  <p className="text-muted-foreground">Moneda</p>
+                  <p className="font-semibold text-foreground">{selectedCountry.currency}</p>
+                  <p className="text-muted-foreground">{selectedCountry.currencySymbol}</p>
                 </div>
                 <div className="bg-white rounded-lg p-2 border border-cyan-100 text-center">
-                  <p className="text-gray-400">Impuesto</p>
-                  <p className="font-semibold text-gray-800">{selectedCountry.taxName}</p>
-                  <p className="text-gray-500">{Math.round(selectedCountry.taxRate * 100)}%</p>
+                  <p className="text-muted-foreground">Impuesto</p>
+                  <p className="font-semibold text-foreground">{selectedCountry.taxName}</p>
+                  <p className="text-muted-foreground">{Math.round(selectedCountry.taxRate * 100)}%</p>
                 </div>
                 <div className="bg-white rounded-lg p-2 border border-cyan-100 text-center">
-                  <p className="text-gray-400">Prefijo tel.</p>
-                  <p className="font-semibold text-gray-800">{selectedCountry.phonePrefix}</p>
-                  <p className="text-gray-500">Código</p>
+                  <p className="text-muted-foreground">Prefijo tel.</p>
+                  <p className="font-semibold text-foreground">{selectedCountry.phonePrefix}</p>
+                  <p className="text-muted-foreground">Código</p>
                 </div>
               </div>
               <div className="mt-2 pt-2 border-t border-cyan-100">
@@ -485,14 +485,14 @@ export default function Settings() {
         {/* Comisiones */}
         <Card className="border-gray-200 shadow-sm">
           <CardHeader className="pb-3 border-b border-gray-100">
-            <CardTitle className="text-base font-semibold text-gray-800 flex items-center gap-2">
+            <CardTitle className="text-base font-semibold text-foreground flex items-center gap-2">
               <Percent className="w-4 h-4 text-cyan-500" />
               Comisiones de la Plataforma
             </CardTitle>
           </CardHeader>
           <CardContent className="p-5 space-y-4">
             <div className="space-y-1.5">
-              <Label className="text-sm text-gray-700">Comision por defecto (%)</Label>
+              <Label className="text-sm text-foreground">Comision por defecto (%)</Label>
               <div className="relative">
                 <Input
                   type="number"
@@ -503,47 +503,47 @@ export default function Settings() {
                   {...register("commissionRate", { valueAsNumber: true })}
                   className="pr-8"
                 />
-                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">
                   %
                 </span>
               </div>
-              <p className="text-xs text-gray-400">
+              <p className="text-xs text-muted-foreground">
                 Aplica a todos los cobros. Puedes personalizarla por cliente en "Mis Clientes".
               </p>
             </div>
             <div className="p-3 bg-gray-50 rounded-xl border border-gray-200">
-              <p className="text-xs text-gray-500 mb-2 font-medium">
+              <p className="text-xs text-muted-foreground mb-2 font-medium">
                 Ejemplo para un cobro de 1,000 {currencyLabel}:
               </p>
               <div className="space-y-1">
                 <div className="flex justify-between text-xs">
-                  <span className="text-gray-600">Monto bruto:</span>
-                  <span className="font-medium text-gray-800">
+                  <span className="text-muted-foreground">Monto bruto:</span>
+                  <span className="font-medium text-foreground">
                     {selectedCountry.currencySymbol}1,000.00 {currencyLabel}
                   </span>
                 </div>
                 <div className="flex justify-between text-xs">
-                  <span className="text-gray-600">Comisión KobraPay ({commRate || 7}%):</span>
+                  <span className="text-muted-foreground">Comisión KobraPay ({commRate || 7}%):</span>
                   <span className="font-medium text-cyan-600">
                     {selectedCountry.currencySymbol}{((commRate || 7) * 10).toFixed(2)} {currencyLabel}
                   </span>
                 </div>
                 {ivaEnabled && (ivaRate || 0) > 0 && (
                   <div className="flex justify-between text-xs">
-                    <span className="text-gray-600">{taxLabel} sobre comisión ({ivaRate}%):</span>
+                    <span className="text-muted-foreground">{taxLabel} sobre comisión ({ivaRate}%):</span>
                     <span className="font-medium text-orange-500">
                       {selectedCountry.currencySymbol}{((commRate || 7) * 10 * (ivaRate || 16) / 100).toFixed(2)} {currencyLabel}
                     </span>
                   </div>
                 )}
                 <div className="flex justify-between text-xs">
-                  <span className="text-gray-600">Total cobrado por KobraPay:</span>
+                  <span className="text-muted-foreground">Total cobrado por KobraPay:</span>
                   <span className="font-semibold text-cyan-700">
                     {selectedCountry.currencySymbol}{((commRate || 7) * 10 * (1 + (ivaEnabled ? (ivaRate || 16) / 100 : 0))).toFixed(2)} {currencyLabel}
                   </span>
                 </div>
                 <div className="flex justify-between text-xs border-t border-gray-200 pt-1 mt-1">
-                  <span className="text-gray-600">Neto para el comercio:</span>
+                  <span className="text-muted-foreground">Neto para el comercio:</span>
                   <span className="font-bold text-green-600">
                     {selectedCountry.currencySymbol}{(1000 - (commRate || 7) * 10 * (1 + (ivaEnabled ? (ivaRate || 16) / 100 : 0))).toFixed(2)} {currencyLabel}
                   </span>
@@ -556,7 +556,7 @@ export default function Settings() {
         {/* Configuración Fiscal */}
         <Card className="border-orange-200 shadow-sm">
           <CardHeader className="pb-3 border-b border-orange-100">
-            <CardTitle className="text-base font-semibold text-gray-800 flex items-center gap-2">
+            <CardTitle className="text-base font-semibold text-foreground flex items-center gap-2">
               <Receipt className="w-4 h-4 text-orange-500" />
               Configuración Fiscal — {taxLabel}
             </CardTitle>
@@ -564,8 +564,8 @@ export default function Settings() {
           <CardContent className="p-5 space-y-4">
             <div className="flex items-center justify-between p-3 bg-orange-50 rounded-xl border border-orange-200">
               <div>
-                <p className="text-sm font-medium text-gray-800">Cobrar {taxLabel} sobre la comisión</p>
-                <p className="text-xs text-gray-500 mt-0.5">Activa para sumar {taxLabel} a tu comisión de plataforma</p>
+                <p className="text-sm font-medium text-foreground">Cobrar {taxLabel} sobre la comisión</p>
+                <p className="text-xs text-muted-foreground mt-0.5">Activa para sumar {taxLabel} a tu comisión de plataforma</p>
               </div>
               <Switch
                 checked={ivaEnabled}
@@ -574,7 +574,7 @@ export default function Settings() {
             </div>
             {ivaEnabled && (
               <div className="space-y-1.5">
-                <Label className="text-sm text-gray-700">Tasa de {taxLabel} (%)</Label>
+                <Label className="text-sm text-foreground">Tasa de {taxLabel} (%)</Label>
                 <div className="relative">
                   <Input
                     type="number"
@@ -585,7 +585,7 @@ export default function Settings() {
                     {...register("ivaRate", { valueAsNumber: true })}
                     className="pr-8 text-lg font-semibold"
                   />
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">%</span>
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">%</span>
                 </div>
                 <div className={`grid gap-2 mt-2`} style={{ gridTemplateColumns: `repeat(${taxRateOptions.length}, 1fr)` }}>
                   {taxRateOptions.map(({ rate, label }) => (
@@ -595,8 +595,8 @@ export default function Settings() {
                       onClick={() => setValue("ivaRate", rate, { shouldDirty: true })}
                       className={`text-xs py-1.5 rounded-lg border font-medium transition-colors ${
                         ivaRate === rate
-                          ? "bg-orange-500 text-white border-orange-500"
-                          : "bg-white text-gray-600 border-gray-200 hover:border-orange-300"
+                          ? "bg-orange-500 text-foreground border-orange-500"
+                          : "bg-white text-muted-foreground border-gray-200 hover:border-orange-300"
                       }`}
                     >
                       {label}
@@ -615,14 +615,14 @@ export default function Settings() {
         {/* Tipo de Cambio */}
         <Card className="border-gray-200 shadow-sm">
           <CardHeader className="pb-3 border-b border-gray-100">
-            <CardTitle className="text-base font-semibold text-gray-800 flex items-center gap-2">
+            <CardTitle className="text-base font-semibold text-foreground flex items-center gap-2">
               <DollarSign className="w-4 h-4 text-cyan-500" />
               Tipo de Cambio USD / {currencyLabel}
             </CardTitle>
           </CardHeader>
           <CardContent className="p-5 space-y-4">
             <div className="space-y-1.5">
-              <Label className="text-sm text-gray-700">Tipo de cambio (USD a {currencyLabel})</Label>
+              <Label className="text-sm text-foreground">Tipo de cambio (USD a {currencyLabel})</Label>
               <div className="relative">
                 <Input
                   type="number"
@@ -632,11 +632,11 @@ export default function Settings() {
                   {...register("usdExchangeRate", { valueAsNumber: true })}
                   className="pr-24"
                 />
-                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">
                   {currencyLabel}/USD
                 </span>
               </div>
-              <p className="text-xs text-gray-400">
+              <p className="text-xs text-muted-foreground">
                 Si pones 0, no se mostrara equivalente en USD. Con un valor (ej: {businessCountry === "MX" ? "18.50" : "1.25"}), los
                 clientes veran cuanto pagaran en dolares.
               </p>
@@ -659,7 +659,7 @@ export default function Settings() {
         {/* Verificacion */}
         <Card className="border-gray-200 shadow-sm">
           <CardHeader className="pb-3 border-b border-gray-100">
-            <CardTitle className="text-base font-semibold text-gray-800 flex items-center gap-2">
+            <CardTitle className="text-base font-semibold text-foreground flex items-center gap-2">
               <Shield className="w-4 h-4 text-cyan-500" />
               Verificacion de Identidad
             </CardTitle>
@@ -671,8 +671,8 @@ export default function Settings() {
                   <MessageSquare className="w-4 h-4 text-blue-600" />
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-gray-800">Verificacion OTP por email</p>
-                  <p className="text-xs text-gray-400">
+                  <p className="text-sm font-medium text-foreground">Verificacion OTP por email</p>
+                  <p className="text-xs text-muted-foreground">
                     El cliente recibe un codigo de 6 digitos antes de pagar
                   </p>
                 </div>
@@ -688,8 +688,8 @@ export default function Settings() {
                   <Camera className="w-4 h-4 text-purple-600" />
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-gray-800">Verificacion con selfie</p>
-                  <p className="text-xs text-gray-400">
+                  <p className="text-sm font-medium text-foreground">Verificacion con selfie</p>
+                  <p className="text-xs text-muted-foreground">
                     El cliente toma una foto para verificar su identidad
                   </p>
                 </div>
@@ -714,14 +714,14 @@ export default function Settings() {
         {/* Contracargos */}
         <Card className="border-gray-200 shadow-sm">
           <CardHeader className="pb-3 border-b border-gray-100">
-            <CardTitle className="text-base font-semibold text-gray-800 flex items-center gap-2">
+            <CardTitle className="text-base font-semibold text-foreground flex items-center gap-2">
               <Shield className="w-4 h-4 text-red-500" />
               Proteccion contra Contracargos
             </CardTitle>
           </CardHeader>
           <CardContent className="p-5 space-y-3">
             <div className="space-y-1.5">
-              <Label className="text-sm text-gray-700">
+              <Label className="text-sm text-foreground">
                 Texto de aviso legal (aparece en pagina de pago)
               </Label>
               <Textarea
@@ -730,7 +730,7 @@ export default function Settings() {
                 {...register("chargebackText")}
                 className="text-sm resize-none"
               />
-              <p className="text-xs text-gray-400">
+              <p className="text-xs text-muted-foreground">
                 Este texto aparece antes de que el cliente confirme el pago. Sirve como evidencia
                 en caso de contracargo.
               </p>
@@ -741,7 +741,7 @@ export default function Settings() {
         {/* Pasarelas de Pago */}
         <Card className="border-gray-200 shadow-sm">
           <CardHeader className="pb-3 border-b border-gray-100">
-            <CardTitle className="text-base font-semibold text-gray-800 flex items-center gap-2">
+            <CardTitle className="text-base font-semibold text-foreground flex items-center gap-2">
               <CreditCard className="w-4 h-4 text-cyan-500" />
               Pasarelas de Pago
             </CardTitle>
@@ -753,11 +753,11 @@ export default function Settings() {
               <div className="flex items-center justify-between p-4 bg-[#635BFF]/5">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-lg bg-[#635BFF] flex items-center justify-center">
-                    <span className="text-white font-bold text-sm">S</span>
+                    <span className="text-foreground font-bold text-sm">S</span>
                   </div>
                   <div>
-                    <p className="font-semibold text-gray-800">Stripe</p>
-                    <p className="text-xs text-gray-500">Internacional · Tarjetas, OXXO, transferencias</p>
+                    <p className="font-semibold text-foreground">Stripe</p>
+                    <p className="text-xs text-muted-foreground">Internacional · Tarjetas, OXXO, transferencias</p>
                   </div>
                 </div>
                 <Badge className="bg-amber-100 text-amber-800 border-amber-200">Modo prueba</Badge>
@@ -771,8 +771,8 @@ export default function Settings() {
                 </div>
                 <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                   <div>
-                    <p className="text-xs font-medium text-gray-700">Tarjeta de prueba</p>
-                    <p className="text-xs text-gray-400 font-mono">4242 4242 4242 4242 · CVV: 123 · Fecha: cualquier futura</p>
+                    <p className="text-xs font-medium text-foreground">Tarjeta de prueba</p>
+                    <p className="text-xs text-muted-foreground font-mono">4242 4242 4242 4242 · CVV: 123 · Fecha: cualquier futura</p>
                   </div>
                   <Badge variant="secondary">Test</Badge>
                 </div>
@@ -789,18 +789,18 @@ export default function Settings() {
               <div className="flex items-center justify-between p-4 bg-gray-50">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-lg bg-[#00A651] flex items-center justify-center">
-                    <span className="text-white font-bold text-sm">C</span>
+                    <span className="text-foreground font-bold text-sm">C</span>
                   </div>
                   <div>
-                    <p className="font-semibold text-gray-800">Conekta</p>
-                    <p className="text-xs text-gray-500">México · OXXO, SPEI, tarjetas nacionales</p>
+                    <p className="font-semibold text-foreground">Conekta</p>
+                    <p className="text-xs text-muted-foreground">México · OXXO, SPEI, tarjetas nacionales</p>
                   </div>
                 </div>
-                <Badge variant="outline" className="text-gray-500">Próximamente</Badge>
+                <Badge variant="outline" className="text-muted-foreground">Próximamente</Badge>
               </div>
               <div className="p-4 space-y-2">
-                <p className="text-xs text-gray-500">Pasarela mexicana ideal para cobros con OXXO y SPEI. Requiere cuenta en Conekta.</p>
-                <Button size="sm" className="w-full bg-[#00A651] hover:bg-[#008a44] text-white" disabled>
+                <p className="text-xs text-muted-foreground">Pasarela mexicana ideal para cobros con OXXO y SPEI. Requiere cuenta en Conekta.</p>
+                <Button size="sm" className="w-full bg-[#00A651] hover:bg-[#008a44] text-foreground" disabled>
                   Conectar Conekta — Próximamente
                 </Button>
               </div>
@@ -811,18 +811,18 @@ export default function Settings() {
               <div className="flex items-center justify-between p-4 bg-gray-50">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-lg bg-[#0066CC] flex items-center justify-center">
-                    <span className="text-white font-bold text-sm">O</span>
+                    <span className="text-foreground font-bold text-sm">O</span>
                   </div>
                   <div>
-                    <p className="font-semibold text-gray-800">OpenPay (BBVA)</p>
-                    <p className="text-xs text-gray-500">México · Tarjetas, OXXO, transferencias bancarias</p>
+                    <p className="font-semibold text-foreground">OpenPay (BBVA)</p>
+                    <p className="text-xs text-muted-foreground">México · Tarjetas, OXXO, transferencias bancarias</p>
                   </div>
                 </div>
-                <Badge variant="outline" className="text-gray-500">Próximamente</Badge>
+                <Badge variant="outline" className="text-muted-foreground">Próximamente</Badge>
               </div>
               <div className="p-4 space-y-2">
-                <p className="text-xs text-gray-500">Plataforma de pagos de BBVA México. Acepta tarjetas nacionales e internacionales y pagos en efectivo.</p>
-                <Button size="sm" className="w-full bg-[#0066CC] hover:bg-[#0052a3] text-white" disabled>
+                <p className="text-xs text-muted-foreground">Plataforma de pagos de BBVA México. Acepta tarjetas nacionales e internacionales y pagos en efectivo.</p>
+                <Button size="sm" className="w-full bg-[#0066CC] hover:bg-[#0052a3] text-foreground" disabled>
                   Conectar OpenPay — Próximamente
                 </Button>
               </div>
@@ -833,24 +833,24 @@ export default function Settings() {
               <div className="flex items-center justify-between p-4 bg-gray-50">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-lg bg-[#003087] flex items-center justify-center">
-                    <span className="text-white font-bold text-sm">P</span>
+                    <span className="text-foreground font-bold text-sm">P</span>
                   </div>
                   <div>
-                    <p className="font-semibold text-gray-800">PayPal</p>
-                    <p className="text-xs text-gray-500">Internacional · Wallet PayPal, tarjetas, transferencias</p>
+                    <p className="font-semibold text-foreground">PayPal</p>
+                    <p className="text-xs text-muted-foreground">Internacional · Wallet PayPal, tarjetas, transferencias</p>
                   </div>
                 </div>
-                <Badge variant="outline" className="text-gray-500">Próximamente</Badge>
+                <Badge variant="outline" className="text-muted-foreground">Próximamente</Badge>
               </div>
               <div className="p-4 space-y-2">
-                <p className="text-xs text-gray-500">Acepta pagos de clientes con cuenta PayPal o tarjeta en más de 200 países.</p>
-                <Button size="sm" className="w-full bg-[#003087] hover:bg-[#002070] text-white" disabled>
+                <p className="text-xs text-muted-foreground">Acepta pagos de clientes con cuenta PayPal o tarjeta en más de 200 países.</p>
+                <Button size="sm" className="w-full bg-[#003087] hover:bg-[#002070] text-foreground" disabled>
                   Conectar PayPal — Próximamente
                 </Button>
               </div>
             </div>
 
-            <p className="text-xs text-center text-gray-400">¿Necesitas otra pasarela? Contáctanos en soporte@kobrapay.mx</p>
+            <p className="text-xs text-center text-muted-foreground">¿Necesitas otra pasarela? Contáctanos en soporte@kobrapay.mx</p>
           </CardContent>
         </Card>
 
@@ -861,7 +861,7 @@ export default function Settings() {
               <Globe className="w-4 h-4 text-cyan-500" />
               Perfil Público del Negocio
             </CardTitle>
-            <p className="text-xs text-gray-500 mt-1">
+            <p className="text-xs text-muted-foreground mt-1">
               Crea una página pública donde tus clientes puedan ver todos tus cobros activos sin necesidad de que compartas cada link individualmente.
             </p>
           </CardHeader>
@@ -869,8 +869,8 @@ export default function Settings() {
             {/* Toggle activar perfil */}
             <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200">
               <div>
-                <Label className="text-sm font-medium text-gray-700">Activar perfil público</Label>
-                <p className="text-xs text-gray-500 mt-0.5">Cuando está activo, cualquier persona puede ver tu página en kobrapay.mx/p/tu-slug</p>
+                <Label className="text-sm font-medium text-foreground">Activar perfil público</Label>
+                <p className="text-xs text-muted-foreground mt-0.5">Cuando está activo, cualquier persona puede ver tu página en kobrapay.mx/p/tu-slug</p>
               </div>
               <Switch
                 checked={publicProfileEnabled}
@@ -880,19 +880,19 @@ export default function Settings() {
 
             {/* Slug */}
             <div className="space-y-1.5">
-              <Label className="text-sm font-medium text-gray-700 flex items-center gap-1">
+              <Label className="text-sm font-medium text-foreground flex items-center gap-1">
                 <Link2 className="w-3.5 h-3.5 text-cyan-500" />
                 URL de tu perfil
               </Label>
               <div className="flex items-center gap-2">
-                <span className="text-sm text-gray-400 bg-gray-100 px-3 py-2 rounded-l-lg border border-r-0 border-gray-200 whitespace-nowrap">kobrapay.mx/p/</span>
+                <span className="text-sm text-muted-foreground bg-gray-100 px-3 py-2 rounded-l-lg border border-r-0 border-gray-200 whitespace-nowrap">kobrapay.mx/p/</span>
                 <Input
                   {...register("businessSlug")}
                   placeholder="mi-negocio"
                   className="rounded-l-none"
                 />
               </div>
-              <p className="text-xs text-gray-400">Solo letras minúsculas, números y guiones. Ej: clinica-dental-garcia</p>
+              <p className="text-xs text-muted-foreground">Solo letras minúsculas, números y guiones. Ej: clinica-dental-garcia</p>
               {businessSlug && (
                 <div className="flex items-center gap-2 p-2 bg-cyan-50 border border-cyan-200 rounded-lg">
                   <CheckCircle2 className="w-3.5 h-3.5 text-cyan-500 flex-shrink-0" />
@@ -913,19 +913,19 @@ export default function Settings() {
 
             {/* Bio */}
             <div className="space-y-1.5">
-              <Label className="text-sm font-medium text-gray-700">Descripción del negocio</Label>
+              <Label className="text-sm font-medium text-foreground">Descripción del negocio</Label>
               <Textarea
                 {...register("publicBio")}
                 placeholder="Ej: Clínica dental con más de 10 años de experiencia en CDMX. Aceptamos todas las tarjetas."
                 rows={3}
                 className="text-sm"
               />
-              <p className="text-xs text-gray-400">Máximo 500 caracteres. Aparece en tu página pública.</p>
+              <p className="text-xs text-muted-foreground">Máximo 500 caracteres. Aparece en tu página pública.</p>
             </div>
 
             {/* Website */}
             <div className="space-y-1.5">
-              <Label className="text-sm font-medium text-gray-700 flex items-center gap-1">
+              <Label className="text-sm font-medium text-foreground flex items-center gap-1">
                 <Globe className="w-3.5 h-3.5 text-cyan-500" />
                 Sitio web (opcional)
               </Label>
@@ -947,7 +947,7 @@ export default function Settings() {
                   websiteUrl: watch("websiteUrl") || undefined,
                   publicProfileEnabled,
                 })}
-                className="bg-cyan-500 hover:bg-cyan-400 text-white gap-2"
+                className="bg-cyan-500 hover:bg-cyan-400 text-foreground gap-2"
               >
                 <Globe className="w-4 h-4" />
                 {updatePublicProfile.isPending ? "Guardando..." : "Guardar Perfil Público"}
@@ -962,11 +962,11 @@ export default function Settings() {
         {isSuperAdmin && (
           <Card className="border-gray-200 shadow-sm">
             <CardHeader className="pb-3">
-              <CardTitle className="text-base font-semibold text-gray-800 flex items-center gap-2">
+              <CardTitle className="text-base font-semibold text-foreground flex items-center gap-2">
                 <Lock className="w-4 h-4 text-cyan-600" />
                 PIN de Seguridad
               </CardTitle>
-              <p className="text-sm text-gray-500">PIN de 4 dígitos para operaciones sensibles como eliminar transacciones.</p>
+              <p className="text-sm text-muted-foreground">PIN de 4 dígitos para operaciones sensibles como eliminar transacciones.</p>
             </CardHeader>
             <CardContent className="space-y-4">
               {/* Estado actual del PIN */}
@@ -976,8 +976,8 @@ export default function Settings() {
                     <KeyRound className={`w-4 h-4 ${pinStatus?.hasPin ? 'text-green-600' : 'text-amber-600'}`} />
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-gray-800">{pinStatus?.hasPin ? 'PIN configurado' : 'Sin PIN configurado'}</p>
-                    <p className="text-xs text-gray-500">{pinStatus?.hasPin ? 'Tu PIN está activo y protege las eliminaciones' : 'Crea un PIN para poder eliminar transacciones'}</p>
+                    <p className="text-sm font-medium text-foreground">{pinStatus?.hasPin ? 'PIN configurado' : 'Sin PIN configurado'}</p>
+                    <p className="text-xs text-muted-foreground">{pinStatus?.hasPin ? 'Tu PIN está activo y protege las eliminaciones' : 'Crea un PIN para poder eliminar transacciones'}</p>
                   </div>
                 </div>
                 {pinMode === "idle" && (
@@ -996,12 +996,12 @@ export default function Settings() {
               {/* Formulario de PIN */}
               {pinMode !== "idle" && (
                 <div className="space-y-4 p-4 bg-gray-50 rounded-xl border border-gray-200">
-                  <p className="text-sm font-semibold text-gray-700">{pinStatus?.hasPin ? 'Cambiar PIN de seguridad' : 'Crear PIN de seguridad'}</p>
+                  <p className="text-sm font-semibold text-foreground">{pinStatus?.hasPin ? 'Cambiar PIN de seguridad' : 'Crear PIN de seguridad'}</p>
 
                   {/* PIN actual (solo si ya tiene uno) */}
                   {pinStatus?.hasPin && (
                     <div>
-                      <p className="text-xs text-gray-500 mb-2">PIN actual</p>
+                      <p className="text-xs text-muted-foreground mb-2">PIN actual</p>
                       <div className="flex gap-3">
                         {currentPin.map((digit, i) => (
                           <input
@@ -1026,7 +1026,7 @@ export default function Settings() {
 
                   {/* Nuevo PIN */}
                   <div>
-                    <p className="text-xs text-gray-500 mb-2">Nuevo PIN (4 dígitos)</p>
+                    <p className="text-xs text-muted-foreground mb-2">Nuevo PIN (4 dígitos)</p>
                     <div className="flex gap-3">
                       {newPin.map((digit, i) => (
                         <input
@@ -1050,7 +1050,7 @@ export default function Settings() {
 
                   {/* Confirmar PIN */}
                   <div>
-                    <p className="text-xs text-gray-500 mb-2">Confirmar nuevo PIN</p>
+                    <p className="text-xs text-muted-foreground mb-2">Confirmar nuevo PIN</p>
                     <div className="flex gap-3">
                       {confirmPin.map((digit, i) => (
                         <input
@@ -1078,7 +1078,7 @@ export default function Settings() {
                     </Button>
                     <Button
                       type="button"
-                      className="flex-1 bg-cyan-500 hover:bg-cyan-400 text-white"
+                      className="flex-1 bg-cyan-500 hover:bg-cyan-400 text-foreground"
                       onClick={handleSavePin}
                       disabled={setPinMutation.isPending}
                     >
@@ -1096,7 +1096,7 @@ export default function Settings() {
           <Button
             type="submit"
             disabled={updateSettings.isPending || !isDirty}
-            className="bg-cyan-500 hover:bg-cyan-400 text-white gap-2 px-8"
+            className="bg-cyan-500 hover:bg-cyan-400 text-foreground gap-2 px-8"
             size="lg"
           >
             <Save className="w-4 h-4" />

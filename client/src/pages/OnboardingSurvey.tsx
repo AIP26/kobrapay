@@ -42,7 +42,7 @@ const BUSINESS_TYPES = [
 ];
 
 const REVENUE_OPTIONS = [
-  { value: "menos_10k", label: "Menos de $10,000", desc: "Inicio de operaciones", color: "bg-gray-100 text-gray-700" },
+  { value: "menos_10k", label: "Menos de $10,000", desc: "Inicio de operaciones", color: "bg-gray-100 text-foreground" },
   { value: "10k_50k", label: "$10,000 – $50,000", desc: "Negocio en crecimiento", color: "bg-blue-50 text-blue-700" },
   { value: "50k_200k", label: "$50,000 – $200,000", desc: "Empresa establecida", color: "bg-emerald-50 text-emerald-700" },
   { value: "200k_500k", label: "$200,000 – $500,000", desc: "Empresa mediana-grande", color: "bg-purple-50 text-purple-700" },
@@ -162,8 +162,8 @@ export default function OnboardingSurvey() {
             <Star className="w-4 h-4 fill-[#00C896]" />
             Bienvenido a KobraPay
           </div>
-          <h1 className="text-3xl font-bold text-gray-900">Cuéntanos sobre tu negocio</h1>
-          <p className="text-gray-500 mt-2">Esta información nos ayuda a ofrecerte el plan y servicios ideales para ti</p>
+          <h1 className="text-3xl font-bold text-foreground">Cuéntanos sobre tu negocio</h1>
+          <p className="text-muted-foreground mt-2">Esta información nos ayuda a ofrecerte el plan y servicios ideales para ti</p>
         </div>
 
         {/* Progress */}
@@ -171,9 +171,9 @@ export default function OnboardingSurvey() {
           {STEPS.map((s, i) => (
             <div key={s.id} className="flex items-center flex-1">
               <div className={`flex items-center justify-center w-8 h-8 rounded-full text-xs font-bold flex-shrink-0 transition-all ${
-                step > s.id ? "bg-[#00C896] text-white" :
-                step === s.id ? "bg-[#00C896] text-white ring-4 ring-[#00C896]/20" :
-                "bg-gray-100 text-gray-400"
+                step > s.id ? "bg-[#00C896] text-foreground" :
+                step === s.id ? "bg-[#00C896] text-foreground ring-4 ring-[#00C896]/20" :
+                "bg-gray-100 text-muted-foreground"
               }`}>
                 {step > s.id ? <CheckCircle2 className="w-4 h-4" /> : s.id}
               </div>
@@ -190,8 +190,8 @@ export default function OnboardingSurvey() {
             {step === 1 && (
               <div className="space-y-4">
                 <div>
-                  <h2 className="text-xl font-bold text-gray-900">¿Qué tipo de empresa o negocio tienes?</h2>
-                  <p className="text-gray-500 text-sm mt-1">Esto nos ayuda a entender tu estructura y necesidades</p>
+                  <h2 className="text-xl font-bold text-foreground">¿Qué tipo de empresa o negocio tienes?</h2>
+                  <p className="text-muted-foreground text-sm mt-1">Esto nos ayuda a entender tu estructura y necesidades</p>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   {BUSINESS_TYPES.map(opt => (
@@ -203,8 +203,8 @@ export default function OnboardingSurvey() {
                       }`}
                     >
                       <span className="text-2xl">{opt.icon}</span>
-                      <p className="font-semibold text-gray-800 mt-2 text-sm">{opt.label}</p>
-                      <p className="text-xs text-gray-500 mt-0.5">{opt.desc}</p>
+                      <p className="font-semibold text-foreground mt-2 text-sm">{opt.label}</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">{opt.desc}</p>
                     </button>
                   ))}
                 </div>
@@ -215,8 +215,8 @@ export default function OnboardingSurvey() {
             {step === 2 && (
               <div className="space-y-4">
                 <div>
-                  <h2 className="text-xl font-bold text-gray-900">¿Cuál es tu ingreso mensual estimado?</h2>
-                  <p className="text-gray-500 text-sm mt-1">En pesos mexicanos (MXN). Esto es confidencial y solo para recomendarte el plan correcto.</p>
+                  <h2 className="text-xl font-bold text-foreground">¿Cuál es tu ingreso mensual estimado?</h2>
+                  <p className="text-muted-foreground text-sm mt-1">En pesos mexicanos (MXN). Esto es confidencial y solo para recomendarte el plan correcto.</p>
                 </div>
                 <div className="space-y-2">
                   {REVENUE_OPTIONS.map(opt => (
@@ -228,8 +228,8 @@ export default function OnboardingSurvey() {
                       }`}
                     >
                       <div>
-                        <p className="font-semibold text-gray-800">{opt.label}</p>
-                        <p className="text-xs text-gray-500">{opt.desc}</p>
+                        <p className="font-semibold text-foreground">{opt.label}</p>
+                        <p className="text-xs text-muted-foreground">{opt.desc}</p>
                       </div>
                       {form.monthlyRevenue === opt.value && <CheckCircle2 className="w-5 h-5 text-[#00C896]" />}
                     </button>
@@ -242,8 +242,8 @@ export default function OnboardingSurvey() {
             {step === 3 && (
               <div className="space-y-4">
                 <div>
-                  <h2 className="text-xl font-bold text-gray-900">¿Cuántas personas trabajan en tu empresa?</h2>
-                  <p className="text-gray-500 text-sm mt-1">Incluyendo tú mismo y colaboradores</p>
+                  <h2 className="text-xl font-bold text-foreground">¿Cuántas personas trabajan en tu empresa?</h2>
+                  <p className="text-muted-foreground text-sm mt-1">Incluyendo tú mismo y colaboradores</p>
                 </div>
                 <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
                   {EMPLOYEE_OPTIONS.map(opt => (
@@ -255,8 +255,8 @@ export default function OnboardingSurvey() {
                       }`}
                     >
                       <span className="text-2xl">{opt.icon}</span>
-                      <p className="font-bold text-gray-800 mt-2">{opt.label}</p>
-                      <p className="text-xs text-gray-500">{opt.desc}</p>
+                      <p className="font-bold text-foreground mt-2">{opt.label}</p>
+                      <p className="text-xs text-muted-foreground">{opt.desc}</p>
                     </button>
                   ))}
                 </div>
@@ -267,8 +267,8 @@ export default function OnboardingSurvey() {
             {step === 4 && (
               <div className="space-y-4">
                 <div>
-                  <h2 className="text-xl font-bold text-gray-900">¿Qué servicios necesitas?</h2>
-                  <p className="text-gray-500 text-sm mt-1">Selecciona todos los que apliquen (puedes elegir varios)</p>
+                  <h2 className="text-xl font-bold text-foreground">¿Qué servicios necesitas?</h2>
+                  <p className="text-muted-foreground text-sm mt-1">Selecciona todos los que apliquen (puedes elegir varios)</p>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   {SERVICES.map(svc => {
@@ -281,12 +281,12 @@ export default function OnboardingSurvey() {
                           selected ? "border-[#00C896] bg-[#00C896]/5" : "border-gray-200 hover:border-gray-300"
                         }`}
                       >
-                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${selected ? "bg-[#00C896] text-white" : "bg-gray-100 text-gray-500"}`}>
+                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${selected ? "bg-[#00C896] text-foreground" : "bg-gray-100 text-muted-foreground"}`}>
                           <svc.icon className="w-4 h-4" />
                         </div>
                         <div>
-                          <p className="font-medium text-sm text-gray-800">{svc.label}</p>
-                          <p className="text-xs text-gray-500">{svc.desc}</p>
+                          <p className="font-medium text-sm text-foreground">{svc.label}</p>
+                          <p className="text-xs text-muted-foreground">{svc.desc}</p>
                         </div>
                       </button>
                     );
@@ -302,8 +302,8 @@ export default function OnboardingSurvey() {
             {step === 5 && (
               <div className="space-y-4">
                 <div>
-                  <h2 className="text-xl font-bold text-gray-900">¿Cuántas cuentas bancarias necesitas?</h2>
-                  <p className="text-gray-500 text-sm mt-1">Para recibir los pagos de tus clientes</p>
+                  <h2 className="text-xl font-bold text-foreground">¿Cuántas cuentas bancarias necesitas?</h2>
+                  <p className="text-muted-foreground text-sm mt-1">Para recibir los pagos de tus clientes</p>
                 </div>
                 <div className="space-y-3">
                   {ACCOUNTS_OPTIONS.map(opt => (
@@ -315,8 +315,8 @@ export default function OnboardingSurvey() {
                       }`}
                     >
                       <div>
-                        <p className="font-semibold text-gray-800">{opt.label}</p>
-                        <p className="text-xs text-gray-500">{opt.desc}</p>
+                        <p className="font-semibold text-foreground">{opt.label}</p>
+                        <p className="text-xs text-muted-foreground">{opt.desc}</p>
                       </div>
                       {form.accountsNeeded === opt.value && <CheckCircle2 className="w-5 h-5 text-[#00C896]" />}
                     </button>
@@ -329,11 +329,11 @@ export default function OnboardingSurvey() {
             {step === 6 && (
               <div className="space-y-4">
                 <div>
-                  <h2 className="text-xl font-bold text-gray-900">Cuéntanos un poco más</h2>
-                  <p className="text-gray-500 text-sm mt-1">Información adicional para personalizar tu experiencia</p>
+                  <h2 className="text-xl font-bold text-foreground">Cuéntanos un poco más</h2>
+                  <p className="text-muted-foreground text-sm mt-1">Información adicional para personalizar tu experiencia</p>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-gray-700 block mb-1">¿En qué industria opera tu negocio?</label>
+                  <label className="text-sm font-medium text-foreground block mb-1">¿En qué industria opera tu negocio?</label>
                   <select
                     value={form.industry}
                     onChange={e => setForm(f => ({ ...f, industry: e.target.value }))}
@@ -344,7 +344,7 @@ export default function OnboardingSurvey() {
                   </select>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-gray-700 block mb-1">Describe brevemente tu negocio <span className="text-gray-400 font-normal">(opcional)</span></label>
+                  <label className="text-sm font-medium text-foreground block mb-1">Describe brevemente tu negocio <span className="text-muted-foreground font-normal">(opcional)</span></label>
                   <textarea
                     value={form.businessDescription}
                     onChange={e => setForm(f => ({ ...f, businessDescription: e.target.value }))}
@@ -354,7 +354,7 @@ export default function OnboardingSurvey() {
                   />
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-gray-700 block mb-1">¿Cómo nos encontraste? <span className="text-gray-400 font-normal">(opcional)</span></label>
+                  <label className="text-sm font-medium text-foreground block mb-1">¿Cómo nos encontraste? <span className="text-muted-foreground font-normal">(opcional)</span></label>
                   <select
                     value={form.referralSource}
                     onChange={e => setForm(f => ({ ...f, referralSource: e.target.value }))}
@@ -377,7 +377,7 @@ export default function OnboardingSurvey() {
               <Button
                 variant="ghost"
                 onClick={() => step > 1 ? setStep(s => s - 1) : navigate("/dashboard")}
-                className="gap-2 text-gray-500"
+                className="gap-2 text-muted-foreground"
               >
                 <ArrowLeft className="w-4 h-4" />
                 {step === 1 ? "Omitir por ahora" : "Anterior"}
@@ -387,7 +387,7 @@ export default function OnboardingSurvey() {
                 <Button
                   onClick={() => setStep(s => s + 1)}
                   disabled={!canNext()}
-                  className="bg-[#00C896] hover:bg-[#00a87e] text-white gap-2"
+                  className="bg-[#00C896] hover:bg-[#00a87e] text-foreground gap-2"
                 >
                   Siguiente
                   <ArrowRight className="w-4 h-4" />
@@ -396,7 +396,7 @@ export default function OnboardingSurvey() {
                 <Button
                   onClick={handleSubmit}
                   disabled={submitMutation.isPending}
-                  className="bg-[#00C896] hover:bg-[#00a87e] text-white gap-2"
+                  className="bg-[#00C896] hover:bg-[#00a87e] text-foreground gap-2"
                 >
                   {submitMutation.isPending ? <RefreshCw className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
                   Enviar y continuar
@@ -406,7 +406,7 @@ export default function OnboardingSurvey() {
           </CardContent>
         </Card>
 
-        <p className="text-center text-xs text-gray-400 mt-4">
+        <p className="text-center text-xs text-muted-foreground mt-4">
           Tu información es confidencial y solo se usa para personalizar tu experiencia en KobraPay
         </p>
       </div>

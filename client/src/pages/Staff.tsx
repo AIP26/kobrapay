@@ -117,14 +117,14 @@ export default function Staff() {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Colaboradores</h1>
-            <p className="text-sm text-gray-500 mt-1">
+            <h1 className="text-2xl font-bold text-foreground">Colaboradores</h1>
+            <p className="text-sm text-muted-foreground mt-1">
               Agrega empleados con roles específicos para tu negocio
             </p>
           </div>
           <Button
             onClick={() => setShowInviteDialog(true)}
-            className="bg-cyan-500 hover:bg-cyan-600 text-white gap-2"
+            className="bg-cyan-500 hover:bg-cyan-600 text-foreground gap-2"
           >
             <UserPlus className="w-4 h-4" />
             Invitar colaborador
@@ -144,8 +144,8 @@ export default function Staff() {
                       <Icon className={`w-4 h-4 ${role === "asistente" ? "text-purple-600" : "text-blue-600"}`} />
                     </div>
                     <div>
-                      <p className="font-semibold text-sm text-gray-900">{info.label}</p>
-                      <p className="text-xs text-gray-500">{info.description}</p>
+                      <p className="font-semibold text-sm text-foreground">{info.label}</p>
+                      <p className="text-xs text-muted-foreground">{info.description}</p>
                     </div>
                     <Badge className={`ml-auto text-xs ${info.color}`} variant="outline">
                       {role === "asistente" ? asistentes.length : operadores.length}
@@ -153,13 +153,13 @@ export default function Staff() {
                   </div>
                   <ul className="space-y-1">
                     {info.permissions.map(p => (
-                      <li key={p} className="flex items-center gap-1.5 text-xs text-gray-600">
+                      <li key={p} className="flex items-center gap-1.5 text-xs text-muted-foreground">
                         <Check className="w-3 h-3 text-green-500 flex-shrink-0" />
                         {p}
                       </li>
                     ))}
                     {role === "operador" && (
-                      <li className="flex items-center gap-1.5 text-xs text-gray-400">
+                      <li className="flex items-center gap-1.5 text-xs text-muted-foreground">
                         <span className="w-3 h-3 flex-shrink-0 text-center">✗</span>
                         No accede a contratos
                       </li>
@@ -174,7 +174,7 @@ export default function Staff() {
         {/* Staff list */}
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-base font-semibold text-gray-800 flex items-center gap-2">
+            <CardTitle className="text-base font-semibold text-foreground flex items-center gap-2">
               <UserCheck className="w-4 h-4 text-cyan-500" />
               Equipo activo
               {staffList && (
@@ -200,10 +200,10 @@ export default function Staff() {
             ) : !staffList || staffList.length === 0 ? (
               <div className="text-center py-16">
                 <div className="w-14 h-14 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-3">
-                  <UserCheck className="w-7 h-7 text-gray-400" />
+                  <UserCheck className="w-7 h-7 text-muted-foreground" />
                 </div>
-                <p className="font-medium text-gray-600 mb-1">Sin colaboradores aún</p>
-                <p className="text-sm text-gray-400 mb-4">
+                <p className="font-medium text-muted-foreground mb-1">Sin colaboradores aún</p>
+                <p className="text-sm text-muted-foreground mb-4">
                   Invita a tu equipo para que puedan crear cobros
                 </p>
                 <Button
@@ -225,14 +225,14 @@ export default function Staff() {
                     <div key={member.id} className="flex items-center gap-4 px-6 py-4 hover:bg-gray-50 transition-colors">
                       {/* Avatar */}
                       <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${role === "asistente" ? "bg-gradient-to-br from-purple-400 to-violet-500" : "bg-gradient-to-br from-cyan-400 to-teal-500"}`}>
-                        <span className="text-white font-semibold text-sm">
+                        <span className="text-foreground font-semibold text-sm">
                           {(member.name || member.email || "?").charAt(0).toUpperCase()}
                         </span>
                       </div>
                       {/* Info */}
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
-                          <p className="font-medium text-gray-900 text-sm truncate">
+                          <p className="font-medium text-foreground text-sm truncate">
                             {member.name || "Sin nombre"}
                           </p>
                           <Badge className={`text-xs ${roleInfo.color}`} variant="outline">
@@ -240,11 +240,11 @@ export default function Staff() {
                           </Badge>
                         </div>
                         <div className="flex items-center gap-1.5 mt-0.5">
-                          <Mail className="w-3 h-3 text-gray-400" />
-                          <p className="text-xs text-gray-500 truncate">{member.email}</p>
+                          <Mail className="w-3 h-3 text-muted-foreground" />
+                          <p className="text-xs text-muted-foreground truncate">{member.email}</p>
                           <button
                             onClick={() => handleCopyEmail(member.email || "", member.id)}
-                            className="text-gray-300 hover:text-gray-500 transition-colors flex-shrink-0"
+                            className="text-muted-foreground hover:text-muted-foreground transition-colors flex-shrink-0"
                           >
                             {copiedId === member.id ? (
                               <Check className="w-3 h-3 text-green-500" />
@@ -266,7 +266,7 @@ export default function Staff() {
                         >
                           {member.isActive ? "Activo" : "Pendiente"}
                         </Badge>
-                        <p className="text-xs text-gray-400 hidden sm:block">
+                        <p className="text-xs text-muted-foreground hidden sm:block">
                           {new Date(member.createdAt).toLocaleDateString("es-MX", {
                             day: "2-digit",
                             month: "short",
@@ -278,7 +278,7 @@ export default function Staff() {
                             setSelectedStaff({ id: member.id, name: member.name || member.email || "" });
                             setShowDeleteDialog(true);
                           }}
-                          className="p-1.5 rounded-lg text-gray-300 hover:text-red-500 hover:bg-red-50 transition-all"
+                          className="p-1.5 rounded-lg text-muted-foreground hover:text-red-500 hover:bg-red-50 transition-all"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
@@ -303,9 +303,9 @@ export default function Staff() {
           </DialogHeader>
           <div className="space-y-4 py-2">
             <div className="space-y-1.5">
-              <label className="text-sm font-medium text-gray-700">Nombre completo</label>
+              <label className="text-sm font-medium text-foreground">Nombre completo</label>
               <div className="relative">
-                <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input
                   placeholder="Ej. María García"
                   value={inviteName}
@@ -315,9 +315,9 @@ export default function Staff() {
               </div>
             </div>
             <div className="space-y-1.5">
-              <label className="text-sm font-medium text-gray-700">Correo electrónico</label>
+              <label className="text-sm font-medium text-foreground">Correo electrónico</label>
               <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input
                   type="email"
                   placeholder="colaborador@empresa.com"
@@ -329,7 +329,7 @@ export default function Staff() {
               </div>
             </div>
             <div className="space-y-1.5">
-              <label className="text-sm font-medium text-gray-700">Rol del colaborador</label>
+              <label className="text-sm font-medium text-foreground">Rol del colaborador</label>
               <Select value={inviteRole} onValueChange={(v) => setInviteRole(v as StaffRole)}>
                 <SelectTrigger>
                   <SelectValue />
@@ -340,7 +340,7 @@ export default function Staff() {
                       <CreditCard className="w-4 h-4 text-blue-500" />
                       <div>
                         <p className="font-medium">Operador</p>
-                        <p className="text-xs text-gray-500">Solo puede crear y gestionar cobros</p>
+                        <p className="text-xs text-muted-foreground">Solo puede crear y gestionar cobros</p>
                       </div>
                     </div>
                   </SelectItem>
@@ -349,7 +349,7 @@ export default function Staff() {
                       <Briefcase className="w-4 h-4 text-purple-500" />
                       <div>
                         <p className="font-medium">Asistente</p>
-                        <p className="text-xs text-gray-500">Cobros + contratos de clientes</p>
+                        <p className="text-xs text-muted-foreground">Cobros + contratos de clientes</p>
                       </div>
                     </div>
                   </SelectItem>
@@ -369,7 +369,7 @@ export default function Staff() {
                 ))}
               </ul>
             </div>
-            <p className="text-xs text-gray-500 bg-gray-50 rounded-lg p-3">
+            <p className="text-xs text-muted-foreground bg-gray-50 rounded-lg p-3">
               El colaborador recibirá un email con instrucciones para acceder a la plataforma.
             </p>
           </div>
@@ -380,7 +380,7 @@ export default function Staff() {
             <Button
               onClick={handleInvite}
               disabled={inviteMutation.isPending}
-              className="bg-cyan-500 hover:bg-cyan-600 text-white"
+              className="bg-cyan-500 hover:bg-cyan-600 text-foreground"
             >
               {inviteMutation.isPending ? "Enviando..." : "Invitar"}
             </Button>
@@ -394,7 +394,7 @@ export default function Staff() {
           <DialogHeader>
             <DialogTitle>¿Eliminar colaborador?</DialogTitle>
           </DialogHeader>
-          <p className="text-sm text-gray-500 py-2">
+          <p className="text-sm text-muted-foreground py-2">
             Se eliminará el acceso de <strong>{selectedStaff?.name}</strong> a tu cuenta. Esta acción no se puede deshacer.
           </p>
           <DialogFooter>

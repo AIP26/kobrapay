@@ -220,15 +220,15 @@ export default function StripeConnect() {
 
   const getStatusBadge = (acc: BankAccount) => {
     if (acc.stripeStatus === "active" && acc.stripeChargesEnabled) {
-      return <Badge className="bg-emerald-500 text-white gap-1 text-xs"><CheckCircle2 className="w-3 h-3" /> Activa</Badge>;
+      return <Badge className="bg-emerald-500 text-foreground gap-1 text-xs"><CheckCircle2 className="w-3 h-3" /> Activa</Badge>;
     }
     if (acc.stripeStatus === "pending" || acc.stripeDetailsSubmitted) {
-      return <Badge className="bg-amber-500 text-white gap-1 text-xs"><Clock className="w-3 h-3" /> En proceso</Badge>;
+      return <Badge className="bg-amber-500 text-foreground gap-1 text-xs"><Clock className="w-3 h-3" /> En proceso</Badge>;
     }
     if (acc.stripeAccountId) {
-      return <Badge className="bg-orange-400 text-white gap-1 text-xs"><AlertCircle className="w-3 h-3" /> Sin completar</Badge>;
+      return <Badge className="bg-orange-400 text-foreground gap-1 text-xs"><AlertCircle className="w-3 h-3" /> Sin completar</Badge>;
     }
-    return <Badge className="bg-gray-400 text-white gap-1 text-xs"><AlertCircle className="w-3 h-3" /> Sin conectar</Badge>;
+    return <Badge className="bg-gray-400 text-foreground gap-1 text-xs"><AlertCircle className="w-3 h-3" /> Sin conectar</Badge>;
   };
 
   return (
@@ -239,21 +239,21 @@ export default function StripeConnect() {
           variant="ghost"
           size="sm"
           onClick={() => navigate("/dashboard")}
-          className="gap-1 text-gray-500 hover:text-gray-800 -ml-2"
+          className="gap-1 text-muted-foreground hover:text-foreground -ml-2"
         >
           <ChevronLeft className="w-4 h-4" />
           Menú
         </Button>
         <div className="h-5 w-px bg-gray-200" />
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Cuenta de Cobros</h1>
-          <p className="text-gray-500 text-sm mt-0.5">Gestiona tus cuentas bancarias para recibir pagos con Stripe Connect</p>
+          <h1 className="text-2xl font-bold text-foreground">Cuenta de Cobros</h1>
+          <p className="text-muted-foreground text-sm mt-0.5">Gestiona tus cuentas bancarias para recibir pagos con Stripe Connect</p>
         </div>
       </div>
 
       {/* Botón agregar cuenta */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2 text-sm text-gray-500">
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <Landmark className="w-4 h-4" />
           {accounts.length === 0 ? "Sin cuentas registradas" : `${accounts.length} cuenta${accounts.length !== 1 ? "s" : ""} registrada${accounts.length !== 1 ? "s" : ""}`}
         </div>
@@ -262,14 +262,14 @@ export default function StripeConnect() {
             variant="outline"
             size="sm"
             onClick={() => refetchAccounts()}
-            className="gap-1 text-gray-500"
+            className="gap-1 text-muted-foreground"
           >
             <RefreshCw className="w-4 h-4" />
             Actualizar
           </Button>
           <Button
             onClick={() => { setEditingAccount(null); setForm({ ...emptyForm }); setShowForm(true); }}
-            className="bg-[#00C896] hover:bg-[#00a87e] text-white gap-2"
+            className="bg-[#00C896] hover:bg-[#00a87e] text-foreground gap-2"
             size="sm"
           >
             <Plus className="w-4 h-4" />
@@ -280,19 +280,19 @@ export default function StripeConnect() {
 
       {/* Lista de cuentas */}
       {isLoading ? (
-        <div className="flex items-center gap-2 text-gray-400 py-8 justify-center">
+        <div className="flex items-center gap-2 text-muted-foreground py-8 justify-center">
           <RefreshCw className="w-5 h-5 animate-spin" />
           Cargando cuentas...
         </div>
       ) : accounts.length === 0 ? (
         <Card className="border-2 border-dashed border-gray-200">
           <CardContent className="py-12 text-center">
-            <Landmark className="w-12 h-12 mx-auto mb-3 text-gray-300" />
-            <p className="text-gray-500 font-medium">No tienes cuentas bancarias registradas</p>
-            <p className="text-gray-400 text-sm mt-1 mb-4">Agrega una cuenta para empezar a recibir pagos directamente</p>
+            <Landmark className="w-12 h-12 mx-auto mb-3 text-muted-foreground" />
+            <p className="text-muted-foreground font-medium">No tienes cuentas bancarias registradas</p>
+            <p className="text-muted-foreground text-sm mt-1 mb-4">Agrega una cuenta para empezar a recibir pagos directamente</p>
             <Button
               onClick={() => { setEditingAccount(null); setForm({ ...emptyForm }); setShowForm(true); }}
-              className="bg-[#00C896] hover:bg-[#00a87e] text-white gap-2"
+              className="bg-[#00C896] hover:bg-[#00a87e] text-foreground gap-2"
             >
               <Plus className="w-4 h-4" />
               Agregar mi primera cuenta
@@ -317,7 +317,7 @@ export default function StripeConnect() {
                     )}
                     <div>
                       <div className="flex items-center gap-2">
-                        <span className="font-semibold text-gray-900">{acc.accountAlias || "Cuenta sin nombre"}</span>
+                        <span className="font-semibold text-foreground">{acc.accountAlias || "Cuenta sin nombre"}</span>
                         {acc.isPrimary && (
                           <span className="inline-flex items-center gap-1 text-xs text-[#00C896] font-medium">
                             <Star className="w-3 h-3 fill-[#00C896]" /> Principal
@@ -325,23 +325,23 @@ export default function StripeConnect() {
                         )}
                       </div>
                       <div className="flex items-center gap-2 mt-0.5">
-                        <span className="text-xs text-gray-400 uppercase font-medium">
+                        <span className="text-xs text-muted-foreground uppercase font-medium">
                           {acc.connectType === "express" ? "Connect Express" : "Connect Custom"}
                         </span>
-                        {acc.bankName && <span className="text-xs text-gray-400">• {acc.bankName}</span>}
-                        {acc.clabe && <span className="text-xs text-gray-400">• CLABE: ···{acc.clabe.slice(-4)}</span>}
+                        {acc.bankName && <span className="text-xs text-muted-foreground">• {acc.bankName}</span>}
+                        {acc.clabe && <span className="text-xs text-muted-foreground">• CLABE: ···{acc.clabe.slice(-4)}</span>}
                       </div>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
                     {getStatusBadge(acc)}
-                    <Button variant="ghost" size="sm" onClick={() => handleEdit(acc)} className="text-gray-400 hover:text-gray-700 h-7 w-7 p-0">
+                    <Button variant="ghost" size="sm" onClick={() => handleEdit(acc)} className="text-muted-foreground hover:text-foreground h-7 w-7 p-0">
                       <Pencil className="w-3.5 h-3.5" />
                     </Button>
                     <Button variant="ghost" size="sm" onClick={() => setDeleteConfirm(acc.id)} className="text-red-400 hover:text-red-600 h-7 w-7 p-0">
                       <Trash2 className="w-3.5 h-3.5" />
                     </Button>
-                    <Button variant="ghost" size="sm" onClick={() => setExpandedId(expandedId === acc.id ? null : acc.id)} className="text-gray-400 h-7 w-7 p-0">
+                    <Button variant="ghost" size="sm" onClick={() => setExpandedId(expandedId === acc.id ? null : acc.id)} className="text-muted-foreground h-7 w-7 p-0">
                       {expandedId === acc.id ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                     </Button>
                   </div>
@@ -354,25 +354,25 @@ export default function StripeConnect() {
                     {/* Datos bancarios */}
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
                       {acc.accountHolderName && (
-                        <div><p className="text-xs text-gray-400">Titular</p><p className="font-medium text-gray-800">{acc.accountHolderName}</p></div>
+                        <div><p className="text-xs text-muted-foreground">Titular</p><p className="font-medium text-foreground">{acc.accountHolderName}</p></div>
                       )}
                       {acc.rfc && (
-                        <div><p className="text-xs text-gray-400">RFC</p><p className="font-medium text-gray-800">{acc.rfc}</p></div>
+                        <div><p className="text-xs text-muted-foreground">RFC</p><p className="font-medium text-foreground">{acc.rfc}</p></div>
                       )}
                       {acc.curp && (
-                        <div><p className="text-xs text-gray-400">CURP</p><p className="font-medium text-gray-800">{acc.curp}</p></div>
+                        <div><p className="text-xs text-muted-foreground">CURP</p><p className="font-medium text-foreground">{acc.curp}</p></div>
                       )}
                       {acc.razonSocial && (
-                        <div><p className="text-xs text-gray-400">Razón Social</p><p className="font-medium text-gray-800">{acc.razonSocial}</p></div>
+                        <div><p className="text-xs text-muted-foreground">Razón Social</p><p className="font-medium text-foreground">{acc.razonSocial}</p></div>
                       )}
                       {acc.regimenFiscal && (
-                        <div className="col-span-2"><p className="text-xs text-gray-400">Régimen Fiscal</p><p className="font-medium text-gray-800">{acc.regimenFiscal}</p></div>
+                        <div className="col-span-2"><p className="text-xs text-muted-foreground">Régimen Fiscal</p><p className="font-medium text-foreground">{acc.regimenFiscal}</p></div>
                       )}
                       {acc.clabe && (
-                        <div><p className="text-xs text-gray-400">CLABE</p><p className="font-medium text-gray-800 font-mono">{acc.clabe}</p></div>
+                        <div><p className="text-xs text-muted-foreground">CLABE</p><p className="font-medium text-foreground font-mono">{acc.clabe}</p></div>
                       )}
                       {acc.accountNumber && (
-                        <div><p className="text-xs text-gray-400">No. de cuenta</p><p className="font-medium text-gray-800">{acc.accountNumber}</p></div>
+                        <div><p className="text-xs text-muted-foreground">No. de cuenta</p><p className="font-medium text-foreground">{acc.accountNumber}</p></div>
                       )}
                     </div>
 
@@ -382,7 +382,7 @@ export default function StripeConnect() {
                         <Button
                           onClick={() => handleConnectStripe(acc)}
                           disabled={onboardMutation.isPending}
-                          className="bg-[#00C896] hover:bg-[#00a87e] text-white gap-2"
+                          className="bg-[#00C896] hover:bg-[#00a87e] text-foreground gap-2"
                           size="sm"
                         >
                           {onboardMutation.isPending ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <ExternalLink className="w-3.5 h-3.5" />}
@@ -402,7 +402,7 @@ export default function StripeConnect() {
                       ) : acc.stripeStatus === "active" && acc.stripePayoutsEnabled ? (
                         <Button
                           onClick={() => setPayoutModal({ open: true, accountId: acc.id, max: 0 })}
-                          className="bg-emerald-500 hover:bg-emerald-600 text-white gap-2"
+                          className="bg-emerald-500 hover:bg-emerald-600 text-foreground gap-2"
                           size="sm"
                         >
                           <ArrowDownToLine className="w-3.5 h-3.5" />
@@ -414,7 +414,7 @@ export default function StripeConnect() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="text-gray-400 gap-1"
+                          className="text-muted-foreground gap-1"
                           onClick={() => {
                             toast.info("Verificando estado con Stripe...");
                             refetchAccounts();
@@ -443,7 +443,7 @@ export default function StripeConnect() {
       {/* Cómo funciona */}
       <Card className="bg-gray-50 border-0">
         <CardHeader className="pb-2">
-          <CardTitle className="text-sm text-gray-600 font-semibold">¿Cómo funciona Stripe Connect?</CardTitle>
+          <CardTitle className="text-sm text-muted-foreground font-semibold">¿Cómo funciona Stripe Connect?</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -454,12 +454,12 @@ export default function StripeConnect() {
               { step: "4", icon: Wallet, title: "Retira cuando quieras", desc: "1-2 días hábiles a tu CLABE" },
             ].map((item) => (
               <div key={item.step} className="flex items-start gap-2">
-                <div className="w-6 h-6 rounded-full bg-[#00C896] text-white text-xs font-bold flex items-center justify-center flex-shrink-0 mt-0.5">
+                <div className="w-6 h-6 rounded-full bg-[#00C896] text-foreground text-xs font-bold flex items-center justify-center flex-shrink-0 mt-0.5">
                   {item.step}
                 </div>
                 <div>
-                  <p className="font-medium text-sm text-gray-800">{item.title}</p>
-                  <p className="text-xs text-gray-500 mt-0.5">{item.desc}</p>
+                  <p className="font-medium text-sm text-foreground">{item.title}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">{item.desc}</p>
                 </div>
               </div>
             ))}
@@ -484,7 +484,7 @@ export default function StripeConnect() {
           <div className="space-y-5 py-2">
             {/* Tipo de cuenta */}
             <div>
-              <label className="text-sm font-medium text-gray-700 block mb-2">Tipo de cuenta Stripe Connect</label>
+              <label className="text-sm font-medium text-foreground block mb-2">Tipo de cuenta Stripe Connect</label>
               <div className="grid grid-cols-2 gap-3">
                 {[
                   { value: "express", label: "Express", desc: "1 cuenta bancaria, onboarding rápido (~5 min)", icon: Zap, color: "text-[#00C896]", bg: "bg-[#00C896]/10" },
@@ -499,8 +499,8 @@ export default function StripeConnect() {
                     <div className={`w-7 h-7 rounded-full ${opt.bg} flex items-center justify-center mb-2`}>
                       <opt.icon className={`w-4 h-4 ${opt.color}`} />
                     </div>
-                    <p className="font-semibold text-sm text-gray-800">{opt.label}</p>
-                    <p className="text-xs text-gray-500 mt-0.5">{opt.desc}</p>
+                    <p className="font-semibold text-sm text-foreground">{opt.label}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">{opt.desc}</p>
                   </button>
                 ))}
               </div>
@@ -509,7 +509,7 @@ export default function StripeConnect() {
             {/* Alias y banco */}
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="text-sm font-medium text-gray-700 block mb-1">Nombre / Alias <span className="text-red-500">*</span></label>
+                <label className="text-sm font-medium text-foreground block mb-1">Nombre / Alias <span className="text-red-500">*</span></label>
                 <input
                   value={form.accountAlias}
                   onChange={e => setForm(f => ({ ...f, accountAlias: e.target.value }))}
@@ -518,7 +518,7 @@ export default function StripeConnect() {
                 />
               </div>
               <div>
-                <label className="text-sm font-medium text-gray-700 block mb-1">Banco</label>
+                <label className="text-sm font-medium text-foreground block mb-1">Banco</label>
                 <select
                   value={form.bankName}
                   onChange={e => setForm(f => ({ ...f, bankName: e.target.value }))}
@@ -533,7 +533,7 @@ export default function StripeConnect() {
             {/* CLABE y número de cuenta */}
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="text-sm font-medium text-gray-700 block mb-1">CLABE Interbancaria (18 dígitos)</label>
+                <label className="text-sm font-medium text-foreground block mb-1">CLABE Interbancaria (18 dígitos)</label>
                 <input
                   value={form.clabe}
                   onChange={e => setForm(f => ({ ...f, clabe: e.target.value.replace(/\D/g, "").slice(0, 18) }))}
@@ -546,7 +546,7 @@ export default function StripeConnect() {
                 )}
               </div>
               <div>
-                <label className="text-sm font-medium text-gray-700 block mb-1">Número de cuenta</label>
+                <label className="text-sm font-medium text-foreground block mb-1">Número de cuenta</label>
                 <input
                   value={form.accountNumber}
                   onChange={e => setForm(f => ({ ...f, accountNumber: e.target.value }))}
@@ -558,13 +558,13 @@ export default function StripeConnect() {
 
             {/* Separador */}
             <div className="border-t border-gray-100 pt-1">
-              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Datos del titular / Fiscales</p>
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3">Datos del titular / Fiscales</p>
             </div>
 
             {/* Nombre del titular y RFC */}
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="text-sm font-medium text-gray-700 block mb-1">Nombre del titular</label>
+                <label className="text-sm font-medium text-foreground block mb-1">Nombre del titular</label>
                 <input
                   value={form.accountHolderName}
                   onChange={e => setForm(f => ({ ...f, accountHolderName: e.target.value }))}
@@ -573,7 +573,7 @@ export default function StripeConnect() {
                 />
               </div>
               <div>
-                <label className="text-sm font-medium text-gray-700 block mb-1">RFC</label>
+                <label className="text-sm font-medium text-foreground block mb-1">RFC</label>
                 <input
                   value={form.rfc}
                   onChange={e => setForm(f => ({ ...f, rfc: e.target.value.toUpperCase().slice(0, 13) }))}
@@ -587,7 +587,7 @@ export default function StripeConnect() {
             {/* CURP y Razón Social */}
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="text-sm font-medium text-gray-700 block mb-1">CURP (persona física)</label>
+                <label className="text-sm font-medium text-foreground block mb-1">CURP (persona física)</label>
                 <input
                   value={form.curp}
                   onChange={e => setForm(f => ({ ...f, curp: e.target.value.toUpperCase().slice(0, 18) }))}
@@ -597,7 +597,7 @@ export default function StripeConnect() {
                 />
               </div>
               <div>
-                <label className="text-sm font-medium text-gray-700 block mb-1">Razón Social (persona moral)</label>
+                <label className="text-sm font-medium text-foreground block mb-1">Razón Social (persona moral)</label>
                 <input
                   value={form.razonSocial}
                   onChange={e => setForm(f => ({ ...f, razonSocial: e.target.value }))}
@@ -609,7 +609,7 @@ export default function StripeConnect() {
 
             {/* Régimen fiscal */}
             <div>
-              <label className="text-sm font-medium text-gray-700 block mb-1">Régimen Fiscal SAT</label>
+              <label className="text-sm font-medium text-foreground block mb-1">Régimen Fiscal SAT</label>
               <select
                 value={form.regimenFiscal}
                 onChange={e => setForm(f => ({ ...f, regimenFiscal: e.target.value }))}
@@ -629,14 +629,14 @@ export default function StripeConnect() {
                 onChange={e => setForm(f => ({ ...f, isPrimary: e.target.checked }))}
                 className="w-4 h-4 accent-[#00C896]"
               />
-              <label htmlFor="isPrimary" className="text-sm text-gray-700 cursor-pointer">
+              <label htmlFor="isPrimary" className="text-sm text-foreground cursor-pointer">
                 Marcar como cuenta principal (para recibir pagos por defecto)
               </label>
             </div>
 
             {/* Notas */}
             <div>
-              <label className="text-sm font-medium text-gray-700 block mb-1">Notas internas (opcional)</label>
+              <label className="text-sm font-medium text-foreground block mb-1">Notas internas (opcional)</label>
               <textarea
                 value={form.notes}
                 onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
@@ -654,7 +654,7 @@ export default function StripeConnect() {
             <Button
               onClick={handleSave}
               disabled={createMutation.isPending || updateMutation.isPending}
-              className="bg-[#00C896] hover:bg-[#00a87e] text-white"
+              className="bg-[#00C896] hover:bg-[#00a87e] text-foreground"
             >
               {(createMutation.isPending || updateMutation.isPending) ? (
                 <RefreshCw className="w-4 h-4 animate-spin mr-2" />
@@ -672,9 +672,9 @@ export default function StripeConnect() {
             <DialogTitle>Solicitar retiro</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-2">
-            <p className="text-sm text-gray-600">Ingresa el monto a retirar a tu cuenta bancaria. El dinero llegará en 1-2 días hábiles.</p>
+            <p className="text-sm text-muted-foreground">Ingresa el monto a retirar a tu cuenta bancaria. El dinero llegará en 1-2 días hábiles.</p>
             <div>
-              <label className="text-sm font-medium text-gray-700 block mb-1">Monto (MXN)</label>
+              <label className="text-sm font-medium text-foreground block mb-1">Monto (MXN)</label>
               <input
                 type="number"
                 value={payoutAmount}
@@ -694,7 +694,7 @@ export default function StripeConnect() {
                 if (payoutModal.accountId) payoutMutation.mutate({ bankAccountId: payoutModal.accountId, amount });
               }}
               disabled={payoutMutation.isPending}
-              className="bg-emerald-500 hover:bg-emerald-600 text-white"
+              className="bg-emerald-500 hover:bg-emerald-600 text-foreground"
             >
               {payoutMutation.isPending ? <RefreshCw className="w-4 h-4 animate-spin mr-1" /> : null}
               Solicitar retiro
@@ -709,13 +709,13 @@ export default function StripeConnect() {
           <DialogHeader>
             <DialogTitle>¿Eliminar cuenta bancaria?</DialogTitle>
           </DialogHeader>
-          <p className="text-sm text-gray-600 py-2">Esta acción no se puede deshacer. La cuenta será eliminada permanentemente.</p>
+          <p className="text-sm text-muted-foreground py-2">Esta acción no se puede deshacer. La cuenta será eliminada permanentemente.</p>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDeleteConfirm(null)}>Cancelar</Button>
             <Button
               onClick={() => { if (deleteConfirm !== null) deleteMutation.mutate({ id: deleteConfirm }); }}
               disabled={deleteMutation.isPending}
-              className="bg-red-500 hover:bg-red-600 text-white"
+              className="bg-red-500 hover:bg-red-600 text-foreground"
             >
               {deleteMutation.isPending ? <RefreshCw className="w-4 h-4 animate-spin mr-1" /> : <Trash2 className="w-4 h-4 mr-1" />}
               Eliminar

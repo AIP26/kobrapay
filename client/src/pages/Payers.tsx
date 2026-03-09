@@ -76,13 +76,13 @@ function PayerDetail({ payer, onClose }: { payer: Payer; onClose: () => void }) 
         <DialogHeader>
           <DialogTitle className="flex items-center gap-3">
             <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center flex-shrink-0">
-              <span className="text-white text-sm font-bold">
+              <span className="text-foreground text-sm font-bold">
                 {payer.name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2)}
               </span>
             </div>
             <div>
-              <p className="text-gray-900 font-bold">{payer.name}</p>
-              <p className="text-gray-400 text-xs font-normal">{payer.email}</p>
+              <p className="text-foreground font-bold">{payer.name}</p>
+              <p className="text-muted-foreground text-xs font-normal">{payer.email}</p>
             </div>
           </DialogTitle>
         </DialogHeader>
@@ -98,8 +98,8 @@ function PayerDetail({ payer, onClose }: { payer: Payer; onClose: () => void }) 
             <p className="text-lg font-bold text-blue-700">{payer.totalTransactions}</p>
           </div>
           <div className="bg-gray-50 rounded-xl p-3 text-center">
-            <p className="text-xs text-gray-500 font-medium">Último pago</p>
-            <p className="text-xs font-semibold text-gray-700 mt-1">
+            <p className="text-xs text-muted-foreground font-medium">Último pago</p>
+            <p className="text-xs font-semibold text-foreground mt-1">
               {payer.lastPaymentAt
                 ? new Date(Number(payer.lastPaymentAt)).toLocaleDateString("es-MX", { day: "2-digit", month: "short", year: "numeric" })
                 : "—"}
@@ -109,13 +109,13 @@ function PayerDetail({ payer, onClose }: { payer: Payer; onClose: () => void }) 
 
         {/* Contact info */}
         <div className="flex gap-4 flex-wrap">
-          <div className="flex items-center gap-1.5 text-sm text-gray-500">
-            <Mail className="w-4 h-4 text-gray-400" />
+          <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+            <Mail className="w-4 h-4 text-muted-foreground" />
             {payer.email}
           </div>
           {payer.phone && (
-            <div className="flex items-center gap-1.5 text-sm text-gray-500">
-              <Phone className="w-4 h-4 text-gray-400" />
+            <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+              <Phone className="w-4 h-4 text-muted-foreground" />
               {payer.phone}
             </div>
           )}
@@ -123,7 +123,7 @@ function PayerDetail({ payer, onClose }: { payer: Payer; onClose: () => void }) 
 
         {/* Transaction history */}
         <div>
-          <h4 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+          <h4 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
             <CreditCard className="w-4 h-4 text-blue-500" />
             Historial de pagos
           </h4>
@@ -134,7 +134,7 @@ function PayerDetail({ payer, onClose }: { payer: Payer; onClose: () => void }) 
               ))}
             </div>
           ) : !transactions || transactions.length === 0 ? (
-            <div className="text-center py-8 text-gray-400">
+            <div className="text-center py-8 text-muted-foreground">
               <CreditCard className="w-8 h-8 mx-auto mb-2 opacity-40" />
               <p className="text-sm">Sin transacciones registradas</p>
             </div>
@@ -146,14 +146,14 @@ function PayerDetail({ payer, onClose }: { payer: Payer; onClose: () => void }) 
                     <CheckCircle2 className="w-4 h-4 text-green-600" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-800 truncate">{tx.description || "Pago"}</p>
+                    <p className="text-sm font-medium text-foreground truncate">{tx.description || "Pago"}</p>
                     {tx.operationNumber && (
-                      <p className="text-xs text-gray-400 flex items-center gap-1">
+                      <p className="text-xs text-muted-foreground flex items-center gap-1">
                         <Hash className="w-3 h-3" />
                         {tx.operationNumber}
                       </p>
                     )}
-                    <p className="text-xs text-gray-400">{formatDate(tx.createdAt ?? null)}</p>
+                    <p className="text-xs text-muted-foreground">{formatDate(tx.createdAt ?? null)}</p>
                   </div>
                   <div className="text-right flex-shrink-0">
                     <p className="text-sm font-bold text-green-600">{formatCurrency(tx.amount)}</p>
@@ -224,8 +224,8 @@ export default function Payers() {
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs text-gray-500 font-medium">Total pagadores</p>
-                  <p className="text-2xl font-bold text-gray-800 mt-0.5">{payers?.length ?? 0}</p>
+                  <p className="text-xs text-muted-foreground font-medium">Total pagadores</p>
+                  <p className="text-2xl font-bold text-foreground mt-0.5">{payers?.length ?? 0}</p>
                 </div>
                 <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center">
                   <Users className="w-5 h-5 text-blue-600" />
@@ -237,8 +237,8 @@ export default function Payers() {
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs text-gray-500 font-medium">Transacciones</p>
-                  <p className="text-2xl font-bold text-gray-800 mt-0.5">{totalTx}</p>
+                  <p className="text-xs text-muted-foreground font-medium">Transacciones</p>
+                  <p className="text-2xl font-bold text-foreground mt-0.5">{totalTx}</p>
                 </div>
                 <div className="w-10 h-10 bg-purple-100 rounded-xl flex items-center justify-center">
                   <CreditCard className="w-5 h-5 text-purple-600" />
@@ -250,8 +250,8 @@ export default function Payers() {
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs text-gray-500 font-medium">Total recaudado</p>
-                  <p className="text-xl font-bold text-gray-800 mt-0.5">{formatCurrency(totalPaid)}</p>
+                  <p className="text-xs text-muted-foreground font-medium">Total recaudado</p>
+                  <p className="text-xl font-bold text-foreground mt-0.5">{formatCurrency(totalPaid)}</p>
                 </div>
                 <div className="w-10 h-10 bg-green-100 rounded-xl flex items-center justify-center">
                   <TrendingUp className="w-5 h-5 text-green-600" />
@@ -265,12 +265,12 @@ export default function Payers() {
         <Card className="border-gray-200 shadow-sm">
           <CardHeader className="pb-3 border-b border-gray-100">
             <div className="flex items-center justify-between gap-4">
-              <CardTitle className="text-base font-semibold text-gray-800 flex items-center gap-2">
+              <CardTitle className="text-base font-semibold text-foreground flex items-center gap-2">
                 <Users className="w-4 h-4 text-blue-500" />
                 Directorio de Pagadores
               </CardTitle>
               <div className="relative flex-1 max-w-xs">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input
                   className="pl-9 h-9 text-sm"
                   placeholder="Buscar por nombre, email o teléfono..."
@@ -280,7 +280,7 @@ export default function Payers() {
                 {search && (
                   <button
                     onClick={() => setSearch("")}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-muted-foreground"
                   >
                     <X className="w-3.5 h-3.5" />
                   </button>
@@ -305,12 +305,12 @@ export default function Payers() {
             ) : !payers || payers.length === 0 ? (
               <div className="text-center py-16">
                 <div className="w-14 h-14 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                  <Users className="w-7 h-7 text-gray-400" />
+                  <Users className="w-7 h-7 text-muted-foreground" />
                 </div>
-                <p className="text-gray-600 font-medium mb-1">
+                <p className="text-muted-foreground font-medium mb-1">
                   {search ? "Sin resultados" : "Sin pagadores aún"}
                 </p>
-                <p className="text-sm text-gray-400">
+                <p className="text-sm text-muted-foreground">
                   {search
                     ? `No se encontraron pagadores con "${search}"`
                     : "Los pagadores aparecerán aquí cuando alguien complete un pago"}
@@ -328,19 +328,19 @@ export default function Payers() {
                     >
                       {/* Avatar */}
                       <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center flex-shrink-0">
-                        <span className="text-white text-sm font-bold">{initials}</span>
+                        <span className="text-foreground text-sm font-bold">{initials}</span>
                       </div>
 
                       {/* Info */}
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold text-gray-800">{payer.name}</p>
+                        <p className="text-sm font-semibold text-foreground">{payer.name}</p>
                         <div className="flex items-center gap-3 mt-0.5 flex-wrap">
-                          <span className="text-xs text-gray-400 flex items-center gap-1">
+                          <span className="text-xs text-muted-foreground flex items-center gap-1">
                             <Mail className="w-3 h-3" />
                             {payer.email}
                           </span>
                           {payer.phone && (
-                            <span className="text-xs text-gray-400 flex items-center gap-1">
+                            <span className="text-xs text-muted-foreground flex items-center gap-1">
                               <Phone className="w-3 h-3" />
                               {payer.phone}
                             </span>
@@ -351,17 +351,17 @@ export default function Payers() {
                       {/* Stats */}
                       <div className="hidden sm:flex items-center gap-4 flex-shrink-0">
                         <div className="text-right">
-                          <p className="text-xs text-gray-400">Total pagado</p>
+                          <p className="text-xs text-muted-foreground">Total pagado</p>
                           <p className="text-sm font-bold text-green-600">{formatCurrency(payer.totalPaid)}</p>
                         </div>
                         <div className="text-right">
-                          <p className="text-xs text-gray-400">Pagos</p>
-                          <p className="text-sm font-bold text-gray-700">{payer.totalTransactions}</p>
+                          <p className="text-xs text-muted-foreground">Pagos</p>
+                          <p className="text-sm font-bold text-foreground">{payer.totalTransactions}</p>
                         </div>
                         {payer.lastPaymentAt && (
                           <div className="text-right hidden lg:block">
-                            <p className="text-xs text-gray-400">Último pago</p>
-                            <p className="text-xs text-gray-600 flex items-center gap-1">
+                            <p className="text-xs text-muted-foreground">Último pago</p>
+                            <p className="text-xs text-muted-foreground flex items-center gap-1">
                               <Calendar className="w-3 h-3" />
                               {new Date(Number(payer.lastPaymentAt)).toLocaleDateString("es-MX", {
                                 day: "2-digit",
@@ -372,12 +372,12 @@ export default function Payers() {
                         )}
                       </div>
 
-                      <ChevronRight className="w-4 h-4 text-gray-300 flex-shrink-0" />
+                      <ChevronRight className="w-4 h-4 text-muted-foreground flex-shrink-0" />
                       {/* Botón eliminar solo para superadmin */}
                       {isSuperAdmin && (
                         <button
                           onClick={(e) => { e.stopPropagation(); setDeleteTarget(payer); setDeletePin(["","","",""]); }}
-                          className="ml-1 p-1.5 rounded-lg text-gray-300 hover:text-red-500 hover:bg-red-50 transition-colors flex-shrink-0"
+                          className="ml-1 p-1.5 rounded-lg text-muted-foreground hover:text-red-500 hover:bg-red-50 transition-colors flex-shrink-0"
                           title="Eliminar pagador"
                         >
                           <Trash2 className="w-4 h-4" />
@@ -423,12 +423,12 @@ export default function Payers() {
                   <p className="text-sm text-red-700">
                     ¿Eliminar al pagador <strong>{deleteTarget?.name}</strong>?
                   </p>
-                  <p className="text-xs text-gray-500 mt-1">{deleteTarget?.email}</p>
+                  <p className="text-xs text-muted-foreground mt-1">{deleteTarget?.email}</p>
                   <p className="text-xs text-red-500 mt-1">Se eliminará de tu directorio. Sus transacciones históricas se conservarán.</p>
                 </div>
                 <div>
-                  <p className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
-                    <Lock className="w-4 h-4 text-gray-500" />
+                  <p className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
+                    <Lock className="w-4 h-4 text-muted-foreground" />
                     Ingresa tu PIN de seguridad
                   </p>
                   <div className="flex gap-3 justify-center">
@@ -459,7 +459,7 @@ export default function Payers() {
                     Cancelar
                   </Button>
                   <Button
-                    className="flex-1 bg-red-600 hover:bg-red-700 text-white"
+                    className="flex-1 bg-red-600 hover:bg-red-700 text-foreground"
                     onClick={handleDeleteConfirm}
                     disabled={isDeleting || deletePin.join("").length !== 4}
                   >

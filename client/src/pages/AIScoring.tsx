@@ -118,8 +118,8 @@ function EvaluateForm({ onDone }: { onDone: () => void }) {
           <Brain className="w-5 h-5 text-violet-600" />
         </div>
         <div>
-          <h3 className="font-bold text-gray-900">Evaluar solicitud manualmente</h3>
-          <p className="text-xs text-gray-500">
+          <h3 className="font-bold text-foreground">Evaluar solicitud manualmente</h3>
+          <p className="text-xs text-muted-foreground">
             La IA analizará los datos y asignará un score de riesgo
           </p>
         </div>
@@ -127,7 +127,7 @@ function EvaluateForm({ onDone }: { onDone: () => void }) {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
-          <Label className="text-xs font-semibold text-gray-600 mb-1.5 block">
+          <Label className="text-xs font-semibold text-muted-foreground mb-1.5 block">
             Email del solicitante *
           </Label>
           <Input
@@ -138,7 +138,7 @@ function EvaluateForm({ onDone }: { onDone: () => void }) {
           />
         </div>
         <div>
-          <Label className="text-xs font-semibold text-gray-600 mb-1.5 block">
+          <Label className="text-xs font-semibold text-muted-foreground mb-1.5 block">
             Nombre completo
           </Label>
           <Input
@@ -148,7 +148,7 @@ function EvaluateForm({ onDone }: { onDone: () => void }) {
           />
         </div>
         <div>
-          <Label className="text-xs font-semibold text-gray-600 mb-1.5 block">
+          <Label className="text-xs font-semibold text-muted-foreground mb-1.5 block">
             Nombre del negocio
           </Label>
           <Input
@@ -158,7 +158,7 @@ function EvaluateForm({ onDone }: { onDone: () => void }) {
           />
         </div>
         <div>
-          <Label className="text-xs font-semibold text-gray-600 mb-1.5 block">
+          <Label className="text-xs font-semibold text-muted-foreground mb-1.5 block">
             Tipo de negocio
           </Label>
           <Input
@@ -168,7 +168,7 @@ function EvaluateForm({ onDone }: { onDone: () => void }) {
           />
         </div>
         <div>
-          <Label className="text-xs font-semibold text-gray-600 mb-1.5 block">
+          <Label className="text-xs font-semibold text-muted-foreground mb-1.5 block">
             Ingresos mensuales estimados
           </Label>
           <Input
@@ -178,7 +178,7 @@ function EvaluateForm({ onDone }: { onDone: () => void }) {
           />
         </div>
         <div>
-          <Label className="text-xs font-semibold text-gray-600 mb-1.5 block">
+          <Label className="text-xs font-semibold text-muted-foreground mb-1.5 block">
             RFC
           </Label>
           <Input
@@ -192,7 +192,7 @@ function EvaluateForm({ onDone }: { onDone: () => void }) {
       <Button
         onClick={() => evaluate.mutate(form)}
         disabled={!form.applicantEmail || evaluate.isPending}
-        className="w-full bg-violet-600 hover:bg-violet-700 text-white"
+        className="w-full bg-violet-600 hover:bg-violet-700 text-foreground"
       >
         {evaluate.isPending ? (
           <>
@@ -219,10 +219,10 @@ function EvaluateForm({ onDone }: { onDone: () => void }) {
         >
           <div className="flex items-center justify-between mb-3">
             <DecisionBadge decision={result.decision} />
-            <span className="text-2xl font-black text-gray-800">{result.aiScore}/100</span>
+            <span className="text-2xl font-black text-foreground">{result.aiScore}/100</span>
           </div>
           <ScoreBar score={result.aiScore} />
-          <p className="text-sm text-gray-700 mt-3">{result.aiReasoning}</p>
+          <p className="text-sm text-foreground mt-3">{result.aiReasoning}</p>
           {result.riskFlags.length > 0 && (
             <div className="mt-3 flex flex-wrap gap-1.5">
               {result.riskFlags.map((flag, i) => (
@@ -292,23 +292,23 @@ function ScoreRow({
         {/* Info */}
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
-            <p className="text-sm font-semibold text-gray-800">
+            <p className="text-sm font-semibold text-foreground">
               {score.applicantName || score.applicantEmail}
             </p>
             {score.businessName && (
-              <span className="text-xs text-gray-400">{score.businessName}</span>
+              <span className="text-xs text-muted-foreground">{score.businessName}</span>
             )}
           </div>
-          <p className="text-xs text-gray-400 mt-0.5">{score.applicantEmail}</p>
+          <p className="text-xs text-muted-foreground mt-0.5">{score.applicantEmail}</p>
         </div>
 
         {/* Decision */}
         <div className="flex items-center gap-3 flex-shrink-0">
           <DecisionBadge decision={score.decision} />
           {expanded ? (
-            <ChevronUp className="w-4 h-4 text-gray-400" />
+            <ChevronUp className="w-4 h-4 text-muted-foreground" />
           ) : (
-            <ChevronDown className="w-4 h-4 text-gray-400" />
+            <ChevronDown className="w-4 h-4 text-muted-foreground" />
           )}
         </div>
       </div>
@@ -322,17 +322,17 @@ function ScoreRow({
 
           {score.aiReasoning && (
             <div className="bg-white rounded-xl p-4 border border-gray-200">
-              <p className="text-xs font-semibold text-gray-500 uppercase mb-1.5 flex items-center gap-1.5">
+              <p className="text-xs font-semibold text-muted-foreground uppercase mb-1.5 flex items-center gap-1.5">
                 <Brain className="w-3.5 h-3.5" />
                 Razonamiento IA
               </p>
-              <p className="text-sm text-gray-700">{score.aiReasoning}</p>
+              <p className="text-sm text-foreground">{score.aiReasoning}</p>
             </div>
           )}
 
           {flags.length > 0 && (
             <div>
-              <p className="text-xs font-semibold text-gray-500 uppercase mb-2">
+              <p className="text-xs font-semibold text-muted-foreground uppercase mb-2">
                 Señales de riesgo
               </p>
               <div className="flex flex-wrap gap-1.5">
@@ -349,7 +349,7 @@ function ScoreRow({
           )}
 
           <div className="flex items-center justify-between">
-            <p className="text-xs text-gray-400">
+            <p className="text-xs text-muted-foreground">
               <Clock className="w-3 h-3 inline mr-1" />
               {formatDate(score.createdAt)}
             </p>
@@ -369,7 +369,7 @@ function ScoreRow({
                 </Button>
                 <Button
                   size="sm"
-                  className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                  className="bg-emerald-600 hover:bg-emerald-700 text-foreground"
                   onClick={(e) => {
                     e.stopPropagation();
                     onReview(score.id, "auto_approved");
@@ -381,7 +381,7 @@ function ScoreRow({
               </div>
             )}
             {score.reviewedAt && (
-              <span className="text-xs text-gray-400">
+              <span className="text-xs text-muted-foreground">
                 Revisado: {formatDate(score.reviewedAt)}
               </span>
             )}
@@ -428,18 +428,18 @@ export default function AIScoring() {
         {/* Header */}
         <div className="flex items-center justify-between flex-wrap gap-3">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+            <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
               <Brain className="w-6 h-6 text-violet-600" />
               Motor de Scoring IA
             </h1>
-            <p className="text-sm text-gray-500 mt-1">
+            <p className="text-sm text-muted-foreground mt-1">
               Evaluación automática de solicitudes de registro. La IA filtra bots,
               duplicados y solicitudes de alto riesgo.
             </p>
           </div>
           <Button
             onClick={() => setShowForm(!showForm)}
-            className="bg-violet-600 hover:bg-violet-700 text-white"
+            className="bg-violet-600 hover:bg-violet-700 text-foreground"
           >
             <Brain className="w-4 h-4 mr-2" />
             {showForm ? "Ocultar formulario" : "Evaluar solicitud"}
@@ -483,8 +483,8 @@ export default function AIScoring() {
                   <Icon className={`w-4.5 h-4.5 ${color}`} />
                 </div>
                 <div>
-                  <p className="text-sm font-semibold text-gray-800">{title}</p>
-                  <p className="text-xs text-gray-500 mt-0.5 leading-relaxed">{desc}</p>
+                  <p className="text-sm font-semibold text-foreground">{title}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">{desc}</p>
                 </div>
               </div>
             ))}
@@ -515,8 +515,8 @@ export default function AIScoring() {
             <div key={label} className="bg-white rounded-2xl border border-gray-200 shadow-sm p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs text-gray-500 font-medium">{label}</p>
-                  <p className="text-2xl font-black text-gray-800 mt-0.5">{value}</p>
+                  <p className="text-xs text-muted-foreground font-medium">{label}</p>
+                  <p className="text-2xl font-black text-foreground mt-0.5">{value}</p>
                 </div>
                 <div className={`w-10 h-10 ${bg} rounded-xl flex items-center justify-center`}>
                   <Icon className={`w-5 h-5 ${color}`} />
@@ -539,13 +539,13 @@ export default function AIScoring() {
               onClick={() => setFilter(key as typeof filter)}
               className={`px-4 py-2 rounded-xl text-sm font-medium transition-colors ${
                 filter === key
-                  ? "bg-violet-600 text-white"
-                  : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                  ? "bg-violet-600 text-foreground"
+                  : "bg-gray-100 text-muted-foreground hover:bg-gray-200"
               }`}
             >
               {label}
               {key === "manual_review" && stats.manual > 0 && (
-                <span className="ml-1.5 bg-amber-500 text-white text-xs rounded-full px-1.5 py-0.5">
+                <span className="ml-1.5 bg-amber-500 text-foreground text-xs rounded-full px-1.5 py-0.5">
                   {stats.manual}
                 </span>
               )}
@@ -553,7 +553,7 @@ export default function AIScoring() {
           ))}
           <button
             onClick={() => refetch()}
-            className="ml-auto p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-xl transition-colors"
+            className="ml-auto p-2 text-muted-foreground hover:text-muted-foreground hover:bg-gray-100 rounded-xl transition-colors"
             title="Actualizar"
           >
             <RefreshCw className="w-4 h-4" />
@@ -563,11 +563,11 @@ export default function AIScoring() {
         {/* Lista de scores */}
         <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
           <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
-            <h3 className="font-semibold text-gray-800 flex items-center gap-2">
+            <h3 className="font-semibold text-foreground flex items-center gap-2">
               <Zap className="w-4 h-4 text-violet-500" />
               Solicitudes evaluadas
             </h3>
-            <span className="text-xs text-gray-400">{filtered.length} registros</span>
+            <span className="text-xs text-muted-foreground">{filtered.length} registros</span>
           </div>
 
           {isLoading ? (
@@ -587,8 +587,8 @@ export default function AIScoring() {
               <div className="w-14 h-14 bg-violet-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
                 <Brain className="w-7 h-7 text-violet-400" />
               </div>
-              <p className="text-gray-600 font-medium mb-1">Sin evaluaciones aún</p>
-              <p className="text-sm text-gray-400">
+              <p className="text-muted-foreground font-medium mb-1">Sin evaluaciones aún</p>
+              <p className="text-sm text-muted-foreground">
                 Usa el botón "Evaluar solicitud" para probar el motor de scoring
               </p>
             </div>

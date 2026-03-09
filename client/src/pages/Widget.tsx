@@ -84,10 +84,10 @@ export default function Widget() {
     <DashboardLayout title="Widget de Pago">
       <div className="space-y-5 max-w-4xl">
         {/* Header */}
-        <div className="bg-gradient-to-r from-cyan-500 to-blue-600 rounded-2xl p-6 text-white">
+        <div className="bg-gradient-to-r from-cyan-500 to-blue-600 rounded-2xl p-6 text-foreground">
           <div className="flex items-center gap-3 mb-2">
             <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
-              <Code2 className="w-5 h-5 text-white" />
+              <Code2 className="w-5 h-5 text-foreground" />
             </div>
             <div>
               <h2 className="text-lg font-bold">Widget de Pago Embebible</h2>
@@ -111,14 +111,14 @@ export default function Widget() {
         {/* Seleccionar enlace */}
         <Card className="border-gray-200 shadow-sm">
           <CardHeader className="pb-3 border-b border-gray-100">
-            <CardTitle className="text-base font-semibold text-gray-800 flex items-center gap-2">
+            <CardTitle className="text-base font-semibold text-foreground flex items-center gap-2">
               <Link2 className="w-4 h-4 text-cyan-500" />
               1. Selecciona un enlace de pago
             </CardTitle>
           </CardHeader>
           <CardContent className="p-4">
             {pendingLinks.length === 0 ? (
-              <div className="text-center py-6 text-gray-400">
+              <div className="text-center py-6 text-muted-foreground">
                 <Link2 className="w-8 h-8 mx-auto mb-2 opacity-50" />
                 <p className="text-sm">No tienes enlaces pendientes.</p>
                 <p className="text-xs mt-1">Crea un enlace de pago primero.</p>
@@ -136,14 +136,14 @@ export default function Widget() {
                     }`}
                   >
                     <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${selectedLink === link.id ? "bg-cyan-500" : "bg-gray-100"}`}>
-                      <Link2 className={`w-4 h-4 ${selectedLink === link.id ? "text-white" : "text-gray-500"}`} />
+                      <Link2 className={`w-4 h-4 ${selectedLink === link.id ? "text-foreground" : "text-muted-foreground"}`} />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-gray-800 truncate">{link.clientName}</p>
-                      <p className="text-xs text-gray-400 truncate">{link.description}</p>
+                      <p className="text-sm font-medium text-foreground truncate">{link.clientName}</p>
+                      <p className="text-xs text-muted-foreground truncate">{link.description}</p>
                     </div>
                     <div className="text-right flex-shrink-0">
-                      <p className="text-sm font-bold text-gray-700">
+                      <p className="text-sm font-bold text-foreground">
                         {new Intl.NumberFormat("es-MX", { style: "currency", currency: link.currency }).format(Number(link.amount))}
                       </p>
                       {selectedLink === link.id && <CheckCircle2 className="w-4 h-4 text-cyan-500 ml-auto mt-0.5" />}
@@ -158,7 +158,7 @@ export default function Widget() {
         {/* Personalizar botón */}
         <Card className="border-gray-200 shadow-sm">
           <CardHeader className="pb-3 border-b border-gray-100">
-            <CardTitle className="text-base font-semibold text-gray-800 flex items-center gap-2">
+            <CardTitle className="text-base font-semibold text-foreground flex items-center gap-2">
               <Palette className="w-4 h-4 text-cyan-500" />
               2. Personaliza el botón
             </CardTitle>
@@ -166,7 +166,7 @@ export default function Widget() {
           <CardContent className="p-4">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-5">
               <div>
-                <Label className="text-xs text-gray-500 mb-1.5 block">Texto del botón</Label>
+                <Label className="text-xs text-muted-foreground mb-1.5 block">Texto del botón</Label>
                 <Input
                   value={btnText}
                   onChange={(e) => setBtnText(e.target.value)}
@@ -175,7 +175,7 @@ export default function Widget() {
                 />
               </div>
               <div>
-                <Label className="text-xs text-gray-500 mb-1.5 block">Color de fondo</Label>
+                <Label className="text-xs text-muted-foreground mb-1.5 block">Color de fondo</Label>
                 <div className="flex items-center gap-2">
                   <input
                     type="color"
@@ -191,7 +191,7 @@ export default function Widget() {
                 </div>
               </div>
               <div>
-                <Label className="text-xs text-gray-500 mb-1.5 block">Color del texto</Label>
+                <Label className="text-xs text-muted-foreground mb-1.5 block">Color del texto</Label>
                 <div className="flex items-center gap-2">
                   <input
                     type="color"
@@ -207,7 +207,7 @@ export default function Widget() {
                 </div>
               </div>
               <div>
-                <Label className="text-xs text-gray-500 mb-1.5 block">Radio (px)</Label>
+                <Label className="text-xs text-muted-foreground mb-1.5 block">Radio (px)</Label>
                 <Input
                   type="number"
                   value={btnRadius}
@@ -247,7 +247,7 @@ export default function Widget() {
         <Card className="border-gray-200 shadow-sm">
           <CardHeader className="pb-3 border-b border-gray-100">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-base font-semibold text-gray-800 flex items-center gap-2">
+              <CardTitle className="text-base font-semibold text-foreground flex items-center gap-2">
                 <Code2 className="w-4 h-4 text-cyan-500" />
                 3. Copia el código HTML
               </CardTitle>
@@ -258,7 +258,7 @@ export default function Widget() {
           </CardHeader>
           <CardContent className="p-4">
             <div className="relative">
-              <pre className="bg-gray-900 text-gray-100 rounded-xl p-4 text-xs overflow-x-auto font-mono leading-relaxed">
+              <pre className="bg-card text-gray-100 rounded-xl p-4 text-xs overflow-x-auto font-mono leading-relaxed">
                 {widgetCode}
               </pre>
               <Button
@@ -266,8 +266,8 @@ export default function Widget() {
                 onClick={() => handleCopy(widgetCode, "button")}
                 className={`absolute top-3 right-3 h-8 text-xs transition-all ${
                   copied === "button"
-                    ? "bg-green-500 hover:bg-green-500 text-white"
-                    : "bg-gray-700 hover:bg-gray-600 text-white"
+                    ? "bg-green-500 hover:bg-green-500 text-foreground"
+                    : "bg-gray-700 hover:bg-gray-600 text-foreground"
                 }`}
               >
                 {copied === "button" ? (
@@ -277,7 +277,7 @@ export default function Widget() {
                 )}
               </Button>
             </div>
-            <p className="text-xs text-gray-400 mt-2">
+            <p className="text-xs text-muted-foreground mt-2">
               Pega este código en el HTML de tu sitio web donde quieras que aparezca el botón de pago.
             </p>
           </CardContent>
@@ -287,7 +287,7 @@ export default function Widget() {
         <Card className="border-gray-200 shadow-sm">
           <CardHeader className="pb-3 border-b border-gray-100">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-base font-semibold text-gray-800 flex items-center gap-2">
+              <CardTitle className="text-base font-semibold text-foreground flex items-center gap-2">
                 <ExternalLink className="w-4 h-4 text-blue-500" />
                 Formulario embebido (iframe)
               </CardTitle>
@@ -298,7 +298,7 @@ export default function Widget() {
           </CardHeader>
           <CardContent className="p-4">
             <div className="relative">
-              <pre className="bg-gray-900 text-gray-100 rounded-xl p-4 text-xs overflow-x-auto font-mono leading-relaxed">
+              <pre className="bg-card text-gray-100 rounded-xl p-4 text-xs overflow-x-auto font-mono leading-relaxed">
                 {iframeCode}
               </pre>
               <Button
@@ -306,8 +306,8 @@ export default function Widget() {
                 onClick={() => handleCopy(iframeCode, "iframe")}
                 className={`absolute top-3 right-3 h-8 text-xs transition-all ${
                   copied === "iframe"
-                    ? "bg-green-500 hover:bg-green-500 text-white"
-                    : "bg-gray-700 hover:bg-gray-600 text-white"
+                    ? "bg-green-500 hover:bg-green-500 text-foreground"
+                    : "bg-gray-700 hover:bg-gray-600 text-foreground"
                 }`}
               >
                 {copied === "iframe" ? (
@@ -317,7 +317,7 @@ export default function Widget() {
                 )}
               </Button>
             </div>
-            <p className="text-xs text-gray-400 mt-2">
+            <p className="text-xs text-muted-foreground mt-2">
               Usa este código para mostrar el formulario de pago completo directamente en tu página, sin redirigir al cliente.
             </p>
           </CardContent>

@@ -188,11 +188,11 @@ export default function PlatformConfig() {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+            <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
               <Settings className="w-6 h-6 text-orange-500" />
               Configuración de Plataforma
             </h1>
-            <p className="text-sm text-gray-500 mt-1">
+            <p className="text-sm text-muted-foreground mt-1">
               Panel exclusivo para superadmin — Modifica comisiones y métodos de pago en tiempo real.
             </p>
           </div>
@@ -205,7 +205,7 @@ export default function PlatformConfig() {
               size="sm"
               onClick={handleSave}
               disabled={!dirty || updateMany.isPending}
-              className="bg-orange-500 hover:bg-orange-600 text-white"
+              className="bg-orange-500 hover:bg-orange-600 text-foreground"
             >
               <Save className="w-4 h-4 mr-1" />
               {updateMany.isPending ? "Guardando..." : "Guardar Cambios"}
@@ -234,27 +234,27 @@ export default function PlatformConfig() {
           <CardContent>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div className="bg-white rounded-lg p-3 border border-orange-100 text-center">
-                <p className="text-xs text-gray-500 uppercase tracking-wide">KobraPay</p>
+                <p className="text-xs text-muted-foreground uppercase tracking-wide">KobraPay</p>
                 <p className="text-2xl font-bold text-orange-600">{fmtPct(kobrapayFee)}</p>
-                <p className="text-xs text-gray-400">sin IVA</p>
+                <p className="text-xs text-muted-foreground">sin IVA</p>
               </div>
               <div className="bg-white rounded-lg p-3 border border-blue-100 text-center">
-                <p className="text-xs text-gray-500 uppercase tracking-wide">Procesador*</p>
+                <p className="text-xs text-muted-foreground uppercase tracking-wide">Procesador*</p>
                 <p className="text-2xl font-bold text-blue-600">{fmtPct(stripeFee)} + ${stripeFixed} MXN</p>
-                <p className="text-xs text-gray-400">tarifa todo incluido</p>
+                <p className="text-xs text-muted-foreground">tarifa todo incluido</p>
               </div>
               <div className="bg-white rounded-lg p-3 border border-purple-100 text-center">
-                <p className="text-xs text-gray-500 uppercase tracking-wide">Total sin IVA</p>
+                <p className="text-xs text-muted-foreground uppercase tracking-wide">Total sin IVA</p>
                 <p className="text-2xl font-bold text-purple-600">{fmtPct(totalPct)}</p>
-                <p className="text-xs text-gray-400">+ ${stripeFixed} MXN fijo</p>
+                <p className="text-xs text-muted-foreground">+ ${stripeFixed} MXN fijo</p>
               </div>
               <div className="bg-white rounded-lg p-3 border border-green-100 text-center">
-                <p className="text-xs text-gray-500 uppercase tracking-wide">Total con IVA</p>
+                <p className="text-xs text-muted-foreground uppercase tracking-wide">Total con IVA</p>
                 <p className="text-2xl font-bold text-green-600">~{fmtPct(totalWithIva)}</p>
-                <p className="text-xs text-gray-400">lo que ve el cliente</p>
+                <p className="text-xs text-muted-foreground">lo que ve el cliente</p>
               </div>
             </div>
-            <p className="text-xs text-gray-400 mt-3">
+            <p className="text-xs text-muted-foreground mt-3">
               * La comisión del procesador se muestra al cliente como "Tarifa todo incluido, sin costos adicionales" para simplificar la propuesta comercial.
             </p>
           </CardContent>
@@ -273,7 +273,7 @@ export default function PlatformConfig() {
           </CardHeader>
           <CardContent className="space-y-5">
             {isLoading ? (
-              <div className="text-center py-8 text-gray-400">Cargando configuración...</div>
+              <div className="text-center py-8 text-muted-foreground">Cargando configuración...</div>
             ) : (
               feeFields.map((field) => {
                 const Icon = field.icon;
@@ -283,8 +283,8 @@ export default function PlatformConfig() {
                       <Icon className={`w-4 h-4 ${field.color}`} />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <Label className="text-sm font-semibold text-gray-800">{field.label}</Label>
-                      <p className="text-xs text-gray-500 mt-0.5 mb-2">{field.description}</p>
+                      <Label className="text-sm font-semibold text-foreground">{field.label}</Label>
+                      <p className="text-xs text-muted-foreground mt-0.5 mb-2">{field.description}</p>
                       <div className="flex items-center gap-2">
                         <Input
                           type="number"
@@ -295,7 +295,7 @@ export default function PlatformConfig() {
                           onChange={(e) => setValue(field.key, e.target.value)}
                           className="w-32 text-right font-mono"
                         />
-                        <span className="text-sm text-gray-500 font-medium">{field.unit}</span>
+                        <span className="text-sm text-muted-foreground font-medium">{field.unit}</span>
                         {field.key === "kobrapay_fee_rate" && (
                           <Badge variant="outline" className="text-xs text-orange-600 border-orange-200">
                             Con IVA: {fmtPct(kobrapayWithIva)}
@@ -323,7 +323,7 @@ export default function PlatformConfig() {
           </CardHeader>
           <CardContent className="space-y-4">
             {isLoading ? (
-              <div className="text-center py-4 text-gray-400">Cargando...</div>
+              <div className="text-center py-4 text-muted-foreground">Cargando...</div>
             ) : (
               methodFields.map((field) => {
                 const Icon = field.icon;
@@ -335,8 +335,8 @@ export default function PlatformConfig() {
                         <Icon className={`w-4 h-4 ${field.color}`} />
                       </div>
                       <div>
-                        <p className="text-sm font-semibold text-gray-800">{field.label}</p>
-                        <p className="text-xs text-gray-500">{field.description}</p>
+                        <p className="text-sm font-semibold text-foreground">{field.label}</p>
+                        <p className="text-xs text-muted-foreground">{field.description}</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-2">

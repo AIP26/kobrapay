@@ -45,7 +45,7 @@ function formatDate(date: Date | string) {
 const statusConfig = {
   pending: { label: "Pendiente", color: "bg-amber-100 text-amber-700 border-amber-200", icon: Clock },
   paid: { label: "Pagado", color: "bg-green-100 text-green-700 border-green-200", icon: CheckCircle2 },
-  expired: { label: "Expirado", color: "bg-gray-100 text-gray-500 border-gray-200", icon: XCircle },
+  expired: { label: "Expirado", color: "bg-gray-100 text-muted-foreground border-gray-200", icon: XCircle },
   cancelled: { label: "Cancelado", color: "bg-red-100 text-red-600 border-red-200", icon: XCircle },
 };
 type LinkItem = {
@@ -312,7 +312,7 @@ export default function Links() {
         {/* Header */}
         <div className="flex items-center gap-3 flex-wrap">
           <div className="relative flex-1 min-w-[200px]">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
               placeholder="Buscar por cliente o descripción..."
               className="pl-9 border-gray-200"
@@ -327,7 +327,7 @@ export default function Links() {
                   variant="outline"
                   size="sm"
                   onClick={() => setSelectMode(true)}
-                  className="border-gray-200 text-gray-600 hover:text-gray-800"
+                  className="border-gray-200 text-muted-foreground hover:text-foreground"
                 >
                   Seleccionar
                 </Button>
@@ -335,12 +335,12 @@ export default function Links() {
                   variant="outline"
                   size="sm"
                   onClick={() => setShowArchived(!showArchived)}
-                  className={`border-gray-200 ${showArchived ? "bg-amber-50 text-amber-700 border-amber-200" : "text-gray-600"}`}
+                  className={`border-gray-200 ${showArchived ? "bg-amber-50 text-amber-700 border-amber-200" : "text-muted-foreground"}`}
                 >
                   <Archive className="w-4 h-4 mr-1.5" />
                   {showArchived ? `Archivados (${archivedCount})` : `Ver archivados${archivedCount > 0 ? ` (${archivedCount})` : ""}`}
                 </Button>
-                <Button asChild className="bg-cyan-500 hover:bg-cyan-400 text-white">
+                <Button asChild className="bg-cyan-500 hover:bg-cyan-400 text-foreground">
                   <Link href="/dashboard/create">
                     <Plus className="w-4 h-4 mr-2" />
                     Nuevo enlace
@@ -349,14 +349,14 @@ export default function Links() {
               </>
             ) : (
               <>
-                <Button variant="outline" size="sm" onClick={exitSelectMode} className="border-gray-200 text-gray-600">
+                <Button variant="outline" size="sm" onClick={exitSelectMode} className="border-gray-200 text-muted-foreground">
                   Cancelar
                 </Button>
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={toggleSelectAll}
-                  className="border-gray-200 text-gray-600"
+                  className="border-gray-200 text-muted-foreground"
                 >
                   {selectedIds.size === filtered.length && filtered.length > 0 ? "Deseleccionar todo" : "Seleccionar todo"}
                 </Button>
@@ -411,12 +411,12 @@ export default function Links() {
 
         <Card className="border-gray-200 shadow-sm">
           <CardHeader className="border-b border-gray-100 pb-3">
-            <CardTitle className="text-base font-semibold text-gray-800 flex items-center gap-2">
+            <CardTitle className="text-base font-semibold text-foreground flex items-center gap-2">
               {showArchived ? (
                 <><Archive className="w-4 h-4 text-amber-500" /> Archivados</>
               ) : "Mis enlaces de pago"}
               {allLinks.length > 0 && (
-                <span className="text-sm font-normal text-gray-400">
+                <span className="text-sm font-normal text-muted-foreground">
                   ({filtered.length} de {showArchived ? archivedCount : activeCount})
                 </span>
               )}
@@ -439,16 +439,16 @@ export default function Links() {
             ) : filtered.length === 0 ? (
               <div className="text-center py-16">
                 <div className="w-14 h-14 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-3">
-                  {showArchived ? <Archive className="w-7 h-7 text-gray-400" /> : <Link2 className="w-7 h-7 text-gray-400" />}
+                  {showArchived ? <Archive className="w-7 h-7 text-muted-foreground" /> : <Link2 className="w-7 h-7 text-muted-foreground" />}
                 </div>
-                <p className="font-medium text-gray-600 mb-1">
+                <p className="font-medium text-muted-foreground mb-1">
                   {search ? "Sin resultados" : showArchived ? "No hay archivados" : "Sin enlaces aún"}
                 </p>
-                <p className="text-sm text-gray-400 mb-4">
+                <p className="text-sm text-muted-foreground mb-4">
                   {search ? "Intenta con otra búsqueda" : showArchived ? "Los enlaces archivados aparecerán aquí" : "Crea tu primer enlace de pago para comenzar a cobrar"}
                 </p>
                 {!search && !showArchived && (
-                  <Button asChild className="bg-cyan-500 hover:bg-cyan-400 text-white">
+                  <Button asChild className="bg-cyan-500 hover:bg-cyan-400 text-foreground">
                     <Link href="/dashboard/create">
                       <Plus className="w-4 h-4 mr-2" />
                       Crear enlace
@@ -499,7 +499,7 @@ export default function Links() {
                           {isArchived
                             ? <Archive className="w-4 h-4 text-amber-500" />
                             : <Link2 className={`w-4 h-4 ${
-                                link.status === "paid" ? "text-green-600" : link.status === "pending" ? "text-cyan-600" : "text-gray-400"
+                                link.status === "paid" ? "text-green-600" : link.status === "pending" ? "text-cyan-600" : "text-muted-foreground"
                               }`} />
                           }
                         </div>
@@ -507,7 +507,7 @@ export default function Links() {
                         {/* Info */}
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 flex-wrap">
-                            <p className="text-sm font-semibold text-gray-800">{link.clientName}</p>
+                            <p className="text-sm font-semibold text-foreground">{link.clientName}</p>
                             <span
                               className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border ${cfg.color}`}
                               title={link.status === 'pending' ? 'El cliente aún no ha realizado el pago.' : link.status === 'paid' ? 'Pago recibido exitosamente.' : link.status === 'expired' ? 'El enlace ha expirado.' : 'Este enlace fue cancelado.'}
@@ -521,19 +521,19 @@ export default function Links() {
                               </span>
                             )}
                           </div>
-                          <p className="text-xs text-gray-500 mt-0.5 truncate">{link.description}</p>
+                          <p className="text-xs text-muted-foreground mt-0.5 truncate">{link.description}</p>
                           <div className="flex items-center gap-3 mt-1 flex-wrap">
-                            <span className="text-sm font-bold text-gray-800">{formatCurrency(link.amount, link.currency)}</span>
+                            <span className="text-sm font-bold text-foreground">{formatCurrency(link.amount, link.currency)}</span>
                             {commRate > 0 && (
                               <span className="text-xs text-green-600 font-medium">Neto: {formatCurrency(netAmt)}</span>
                             )}
-                            <span className="text-xs text-gray-400">{formatDate(link.createdAt)}</span>
+                            <span className="text-xs text-muted-foreground">{formatDate(link.createdAt)}</span>
                             {link.expiresAt && (
                               <span className="text-xs text-amber-500">Vence: {formatDate(link.expiresAt)}</span>
                             )}
                           </div>
                           {isPending && !isArchived && (
-                            <p className="text-xs text-gray-400 font-mono mt-1.5 truncate max-w-xs">{url}</p>
+                            <p className="text-xs text-muted-foreground font-mono mt-1.5 truncate max-w-xs">{url}</p>
                           )}
                         </div>
 
@@ -545,14 +545,14 @@ export default function Links() {
                               <>
                                 <button
                                   onClick={() => archiveLink.mutate({ id: link.id, archived: false })}
-                                  className="p-1.5 rounded-lg hover:bg-green-50 text-gray-500 hover:text-green-600 transition-all"
+                                  className="p-1.5 rounded-lg hover:bg-green-50 text-muted-foreground hover:text-green-600 transition-all"
                                   title="Restaurar enlace"
                                 >
                                   <ArchiveRestore className="w-4 h-4" />
                                 </button>
                                 <button
                                   onClick={() => { if (confirm("¿Eliminar este enlace permanentemente?")) deleteLink.mutate({ id: link.id }); }}
-                                  className="p-1.5 rounded-lg hover:bg-red-100 text-gray-400 hover:text-red-600 transition-all"
+                                  className="p-1.5 rounded-lg hover:bg-red-100 text-muted-foreground hover:text-red-600 transition-all"
                                   title="Eliminar enlace"
                                 >
                                   <Trash2 className="w-4 h-4" />
@@ -562,28 +562,28 @@ export default function Links() {
                               <>
                                 <button
                                   onClick={() => handleCopy(link.id, link.token)}
-                                  className={`p-1.5 rounded-lg transition-all ${copiedId === link.id ? "bg-green-100 text-green-600" : "hover:bg-gray-100 text-gray-500 hover:text-cyan-600"}`}
+                                  className={`p-1.5 rounded-lg transition-all ${copiedId === link.id ? "bg-green-100 text-green-600" : "hover:bg-gray-100 text-muted-foreground hover:text-cyan-600"}`}
                                   title="Copiar enlace"
                                 >
                                   {copiedId === link.id ? <CheckCircle2 className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
                                 </button>
                                 <button
                                   onClick={() => handleWhatsApp(link as LinkItem)}
-                                  className="p-1.5 rounded-lg hover:bg-green-50 text-gray-500 hover:text-green-600 transition-all"
+                                  className="p-1.5 rounded-lg hover:bg-green-50 text-muted-foreground hover:text-green-600 transition-all"
                                   title="Enviar por WhatsApp"
                                 >
                                   <MessageCircle className="w-4 h-4" />
                                 </button>
                                 <button
                                   onClick={() => handleEmail(link as LinkItem)}
-                                  className="p-1.5 rounded-lg hover:bg-blue-50 text-gray-500 hover:text-blue-600 transition-all"
+                                  className="p-1.5 rounded-lg hover:bg-blue-50 text-muted-foreground hover:text-blue-600 transition-all"
                                   title="Enviar por Email"
                                 >
                                   <Mail className="w-4 h-4" />
                                 </button>
                                 <button
                                   onClick={() => setQrLink(link as LinkItem)}
-                                  className="p-1.5 rounded-lg hover:bg-purple-50 text-gray-500 hover:text-purple-600 transition-all"
+                                  className="p-1.5 rounded-lg hover:bg-purple-50 text-muted-foreground hover:text-purple-600 transition-all"
                                   title="Ver QR"
                                 >
                                   <QrCode className="w-4 h-4" />
@@ -592,7 +592,7 @@ export default function Links() {
                                   href={url}
                                   target="_blank"
                                   rel="noopener noreferrer"
-                                  className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 hover:text-gray-700 transition-all"
+                                  className="p-1.5 rounded-lg hover:bg-gray-100 text-muted-foreground hover:text-foreground transition-all"
                                   title="Ver página de pago"
                                 >
                                   <ExternalLink className="w-4 h-4" />
@@ -600,7 +600,7 @@ export default function Links() {
                                 {/* Menú 3 puntos para acciones adicionales */}
                                 <DropdownMenu>
                                   <DropdownMenuTrigger asChild>
-                                    <button className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-all" title="Más opciones">
+                                    <button className="p-1.5 rounded-lg hover:bg-gray-100 text-muted-foreground hover:text-muted-foreground transition-all" title="Más opciones">
                                       <MoreVertical className="w-4 h-4" />
                                     </button>
                                   </DropdownMenuTrigger>
@@ -636,7 +636,7 @@ export default function Links() {
                                 )}
                                 <button
                                   onClick={() => archiveLink.mutate({ id: link.id, archived: true })}
-                                  className="p-1.5 rounded-lg hover:bg-amber-50 text-gray-400 hover:text-amber-500 transition-all"
+                                  className="p-1.5 rounded-lg hover:bg-amber-50 text-muted-foreground hover:text-amber-500 transition-all"
                                   title="Archivar enlace"
                                 >
                                   <Archive className="w-4 h-4" />
@@ -644,7 +644,7 @@ export default function Links() {
                                 {/* Menú 3 puntos para pagados/cancelados */}
                                 <DropdownMenu>
                                   <DropdownMenuTrigger asChild>
-                                    <button className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-all" title="Más opciones">
+                                    <button className="p-1.5 rounded-lg hover:bg-gray-100 text-muted-foreground hover:text-muted-foreground transition-all" title="Más opciones">
                                       <MoreVertical className="w-4 h-4" />
                                     </button>
                                   </DropdownMenuTrigger>
@@ -686,7 +686,7 @@ export default function Links() {
           </DialogHeader>
           {qrLink && (
             <div className="text-center space-y-4">
-              <p className="text-sm text-gray-500">
+              <p className="text-sm text-muted-foreground">
                 <strong>{qrLink.clientName}</strong> · {formatCurrency(qrLink.amount, qrLink.currency)}
               </p>
               <div ref={qrRef} className="flex justify-center">
@@ -699,12 +699,12 @@ export default function Links() {
                   includeMargin
                 />
               </div>
-              <p className="text-xs text-gray-400 break-all font-mono">{getUrl(qrLink.token)}</p>
+              <p className="text-xs text-muted-foreground break-all font-mono">{getUrl(qrLink.token)}</p>
               <div className="flex gap-2">
                 <Button variant="outline" className="flex-1" onClick={() => handleCopy(qrLink.id, qrLink.token)}>
                   <Copy className="w-4 h-4 mr-2" /> Copiar enlace
                 </Button>
-                <Button className="flex-1 bg-cyan-500 hover:bg-cyan-400 text-white" onClick={handleDownloadQR}>
+                <Button className="flex-1 bg-cyan-500 hover:bg-cyan-400 text-foreground" onClick={handleDownloadQR}>
                   <Download className="w-4 h-4 mr-2" /> Descargar QR
                 </Button>
               </div>
@@ -745,13 +745,13 @@ export default function Links() {
                 autoFocus
               />
               {pinError && <p className="text-xs text-red-600">{pinError}</p>}
-              <p className="text-xs text-gray-400">Configura tu PIN en Ajustes &gt; Seguridad si aún no lo tienes.</p>
+              <p className="text-xs text-muted-foreground">Configura tu PIN en Ajustes &gt; Seguridad si aún no lo tienes.</p>
             </div>
           </div>
           <DialogFooter className="gap-2 mt-2">
             <Button variant="outline" onClick={() => { setPinModal(null); setPinValue(""); setPinError(""); }}>Cancelar</Button>
             <Button
-              className="bg-red-500 hover:bg-red-600 text-white"
+              className="bg-red-500 hover:bg-red-600 text-foreground"
               onClick={handlePinConfirm}
               disabled={pinValue.length !== 4 || deleteLink.isPending || bulkDelete.isPending}
             >
@@ -788,7 +788,7 @@ export default function Links() {
             <div className="space-y-1.5">
               <Label>Monto</Label>
               <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">$</span>
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">$</span>
                 <Input
                   type="number"
                   min="10"
@@ -811,7 +811,7 @@ export default function Links() {
           <DialogFooter className="gap-2 mt-2">
             <Button variant="outline" onClick={() => setEditLink(null)}>Cancelar</Button>
             <Button
-              className="bg-cyan-500 hover:bg-cyan-400 text-white"
+              className="bg-cyan-500 hover:bg-cyan-400 text-foreground"
               onClick={handleSaveEdit}
               disabled={updateLink.isPending}
             >

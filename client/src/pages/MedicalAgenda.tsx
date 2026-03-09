@@ -80,7 +80,7 @@ function statusLabel(s: string) {
     cancelled: { label: "Cancelada", color: "bg-red-500/20 text-red-400 border-red-500/30" },
     rescheduled: { label: "Reprogramada", color: "bg-yellow-500/20 text-yellow-400 border-yellow-500/30" },
   };
-  return map[s] || { label: s, color: "bg-gray-500/20 text-gray-400" };
+  return map[s] || { label: s, color: "bg-gray-500/20 text-muted-foreground" };
 }
 
 // ─── Mini Calendario ──────────────────────────────────────────────────────────
@@ -115,21 +115,21 @@ function MiniCalendar({
   for (let d = 1; d <= daysInMonth; d++) cells.push(d);
 
   return (
-    <div className="bg-[#1a1f2e] border border-gray-700 rounded-xl p-4">
+    <div className="bg-[#1a1f2e] border border-border rounded-xl p-4">
       <div className="flex items-center justify-between mb-3">
         <button
           onClick={() => setViewDate(new Date(year, month - 1, 1))}
-          className="text-gray-400 hover:text-white px-2 py-1 rounded hover:bg-gray-700"
+          className="text-muted-foreground hover:text-foreground px-2 py-1 rounded hover:bg-gray-700"
         >‹</button>
-        <span className="text-white font-semibold text-sm">{monthNames[month]} {year}</span>
+        <span className="text-foreground font-semibold text-sm">{monthNames[month]} {year}</span>
         <button
           onClick={() => setViewDate(new Date(year, month + 1, 1))}
-          className="text-gray-400 hover:text-white px-2 py-1 rounded hover:bg-gray-700"
+          className="text-muted-foreground hover:text-foreground px-2 py-1 rounded hover:bg-gray-700"
         >›</button>
       </div>
       <div className="grid grid-cols-7 gap-1 mb-1">
         {dayNames.map((d) => (
-          <div key={d} className="text-center text-xs text-gray-500 font-medium py-1">{d}</div>
+          <div key={d} className="text-center text-xs text-muted-foreground font-medium py-1">{d}</div>
         ))}
       </div>
       <div className="grid grid-cols-7 gap-1">
@@ -142,7 +142,7 @@ function MiniCalendar({
               key={i}
               onClick={() => onSelectDate(new Date(year, month, day))}
               className={`relative text-center text-xs py-1.5 rounded-lg font-medium transition-colors
-                ${isToday ? "bg-[#FF6B00] text-white" : "text-gray-300 hover:bg-white/10"}
+                ${isToday ? "bg-[#FF6B00] text-foreground" : "text-muted-foreground hover:bg-white/10"}
               `}
             >
               {day}
@@ -246,7 +246,7 @@ function PatientForm({
       <DialogFooter>
         <Button variant="outline" onClick={onCancel}>Cancelar</Button>
         <Button
-          className="bg-[#FF6B00] hover:bg-[#e55f00] text-white"
+          className="bg-[#FF6B00] hover:bg-[#e55f00] text-foreground"
           onClick={() => onSave(form)}
           disabled={!form.firstName || !form.lastName}
         >
@@ -322,7 +322,7 @@ function AppointmentForm({
       <DialogFooter>
         <Button variant="outline" onClick={onCancel}>Cancelar</Button>
         <Button
-          className="bg-[#FF6B00] hover:bg-[#e55f00] text-white"
+          className="bg-[#FF6B00] hover:bg-[#e55f00] text-foreground"
           onClick={() => {
             // Convertir datetime-local (sin TZ) a ISO con offset local para evitar desfase UTC
             let isoDate = form.appointmentDate;
@@ -466,11 +466,11 @@ function PatientDetailPanel({
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-end bg-black/60" onClick={onClose}>
       <div
-        className="h-full w-full max-w-2xl bg-[#111827] border-l border-gray-700 overflow-y-auto shadow-2xl"
+        className="h-full w-full max-w-2xl bg-card border-l border-border overflow-y-auto shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="sticky top-0 z-10 bg-[#111827] border-b border-gray-700 px-6 pt-6 pb-4">
+        <div className="sticky top-0 z-10 bg-card border-b border-border px-6 pt-6 pb-4">
           <div className="flex items-start justify-between">
             <div className="flex items-center gap-4">
               <div className="w-14 h-14 rounded-full bg-[#FF6B00]/20 flex items-center justify-center text-xl font-bold text-[#FF6B00] overflow-hidden flex-shrink-0">
@@ -480,8 +480,8 @@ function PatientDetailPanel({
                 }
               </div>
               <div>
-                <h2 className="text-xl font-bold text-white">{patient.firstName} {patient.lastName}</h2>
-                <div className="flex gap-3 text-sm text-gray-400 mt-1">
+                <h2 className="text-xl font-bold text-foreground">{patient.firstName} {patient.lastName}</h2>
+                <div className="flex gap-3 text-sm text-muted-foreground mt-1">
                   {patient.birthDate && <span>{calcAge(patient.birthDate)}</span>}
                   {patient.bloodType && <span className="text-red-400 font-semibold">{patient.bloodType}</span>}
                   {patient.gender && <span className="capitalize">{patient.gender}</span>}
@@ -491,21 +491,21 @@ function PatientDetailPanel({
             <div className="flex items-center gap-2">
               <button
                 onClick={() => setShowEditPatient(true)}
-                className="text-gray-400 hover:text-[#FF6B00] transition-colors p-1 rounded-lg hover:bg-[#FF6B00]/10 text-sm font-medium flex items-center gap-1"
+                className="text-muted-foreground hover:text-[#FF6B00] transition-colors p-1 rounded-lg hover:bg-[#FF6B00]/10 text-sm font-medium flex items-center gap-1"
                 title="Editar datos del paciente"
               >
                 ✏ Editar
               </button>
-              <button onClick={onClose} className="text-gray-400 hover:text-white text-2xl leading-none mt-1">×</button>
+              <button onClick={onClose} className="text-muted-foreground hover:text-foreground text-2xl leading-none mt-1">×</button>
             </div>
           </div>
           <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-4">
-            <TabsList className="bg-gray-800 border border-gray-700">
-              <TabsTrigger value="info" className="data-[state=active]:bg-[#FF6B00] data-[state=active]:text-white text-gray-300">Información</TabsTrigger>
-              <TabsTrigger value="appointments" className="data-[state=active]:bg-[#FF6B00] data-[state=active]:text-white text-gray-300">Citas ({appointments.length})</TabsTrigger>
-              <TabsTrigger value="records" className="data-[state=active]:bg-[#FF6B00] data-[state=active]:text-white text-gray-300">Expediente ({records.length})</TabsTrigger>
-              <TabsTrigger value="prescriptions" className="data-[state=active]:bg-[#FF6B00] data-[state=active]:text-white text-gray-300">💊 Recetas ({patientRx.length})</TabsTrigger>
-              <TabsTrigger value="files" className="data-[state=active]:bg-[#FF6B00] data-[state=active]:text-white text-gray-300">Archivos ({allAttachments.length})</TabsTrigger>
+            <TabsList className="bg-muted border border-border">
+              <TabsTrigger value="info" className="data-[state=active]:bg-[#FF6B00] data-[state=active]:text-foreground text-muted-foreground">Información</TabsTrigger>
+              <TabsTrigger value="appointments" className="data-[state=active]:bg-[#FF6B00] data-[state=active]:text-foreground text-muted-foreground">Citas ({appointments.length})</TabsTrigger>
+              <TabsTrigger value="records" className="data-[state=active]:bg-[#FF6B00] data-[state=active]:text-foreground text-muted-foreground">Expediente ({records.length})</TabsTrigger>
+              <TabsTrigger value="prescriptions" className="data-[state=active]:bg-[#FF6B00] data-[state=active]:text-foreground text-muted-foreground">💊 Recetas ({patientRx.length})</TabsTrigger>
+              <TabsTrigger value="files" className="data-[state=active]:bg-[#FF6B00] data-[state=active]:text-foreground text-muted-foreground">Archivos ({allAttachments.length})</TabsTrigger>
             </TabsList>
           </Tabs>
         </div>
@@ -521,9 +521,9 @@ function PatientDetailPanel({
                   { label: "Fecha de nacimiento", value: patient.birthDate ? new Date(patient.birthDate + "T00:00:00").toLocaleDateString("es-MX") : null },
                   { label: "Dirección", value: patient.address },
                 ].map(({ label, value }) => value ? (
-                  <div key={label} className="bg-gray-800 border border-gray-700 rounded-lg p-3">
-                    <div className="text-xs text-gray-400 mb-1">{label}</div>
-                    <div className="text-sm text-white font-medium">{value}</div>
+                  <div key={label} className="bg-muted border border-border rounded-lg p-3">
+                    <div className="text-xs text-muted-foreground mb-1">{label}</div>
+                    <div className="text-sm text-foreground font-medium">{value}</div>
                   </div>
                 ) : null)}
               </div>
@@ -534,14 +534,14 @@ function PatientDetailPanel({
                 </div>
               )}
               {patient.medicalNotes && (
-                <div className="bg-gray-800 border border-gray-700 rounded-lg p-3">
-                  <div className="text-xs text-gray-400 mb-1">Notas médicas</div>
+                <div className="bg-muted border border-border rounded-lg p-3">
+                  <div className="text-xs text-muted-foreground mb-1">Notas médicas</div>
                   <div className="text-sm text-gray-200 whitespace-pre-wrap">{patient.medicalNotes}</div>
                 </div>
               )}
               <div className="pt-2">
                 <Button
-                  className="w-full bg-[#FF6B00] hover:bg-[#e55f00] text-white font-semibold"
+                  className="w-full bg-[#FF6B00] hover:bg-[#e55f00] text-foreground font-semibold"
                   onClick={() => setShowApptForm(true)}
                 >
                   + Agendar nueva cita
@@ -554,29 +554,29 @@ function PatientDetailPanel({
           {activeTab === "appointments" && (
             <div className="space-y-3">
               <Button
-                className="w-full bg-[#FF6B00] hover:bg-[#e55f00] text-white font-semibold"
+                className="w-full bg-[#FF6B00] hover:bg-[#e55f00] text-foreground font-semibold"
                 onClick={() => setShowApptForm(true)}
               >
                 + Nueva cita
               </Button>
               {appointments.length === 0 ? (
-                <div className="text-center py-12 text-gray-400">Sin citas registradas</div>
+                <div className="text-center py-12 text-muted-foreground">Sin citas registradas</div>
               ) : (
                 appointments.map((appt) => {
                   const st = statusLabel(appt.status);
                   return (
-                    <div key={appt.id} className="bg-gray-800 border border-gray-700 rounded-lg p-4">
+                    <div key={appt.id} className="bg-muted border border-border rounded-lg p-4">
                       <div className="flex items-start justify-between">
                         <div className="flex-1 min-w-0">
-                          <div className="font-semibold text-white">{appt.title}</div>
-                          <div className="text-sm text-gray-400 mt-1">
+                          <div className="font-semibold text-foreground">{appt.title}</div>
+                          <div className="text-sm text-muted-foreground mt-1">
                             {new Date(appt.appointmentDate).toLocaleString("es-MX", {
                               weekday: "long", year: "numeric", month: "long", day: "numeric",
                               hour: "2-digit", minute: "2-digit",
                             })}
                           </div>
-                          <div className="text-xs text-gray-500 mt-1">{appt.durationMinutes} min</div>
-                          {appt.notes && <div className="text-sm text-gray-300 mt-2">{appt.notes}</div>}
+                          <div className="text-xs text-muted-foreground mt-1">{appt.durationMinutes} min</div>
+                          {appt.notes && <div className="text-sm text-muted-foreground mt-2">{appt.notes}</div>}
                         </div>
                         <span className={`text-xs px-2 py-1 rounded border ml-2 flex-shrink-0 ${st.color}`}>{st.label}</span>
                       </div>
@@ -621,17 +621,17 @@ function PatientDetailPanel({
           {activeTab === "records" && (
             <div className="space-y-3">
               <Button
-                className="w-full bg-[#FF6B00] hover:bg-[#e55f00] text-white font-semibold"
+                className="w-full bg-[#FF6B00] hover:bg-[#e55f00] text-foreground font-semibold"
                 onClick={() => setShowRecordForm(true)}
               >
                 + Nuevo registro clínico
               </Button>
               {records.length === 0 ? (
-                <div className="text-center py-12 text-gray-400">Sin registros clínicos</div>
+                <div className="text-center py-12 text-muted-foreground">Sin registros clínicos</div>
               ) : (
                 records.map((rec) => (
-                  <div key={rec.id} className="bg-gray-800 border border-gray-700 rounded-lg p-4 space-y-2">
-                    <div className="text-xs text-gray-500">
+                  <div key={rec.id} className="bg-muted border border-border rounded-lg p-4 space-y-2">
+                    <div className="text-xs text-muted-foreground">
                       {new Date(rec.recordDate).toLocaleDateString("es-MX", { year: "numeric", month: "long", day: "numeric" })}
                     </div>
                     {rec.diagnosis && (
@@ -654,8 +654,8 @@ function PatientDetailPanel({
                     )}
                     {rec.clinicalNotes && (
                       <div>
-                        <div className="text-xs text-gray-400 font-semibold mb-1">Notas clínicas</div>
-                        <div className="text-sm text-gray-300 whitespace-pre-wrap">{rec.clinicalNotes}</div>
+                        <div className="text-xs text-muted-foreground font-semibold mb-1">Notas clínicas</div>
+                        <div className="text-sm text-muted-foreground whitespace-pre-wrap">{rec.clinicalNotes}</div>
                       </div>
                     )}
                     {rec.attachments && (() => {
@@ -683,16 +683,16 @@ function PatientDetailPanel({
           {activeTab === "prescriptions" && (
             <div className="space-y-3">
               {(patientRx as any[]).length === 0 ? (
-                <div className="text-center py-12 text-gray-400">
+                <div className="text-center py-12 text-muted-foreground">
                   <div className="text-4xl mb-3">💊</div>
                   <div className="text-sm">Sin recetas registradas para este paciente</div>
                 </div>
               ) : (
                 (patientRx as any[]).map((rx: any) => (
-                  <div key={rx.id} className="bg-gray-800 border border-gray-700 rounded-lg p-4">
+                  <div key={rx.id} className="bg-muted border border-border rounded-lg p-4">
                     <div className="flex items-start justify-between mb-2">
                       <div>
-                        <div className="font-semibold text-white text-sm">
+                        <div className="font-semibold text-foreground text-sm">
                           {new Date(rx.prescriptionDate).toLocaleDateString("es-MX", { year: "numeric", month: "long", day: "numeric" })}
                         </div>
                         {rx.diagnosis && (
@@ -710,17 +710,17 @@ function PatientDetailPanel({
                           <div className="mt-2 space-y-1">
                             {meds.map((m: any, i: number) => (
                               <div key={i} className="text-xs bg-gray-700/50 rounded px-2 py-1">
-                                <span className="text-white font-medium">{m.name}</span>
-                                {m.dose && <span className="text-gray-400 ml-2">{m.dose}</span>}
-                                {m.instructions && <span className="text-gray-500 ml-2">— {m.instructions}</span>}
+                                <span className="text-foreground font-medium">{m.name}</span>
+                                {m.dose && <span className="text-muted-foreground ml-2">{m.dose}</span>}
+                                {m.instructions && <span className="text-muted-foreground ml-2">— {m.instructions}</span>}
                               </div>
                             ))}
                           </div>
                         );
-                      } catch { return <div className="text-xs text-gray-400 mt-1">{rx.medications}</div>; }
+                      } catch { return <div className="text-xs text-muted-foreground mt-1">{rx.medications}</div>; }
                     })()}
                     {rx.instructions && (
-                      <div className="text-xs text-gray-400 mt-2 italic">{rx.instructions}</div>
+                      <div className="text-xs text-muted-foreground mt-2 italic">{rx.instructions}</div>
                     )}
                   </div>
                 ))
@@ -731,11 +731,11 @@ function PatientDetailPanel({
           {/* TAB: Archivos */}
           {activeTab === "files" && (
             <div className="space-y-4">
-              <div className="bg-gray-800 border border-gray-700 rounded-lg p-4">
-                <div className="text-sm font-semibold text-white mb-3">Subir archivo</div>
+              <div className="bg-muted border border-border rounded-lg p-4">
+                <div className="text-sm font-semibold text-foreground mb-3">Subir archivo</div>
                 <div className="grid grid-cols-2 gap-3 mb-3">
                   <Select value={uploadCategory} onValueChange={setUploadCategory}>
-                    <SelectTrigger className="bg-gray-700 border-gray-600 text-white">
+                    <SelectTrigger className="bg-gray-700 border-gray-600 text-foreground">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -758,15 +758,15 @@ function PatientDetailPanel({
                 <input ref={fileRef} type="file" className="hidden" onChange={handleFileUpload} />
               </div>
               {allAttachments.length === 0 ? (
-                <div className="text-center py-12 text-gray-400">Sin archivos adjuntos</div>
+                <div className="text-center py-12 text-muted-foreground">Sin archivos adjuntos</div>
               ) : (
                 <div className="grid grid-cols-2 gap-3">
                   {allAttachments.map((a, i) => (
                     <a key={i} href={a.url} target="_blank" rel="noreferrer"
-                      className="bg-gray-800 border border-gray-700 rounded-lg p-3 hover:bg-gray-700 transition-colors">
-                      <div className="text-xs text-gray-400 mb-1">{categoryLabel[a.category] || a.category}</div>
-                      <div className="text-sm text-white truncate">📎 {a.name}</div>
-                      <div className="text-xs text-gray-500 mt-1">{new Date(a.uploadedAt).toLocaleDateString("es-MX")}</div>
+                      className="bg-muted border border-border rounded-lg p-3 hover:bg-gray-700 transition-colors">
+                      <div className="text-xs text-muted-foreground mb-1">{categoryLabel[a.category] || a.category}</div>
+                      <div className="text-sm text-foreground truncate">📎 {a.name}</div>
+                      <div className="text-xs text-muted-foreground mt-1">{new Date(a.uploadedAt).toLocaleDateString("es-MX")}</div>
                     </a>
                   ))}
                 </div>
@@ -841,7 +841,7 @@ function PatientDetailPanel({
             <DialogFooter>
               <Button variant="outline" onClick={() => setShowRecordForm(false)}>Cancelar</Button>
               <Button
-                className="bg-[#FF6B00] hover:bg-[#e55f00] text-white"
+                className="bg-[#FF6B00] hover:bg-[#e55f00] text-foreground"
                 onClick={() => createRecord.mutate({ patientId: patient.id, ...recordForm })}
                 disabled={createRecord.isPending}
               >
@@ -852,9 +852,9 @@ function PatientDetailPanel({
         </Dialog>
         {/* Modal: Editar datos del paciente */}
         <Dialog open={showEditPatient} onOpenChange={setShowEditPatient}>
-          <DialogContent className="bg-[#1a2035] border-gray-700 text-white max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogContent className="bg-[#1a2035] border-border text-foreground max-w-lg max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle className="text-white">✏ Editar datos del paciente</DialogTitle>
+              <DialogTitle className="text-foreground">✏ Editar datos del paciente</DialogTitle>
             </DialogHeader>
             <PatientForm
               initial={patient}
@@ -1045,10 +1045,10 @@ export default function MedicalAgenda() {
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="text-2xl font-bold text-white flex items-center gap-2">
+            <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
               🏥 Agenda Médica
             </h1>
-            <p className="text-gray-400 text-sm mt-1">
+            <p className="text-muted-foreground text-sm mt-1">
               Gestión de pacientes, citas y expedientes clínicos
             </p>
           </div>
@@ -1062,17 +1062,17 @@ export default function MedicalAgenda() {
                   title="Citas de hoy"
                 >
                   <span className="text-xl">🔔</span>
-                  <span className="absolute -top-1 -right-1 bg-[#FF6B00] text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                  <span className="absolute -top-1 -right-1 bg-[#FF6B00] text-foreground text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
                     {todayAlertAppts.length}
                   </span>
                 </button>
               </div>
             )}
-            <Button variant="outline" className="border-gray-600 text-gray-200 hover:bg-gray-800" onClick={() => setShowApptForm(true)}>
+            <Button variant="outline" className="border-gray-600 text-gray-200 hover:bg-muted" onClick={() => setShowApptForm(true)}>
               + Nueva cita
             </Button>
             <Button
-              className="bg-[#FF6B00] hover:bg-[#e55f00] text-white font-semibold"
+              className="bg-[#FF6B00] hover:bg-[#e55f00] text-foreground font-semibold"
               onClick={() => setShowPatientForm(true)}
             >
               + Nuevo paciente
@@ -1086,26 +1086,26 @@ export default function MedicalAgenda() {
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
                 <span className="text-xl">🔔</span>
-                <span className="text-white font-semibold">Citas de hoy ({todayAlertAppts.length})</span>
+                <span className="text-foreground font-semibold">Citas de hoy ({todayAlertAppts.length})</span>
               </div>
               <div className="flex gap-2">
                 <button
                   onClick={dismissAllAlerts}
-                  className="text-xs text-gray-400 hover:text-white border border-gray-600 rounded px-2 py-1"
+                  className="text-xs text-muted-foreground hover:text-foreground border border-gray-600 rounded px-2 py-1"
                 >
                   Marcar todas como vistas
                 </button>
-                <button onClick={() => setShowBellPanel(false)} className="text-gray-400 hover:text-white text-lg leading-none">×</button>
+                <button onClick={() => setShowBellPanel(false)} className="text-muted-foreground hover:text-foreground text-lg leading-none">×</button>
               </div>
             </div>
             <div className="space-y-2">
               {todayAlertAppts.map((a: any) => {
                 const t = new Date(a.appointmentDate).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit', hour12: true });
                 return (
-                  <div key={a.id} className="flex items-center justify-between bg-[#111827] rounded-lg px-3 py-2">
+                  <div key={a.id} className="flex items-center justify-between bg-card rounded-lg px-3 py-2">
                     <div>
-                      <span className="text-white text-sm font-medium">{a.title}</span>
-                      <span className="text-gray-400 text-xs ml-2">{a.patientName} — {t}</span>
+                      <span className="text-foreground text-sm font-medium">{a.title}</span>
+                      <span className="text-muted-foreground text-xs ml-2">{a.patientName} — {t}</span>
                     </div>
                     <button
                       onClick={() => dismissAlert(a.id)}
@@ -1122,35 +1122,35 @@ export default function MedicalAgenda() {
 
         {/* Modal de recordatorio Email + WhatsApp */}
         <Dialog open={showReminderModal} onOpenChange={setShowReminderModal}>
-          <DialogContent className="bg-[#1a2035] border-gray-700 text-white max-w-sm">
+          <DialogContent className="bg-[#1a2035] border-border text-foreground max-w-sm">
             <DialogHeader>
-              <DialogTitle className="text-white">📨 Enviar recordatorio de cita</DialogTitle>
+              <DialogTitle className="text-foreground">📨 Enviar recordatorio de cita</DialogTitle>
             </DialogHeader>
             {reminderAppt && (
               <div className="space-y-4">
-                <div className="bg-[#111827] rounded-lg p-3">
-                  <div className="text-sm text-gray-300"><span className="text-gray-500">Cita:</span> {reminderAppt.title}</div>
-                  <div className="text-sm text-gray-300"><span className="text-gray-500">Fecha:</span> {new Date(reminderAppt.appointmentDate).toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'long' })}</div>
-                  <div className="text-sm text-gray-300"><span className="text-gray-500">Hora:</span> {new Date(reminderAppt.appointmentDate).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit', hour12: true })}</div>
+                <div className="bg-card rounded-lg p-3">
+                  <div className="text-sm text-muted-foreground"><span className="text-muted-foreground">Cita:</span> {reminderAppt.title}</div>
+                  <div className="text-sm text-muted-foreground"><span className="text-muted-foreground">Fecha:</span> {new Date(reminderAppt.appointmentDate).toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'long' })}</div>
+                  <div className="text-sm text-muted-foreground"><span className="text-muted-foreground">Hora:</span> {new Date(reminderAppt.appointmentDate).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit', hour12: true })}</div>
                 </div>
-                <p className="text-gray-400 text-sm">¿Cómo deseas enviar el recordatorio al paciente?</p>
+                <p className="text-muted-foreground text-sm">¿Cómo deseas enviar el recordatorio al paciente?</p>
                 <div className="flex flex-col gap-2">
                   <Button
-                    className="bg-blue-600 hover:bg-blue-700 text-white w-full"
+                    className="bg-blue-600 hover:bg-blue-700 text-foreground w-full"
                     onClick={handleSendReminderEmail}
                     disabled={sendReminder.isPending}
                   >
                     📧 Enviar por Email
                   </Button>
                   <Button
-                    className="bg-green-600 hover:bg-green-700 text-white w-full"
+                    className="bg-green-600 hover:bg-green-700 text-foreground w-full"
                     onClick={handleSendReminderWhatsApp}
                     disabled={sendReminder.isPending}
                   >
                     📱 Enviar por WhatsApp
                   </Button>
                   <Button
-                    className="bg-[#FF6B00] hover:bg-[#e55f00] text-white w-full"
+                    className="bg-[#FF6B00] hover:bg-[#e55f00] text-foreground w-full"
                     onClick={() => { handleSendReminderEmail(); setTimeout(() => handleSendReminderWhatsApp(), 1500); }}
                     disabled={sendReminder.isPending}
                   >
@@ -1160,7 +1160,7 @@ export default function MedicalAgenda() {
               </div>
             )}
             <DialogFooter>
-              <Button variant="outline" className="border-gray-600 text-gray-300" onClick={() => setShowReminderModal(false)}>Cancelar</Button>
+              <Button variant="outline" className="border-gray-600 text-muted-foreground" onClick={() => setShowReminderModal(false)}>Cancelar</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
@@ -1171,10 +1171,10 @@ export default function MedicalAgenda() {
             <div className="flex items-center gap-3">
               <span className="text-3xl">🎂</span>
               <div>
-                <div className="text-white font-semibold">
+                <div className="text-foreground font-semibold">
                   {totalBirthdays === 1 ? "¡Hay 1 cumpleaños hoy!" : `¡Hay ${totalBirthdays} cumpleaños hoy!`}
                 </div>
-                <div className="text-gray-300 text-sm">
+                <div className="text-muted-foreground text-sm">
                   {[
                     ...(birthdays?.patients || []).map((p: { name: string }) => `${p.name} (paciente)`),
                     ...(birthdays?.employees || []).map((e: { name: string }) => `${e.name} (empleado)`),
@@ -1186,7 +1186,7 @@ export default function MedicalAgenda() {
               {(birthdays?.patients?.length || 0) > 0 && (
                 <Button
                   size="sm"
-                  className="bg-[#FF6B00] hover:bg-[#e55f00] text-white text-xs"
+                  className="bg-[#FF6B00] hover:bg-[#e55f00] text-foreground text-xs"
                   onClick={() => sendBirthdayEmails.mutate({ type: "patients" })}
                   disabled={sendBirthdayEmails.isPending}
                 >
@@ -1220,20 +1220,20 @@ export default function MedicalAgenda() {
               return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
             }).length, icon: "📊" },
           ].map(({ label, value, icon }) => (
-            <div key={label} className="bg-[#1a1f2e] rounded-xl p-4 border border-gray-700">
+            <div key={label} className="bg-[#1a1f2e] rounded-xl p-4 border border-border">
               <div className="text-2xl mb-1">{icon}</div>
-              <div className="text-2xl font-bold text-white">{value}</div>
-              <div className="text-xs text-gray-400">{label}</div>
+              <div className="text-2xl font-bold text-foreground">{value}</div>
+              <div className="text-xs text-muted-foreground">{label}</div>
             </div>
           ))}
         </div>
 
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="bg-gray-800 border border-gray-700 mb-4">
-            <TabsTrigger value="patients" className="data-[state=active]:bg-[#FF6B00] data-[state=active]:text-white text-gray-300">Pacientes</TabsTrigger>
-            <TabsTrigger value="agenda" className="data-[state=active]:bg-[#FF6B00] data-[state=active]:text-white text-gray-300">Agenda de citas</TabsTrigger>
-            <TabsTrigger value="calendar" className="data-[state=active]:bg-[#FF6B00] data-[state=active]:text-white text-gray-300">📆 Calendario</TabsTrigger>
+          <TabsList className="bg-muted border border-border mb-4">
+            <TabsTrigger value="patients" className="data-[state=active]:bg-[#FF6B00] data-[state=active]:text-foreground text-muted-foreground">Pacientes</TabsTrigger>
+            <TabsTrigger value="agenda" className="data-[state=active]:bg-[#FF6B00] data-[state=active]:text-foreground text-muted-foreground">Agenda de citas</TabsTrigger>
+            <TabsTrigger value="calendar" className="data-[state=active]:bg-[#FF6B00] data-[state=active]:text-foreground text-muted-foreground">📆 Calendario</TabsTrigger>
           </TabsList>
 
           {/* TAB: Pacientes */}
@@ -1243,15 +1243,15 @@ export default function MedicalAgenda() {
                 placeholder="Buscar paciente por nombre, correo o teléfono..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="max-w-md bg-gray-800 border-gray-700 text-white placeholder:text-gray-500"
+                className="max-w-md bg-muted border-border text-foreground placeholder:text-muted-foreground"
               />
             </div>
             {loadingPatients ? (
-              <div className="text-center py-12 text-gray-400">Cargando pacientes...</div>
+              <div className="text-center py-12 text-muted-foreground">Cargando pacientes...</div>
             ) : filteredPatients.length === 0 ? (
-              <div className="text-center py-16 text-gray-400">
+              <div className="text-center py-16 text-muted-foreground">
                 <div className="text-4xl mb-3">👤</div>
-                <div className="font-semibold text-white">Sin pacientes registrados</div>
+                <div className="font-semibold text-foreground">Sin pacientes registrados</div>
                 <div className="text-sm mt-1">Agrega tu primer paciente con el botón de arriba</div>
               </div>
             ) : (
@@ -1262,7 +1262,7 @@ export default function MedicalAgenda() {
                   return (
                     <div
                       key={patient.id}
-                      className="bg-[#1a1f2e] border border-gray-700 rounded-xl p-4 flex items-center gap-4 cursor-pointer hover:border-[#FF6B00]/50 hover:bg-[#1f2535] transition-colors"
+                      className="bg-[#1a1f2e] border border-border rounded-xl p-4 flex items-center gap-4 cursor-pointer hover:border-[#FF6B00]/50 hover:bg-[#1f2535] transition-colors"
                       onClick={() => setSelectedPatient(patient)}
                     >
                       <div className="w-10 h-10 rounded-full bg-[#FF6B00]/20 flex items-center justify-center text-sm font-bold text-[#FF6B00] overflow-hidden flex-shrink-0">
@@ -1272,8 +1272,8 @@ export default function MedicalAgenda() {
                         }
                       </div>
                       <div className="flex-1 min-w-0">
-                        <div className="font-semibold text-white">{patient.firstName} {patient.lastName}</div>
-                        <div className="flex gap-3 text-sm text-gray-400 mt-0.5 flex-wrap">
+                        <div className="font-semibold text-foreground">{patient.firstName} {patient.lastName}</div>
+                        <div className="flex gap-3 text-sm text-muted-foreground mt-0.5 flex-wrap">
                           {patient.phone && <span>📞 {patient.phone}</span>}
                           {patient.email && <span>✉ {patient.email}</span>}
                           {patient.birthDate && <span>🎂 {calcAge(patient.birthDate)}</span>}
@@ -1284,14 +1284,14 @@ export default function MedicalAgenda() {
                         {nextAppt ? (
                           <div>
                             <div className="text-xs text-[#FF6B00] font-semibold">Próxima cita</div>
-                            <div className="text-xs text-gray-400">
+                            <div className="text-xs text-muted-foreground">
                               {new Date(nextAppt.appointmentDate).toLocaleDateString("es-MX", { month: "short", day: "numeric" })}
                               {" "}
                               {new Date(nextAppt.appointmentDate).toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit" })}
                             </div>
                           </div>
                         ) : (
-                          <div className="text-xs text-gray-500">Sin citas próximas</div>
+                          <div className="text-xs text-muted-foreground">Sin citas próximas</div>
                         )}
                         <div className="text-[#FF6B00] mt-1">›</div>
                       </div>
@@ -1316,15 +1316,15 @@ export default function MedicalAgenda() {
                       return (
                         <div key={appt.id} className="bg-[#FF6B00]/10 border border-[#FF6B00]/30 rounded-lg p-4 flex items-center gap-4 flex-wrap">
                           <div className="text-center w-16 flex-shrink-0">
-                            <div className="text-lg font-bold text-white">
+                            <div className="text-lg font-bold text-foreground">
                               {new Date(appt.appointmentDate).toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit" })}
                             </div>
-                            <div className="text-xs text-gray-400">{appt.durationMinutes}min</div>
+                            <div className="text-xs text-muted-foreground">{appt.durationMinutes}min</div>
                           </div>
                           <div className="flex-1">
-                            <div className="font-semibold text-white">{appt.title}</div>
-                            {p && <div className="text-sm text-gray-300">{p.firstName} {p.lastName}</div>}
-                            {appt.notes && <div className="text-xs text-gray-400 mt-1">{appt.notes}</div>}
+                            <div className="font-semibold text-foreground">{appt.title}</div>
+                            {p && <div className="text-sm text-muted-foreground">{p.firstName} {p.lastName}</div>}
+                            {appt.notes && <div className="text-xs text-muted-foreground mt-1">{appt.notes}</div>}
                           </div>
                           <div className="flex items-center gap-2 flex-wrap">
                             <span className={`text-xs px-2 py-1 rounded border ${st.color}`}>{st.label}</span>
@@ -1361,11 +1361,11 @@ export default function MedicalAgenda() {
               )}
               {/* Próximas citas */}
               <div>
-                <h3 className="text-sm font-semibold text-gray-400 mb-2 uppercase tracking-wide">Próximas citas</h3>
+                <h3 className="text-sm font-semibold text-muted-foreground mb-2 uppercase tracking-wide">Próximas citas</h3>
                 {loadingAppts ? (
-                  <div className="text-center py-8 text-gray-400">Cargando...</div>
+                  <div className="text-center py-8 text-muted-foreground">Cargando...</div>
                 ) : upcomingAppts.length === 0 ? (
-                  <div className="text-center py-12 text-gray-400">
+                  <div className="text-center py-12 text-muted-foreground">
                     <div className="text-4xl mb-3">📅</div>
                     <div>Sin citas programadas</div>
                   </div>
@@ -1375,17 +1375,17 @@ export default function MedicalAgenda() {
                       const p = patients.find(pt => pt.id === appt.patientId);
                       const d = new Date(appt.appointmentDate);
                       return (
-                        <div key={appt.id} className="bg-[#1a1f2e] border border-gray-700 rounded-lg p-4 flex items-center gap-4 flex-wrap">
+                        <div key={appt.id} className="bg-[#1a1f2e] border border-border rounded-lg p-4 flex items-center gap-4 flex-wrap">
                           <div className="text-center w-16 flex-shrink-0">
-                            <div className="text-sm font-bold text-white">
+                            <div className="text-sm font-bold text-foreground">
                               {d.toLocaleDateString("es-MX", { day: "2-digit", month: "short" })}
                             </div>
-                            <div className="text-xs text-gray-400">
+                            <div className="text-xs text-muted-foreground">
                               {d.toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit" })}
                             </div>
                           </div>
                           <div className="flex-1">
-                            <div className="font-semibold text-white">{appt.title}</div>
+                            <div className="font-semibold text-foreground">{appt.title}</div>
                             {p && (
                               <div
                                 className="text-sm text-[#FF6B00] cursor-pointer hover:underline"
@@ -1395,7 +1395,7 @@ export default function MedicalAgenda() {
                               </div>
                             )}
                           </div>
-                          <div className="text-xs text-gray-400">{appt.durationMinutes} min</div>
+                          <div className="text-xs text-muted-foreground">{appt.durationMinutes} min</div>
                           <div className="flex gap-2 flex-wrap">
                             <Button
                               size="sm" variant="outline" className="text-xs border-blue-600/50 text-blue-400 hover:bg-blue-900/30"
@@ -1440,9 +1440,9 @@ export default function MedicalAgenda() {
                   onSelectDate={(date) => setCalendarDate(date)}
                 />
                 {calendarDate && (
-                  <div className="mt-2 text-center text-sm text-gray-400">
+                  <div className="mt-2 text-center text-sm text-muted-foreground">
                     Mostrando citas del{" "}
-                    <span className="text-white font-semibold">
+                    <span className="text-foreground font-semibold">
                       {calendarDate.toLocaleDateString("es-MX", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}
                     </span>
                   </div>
@@ -1450,16 +1450,16 @@ export default function MedicalAgenda() {
               </div>
               <div>
                 {!calendarDate ? (
-                  <div className="text-center py-16 text-gray-400">
+                  <div className="text-center py-16 text-muted-foreground">
                     <div className="text-4xl mb-3">📆</div>
                     <div>Selecciona un día en el calendario para ver las citas</div>
                   </div>
                 ) : calendarAppts.length === 0 ? (
-                  <div className="text-center py-16 text-gray-400">
+                  <div className="text-center py-16 text-muted-foreground">
                     <div className="text-4xl mb-3">📅</div>
                     <div>Sin citas para este día</div>
                     <Button
-                      className="mt-4 bg-[#FF6B00] hover:bg-[#e55f00] text-white"
+                      className="mt-4 bg-[#FF6B00] hover:bg-[#e55f00] text-foreground"
                       onClick={() => setShowApptForm(true)}
                     >
                       + Agendar cita
@@ -1467,17 +1467,17 @@ export default function MedicalAgenda() {
                   </div>
                 ) : (
                   <div className="space-y-3">
-                    <div className="text-sm font-semibold text-white mb-2">{calendarAppts.length} cita(s)</div>
+                    <div className="text-sm font-semibold text-foreground mb-2">{calendarAppts.length} cita(s)</div>
                     {calendarAppts.map((appt) => {
                       const p = patients.find(pt => pt.id === appt.patientId);
                       const st = statusLabel(appt.status);
                       return (
-                        <div key={appt.id} className="bg-[#1a1f2e] border border-gray-700 rounded-lg p-4">
+                        <div key={appt.id} className="bg-[#1a1f2e] border border-border rounded-lg p-4">
                           <div className="flex items-start justify-between">
                             <div className="flex-1">
-                              <div className="font-semibold text-white">{appt.title}</div>
+                              <div className="font-semibold text-foreground">{appt.title}</div>
                               {p && <div className="text-sm text-[#FF6B00]">{p.firstName} {p.lastName}</div>}
-                              <div className="text-xs text-gray-400 mt-1">
+                              <div className="text-xs text-muted-foreground mt-1">
                                 {new Date(appt.appointmentDate).toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit" })} · {appt.durationMinutes} min
                               </div>
                             </div>

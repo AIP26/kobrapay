@@ -35,43 +35,43 @@ const FEATURES = [
 function MockPreview({ type }: { type: string }) {
   const items: Record<string, React.ReactNode> = {
     links: (
-      <div className="bg-[#0f1420] rounded-xl p-4 text-xs">
+      <div className="bg-card rounded-xl p-4 text-xs">
         <div className="flex items-center gap-2 mb-3">
           <div className="w-3 h-3 rounded-full bg-red-500/70" /><div className="w-3 h-3 rounded-full bg-yellow-500/70" /><div className="w-3 h-3 rounded-full bg-green-500/70" />
-          <span className="text-gray-500 ml-2">kobrapay.mx/pay/abc123</span>
+          <span className="text-muted-foreground ml-2">kobrapay.mx/pay/abc123</span>
         </div>
         <div className="space-y-2">
           {[["Juan García","$1,500","Pendiente","amber"],["María López","$3,200","Pagado ✓","emerald"],["Carlos Ruiz","$850","Expirado","gray"]].map(([n,a,s,c]) => (
             <div key={n} className={`flex items-center justify-between px-3 py-2 rounded-lg ${c==="emerald"?"bg-emerald-500/10 border border-emerald-500/20":"bg-white/5"}`}>
-              <span className="text-gray-300">{n}</span><span className={`font-semibold ${c==="emerald"?"text-emerald-400":"text-gray-400"}`}>{a}</span>
-              <span className={`text-xs px-2 py-0.5 rounded-full ${c==="emerald"?"bg-emerald-500/20 text-emerald-400":c==="amber"?"bg-amber-500/20 text-amber-400":"bg-gray-500/20 text-gray-400"}`}>{s}</span>
+              <span className="text-muted-foreground">{n}</span><span className={`font-semibold ${c==="emerald"?"text-emerald-400":"text-muted-foreground"}`}>{a}</span>
+              <span className={`text-xs px-2 py-0.5 rounded-full ${c==="emerald"?"bg-emerald-500/20 text-emerald-400":c==="amber"?"bg-amber-500/20 text-amber-400":"bg-gray-500/20 text-muted-foreground"}`}>{s}</span>
             </div>
           ))}
         </div>
       </div>
     ),
     card: (
-      <div className="bg-[#0f1420] rounded-xl p-4">
-        <div className="bg-white/5 rounded-lg p-3 mb-3"><p className="text-xs text-gray-400 mb-1">Monto a pagar</p><p className="text-2xl font-bold text-white">$2,500.00 <span className="text-sm text-gray-400">MXN</span></p></div>
+      <div className="bg-card rounded-xl p-4">
+        <div className="bg-white/5 rounded-lg p-3 mb-3"><p className="text-xs text-muted-foreground mb-1">Monto a pagar</p><p className="text-2xl font-bold text-foreground">$2,500.00 <span className="text-sm text-muted-foreground">MXN</span></p></div>
         <div className="grid grid-cols-2 gap-2 mb-3">
-          <div className="bg-white/5 rounded-lg p-2"><p className="text-xs text-gray-500">Tarjeta</p><p className="text-sm text-white font-mono">•••• 4242</p></div>
-          <div className="bg-white/5 rounded-lg p-2"><p className="text-xs text-gray-500">Vence</p><p className="text-sm text-white">12/27</p></div>
+          <div className="bg-white/5 rounded-lg p-2"><p className="text-xs text-muted-foreground">Tarjeta</p><p className="text-sm text-foreground font-mono">•••• 4242</p></div>
+          <div className="bg-white/5 rounded-lg p-2"><p className="text-xs text-muted-foreground">Vence</p><p className="text-sm text-foreground">12/27</p></div>
         </div>
-        <div className="bg-emerald-500 rounded-lg py-2 text-center"><span className="text-white text-sm font-semibold">🔒 Pagar de forma segura</span></div>
+        <div className="bg-emerald-500 rounded-lg py-2 text-center"><span className="text-foreground text-sm font-semibold">🔒 Pagar de forma segura</span></div>
       </div>
     ),
     shield: (
-      <div className="bg-[#0f1420] rounded-xl p-4 space-y-2">
+      <div className="bg-card rounded-xl p-4 space-y-2">
         {["OTP por email","Selfie del pagador","Firma digital","Texto anti-contracargo"].map(l=>(
-          <div key={l} className="flex items-center gap-3 bg-white/5 rounded-lg px-3 py-2"><CheckCircle2 className="w-4 h-4 text-emerald-400" /><span className="text-sm text-gray-300">{l}</span></div>
+          <div key={l} className="flex items-center gap-3 bg-white/5 rounded-lg px-3 py-2"><CheckCircle2 className="w-4 h-4 text-emerald-400" /><span className="text-sm text-muted-foreground">{l}</span></div>
         ))}
       </div>
     ),
     analytics: (
-      <div className="bg-[#0f1420] rounded-xl p-4">
+      <div className="bg-card rounded-xl p-4">
         <div className="grid grid-cols-3 gap-2 mb-3">
           {[["Total","$48,200","emerald"],["Pendiente","$3,500","amber"],["Comisión","$2,410","cyan"]].map(([l,v,c])=>(
-            <div key={l} className="bg-white/5 rounded-lg p-2 text-center"><p className="text-xs text-gray-500">{l}</p><p className={`text-sm font-bold text-${c}-400`}>{v}</p></div>
+            <div key={l} className="bg-white/5 rounded-lg p-2 text-center"><p className="text-xs text-muted-foreground">{l}</p><p className={`text-sm font-bold text-${c}-400`}>{v}</p></div>
           ))}
         </div>
         <div className="bg-white/5 rounded-lg p-2 h-16 flex items-end gap-1 px-3">
@@ -80,11 +80,11 @@ function MockPreview({ type }: { type: string }) {
       </div>
     ),
     saas: (
-      <div className="bg-[#0f1420] rounded-xl p-4 space-y-2">
+      <div className="bg-card rounded-xl p-4 space-y-2">
         {[["Tienda La Paloma","3.5%","Activo"],["Ferretería Juárez","4.0%","Activo"],["Clínica Norte","2.5%","Pendiente"]].map(([n,c,s])=>(
           <div key={n} className="flex items-center justify-between bg-white/5 rounded-lg px-3 py-2">
             <div className="w-7 h-7 rounded-full bg-emerald-500/20 flex items-center justify-center text-xs text-emerald-400 font-bold">{(n as string)[0]}</div>
-            <span className="text-sm text-gray-300 flex-1 ml-2">{n}</span>
+            <span className="text-sm text-muted-foreground flex-1 ml-2">{n}</span>
             <span className="text-xs text-cyan-400 mr-2">{c}</span>
             <span className={`text-xs px-2 py-0.5 rounded-full ${s==="Activo"?"bg-emerald-500/20 text-emerald-400":"bg-amber-500/20 text-amber-400"}`}>{s}</span>
           </div>
@@ -92,42 +92,42 @@ function MockPreview({ type }: { type: string }) {
       </div>
     ),
     msi: (
-      <div className="bg-[#0f1420] rounded-xl p-4">
-        <p className="text-xs text-gray-400 mb-3 text-center">Elige tu plan de pago</p>
+      <div className="bg-card rounded-xl p-4">
+        <p className="text-xs text-muted-foreground mb-3 text-center">Elige tu plan de pago</p>
         <div className="grid grid-cols-3 gap-2 mb-3">
           {[["3 MSI","$833/mes",false],["6 MSI","$417/mes",true],["12 MSI","$208/mes",false]].map(([p,pr,a])=>(
-            <div key={p as string} className={`rounded-lg p-2 text-center border ${a?"border-emerald-500 bg-emerald-500/10":"border-white/10 bg-white/5"}`}>
-              <p className={`text-sm font-bold ${a?"text-emerald-400":"text-white"}`}>{p}</p><p className="text-xs text-gray-500">{pr}</p>
+            <div key={p as string} className={`rounded-lg p-2 text-center border ${a?"border-emerald-500 bg-emerald-500/10":"border-border bg-white/5"}`}>
+              <p className={`text-sm font-bold ${a?"text-emerald-400":"text-foreground"}`}>{p}</p><p className="text-xs text-muted-foreground">{pr}</p>
             </div>
           ))}
         </div>
-        <div className="bg-emerald-500 rounded-lg py-2 text-center"><span className="text-white text-sm font-semibold">Pagar en 6 meses</span></div>
+        <div className="bg-emerald-500 rounded-lg py-2 text-center"><span className="text-foreground text-sm font-semibold">Pagar en 6 meses</span></div>
       </div>
     ),
     widget: (
-      <div className="bg-[#0f1420] rounded-xl p-4">
-        <p className="text-xs text-gray-400 mb-2">Código para tu sitio web:</p>
+      <div className="bg-card rounded-xl p-4">
+        <p className="text-xs text-muted-foreground mb-2">Código para tu sitio web:</p>
         <div className="bg-black/50 rounded-lg p-3 font-mono text-xs text-emerald-400 mb-3">{`<kobrapay-button token="abc123" amount="500" />`}</div>
-        <div className="border border-emerald-500/30 rounded-lg p-3 text-center"><span className="text-sm text-white">💳 Pagar con KobraPay</span></div>
+        <div className="border border-emerald-500/30 rounded-lg p-3 text-center"><span className="text-sm text-foreground">💳 Pagar con KobraPay</span></div>
       </div>
     ),
     pos: (
-      <div className="bg-[#0f1420] rounded-xl p-4">
+      <div className="bg-card rounded-xl p-4">
         <div className="grid grid-cols-2 gap-2 mb-3">
           {[["Café","$45"],["Sandwich","$85"],["Jugo","$55"],["Postre","$65"]].map(([i,p])=>(
-            <div key={i} className="bg-white/5 rounded-lg p-2 text-center"><p className="text-xs text-gray-300">{i}</p><p className="text-sm font-bold text-emerald-400">{p}</p></div>
+            <div key={i} className="bg-white/5 rounded-lg p-2 text-center"><p className="text-xs text-muted-foreground">{i}</p><p className="text-sm font-bold text-emerald-400">{p}</p></div>
           ))}
         </div>
         <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-lg px-3 py-2 flex justify-between">
-          <span className="text-sm text-gray-300">Total:</span><span className="text-sm font-bold text-emerald-400">$250 MXN</span>
+          <span className="text-sm text-muted-foreground">Total:</span><span className="text-sm font-bold text-emerald-400">$250 MXN</span>
         </div>
       </div>
     ),
     contracts: (
-      <div className="bg-[#0f1420] rounded-xl p-4 space-y-2">
+      <div className="bg-card rounded-xl p-4 space-y-2">
         {[["Ana Torres","Firmado","emerald"],["Pedro Sánchez","Enviado","cyan"],["Laura Vega","Borrador","gray"]].map(([n,s,c])=>(
           <div key={n} className="flex items-center justify-between bg-white/5 rounded-lg px-3 py-2">
-            <div className="flex items-center gap-2"><FileText className="w-4 h-4 text-gray-400" /><span className="text-sm text-gray-300">{n}</span></div>
+            <div className="flex items-center gap-2"><FileText className="w-4 h-4 text-muted-foreground" /><span className="text-sm text-muted-foreground">{n}</span></div>
             <span className={`text-xs px-2 py-0.5 rounded-full bg-${c}-500/20 text-${c}-400`}>{s}</span>
           </div>
         ))}
@@ -142,25 +142,25 @@ function FeatureModal({ feature, onClose }: { feature: typeof FEATURES[0]; onClo
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={onClose}>
       <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
-      <div className="relative bg-[#141c2e] border border-white/10 rounded-2xl max-w-lg w-full shadow-2xl overflow-hidden" onClick={(e) => e.stopPropagation()}>
-        <div className="p-6 border-b border-white/10 flex items-start justify-between">
+      <div className="relative bg-card border border-border rounded-2xl max-w-lg w-full shadow-2xl overflow-hidden" onClick={(e) => e.stopPropagation()}>
+        <div className="p-6 border-b border-border flex items-start justify-between">
           <div className="flex items-center gap-3">
             <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${feature.color === "emerald" ? "bg-emerald-500/15" : "bg-cyan-500/15"}`}>
               <Icon className={`w-6 h-6 ${feature.color === "emerald" ? "text-emerald-400" : "text-cyan-400"}`} />
             </div>
             <div>
-              <h3 className="text-lg font-bold text-white">{feature.title}</h3>
-              <p className="text-sm text-gray-400">{feature.shortDesc}</p>
+              <h3 className="text-lg font-bold text-foreground">{feature.title}</h3>
+              <p className="text-sm text-muted-foreground">{feature.shortDesc}</p>
             </div>
           </div>
-          <button onClick={onClose} className="text-gray-500 hover:text-white transition-colors ml-4 mt-1"><X className="w-5 h-5" /></button>
+          <button onClick={onClose} className="text-muted-foreground hover:text-foreground transition-colors ml-4 mt-1"><X className="w-5 h-5" /></button>
         </div>
-        <div className="p-6 border-b border-white/10"><MockPreview type={feature.mockContent} /></div>
+        <div className="p-6 border-b border-border"><MockPreview type={feature.mockContent} /></div>
         <div className="p-6">
-          <p className="text-gray-300 text-sm leading-relaxed mb-4">{feature.fullDesc}</p>
+          <p className="text-muted-foreground text-sm leading-relaxed mb-4">{feature.fullDesc}</p>
           <ul className="space-y-2">
             {feature.bullets.map((b) => (
-              <li key={b} className="flex items-center gap-2 text-sm text-gray-400">
+              <li key={b} className="flex items-center gap-2 text-sm text-muted-foreground">
                 <CheckCircle2 className={`w-4 h-4 flex-shrink-0 ${feature.color === "emerald" ? "text-emerald-400" : "text-cyan-400"}`} />{b}
               </li>
             ))}
@@ -247,17 +247,17 @@ function FAQSection() {
   return (
     <div className="space-y-3">
       {FAQ_ITEMS.map((item, i) => (
-        <div key={i} className="border border-white/10 rounded-xl overflow-hidden">
+        <div key={i} className="border border-border rounded-xl overflow-hidden">
           <button
             className="w-full flex items-center justify-between gap-4 px-5 py-4 text-left bg-white/5 hover:bg-white/8 transition-colors"
             onClick={() => setOpen(open === i ? null : i)}
           >
-            <span className="text-sm font-medium text-white">{item.q}</span>
+            <span className="text-sm font-medium text-foreground">{item.q}</span>
             <span className={`text-emerald-400 text-lg font-bold flex-shrink-0 transition-transform ${open === i ? 'rotate-45' : ''}`}>+</span>
           </button>
           {open === i && (
-            <div className="px-5 py-4 bg-white/3 border-t border-white/10">
-              <p className="text-sm text-gray-400 leading-relaxed">{item.a}</p>
+            <div className="px-5 py-4 bg-white/3 border-t border-border">
+              <p className="text-sm text-muted-foreground leading-relaxed">{item.a}</p>
             </div>
           )}
         </div>
@@ -317,14 +317,14 @@ function PublicQuoteCalculator() {
   ];
 
   return (
-    <div className="bg-white/5 border border-white/10 rounded-3xl p-8">
+    <div className="bg-white/5 border border-border rounded-3xl p-8">
       <div className="grid lg:grid-cols-2 gap-10">
         {/* Izquierda: controles */}
         <div className="space-y-6">
           {/* Slider volumen mensual */}
           <div>
             <div className="flex items-center justify-between mb-2">
-              <label className="text-sm font-semibold text-white">Volumen mensual estimado</label>
+              <label className="text-sm font-semibold text-foreground">Volumen mensual estimado</label>
               <span className="text-emerald-400 font-bold text-sm">{simSymbol}{monthlyVolume.toLocaleString("es-MX")} {simCurrency}</span>
             </div>
             <input
@@ -336,7 +336,7 @@ function PublicQuoteCalculator() {
               onChange={e => setMonthlyVolume(Number(e.target.value))}
               className="w-full accent-emerald-500"
             />
-            <div className="flex justify-between text-xs text-gray-500 mt-1">
+            <div className="flex justify-between text-xs text-muted-foreground mt-1">
               <span>$5,000</span><span>$1,000,000</span>
             </div>
           </div>
@@ -354,13 +354,13 @@ function PublicQuoteCalculator() {
                 tier.color === "cyan" ? "text-cyan-400" :
                 tier.color === "violet" ? "text-violet-400" : "text-amber-400"
               }`}>Plan {tier.label}</span>
-              <span className="text-white font-black text-2xl">{tier.totalRate}%{(tier as any).fixedFee > 0 ? ` + $${(tier as any).fixedFee}` : ''}</span>
+              <span className="text-foreground font-black text-2xl">{tier.totalRate}%{(tier as any).fixedFee > 0 ? ` + $${(tier as any).fixedFee}` : ''}</span>
             </div>
-            <p className="text-gray-400 text-xs">Comisión KobraPay para este volumen mensual</p>
+            <p className="text-muted-foreground text-xs">Comisión KobraPay para este volumen mensual</p>
             {nextTier && (
-              <div className="mt-3 pt-3 border-t border-white/10">
-                <p className="text-xs text-gray-500">
-                  💡 Procesando <span className="text-white font-semibold">{simSymbol}{nextTier.min.toLocaleString("es-MX")} {simCurrency}/mes</span> o más, tu tasa baja a{" "}
+              <div className="mt-3 pt-3 border-t border-border">
+                <p className="text-xs text-muted-foreground">
+                  💡 Procesando <span className="text-foreground font-semibold">{simSymbol}{nextTier.min.toLocaleString("es-MX")} {simCurrency}/mes</span> o más, tu tasa baja a{" "}
                   <span className={`font-bold ${
                     tier.color === "cyan" ? "text-violet-400" : "text-amber-400"
                   }`}>{nextTier.totalRate}%</span> — Plan {nextTier.label}
@@ -371,26 +371,26 @@ function PublicQuoteCalculator() {
 
           {/* Monto de cobro individual + selector de país/moneda */}
           <div className="space-y-3">
-            <label className="text-sm font-semibold text-white block">Simula un cobro de</label>
+            <label className="text-sm font-semibold text-foreground block">Simula un cobro de</label>
             <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">{getCountryByCode(simCountry)?.currencySymbol || "$"}</span>
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">{getCountryByCode(simCountry)?.currencySymbol || "$"}</span>
               <input
                 type="number"
                 value={singleAmount}
                 onChange={e => setSingleAmount(Math.max(1, Number(e.target.value)))}
-                className="w-full bg-white/5 border border-white/10 rounded-xl pl-7 pr-16 py-2.5 text-white text-sm focus:outline-none focus:border-emerald-500"
+                className="w-full bg-white/5 border border-border rounded-xl pl-7 pr-16 py-2.5 text-foreground text-sm focus:outline-none focus:border-emerald-500"
               />
-              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs font-bold">{getCountryByCode(simCountry)?.currency || "MXN"}</span>
+              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground text-xs font-bold">{getCountryByCode(simCountry)?.currency || "MXN"}</span>
             </div>
             <div>
-              <label className="text-xs text-gray-400 block mb-1">País / Moneda</label>
+              <label className="text-xs text-muted-foreground block mb-1">País / Moneda</label>
               <select
                 value={simCountry}
                 onChange={e => setSimCountry(e.target.value)}
-                className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-white text-sm focus:outline-none focus:border-emerald-500"
+                className="w-full bg-white/5 border border-border rounded-xl px-3 py-2 text-foreground text-sm focus:outline-none focus:border-emerald-500"
               >
                 {getSortedCountries().map(c => (
-                  <option key={c.code} value={c.code} className="bg-gray-900 text-white">
+                  <option key={c.code} value={c.code} className="bg-card text-foreground">
                     {c.flag} {c.name} — {c.currency}
                   </option>
                 ))}
@@ -403,34 +403,34 @@ function PublicQuoteCalculator() {
         <div className="space-y-4">
           {/* Desglose */}
           <div className="bg-black/30 rounded-2xl p-5 space-y-3">
-            <h4 className="text-sm font-bold text-white mb-3">Desglose del cobro</h4>
+            <h4 className="text-sm font-bold text-foreground mb-3">Desglose del cobro</h4>
             {/* Tasa base sin IVA */}
             <div className="flex items-center justify-between">
-              <span className="text-xs text-gray-400">Monto cobrado al cliente</span>
-              <span className="text-sm font-semibold text-white">{fmtAmt(singleAmount)}</span>
+              <span className="text-xs text-muted-foreground">Monto cobrado al cliente</span>
+              <span className="text-sm font-semibold text-foreground">{fmtAmt(singleAmount)}</span>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-xs text-gray-400">Comisión KobraPay ({kpBaseRate.toFixed(1)}%)</span>
+              <span className="text-xs text-muted-foreground">Comisión KobraPay ({kpBaseRate.toFixed(1)}%)</span>
               <span className="text-sm font-semibold text-red-400">- {fmtAmt(kpCommission)}</span>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-xs text-gray-400">{vatLabel} ({(simVatRate * 100).toFixed(0)}%) sobre comisión</span>
+              <span className="text-xs text-muted-foreground">{vatLabel} ({(simVatRate * 100).toFixed(0)}%) sobre comisión</span>
               <span className="text-sm font-semibold text-red-400">- {fmtAmt(kpVatAmount)}</span>
             </div>
-            <div className="border-t border-white/10 pt-3 flex items-center justify-between">
-              <span className="text-sm font-bold text-white">Tú recibes</span>
+            <div className="border-t border-border pt-3 flex items-center justify-between">
+              <span className="text-sm font-bold text-foreground">Tú recibes</span>
               <span className="text-xl font-black text-emerald-400">{fmtAmt(netReceived)}</span>
             </div>
             <p className="text-xs text-emerald-400/70 text-center font-medium">*{kpNote} — sin costos ocultos, sin sorpresas</p>
-            <p className="text-xs text-gray-600 text-center mt-1">*Incluye comisión de procesamiento de pagos + IVA</p>
+            <p className="text-xs text-muted-foreground text-center mt-1">*Incluye comisión de procesamiento de pagos + IVA</p>
           </div>
 
           {/* Comparativa: solo para México */}
           {simCountry === "MX" ? (
             <div className="bg-black/30 rounded-2xl p-5">
-              <h4 className="text-sm font-bold text-white mb-3">vs. Competencia (mismo cobro)</h4>
+              <h4 className="text-sm font-bold text-foreground mb-3">vs. Competencia (mismo cobro)</h4>
               <div className="space-y-2">
-                <p className="text-xs text-gray-500 mb-3">Tasas reales todo incluido (comisión + procesador + IVA)</p>
+                <p className="text-xs text-muted-foreground mb-3">Tasas reales todo incluido (comisión + procesador + IVA)</p>
                 {competitors.map(c => {
                   const baseFee = (singleAmount * c.baseRate / 100) + c.fixedBase;
                   const cFee = baseFee * 1.16;
@@ -441,10 +441,10 @@ function PublicQuoteCalculator() {
                       isWinner ? "bg-white/5" : "bg-red-500/5 border border-red-500/10"
                     }`}>
                       <div>
-                        <span className="text-xs text-gray-400">{c.name}</span>
-                        <span className="text-xs text-gray-600 ml-1">({c.note})</span>
+                        <span className="text-xs text-muted-foreground">{c.name}</span>
+                        <span className="text-xs text-muted-foreground ml-1">({c.note})</span>
                       </div>
-                      <span className="text-xs text-gray-300">{fmtAmt(cNet)}</span>
+                      <span className="text-xs text-muted-foreground">{fmtAmt(cNet)}</span>
                     </div>
                   );
                 })}
@@ -462,19 +462,19 @@ function PublicQuoteCalculator() {
             </div>
           ) : (
             <div className="bg-black/30 rounded-2xl p-5">
-              <h4 className="text-sm font-bold text-white mb-3">🌍 Cobro Internacional</h4>
+              <h4 className="text-sm font-bold text-foreground mb-3">🌍 Cobro Internacional</h4>
               <div className="space-y-3">
-                <p className="text-xs text-gray-400">
+                <p className="text-xs text-muted-foreground">
                   Con KobraPay puedes cobrar en{" "}
                   <span className="text-emerald-400 font-semibold">{countryData?.currencyName || "moneda local"} ({simCurrency})</span>{" "}
                   a clientes en {countryData?.name || "cualquier país"}.
                 </p>
                 <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-4">
-                  <p className="text-xs text-gray-400 mb-1">Tú recibes en este cobro:</p>
+                  <p className="text-xs text-muted-foreground mb-1">Tú recibes en este cobro:</p>
                   <p className="text-2xl font-black text-emerald-400">{fmtAmt(netReceived)}</p>
-                  <p className="text-xs text-gray-500 mt-1">Comisión KobraPay: {kpNote} — sin cargos fijos</p>
+                  <p className="text-xs text-muted-foreground mt-1">Comisión KobraPay: {kpNote} — sin cargos fijos</p>
                 </div>
-                <p className="text-xs text-gray-500">
+                <p className="text-xs text-muted-foreground">
                   El pago se procesa vía Stripe con cifrado SSL. El cliente puede pagar con Visa, Mastercard o Amex de cualquier banco del mundo.
                 </p>
               </div>
@@ -482,38 +482,38 @@ function PublicQuoteCalculator() {
           )}
 
           {/* Botón enviar cotización */}
-          <div className="mt-6 pt-6 border-t border-white/10">
+          <div className="mt-6 pt-6 border-t border-border">
             {!showEmailForm && !quoteSent && (
               <button
                 onClick={() => setShowEmailForm(true)}
-                className="w-full flex items-center justify-center gap-2 bg-emerald-500 hover:bg-emerald-400 text-white font-semibold py-3 rounded-2xl"
+                className="w-full flex items-center justify-center gap-2 bg-emerald-500 hover:bg-emerald-400 text-foreground font-semibold py-3 rounded-2xl"
               >
                 ✉️ Recibir esta cotización por email
               </button>
             )}
             {showEmailForm && !quoteSent && (
               <div className="space-y-3">
-                <p className="text-sm text-gray-300 font-semibold">Ingresa tus datos y te enviamos la cotización con análisis IA:</p>
+                <p className="text-sm text-muted-foreground font-semibold">Ingresa tus datos y te enviamos la cotización con análisis IA:</p>
                 <div className="grid grid-cols-2 gap-3">
                   <input
                     type="text"
                     value={prospectName}
                     onChange={e => setProspectName(e.target.value)}
                     placeholder="Tu nombre"
-                    className="bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-white text-sm placeholder-gray-500 focus:outline-none focus:border-emerald-500"
+                    className="bg-white/5 border border-border rounded-xl px-3 py-2.5 text-foreground text-sm placeholder-gray-500 focus:outline-none focus:border-emerald-500"
                   />
                   <input
                     type="email"
                     value={prospectEmail}
                     onChange={e => setProspectEmail(e.target.value)}
                     placeholder="tu@email.com"
-                    className="bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-white text-sm placeholder-gray-500 focus:outline-none focus:border-emerald-500"
+                    className="bg-white/5 border border-border rounded-xl px-3 py-2.5 text-foreground text-sm placeholder-gray-500 focus:outline-none focus:border-emerald-500"
                   />
                 </div>
                 <div className="flex gap-3">
                   <button
                     onClick={() => setShowEmailForm(false)}
-                    className="flex-1 py-2.5 border border-white/10 rounded-xl text-sm text-gray-400 hover:text-white"
+                    className="flex-1 py-2.5 border border-border rounded-xl text-sm text-muted-foreground hover:text-foreground"
                   >
                     Cancelar
                   </button>
@@ -523,7 +523,7 @@ function PublicQuoteCalculator() {
                       sendPublicQuote.mutate({ prospectEmail, prospectName, monthlyVolume, singleAmount, kpRate: tier.totalRate });
                     }}
                     disabled={sendPublicQuote.isPending}
-                    className="flex-1 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-white rounded-xl text-sm font-semibold disabled:opacity-60"
+                    className="flex-1 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-foreground rounded-xl text-sm font-semibold disabled:opacity-60"
                   >
                     {sendPublicQuote.isPending ? "Enviando..." : "Enviar cotización"}
                   </button>
@@ -535,8 +535,8 @@ function PublicQuoteCalculator() {
                 <div className="w-12 h-12 bg-emerald-500/20 rounded-full flex items-center justify-center mx-auto mb-3">
                   <CheckCircle2 className="w-6 h-6 text-emerald-400" />
                 </div>
-                <p className="text-white font-semibold">¡Cotización enviada!</p>
-                <p className="text-gray-400 text-sm mt-1">Revisa tu bandeja de entrada. Incluye desglose completo, comparativa vs competencia y análisis IA.</p>
+                <p className="text-foreground font-semibold">¡Cotización enviada!</p>
+                <p className="text-muted-foreground text-sm mt-1">Revisa tu bandeja de entrada. Incluye desglose completo, comparativa vs competencia y análisis IA.</p>
               </div>
             )}
           </div>
@@ -566,7 +566,7 @@ export default function Home() {
           <div className="flex items-center gap-3">
             {!loading && (
               isAuthenticated ? (
-                <Button asChild className="bg-emerald-500 hover:bg-emerald-400 text-white">
+                <Button asChild className="bg-emerald-500 hover:bg-emerald-400 text-foreground">
                   <Link href="/dashboard">Ir al Panel <ArrowRight className="w-4 h-4 ml-1" /></Link>
                 </Button>
               ) : (
@@ -574,7 +574,7 @@ export default function Home() {
                   <Button asChild variant="ghost" className="text-muted-foreground hover:text-foreground text-sm">
                     <Link href="/login">Iniciar sesión</Link>
                   </Button>
-                  <Button asChild className="bg-emerald-500 hover:bg-emerald-400 text-white text-sm">
+                  <Button asChild className="bg-emerald-500 hover:bg-emerald-400 text-foreground text-sm">
                     <Link href="/register">Crear cuenta</Link>
                   </Button>
                 </>
@@ -597,7 +597,7 @@ export default function Home() {
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
                 Lanzamiento oficial 2026
               </span>
-              <span className="inline-flex items-center gap-1 bg-white/5 text-gray-400 border border-white/10 rounded-full px-3 py-1 text-xs">
+              <span className="inline-flex items-center gap-1 bg-white/5 text-muted-foreground border border-border rounded-full px-3 py-1 text-xs">
                 <Zap className="w-3 h-3 text-yellow-400" />
                 Procesado por Stripe
               </span>
@@ -626,7 +626,7 @@ export default function Home() {
               </div>
             </div>
             <div className="flex flex-col sm:flex-row gap-2.5">
-              <Button size="sm" asChild className="bg-emerald-500 hover:bg-emerald-400 text-white px-6 h-11 text-sm font-bold shadow-lg shadow-emerald-500/20">
+              <Button size="sm" asChild className="bg-emerald-500 hover:bg-emerald-400 text-foreground px-6 h-11 text-sm font-bold shadow-lg shadow-emerald-500/20">
                 <a href="/register">Crear cuenta gratis <ArrowRight className="w-3.5 h-3.5 ml-1.5" /></a>
               </Button>
               <Button size="sm" variant="outline" asChild className="px-6 h-11 text-sm">
@@ -641,8 +641,8 @@ export default function Home() {
                 <span className="bg-blue-50 border border-blue-200 text-blue-600 text-xs font-black px-2.5 py-1 rounded-lg">AMEX</span>
                 <span className="bg-red-100 border border-red-200 text-red-700 text-xs font-bold px-2.5 py-1 rounded-lg">🏦 OXXO</span>
                 <span className="bg-green-100 border border-green-200 text-green-700 text-xs font-bold px-2.5 py-1 rounded-lg">🏦 SPEI</span>
-                <span className="bg-gray-100 border border-gray-200 text-gray-700 text-xs font-bold px-2.5 py-1 rounded-lg"> Apple Pay</span>
-                <span className="bg-gray-100 border border-gray-200 text-gray-700 text-xs font-bold px-2.5 py-1 rounded-lg">G Pay</span>
+                <span className="bg-gray-100 border border-gray-200 text-foreground text-xs font-bold px-2.5 py-1 rounded-lg"> Apple Pay</span>
+                <span className="bg-gray-100 border border-gray-200 text-foreground text-xs font-bold px-2.5 py-1 rounded-lg">G Pay</span>
               </div>
               <p className="text-xs text-muted-foreground">Procesado por Stripe · SSL 256-bit · PCI DSS</p>
             </div>
@@ -659,7 +659,7 @@ export default function Home() {
                   onClick={() => setActiveTab("acceso")}
                   className={`py-3 text-center border-r border-border transition-all text-xs font-semibold ${
                     activeTab === "acceso"
-                      ? "bg-emerald-500 text-white"
+                      ? "bg-emerald-500 text-foreground"
                       : "bg-card text-muted-foreground hover:text-foreground hover:bg-accent"
                   }`}
                 >
@@ -669,7 +669,7 @@ export default function Home() {
                   onClick={() => setActiveTab("registrar")}
                   className={`py-3 text-center transition-all text-xs font-semibold ${
                     activeTab === "registrar"
-                      ? "bg-emerald-500 text-white"
+                      ? "bg-emerald-500 text-foreground"
                       : "bg-card text-muted-foreground hover:text-foreground hover:bg-accent"
                   }`}
                 >
@@ -685,7 +685,7 @@ export default function Home() {
                   </p>
                   <a
                     href="/login"
-                    className="w-full flex items-center justify-center gap-2 bg-emerald-500 hover:bg-emerald-400 text-white font-semibold py-2.5 px-5 rounded-lg transition-colors mb-3 text-sm"
+                    className="w-full flex items-center justify-center gap-2 bg-emerald-500 hover:bg-emerald-400 text-foreground font-semibold py-2.5 px-5 rounded-lg transition-colors mb-3 text-sm"
                   >
                     <Shield className="w-3.5 h-3.5" />
                     Iniciar sesión
@@ -718,7 +718,7 @@ export default function Home() {
                   </p>
                   <a
                     href="/register"
-                    className="w-full flex items-center justify-center gap-2 bg-emerald-500 hover:bg-emerald-400 text-white font-semibold py-2.5 px-5 rounded-lg transition-colors mb-3 text-sm"
+                    className="w-full flex items-center justify-center gap-2 bg-emerald-500 hover:bg-emerald-400 text-foreground font-semibold py-2.5 px-5 rounded-lg transition-colors mb-3 text-sm"
                   >
                     <ArrowRight className="w-3.5 h-3.5" />
                     Crear cuenta gratis
@@ -776,7 +776,7 @@ export default function Home() {
             ))}
           </div>
           <div className="text-center mt-10">
-            <a href="/register" className="inline-flex items-center gap-2 bg-emerald-500 hover:bg-emerald-400 text-white font-bold py-3 px-8 rounded-2xl transition-colors shadow-lg shadow-emerald-500/20">
+            <a href="/register" className="inline-flex items-center gap-2 bg-emerald-500 hover:bg-emerald-400 text-foreground font-bold py-3 px-8 rounded-2xl transition-colors shadow-lg shadow-emerald-500/20">
               Empezar ahora — es gratis <ArrowRight className="w-4 h-4" />
             </a>
           </div>
@@ -815,7 +815,7 @@ export default function Home() {
       </section>
 
       {/* Simulador de Comisiones */}
-      <section id="simulador" className="py-20 border-t border-white/5">
+      <section id="simulador" className="py-20 border-t border-border">
         <div className="container max-w-5xl mx-auto">
           <div className="text-center mb-10">
             <h2 className="text-2xl lg:text-3xl font-bold text-foreground mb-3">Simula cuanto te cobraremos</h2>
@@ -854,7 +854,7 @@ export default function Home() {
           <h2 className="text-3xl lg:text-4xl font-extrabold text-foreground mb-4">Tu negocio merece cobrar<br /><span className="bg-gradient-to-r from-emerald-500 to-cyan-500 bg-clip-text text-transparent">como los grandes</span></h2>
           <p className="text-muted-foreground mb-8 text-sm leading-relaxed">Crea tu cuenta en 5 minutos y genera tu primer enlace de pago hoy mismo.<br />Sin hardware, sin contratos, sin mensualidad.</p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
-            <Button size="lg" asChild className="bg-emerald-500 hover:bg-emerald-400 text-white text-base px-10 h-12 font-bold shadow-xl shadow-emerald-500/25">
+            <Button size="lg" asChild className="bg-emerald-500 hover:bg-emerald-400 text-foreground text-base px-10 h-12 font-bold shadow-xl shadow-emerald-500/25">
               <a href="/register">Crear cuenta gratis <ArrowRight className="w-4 h-4 ml-2" /></a>
             </Button>
             <Button size="lg" variant="outline" asChild className="h-12 px-8">

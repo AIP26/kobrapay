@@ -317,16 +317,16 @@ const SECTIONS_SUPERADMIN: Section[] = [
 function AccordionItem({ q, a }: FAQItem) {
   const [open, setOpen] = useState(false);
   return (
-    <div className="border border-white/10 rounded-lg overflow-hidden">
+    <div className="border border-border rounded-lg overflow-hidden">
       <button
         onClick={() => setOpen(!open)}
         className="w-full flex items-center justify-between px-4 py-3 text-left text-sm font-medium text-gray-200 hover:bg-white/5 transition-colors"
       >
         {q}
-        {open ? <ChevronDown className="w-4 h-4 text-gray-400 flex-shrink-0" /> : <ChevronRight className="w-4 h-4 text-gray-400 flex-shrink-0" />}
+        {open ? <ChevronDown className="w-4 h-4 text-muted-foreground flex-shrink-0" /> : <ChevronRight className="w-4 h-4 text-muted-foreground flex-shrink-0" />}
       </button>
       {open && (
-        <div className="px-4 py-3 text-sm text-gray-400 border-t border-white/10 bg-white/3">
+        <div className="px-4 py-3 text-sm text-muted-foreground border-t border-border bg-white/3">
           {a}
         </div>
       )}
@@ -354,7 +354,7 @@ function SectionCard({ section }: { section: Section }) {
   };
 
   return (
-    <div className="bg-[#1a1f2e] border border-white/10 rounded-2xl overflow-hidden">
+    <div className="bg-[#1a1f2e] border border-border rounded-2xl overflow-hidden">
       <button
         onClick={() => setExpanded(!expanded)}
         className="w-full flex items-center gap-4 p-5 text-left hover:bg-white/3 transition-colors"
@@ -363,18 +363,18 @@ function SectionCard({ section }: { section: Section }) {
           <Icon className="w-5 h-5" />
         </div>
         <div className="flex-1 min-w-0">
-          <h3 className="font-semibold text-white text-sm">{section.title}</h3>
-          <p className="text-xs text-gray-400 mt-0.5 truncate">{section.intro}</p>
+          <h3 className="font-semibold text-foreground text-sm">{section.title}</h3>
+          <p className="text-xs text-muted-foreground mt-0.5 truncate">{section.intro}</p>
         </div>
         {expanded
-          ? <ChevronDown className="w-5 h-5 text-gray-400 flex-shrink-0" />
-          : <ChevronRight className="w-5 h-5 text-gray-400 flex-shrink-0" />}
+          ? <ChevronDown className="w-5 h-5 text-muted-foreground flex-shrink-0" />
+          : <ChevronRight className="w-5 h-5 text-muted-foreground flex-shrink-0" />}
       </button>
       {expanded && (
-        <div className="px-5 pb-5 border-t border-white/10 pt-4 space-y-5">
+        <div className="px-5 pb-5 border-t border-border pt-4 space-y-5">
           {/* Steps */}
           <div>
-            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Pasos</p>
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Pasos</p>
             <ol className="space-y-3">
               {section.steps.map((step, i) => (
                 <li key={i} className="flex gap-3">
@@ -383,7 +383,7 @@ function SectionCard({ section }: { section: Section }) {
                   </div>
                   <div>
                     <p className={`text-sm font-medium ${accentMap[section.color]}`}>{step.title}</p>
-                    <p className="text-sm text-gray-400 mt-0.5">{step.desc}</p>
+                    <p className="text-sm text-muted-foreground mt-0.5">{step.desc}</p>
                   </div>
                 </li>
               ))}
@@ -392,7 +392,7 @@ function SectionCard({ section }: { section: Section }) {
           {/* FAQs */}
           {section.faqs.length > 0 && (
             <div>
-              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Preguntas frecuentes</p>
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Preguntas frecuentes</p>
               <div className="space-y-2">
                 {section.faqs.map((faq, i) => <AccordionItem key={i} {...faq} />)}
               </div>
@@ -446,8 +446,8 @@ export default function Help() {
               <BookOpen className="w-5 h-5 text-emerald-400" />
             </div>
             <div>
-              <h1 className="text-xl font-bold text-white">Centro de Ayuda</h1>
-              <p className="text-sm text-gray-400">Manual de uso de KobraPay</p>
+              <h1 className="text-xl font-bold text-foreground">Centro de Ayuda</h1>
+              <p className="text-sm text-muted-foreground">Manual de uso de KobraPay</p>
             </div>
           </div>
           <div className={`inline-flex items-center gap-2 mt-3 px-3 py-1.5 rounded-full text-xs font-medium border ${
@@ -461,12 +461,12 @@ export default function Help() {
         </div>
 
         {/* Descarga de Manuales */}
-        <div className="bg-[#1a1f2e] border border-white/10 rounded-2xl p-5 mb-6">
+        <div className="bg-[#1a1f2e] border border-border rounded-2xl p-5 mb-6">
           <div className="flex items-center gap-2 mb-3">
             <Download className="w-4 h-4 text-emerald-400" />
-            <h2 className="font-semibold text-white text-sm">Descargar Manual PDF</h2>
+            <h2 className="font-semibold text-foreground text-sm">Descargar Manual PDF</h2>
           </div>
-          <p className="text-xs text-gray-400 mb-4">Descarga el manual completo de tu rol para consultarlo sin conexión.</p>
+          <p className="text-xs text-muted-foreground mb-4">Descarga el manual completo de tu rol para consultarlo sin conexión.</p>
           <div className="flex flex-col gap-3">
             {isSuperAdmin && (
               <>
@@ -479,7 +479,7 @@ export default function Help() {
                 >
                   <div>
                     <p className="text-sm font-medium text-amber-300">{MANUALS.superadmin.label}</p>
-                    <p className="text-xs text-gray-400 mt-0.5">{MANUALS.superadmin.desc}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">{MANUALS.superadmin.desc}</p>
                   </div>
                   <Download className="w-4 h-4 text-amber-400 group-hover:scale-110 transition-transform flex-shrink-0 ml-3" />
                 </a>
@@ -492,7 +492,7 @@ export default function Help() {
                 >
                   <div>
                     <p className="text-sm font-medium text-emerald-300">{MANUALS.admin.label}</p>
-                    <p className="text-xs text-gray-400 mt-0.5">{MANUALS.admin.desc}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">{MANUALS.admin.desc}</p>
                   </div>
                   <Download className="w-4 h-4 text-emerald-400 group-hover:scale-110 transition-transform flex-shrink-0 ml-3" />
                 </a>
@@ -505,7 +505,7 @@ export default function Help() {
                 >
                   <div>
                     <p className="text-sm font-medium text-cyan-300">{MANUALS.empleado.label}</p>
-                    <p className="text-xs text-gray-400 mt-0.5">{MANUALS.empleado.desc}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">{MANUALS.empleado.desc}</p>
                   </div>
                   <Download className="w-4 h-4 text-cyan-400 group-hover:scale-110 transition-transform flex-shrink-0 ml-3" />
                 </a>
@@ -522,7 +522,7 @@ export default function Help() {
                 >
                   <div>
                     <p className="text-sm font-medium text-emerald-300">{MANUALS.admin.label}</p>
-                    <p className="text-xs text-gray-400 mt-0.5">{MANUALS.admin.desc}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">{MANUALS.admin.desc}</p>
                   </div>
                   <Download className="w-4 h-4 text-emerald-400 group-hover:scale-110 transition-transform flex-shrink-0 ml-3" />
                 </a>
@@ -535,7 +535,7 @@ export default function Help() {
                 >
                   <div>
                     <p className="text-sm font-medium text-cyan-300">{MANUALS.empleado.label}</p>
-                    <p className="text-xs text-gray-400 mt-0.5">{MANUALS.empleado.desc}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">{MANUALS.empleado.desc}</p>
                   </div>
                   <Download className="w-4 h-4 text-cyan-400 group-hover:scale-110 transition-transform flex-shrink-0 ml-3" />
                 </a>
@@ -551,7 +551,7 @@ export default function Help() {
               >
                 <div>
                   <p className="text-sm font-medium text-cyan-300">{MANUALS.empleado.label}</p>
-                  <p className="text-xs text-gray-400 mt-0.5">{MANUALS.empleado.desc}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">{MANUALS.empleado.desc}</p>
                 </div>
                 <Download className="w-4 h-4 text-cyan-400 group-hover:scale-110 transition-transform flex-shrink-0 ml-3" />
               </a>
@@ -567,9 +567,9 @@ export default function Help() {
         </div>
 
         {/* Contact */}
-        <div className="bg-[#1a1f2e] border border-white/10 rounded-2xl p-6">
-          <h2 className="font-semibold text-white mb-1">¿Necesitas más ayuda?</h2>
-          <p className="text-sm text-gray-400 mb-4">Contáctanos y te responderemos a la brevedad.</p>
+        <div className="bg-[#1a1f2e] border border-border rounded-2xl p-6">
+          <h2 className="font-semibold text-foreground mb-1">¿Necesitas más ayuda?</h2>
+          <p className="text-sm text-muted-foreground mb-4">Contáctanos y te responderemos a la brevedad.</p>
           <div className="flex flex-col sm:flex-row gap-3">
             <a
               href="mailto:soporte@kobrapay.mx"

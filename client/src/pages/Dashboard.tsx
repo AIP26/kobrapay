@@ -37,7 +37,7 @@ function formatCurrency(amount: number | string, currency = "MXN") {
 const statusConfig = {
   pending: { label: "Pendiente", color: "bg-amber-100 text-amber-700", icon: Clock },
   paid: { label: "Pagado", color: "bg-green-100 text-green-700", icon: CheckCircle2 },
-  expired: { label: "Expirado", color: "bg-gray-100 text-gray-500", icon: Clock },
+  expired: { label: "Expirado", color: "bg-gray-100 text-muted-foreground", icon: Clock },
   cancelled: { label: "Cancelado", color: "bg-red-100 text-red-600", icon: Clock },
 };
 
@@ -139,13 +139,13 @@ export default function Dashboard() {
               <Card className="border-gray-200 shadow-sm cursor-pointer hover:shadow-md hover:border-gray-300 transition-all">
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between mb-2">
-                    <p className="text-xs text-gray-500 font-medium">{label}</p>
+                    <p className="text-xs text-muted-foreground font-medium">{label}</p>
                     <div className={`w-8 h-8 ${iconBg} rounded-lg flex items-center justify-center`}>
                       <Icon className={`w-4 h-4 ${iconColor}`} />
                     </div>
                   </div>
-                  <p className="text-xl font-bold text-gray-800">{value}</p>
-                  <p className="text-xs text-gray-400 mt-0.5">{sub}</p>
+                  <p className="text-xl font-bold text-foreground">{value}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">{sub}</p>
                 </CardContent>
               </Card>
             </RouterLink>
@@ -196,13 +196,13 @@ export default function Dashboard() {
               <Card className="border-gray-200 shadow-sm cursor-pointer hover:shadow-md hover:border-gray-300 transition-all">
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between mb-2">
-                    <p className="text-xs text-gray-500 font-medium">{label}</p>
+                    <p className="text-xs text-muted-foreground font-medium">{label}</p>
                     <div className={`w-8 h-8 ${iconBg} rounded-lg flex items-center justify-center`}>
                       <Icon className={`w-4 h-4 ${iconColor}`} />
                     </div>
                   </div>
-                  <p className="text-xl font-bold text-gray-800">{value}</p>
-                  <p className="text-xs text-gray-400 mt-0.5">{sub}</p>
+                  <p className="text-xl font-bold text-foreground">{value}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">{sub}</p>
                 </CardContent>
               </Card>
             </RouterLink>
@@ -274,7 +274,7 @@ export default function Dashboard() {
           <Card className="border-gray-200 shadow-sm lg:col-span-2">
             <CardHeader className="pb-3 border-b border-gray-100">
               <div className="flex items-center justify-between">
-                <CardTitle className="text-base font-semibold text-gray-800 flex items-center gap-2">
+                <CardTitle className="text-base font-semibold text-foreground flex items-center gap-2">
                   <BarChart3 className="w-4 h-4 text-cyan-500" />
                   Ventas últimos 7 días
                 </CardTitle>
@@ -317,15 +317,15 @@ export default function Dashboard() {
           {/* Quick Actions */}
           <Card className="border-gray-200 shadow-sm">
             <CardHeader className="pb-3 border-b border-gray-100">
-              <CardTitle className="text-base font-semibold text-gray-800">Acciones rápidas</CardTitle>
+              <CardTitle className="text-base font-semibold text-foreground">Acciones rápidas</CardTitle>
             </CardHeader>
             <CardContent className="p-3 space-y-2">
               {[
-                { href: "/dashboard/create", icon: Plus, label: "Nuevo Cobro", sub: "Crear enlace de pago", color: "bg-cyan-500 hover:bg-cyan-400", textColor: "text-white", subColor: "text-cyan-100" },
-                { href: "/dashboard/links", icon: Link2, label: "Links de Pago", sub: "Ver y gestionar", color: "bg-white hover:bg-gray-50 border border-gray-200", textColor: "text-gray-800", subColor: "text-gray-400" },
-                { href: "/dashboard/sales", icon: BarChart3, label: "Mis Ventas", sub: "Historial completo", color: "bg-white hover:bg-gray-50 border border-gray-200", textColor: "text-gray-800", subColor: "text-gray-400" },
-                { href: "/dashboard/widget", icon: Code2, label: "Widget de Pago", sub: "Para tu sitio web", color: "bg-white hover:bg-gray-50 border border-gray-200", textColor: "text-gray-800", subColor: "text-gray-400" },
-                { href: "/dashboard/recurring", icon: RefreshCw, label: "Cobros Recurrentes", sub: "Suscripciones", color: "bg-white hover:bg-gray-50 border border-gray-200", textColor: "text-gray-800", subColor: "text-gray-400" },
+                { href: "/dashboard/create", icon: Plus, label: "Nuevo Cobro", sub: "Crear enlace de pago", color: "bg-cyan-500 hover:bg-cyan-400", textColor: "text-foreground", subColor: "text-cyan-100" },
+                { href: "/dashboard/links", icon: Link2, label: "Links de Pago", sub: "Ver y gestionar", color: "bg-white hover:bg-gray-50 border border-gray-200", textColor: "text-foreground", subColor: "text-muted-foreground" },
+                { href: "/dashboard/sales", icon: BarChart3, label: "Mis Ventas", sub: "Historial completo", color: "bg-white hover:bg-gray-50 border border-gray-200", textColor: "text-foreground", subColor: "text-muted-foreground" },
+                { href: "/dashboard/widget", icon: Code2, label: "Widget de Pago", sub: "Para tu sitio web", color: "bg-white hover:bg-gray-50 border border-gray-200", textColor: "text-foreground", subColor: "text-muted-foreground" },
+                { href: "/dashboard/recurring", icon: RefreshCw, label: "Cobros Recurrentes", sub: "Suscripciones", color: "bg-white hover:bg-gray-50 border border-gray-200", textColor: "text-foreground", subColor: "text-muted-foreground" },
               ].map(({ href, icon: Icon, label, sub, color, textColor, subColor }) => (
                 <RouterLink key={href} href={href}>
                   <div className={`flex items-center gap-3 p-3 ${color} rounded-xl cursor-pointer transition-all group`}>
@@ -348,7 +348,7 @@ export default function Dashboard() {
         <Card className="border-gray-200 shadow-sm">
           <CardHeader className="pb-3 border-b border-gray-100">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-base font-semibold text-gray-800">Últimos enlaces</CardTitle>
+              <CardTitle className="text-base font-semibold text-foreground">Últimos enlaces</CardTitle>
               <Button asChild variant="ghost" size="sm" className="text-cyan-600 hover:text-cyan-700 hover:bg-cyan-50 h-8 text-xs">
                 <RouterLink href="/dashboard/links">
                   Ver todos <ArrowRight className="w-3.5 h-3.5 ml-1" />
@@ -373,10 +373,10 @@ export default function Dashboard() {
             ) : recentLinks.length === 0 ? (
               <div className="text-center py-10">
                 <div className="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center mx-auto mb-3">
-                  <CreditCard className="w-6 h-6 text-gray-400" />
+                  <CreditCard className="w-6 h-6 text-muted-foreground" />
                 </div>
-                <p className="text-sm text-gray-500 mb-3">Aún no has creado ningún enlace</p>
-                <Button asChild size="sm" className="bg-cyan-500 hover:bg-cyan-400 text-white">
+                <p className="text-sm text-muted-foreground mb-3">Aún no has creado ningún enlace</p>
+                <Button asChild size="sm" className="bg-cyan-500 hover:bg-cyan-400 text-foreground">
                   <RouterLink href="/dashboard/create">
                     <Plus className="w-3.5 h-3.5 mr-1.5" />
                     Crear primer enlace
@@ -391,14 +391,14 @@ export default function Dashboard() {
                   return (
                     <div key={link.id} className="flex items-center gap-3 px-5 py-3.5 hover:bg-gray-50/50 transition-colors">
                       <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${link.status === "paid" ? "bg-green-100" : link.status === "pending" ? "bg-cyan-100" : "bg-gray-100"}`}>
-                        <Link2 className={`w-4 h-4 ${link.status === "paid" ? "text-green-600" : link.status === "pending" ? "text-cyan-600" : "text-gray-400"}`} />
+                        <Link2 className={`w-4 h-4 ${link.status === "paid" ? "text-green-600" : link.status === "pending" ? "text-cyan-600" : "text-muted-foreground"}`} />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-gray-800 truncate">{link.clientName}</p>
-                        <p className="text-xs text-gray-400 truncate">{link.description}</p>
+                        <p className="text-sm font-medium text-foreground truncate">{link.clientName}</p>
+                        <p className="text-xs text-muted-foreground truncate">{link.description}</p>
                       </div>
                       <div className="text-right flex-shrink-0">
-                        <p className="text-sm font-bold text-gray-800">{formatCurrency(link.amount, link.currency)}</p>
+                        <p className="text-sm font-bold text-foreground">{formatCurrency(link.amount, link.currency)}</p>
                         <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-xs font-medium ${cfg.color}`}>
                           <StatusIcon className="w-2.5 h-2.5" />
                           {cfg.label}
@@ -414,11 +414,11 @@ export default function Dashboard() {
         {/* Simulador de Comisiones */}
         <Card className="border-gray-200 shadow-sm">
           <CardHeader className="pb-3 border-b border-gray-100">
-            <CardTitle className="text-base font-semibold text-gray-800 flex items-center gap-2">
+            <CardTitle className="text-base font-semibold text-foreground flex items-center gap-2">
               <CreditCard className="w-4 h-4 text-emerald-600" />
               Simulador de Comisiones
             </CardTitle>
-            <p className="text-xs text-gray-500">Calcula exactamente cuanto recibiras en cada cobro</p>
+            <p className="text-xs text-muted-foreground">Calcula exactamente cuanto recibiras en cada cobro</p>
           </CardHeader>
           <CardContent className="pt-4">
             <ClientQuoteSimulator />
@@ -502,8 +502,8 @@ function ClientQuoteSimulator() {
           onClick={() => handleModeChange("online")}
           className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all ${
             mode === "online"
-              ? "bg-emerald-600 text-white"
-              : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+              ? "bg-emerald-600 text-foreground"
+              : "bg-gray-100 text-muted-foreground hover:bg-gray-200"
           }`}
         >
           Cobro Online
@@ -512,8 +512,8 @@ function ClientQuoteSimulator() {
           onClick={() => handleModeChange("terminal")}
           className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all ${
             mode === "terminal"
-              ? "bg-indigo-600 text-white"
-              : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+              ? "bg-indigo-600 text-foreground"
+              : "bg-gray-100 text-muted-foreground hover:bg-gray-200"
           }`}
         >
           Terminal Fisica
@@ -522,7 +522,7 @@ function ClientQuoteSimulator() {
 
       {/* Monto */}
       <div>
-        <label className="text-xs font-semibold text-gray-500 uppercase mb-2 block">Monto a cobrar (MXN)</label>
+        <label className="text-xs font-semibold text-muted-foreground uppercase mb-2 block">Monto a cobrar (MXN)</label>
         <input
           type="number"
           value={amount}
@@ -539,7 +539,7 @@ function ClientQuoteSimulator() {
           onChange={(e) => setAmount(parseFloat(e.target.value))}
           className="w-full mt-2 accent-emerald-600"
         />
-        <div className="flex justify-between text-xs text-gray-400 mt-1">
+        <div className="flex justify-between text-xs text-muted-foreground mt-1">
           <span>$100</span>
           <span>$500,000</span>
         </div>
@@ -558,7 +558,7 @@ function ClientQuoteSimulator() {
         {showRates && (
           <div className="mt-3 grid grid-cols-2 gap-3 bg-emerald-50 rounded-xl p-4 border border-emerald-200">
             <div>
-              <label className="text-xs font-semibold text-gray-600 mb-1 block">
+              <label className="text-xs font-semibold text-muted-foreground mb-1 block">
                 Comisión KobraPay (%)
               </label>
               <div className="relative">
@@ -572,13 +572,13 @@ function ClientQuoteSimulator() {
                   max="100"
                   className="w-full border border-gray-200 rounded-lg pl-3 pr-7 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400 bg-white"
                 />
-                <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 text-xs font-bold">%</span>
+                <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground text-xs font-bold">%</span>
               </div>
-              <p className="text-xs text-gray-400 mt-0.5">Default: {defaultKp.toFixed(2)}%</p>
+              <p className="text-xs text-muted-foreground mt-0.5">Default: {defaultKp.toFixed(2)}%</p>
             </div>
 
             <div>
-              <label className="text-xs font-semibold text-gray-600 mb-1 block">
+              <label className="text-xs font-semibold text-muted-foreground mb-1 block">
                 IVA sobre comisión (%)
               </label>
               <div className="relative">
@@ -592,13 +592,13 @@ function ClientQuoteSimulator() {
                   max="100"
                   className="w-full border border-gray-200 rounded-lg pl-3 pr-7 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400 bg-white"
                 />
-                <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 text-xs font-bold">%</span>
+                <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground text-xs font-bold">%</span>
               </div>
-              <p className="text-xs text-gray-400 mt-0.5">Default: {defaultIva.toFixed(0)}%</p>
+              <p className="text-xs text-muted-foreground mt-0.5">Default: {defaultIva.toFixed(0)}%</p>
             </div>
 
             <div>
-              <label className="text-xs font-semibold text-gray-600 mb-1 block">
+              <label className="text-xs font-semibold text-muted-foreground mb-1 block">
                 Comisión Stripe (%)
               </label>
               <div className="relative">
@@ -612,13 +612,13 @@ function ClientQuoteSimulator() {
                   max="10"
                   className="w-full border border-gray-200 rounded-lg pl-3 pr-7 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400 bg-white"
                 />
-                <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 text-xs font-bold">%</span>
+                <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground text-xs font-bold">%</span>
               </div>
-              <p className="text-xs text-gray-400 mt-0.5">Default: {mode === "online" ? "2.90" : "2.70"}%</p>
+              <p className="text-xs text-muted-foreground mt-0.5">Default: {mode === "online" ? "2.90" : "2.70"}%</p>
             </div>
 
             <div>
-              <label className="text-xs font-semibold text-gray-600 mb-1 block">
+              <label className="text-xs font-semibold text-muted-foreground mb-1 block">
                 Cargo fijo Stripe ($)
               </label>
               <div className="relative">
@@ -631,15 +631,15 @@ function ClientQuoteSimulator() {
                   min="0"
                   className="w-full border border-gray-200 rounded-lg pl-3 pr-7 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400 bg-white"
                 />
-                <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 text-xs font-bold">$</span>
+                <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground text-xs font-bold">$</span>
               </div>
-              <p className="text-xs text-gray-400 mt-0.5">Default: ${mode === "online" ? "0.30" : "0.05"}</p>
+              <p className="text-xs text-muted-foreground mt-0.5">Default: ${mode === "online" ? "0.30" : "0.05"}</p>
             </div>
 
             <div className="col-span-2">
               <button
                 onClick={() => { setKpRateStr(""); setIvaRateStr(""); setStripeRateStr(""); setStripeFixedStr(""); }}
-                className="text-xs text-gray-500 hover:text-red-500 underline transition-colors"
+                className="text-xs text-muted-foreground hover:text-red-500 underline transition-colors"
               >
                 Restablecer valores por defecto
               </button>
@@ -651,28 +651,28 @@ function ClientQuoteSimulator() {
       {/* Resultado */}
       <div className="bg-gray-50 rounded-xl p-4 space-y-2">
         <div className="flex justify-between text-sm">
-          <span className="text-gray-600">Monto bruto</span>
+          <span className="text-muted-foreground">Monto bruto</span>
           <span className="font-semibold">{formatCurrency(amount)}</span>
         </div>
         <div className="flex justify-between text-sm">
-          <span className="text-gray-600">Comision Stripe ({(stripeRate * 100).toFixed(2)}% + ${stripeFixed.toFixed(2)})</span>
+          <span className="text-muted-foreground">Comision Stripe ({(stripeRate * 100).toFixed(2)}% + ${stripeFixed.toFixed(2)})</span>
           <span className="text-red-500">-{formatCurrency(stripeFee)}</span>
         </div>
         <div className="flex justify-between text-sm">
-          <span className="text-gray-600">Comision KobraPay ({(kpRate * 100).toFixed(2)}%)</span>
+          <span className="text-muted-foreground">Comision KobraPay ({(kpRate * 100).toFixed(2)}%)</span>
           <span className="text-red-500">-{formatCurrency(kpFee)}</span>
         </div>
         {ivaRate > 0 && (
           <div className="flex justify-between text-sm">
-            <span className="text-gray-600">IVA sobre comision ({(ivaRate * 100).toFixed(0)}%)</span>
+            <span className="text-muted-foreground">IVA sobre comision ({(ivaRate * 100).toFixed(0)}%)</span>
             <span className="text-orange-500">-{formatCurrency(kpIva)}</span>
           </div>
         )}
         <div className="border-t border-gray-200 pt-2 flex justify-between">
-          <span className="font-semibold text-gray-800">Tu recibe</span>
+          <span className="font-semibold text-foreground">Tu recibe</span>
           <span className="font-bold text-emerald-600 text-lg">{formatCurrency(netAmount)}</span>
         </div>
-        <p className="text-xs text-gray-400 text-center">Costo efectivo total: {effectiveRate.toFixed(2)}%</p>
+        <p className="text-xs text-muted-foreground text-center">Costo efectivo total: {effectiveRate.toFixed(2)}%</p>
       </div>
 
       {/* Botón enviar cotización */}
@@ -680,13 +680,13 @@ function ClientQuoteSimulator() {
         {!showEmailForm ? (
           <button
             onClick={() => setShowEmailForm(true)}
-            className="w-full flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-2.5 rounded-xl text-sm"
+            className="w-full flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-foreground font-semibold py-2.5 rounded-xl text-sm"
           >
             ✉️ Enviar cotización por email
           </button>
         ) : (
           <div className="space-y-2">
-            <p className="text-xs font-semibold text-gray-600">Ingresa los datos del prospecto:</p>
+            <p className="text-xs font-semibold text-muted-foreground">Ingresa los datos del prospecto:</p>
             <input
               type="text"
               value={prospectName}
@@ -704,7 +704,7 @@ function ClientQuoteSimulator() {
             <div className="flex gap-2">
               <button
                 onClick={() => setShowEmailForm(false)}
-                className="flex-1 py-2 border border-gray-200 rounded-xl text-sm text-gray-500 hover:text-gray-700"
+                className="flex-1 py-2 border border-gray-200 rounded-xl text-sm text-muted-foreground hover:text-foreground"
               >
                 Cancelar
               </button>
@@ -721,7 +721,7 @@ function ClientQuoteSimulator() {
                   });
                 }}
                 disabled={sendQuote.isPending}
-                className="flex-1 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-sm font-semibold disabled:opacity-60"
+                className="flex-1 py-2 bg-emerald-600 hover:bg-emerald-500 text-foreground rounded-xl text-sm font-semibold disabled:opacity-60"
               >
                 {sendQuote.isPending ? "Enviando..." : "Enviar"}
               </button>

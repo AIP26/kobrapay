@@ -413,7 +413,7 @@ function EmployeeHistoryModal({
             <Button variant="outline" onClick={onClose}>Cerrar</Button>
             {isAdmin && (
               <Button
-                className="bg-orange-500 hover:bg-orange-400 text-white"
+                className="bg-orange-500 hover:bg-orange-400 text-foreground"
                 onClick={() => { onAbsence(employee); onClose(); }}
               >
                 <PlusCircle className="w-4 h-4 mr-1" /> Registrar ausencia
@@ -475,7 +475,7 @@ function EmployeeHistoryModal({
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setEditRec(null)}>Cancelar</Button>
-              <Button onClick={handleEdit} disabled={editMutation.isPending} className="bg-blue-600 hover:bg-blue-500 text-white">
+              <Button onClick={handleEdit} disabled={editMutation.isPending} className="bg-blue-600 hover:bg-blue-500 text-foreground">
                 {editMutation.isPending ? "Guardando..." : "Guardar cambios"}
               </Button>
             </DialogFooter>
@@ -539,7 +539,7 @@ function EmployeeCheckCard({
         <Button
           size="sm"
           variant={isCurrentlyIn ? "outline" : "default"}
-          className={isCurrentlyIn ? "" : "bg-green-600 hover:bg-green-700 text-white"}
+          className={isCurrentlyIn ? "" : "bg-green-600 hover:bg-green-700 text-foreground"}
           onClick={() => { setNoteText(""); setNoteModal({ type: "in" }); }}
           disabled={isPending || isCurrentlyIn}
           title="Registrar Entrada"
@@ -584,7 +584,7 @@ function EmployeeCheckCard({
           <DialogFooter>
             <Button variant="outline" onClick={() => setNoteModal(null)}>Cancelar</Button>
             <Button
-              className={noteModal?.type === "in" ? "bg-green-600 hover:bg-green-700 text-white" : "bg-red-600 hover:bg-red-700 text-white"}
+              className={noteModal?.type === "in" ? "bg-green-600 hover:bg-green-700 text-foreground" : "bg-red-600 hover:bg-red-700 text-foreground"}
               disabled={isPending}
               onClick={() => { onCheckIn(noteModal!.type, noteText || undefined); setNoteModal(null); }}
             >
@@ -884,7 +884,7 @@ export default function Checador() {
           <DialogFooter>
             <Button variant="outline" onClick={() => setAbsenceEmployee(null)}>Cancelar</Button>
             <Button
-              className="bg-orange-500 hover:bg-orange-400 text-white"
+              className="bg-orange-500 hover:bg-orange-400 text-foreground"
               onClick={() => {
                 if (!absenceEmployee) return;
                 absenceMutation.mutate({

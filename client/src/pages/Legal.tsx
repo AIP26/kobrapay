@@ -17,11 +17,11 @@ function Section({ title, children, id }: { title: string; children: React.React
         onClick={() => setOpen(!open)}
         className="w-full flex items-center justify-between px-6 py-4 bg-gray-50 hover:bg-gray-100 transition-colors text-left"
       >
-        <h2 className="text-base font-semibold text-gray-800">{title}</h2>
-        {open ? <ChevronUp className="w-4 h-4 text-gray-500 flex-shrink-0" /> : <ChevronDown className="w-4 h-4 text-gray-500 flex-shrink-0" />}
+        <h2 className="text-base font-semibold text-foreground">{title}</h2>
+        {open ? <ChevronUp className="w-4 h-4 text-muted-foreground flex-shrink-0" /> : <ChevronDown className="w-4 h-4 text-muted-foreground flex-shrink-0" />}
       </button>
       {open && (
-        <div className="px-6 py-5 text-sm text-gray-600 leading-relaxed space-y-3">
+        <div className="px-6 py-5 text-sm text-muted-foreground leading-relaxed space-y-3">
           {children}
         </div>
       )}
@@ -38,14 +38,14 @@ export default function Legal() {
       <header className="bg-white border-b border-gray-200 sticky top-0 z-10">
         <div className="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Link href="/" className="flex items-center gap-2 text-gray-500 hover:text-gray-700 transition-colors text-sm">
+            <Link href="/" className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors text-sm">
               <ArrowLeft className="w-4 h-4" />
               <span className="hidden sm:inline">Inicio</span>
             </Link>
             <div className="w-px h-5 bg-gray-200" />
             <img src={KOBRAPAY_LOGO} alt="KobraPay" className="h-7 object-contain" />
           </div>
-          <span className="text-xs text-gray-400">Actualizado: {LAST_UPDATED}</span>
+          <span className="text-xs text-muted-foreground">Actualizado: {LAST_UPDATED}</span>
         </div>
       </header>
 
@@ -56,8 +56,8 @@ export default function Legal() {
             onClick={() => setTab("terms")}
             className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium transition-all ${
               tab === "terms"
-                ? "bg-emerald-500 text-white shadow-sm"
-                : "text-gray-600 hover:text-gray-800 hover:bg-gray-50"
+                ? "bg-emerald-500 text-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground hover:bg-gray-50"
             }`}
           >
             <FileText className="w-4 h-4" />
@@ -67,8 +67,8 @@ export default function Legal() {
             onClick={() => setTab("privacy")}
             className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium transition-all ${
               tab === "privacy"
-                ? "bg-emerald-500 text-white shadow-sm"
-                : "text-gray-600 hover:text-gray-800 hover:bg-gray-50"
+                ? "bg-emerald-500 text-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground hover:bg-gray-50"
             }`}
           >
             <Shield className="w-4 h-4" />
@@ -80,8 +80,8 @@ export default function Legal() {
         {tab === "terms" && (
           <div>
             <div className="mb-6">
-              <h1 className="text-2xl font-bold text-gray-900">Términos y Condiciones de Uso</h1>
-              <p className="text-gray-500 text-sm mt-1">
+              <h1 className="text-2xl font-bold text-foreground">Términos y Condiciones de Uso</h1>
+              <p className="text-muted-foreground text-sm mt-1">
                 Al utilizar {COMPANY} aceptas los siguientes términos. Léelos con atención.
               </p>
             </div>
@@ -235,8 +235,8 @@ export default function Legal() {
         {tab === "privacy" && (
           <div>
             <div className="mb-6">
-              <h1 className="text-2xl font-bold text-gray-900">Aviso de Privacidad</h1>
-              <p className="text-gray-500 text-sm mt-1">
+              <h1 className="text-2xl font-bold text-foreground">Aviso de Privacidad</h1>
+              <p className="text-muted-foreground text-sm mt-1">
                 Conforme a la Ley Federal de Protección de Datos Personales en Posesión de los Particulares (LFPDPPP).
               </p>
             </div>
@@ -376,7 +376,7 @@ export default function Legal() {
 
         {/* Footer */}
         <div className="mt-8 pt-6 border-t border-gray-200 text-center">
-          <p className="text-xs text-gray-400">
+          <p className="text-xs text-muted-foreground">
             © {new Date().getFullYear()} {COMPANY} · Todos los derechos reservados ·{" "}
             <a href={`mailto:${EMAIL}`} className="hover:text-emerald-600 transition-colors">{EMAIL}</a>
           </p>

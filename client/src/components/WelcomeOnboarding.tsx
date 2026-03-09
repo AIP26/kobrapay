@@ -90,13 +90,13 @@ export default function WelcomeOnboarding({ userName }: WelcomeOnboardingProps) 
             onClick={handleDismiss}
             className="absolute top-4 right-4 w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors"
           >
-            <X className="w-4 h-4 text-white/70" />
+            <X className="w-4 h-4 text-foreground/70" />
           </button>
           <img src={LOGO_NAVY} alt="KobraPay" className="w-14 h-14 object-contain mx-auto mb-3" />
-          <h2 className="text-xl font-black text-white">
+          <h2 className="text-xl font-black text-foreground">
             ¡Bienvenido{userName ? `, ${userName.split(' ')[0]}` : ''}! 👋
           </h2>
-          <p className="text-sm text-gray-300 mt-1">
+          <p className="text-sm text-muted-foreground mt-1">
             Sigue estos 3 pasos para empezar a cobrar hoy mismo
           </p>
 
@@ -122,7 +122,7 @@ export default function WelcomeOnboarding({ userName }: WelcomeOnboardingProps) 
         <div className="px-8 py-6">
           {/* Step indicator */}
           <div className="flex items-center gap-2 mb-4">
-            <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">
+            <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
               Paso {currentStep + 1} de {STEPS.length}
             </span>
             {completedSteps.has(currentStep) && (
@@ -134,18 +134,18 @@ export default function WelcomeOnboarding({ userName }: WelcomeOnboardingProps) 
           </div>
 
           {/* Step card */}
-          <div className={`bg-gradient-to-br ${step.color} rounded-2xl p-5 text-white mb-5`}>
+          <div className={`bg-gradient-to-br ${step.color} rounded-2xl p-5 text-foreground mb-5`}>
             <div className="flex items-start gap-4">
               <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center shrink-0">
-                <StepIcon className="w-6 h-6 text-white" />
+                <StepIcon className="w-6 h-6 text-foreground" />
               </div>
               <div>
                 <h3 className="font-bold text-lg leading-tight">{step.title}</h3>
-                <p className="text-white/85 text-sm mt-2 leading-relaxed">{step.description}</p>
+                <p className="text-foreground/85 text-sm mt-2 leading-relaxed">{step.description}</p>
               </div>
             </div>
             <div className="mt-4 bg-white/15 rounded-xl px-3 py-2">
-              <p className="text-xs text-white/80">{step.tip}</p>
+              <p className="text-xs text-foreground/80">{step.tip}</p>
             </div>
           </div>
 
@@ -166,14 +166,14 @@ export default function WelcomeOnboarding({ userName }: WelcomeOnboardingProps) 
                   }`}
                 >
                   <div className={`w-7 h-7 rounded-lg flex items-center justify-center ${
-                    completedSteps.has(i) ? "bg-emerald-500" : i === currentStep ? "bg-gray-800" : "bg-gray-200"
+                    completedSteps.has(i) ? "bg-emerald-500" : i === currentStep ? "bg-muted" : "bg-gray-200"
                   }`}>
                     {completedSteps.has(i)
-                      ? <CheckCircle2 className="w-4 h-4 text-white" />
-                      : <SIcon className={`w-4 h-4 ${i === currentStep ? "text-white" : "text-gray-500"}`} />
+                      ? <CheckCircle2 className="w-4 h-4 text-foreground" />
+                      : <SIcon className={`w-4 h-4 ${i === currentStep ? "text-foreground" : "text-muted-foreground"}`} />
                     }
                   </div>
-                  <span className="text-xs font-medium text-gray-600 text-center leading-tight">{s.emoji}</span>
+                  <span className="text-xs font-medium text-muted-foreground text-center leading-tight">{s.emoji}</span>
                 </button>
               );
             })}
@@ -193,7 +193,7 @@ export default function WelcomeOnboarding({ userName }: WelcomeOnboardingProps) 
               <Button
                 variant="outline"
                 onClick={() => setCurrentStep(i => i + 1)}
-                className="gap-1 text-gray-500 border-gray-200"
+                className="gap-1 text-muted-foreground border-gray-200"
               >
                 Siguiente
                 <ChevronRight className="w-4 h-4" />
@@ -212,7 +212,7 @@ export default function WelcomeOnboarding({ userName }: WelcomeOnboardingProps) 
 
           <button
             onClick={handleDismiss}
-            className="w-full mt-3 text-xs text-gray-400 hover:text-gray-600 transition-colors"
+            className="w-full mt-3 text-xs text-muted-foreground hover:text-muted-foreground transition-colors"
           >
             Saltar introducción
           </button>

@@ -45,7 +45,7 @@ export default function ForgotPassword() {
             <p className="text-muted-foreground text-xs mb-2">Revisa también tu carpeta de spam.</p>
             <p className="text-muted-foreground text-xs mb-6">Si te registraste con Manus, usa el botón <strong>"Continuar con Manus"</strong> en la página de inicio de sesión.</p>
             <Link href="/login">
-              <Button className="bg-emerald-500 hover:bg-emerald-600 text-white font-semibold w-full">
+              <Button className="bg-emerald-500 hover:bg-emerald-600 text-foreground font-semibold w-full">
                 Volver a iniciar sesión
               </Button>
             </Link>
@@ -99,7 +99,7 @@ export default function ForgotPassword() {
               <Button
                 type="submit"
                 disabled={forgotMutation.isPending}
-                className="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-semibold py-2.5 mt-2"
+                className="w-full bg-emerald-500 hover:bg-emerald-600 text-foreground font-semibold py-2.5 mt-2"
               >
                 {forgotMutation.isPending ? "Enviando..." : "Enviar instrucciones"}
               </Button>

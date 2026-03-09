@@ -146,7 +146,7 @@ export default function LoginEmail() {
               <Button
                 type="submit"
                 disabled={loginMutation.isPending}
-                className="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-semibold py-2.5 mt-2"
+                className="w-full bg-emerald-500 hover:bg-emerald-600 text-foreground font-semibold py-2.5 mt-2"
               >
                 {loginMutation.isPending ? "Iniciando sesión..." : "Iniciar sesión"}
               </Button>

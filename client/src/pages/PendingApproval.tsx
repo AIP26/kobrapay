@@ -27,8 +27,8 @@ export default function PendingApproval({ email, name, status }: PendingApproval
             <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
               <span className="text-3xl">🚫</span>
             </div>
-            <h1 className="text-2xl font-bold text-gray-900 mb-2">Acceso denegado</h1>
-            <p className="text-gray-500 mb-6">
+            <h1 className="text-2xl font-bold text-foreground mb-2">Acceso denegado</h1>
+            <p className="text-muted-foreground mb-6">
               Tu cuenta ha sido bloqueada. Si crees que esto es un error, contacta al administrador de KobraPay.
             </p>
             <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-6 text-left">
@@ -45,26 +45,26 @@ export default function PendingApproval({ email, name, status }: PendingApproval
             <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-4">
               <Clock className="w-8 h-8 text-amber-600" />
             </div>
-            <h1 className="text-2xl font-bold text-gray-900 mb-2">Cuenta en revisión</h1>
-            <p className="text-gray-500 mb-6">
+            <h1 className="text-2xl font-bold text-foreground mb-2">Cuenta en revisión</h1>
+            <p className="text-muted-foreground mb-6">
               Tu registro fue recibido correctamente. El equipo de KobraPay está revisando tu solicitud y recibirás una respuesta pronto.
             </p>
             <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6 text-left space-y-2">
               <div className="flex items-center gap-2">
                 <CheckCircle2 className="w-4 h-4 text-green-500 flex-shrink-0" />
-                <p className="text-gray-700 text-sm">Registro completado</p>
+                <p className="text-foreground text-sm">Registro completado</p>
               </div>
               <div className="flex items-center gap-2">
                 <Clock className="w-4 h-4 text-amber-500 flex-shrink-0" />
-                <p className="text-gray-700 text-sm">Esperando aprobación del administrador</p>
+                <p className="text-foreground text-sm">Esperando aprobación del administrador</p>
               </div>
               <div className="flex items-center gap-2">
                 <Mail className="w-4 h-4 text-blue-500 flex-shrink-0" />
-                <p className="text-gray-700 text-sm">Recibirás un email cuando tu cuenta sea activada</p>
+                <p className="text-foreground text-sm">Recibirás un email cuando tu cuenta sea activada</p>
               </div>
             </div>
             {name && (
-              <p className="text-gray-400 text-sm mb-4">Hola, <strong>{name}</strong>. Gracias por tu paciencia.</p>
+              <p className="text-muted-foreground text-sm mb-4">Hola, <strong>{name}</strong>. Gracias por tu paciencia.</p>
             )}
           </>
         )}
@@ -79,7 +79,7 @@ export default function PendingApproval({ email, name, status }: PendingApproval
           Cerrar sesión
         </Button>
 
-        <p className="text-gray-400 text-xs mt-4">
+        <p className="text-muted-foreground text-xs mt-4">
           ¿Tienes dudas? Escríbenos a{" "}
           <a href="mailto:soporte@kobrapay.mx" className="text-blue-600 hover:underline">
             soporte@kobrapay.mx

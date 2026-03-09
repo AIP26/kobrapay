@@ -27,10 +27,10 @@ import { toast } from "sonner";
 type InvStatus = "draft" | "sent" | "paid" | "cancelled" | "overdue";
 
 const STATUS_LABELS: Record<InvStatus, { label: string; color: string }> = {
-  draft: { label: "Borrador", color: "text-gray-500 bg-gray-50 border-gray-200" },
+  draft: { label: "Borrador", color: "text-muted-foreground bg-gray-50 border-gray-200" },
   sent: { label: "Enviada", color: "text-blue-600 bg-blue-50 border-blue-200" },
   paid: { label: "Pagada", color: "text-green-600 bg-green-50 border-green-200" },
-  cancelled: { label: "Cancelada", color: "text-gray-500 bg-gray-50 border-gray-200" },
+  cancelled: { label: "Cancelada", color: "text-muted-foreground bg-gray-50 border-gray-200" },
   overdue: { label: "Vencida", color: "text-red-600 bg-red-50 border-red-200" },
 };
 
@@ -191,11 +191,11 @@ export default function Invoices() {
       <div className="p-6 space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Mis Facturas</h1>
-            <p className="text-gray-500 text-sm mt-1">Genera y gestiona facturas para tus clientes</p>
+            <h1 className="text-2xl font-bold text-foreground">Mis Facturas</h1>
+            <p className="text-muted-foreground text-sm mt-1">Genera y gestiona facturas para tus clientes</p>
           </div>
           <Button
-            className="bg-emerald-500 hover:bg-emerald-400 text-white"
+            className="bg-emerald-500 hover:bg-emerald-400 text-foreground"
             onClick={() => setShowForm(true)}
           >
             <Plus className="w-4 h-4 mr-2" />
@@ -206,13 +206,13 @@ export default function Invoices() {
         {/* Stats */}
         <div className="grid grid-cols-3 gap-4">
           {[
-            { label: "Total facturas", value: invoices.length, color: "text-gray-700" },
+            { label: "Total facturas", value: invoices.length, color: "text-foreground" },
             { label: "Pagadas", value: invoices.filter(i => i.status === "paid").length, color: "text-green-600" },
             { label: "Monto total", value: formatCurrency(invoices.reduce((s, i) => s + (i.total || 0), 0)), color: "text-emerald-600" },
           ].map(({ label, value, color }) => (
             <Card key={label} className="border-0 shadow-sm">
               <CardContent className="p-4 text-center">
-                <p className="text-xs text-gray-500 mb-1">{label}</p>
+                <p className="text-xs text-muted-foreground mb-1">{label}</p>
                 <p className={`text-xl font-bold ${color}`}>{value}</p>
               </CardContent>
             </Card>
@@ -221,7 +221,7 @@ export default function Invoices() {
 
         {/* Search */}
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
             placeholder="Buscar por cliente o folio..."
             className="pl-9"
@@ -234,12 +234,12 @@ export default function Invoices() {
         <Card className="border-0 shadow-sm">
           <CardContent className="p-0">
             {isLoading ? (
-              <div className="text-center py-10 text-gray-400">Cargando...</div>
+              <div className="text-center py-10 text-muted-foreground">Cargando...</div>
             ) : filtered.length === 0 ? (
               <div className="text-center py-16">
-                <FileText className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                <p className="text-gray-500 font-medium">Sin facturas registradas</p>
-                <p className="text-gray-400 text-sm mt-1">Crea tu primera factura para comenzar</p>
+                <FileText className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
+                <p className="text-muted-foreground font-medium">Sin facturas registradas</p>
+                <p className="text-muted-foreground text-sm mt-1">Crea tu primera factura para comenzar</p>
                 <Button variant="outline" className="mt-4" onClick={() => setShowForm(true)}>
                   <Plus className="w-4 h-4 mr-2" /> Nueva Factura
                 </Button>
@@ -249,13 +249,13 @@ export default function Invoices() {
                 <table className="w-full">
                   <thead>
                     <tr className="border-b border-gray-100 bg-gray-50">
-                      <th className="text-left text-xs font-semibold text-gray-500 uppercase tracking-wider px-6 py-3">Folio</th>
-                      <th className="text-left text-xs font-semibold text-gray-500 uppercase tracking-wider px-4 py-3">Receptor</th>
-                      <th className="text-left text-xs font-semibold text-gray-500 uppercase tracking-wider px-4 py-3">Emisor</th>
-                      <th className="text-left text-xs font-semibold text-gray-500 uppercase tracking-wider px-4 py-3">Fecha</th>
-                      <th className="text-left text-xs font-semibold text-gray-500 uppercase tracking-wider px-4 py-3">Estatus</th>
-                      <th className="text-right text-xs font-semibold text-gray-500 uppercase tracking-wider px-4 py-3">Total</th>
-                      <th className="text-center text-xs font-semibold text-gray-500 uppercase tracking-wider px-4 py-3">Acciones</th>
+                      <th className="text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider px-6 py-3">Folio</th>
+                      <th className="text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider px-4 py-3">Receptor</th>
+                      <th className="text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider px-4 py-3">Emisor</th>
+                      <th className="text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider px-4 py-3">Fecha</th>
+                      <th className="text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider px-4 py-3">Estatus</th>
+                      <th className="text-right text-xs font-semibold text-muted-foreground uppercase tracking-wider px-4 py-3">Total</th>
+                      <th className="text-center text-xs font-semibold text-muted-foreground uppercase tracking-wider px-4 py-3">Acciones</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-50">
@@ -267,28 +267,28 @@ export default function Invoices() {
                           <td className="px-6 py-4">
                             <div className="flex items-center gap-2">
                               <FileText className="w-4 h-4 text-emerald-500" />
-                              <span className="text-sm font-mono font-medium text-gray-800">{inv.folio}</span>
+                              <span className="text-sm font-mono font-medium text-foreground">{inv.folio}</span>
                             </div>
                           </td>
                           <td className="px-4 py-4">
                             <div>
-                              <p className="text-sm font-medium text-gray-800">{inv.receptorNombre}</p>
-                              <p className="text-xs text-gray-400 font-mono">{inv.receptorRfc}</p>
+                              <p className="text-sm font-medium text-foreground">{inv.receptorNombre}</p>
+                              <p className="text-xs text-muted-foreground font-mono">{inv.receptorRfc}</p>
                             </div>
                           </td>
                           <td className="px-4 py-4">
                             <div>
-                              <p className="text-sm text-gray-700">{inv.emisorNombre}</p>
-                              <p className="text-xs text-gray-400 font-mono">{inv.emisorRfc}</p>
+                              <p className="text-sm text-foreground">{inv.emisorNombre}</p>
+                              <p className="text-xs text-muted-foreground font-mono">{inv.emisorRfc}</p>
                             </div>
                           </td>
-                          <td className="px-4 py-4 text-sm text-gray-500">{new Date(inv.createdAt).toLocaleDateString("es-MX")}</td>
+                          <td className="px-4 py-4 text-sm text-muted-foreground">{new Date(inv.createdAt).toLocaleDateString("es-MX")}</td>
                           <td className="px-4 py-4">
                             <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border ${cfg.color}`}>
                               {cfg.label}
                             </span>
                           </td>
-                          <td className="px-4 py-4 text-sm font-bold text-gray-900 text-right">{formatCurrency(inv.total / 100, inv.currency)}</td>
+                          <td className="px-4 py-4 text-sm font-bold text-foreground text-right">{formatCurrency(inv.total / 100, inv.currency)}</td>
                           <td className="px-4 py-4">
                             <div className="flex items-center justify-center gap-1">
                               {inv.status === "draft" && (
@@ -306,7 +306,7 @@ export default function Invoices() {
                               <Button
                                 size="sm"
                                 variant="ghost"
-                                className="text-xs text-gray-500 hover:text-blue-600"
+                                className="text-xs text-muted-foreground hover:text-blue-600"
                                 title={inv.receptorEmail ? `Enviar por email a ${inv.receptorEmail}` : "Sin email del receptor"}
                                 onClick={() => {
                                   if (!inv.receptorEmail) {
@@ -322,7 +322,7 @@ export default function Invoices() {
                               <Button
                                 size="sm"
                                 variant="ghost"
-                                className="text-xs text-gray-500 hover:text-emerald-600 hover:bg-emerald-50"
+                                className="text-xs text-muted-foreground hover:text-emerald-600 hover:bg-emerald-50"
                                 title="Descargar factura PDF"
                                 onClick={() => downloadInvoicePDF(inv)}
                               >
@@ -332,7 +332,7 @@ export default function Invoices() {
                                 <Button
                                   size="sm"
                                   variant="ghost"
-                                  className="text-xs text-gray-400 hover:text-red-500 hover:bg-red-50"
+                                  className="text-xs text-muted-foreground hover:text-red-500 hover:bg-red-50"
                                   title="Cancelar factura"
                                   onClick={() => {
                                     if (confirm("¿Cancelar esta factura?")) cancelMutation.mutate({ id: inv.id });
@@ -366,14 +366,14 @@ export default function Invoices() {
               <p className="text-xs text-emerald-700">Para emitir CFDI válidos ante el SAT, configura tu RFC y certificados en <strong>Configuración → Datos Fiscales</strong>.</p>
             </div>
             <div className="space-y-1">
-              <Label className="text-xs font-semibold text-gray-600 uppercase">Datos del Emisor (Tú)</Label>
+              <Label className="text-xs font-semibold text-muted-foreground uppercase">Datos del Emisor (Tú)</Label>
               <div className="grid grid-cols-2 gap-3">
                 <Input placeholder="RFC emisor *" value={form.emisorRfc} onChange={e => setForm(f => ({ ...f, emisorRfc: e.target.value }))} />
                 <Input placeholder="Nombre/Razón social emisor *" value={form.emisorNombre} onChange={e => setForm(f => ({ ...f, emisorNombre: e.target.value }))} />
               </div>
             </div>
             <div className="space-y-1">
-              <Label className="text-xs font-semibold text-gray-600 uppercase">Datos del Receptor (Cliente)</Label>
+              <Label className="text-xs font-semibold text-muted-foreground uppercase">Datos del Receptor (Cliente)</Label>
               <div className="grid grid-cols-2 gap-3">
                 <Input placeholder="RFC receptor *" value={form.receptorRfc} onChange={e => setForm(f => ({ ...f, receptorRfc: e.target.value }))} />
                 <Input placeholder="Nombre/Razón social receptor *" value={form.receptorNombre} onChange={e => setForm(f => ({ ...f, receptorNombre: e.target.value }))} />
@@ -396,13 +396,13 @@ export default function Invoices() {
             </div>
             {subtotalNum > 0 && (
               <div className="bg-gray-50 rounded-xl p-4 space-y-2">
-                <div className="flex justify-between text-sm text-gray-600">
+                <div className="flex justify-between text-sm text-muted-foreground">
                   <span>Subtotal</span><span>{formatCurrency(subtotalNum)}</span>
                 </div>
-                <div className="flex justify-between text-sm text-gray-600">
+                <div className="flex justify-between text-sm text-muted-foreground">
                   <span>IVA (16%)</span><span>{formatCurrency(ivaNum)}</span>
                 </div>
-                <div className="flex justify-between text-base font-bold text-gray-900 border-t border-gray-200 pt-2">
+                <div className="flex justify-between text-base font-bold text-foreground border-t border-gray-200 pt-2">
                   <span>Total</span><span className="text-emerald-600">{formatCurrency(totalNum)}</span>
                 </div>
               </div>
@@ -411,7 +411,7 @@ export default function Invoices() {
           <DialogFooter>
             <Button variant="outline" onClick={() => { setShowForm(false); resetForm(); }}>Cancelar</Button>
             <Button
-              className="bg-emerald-500 hover:bg-emerald-400 text-white"
+              className="bg-emerald-500 hover:bg-emerald-400 text-foreground"
               onClick={handleCreate}
               disabled={createMutation.isPending}
             >

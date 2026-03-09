@@ -87,10 +87,10 @@ export default function Welcome() {
             <CheckCircle2 className="w-4 h-4 text-emerald-400" />
             <span className="text-emerald-400 text-sm font-medium">Cuenta aprobada</span>
           </div>
-          <h1 className="text-4xl font-bold text-white mb-3">
+          <h1 className="text-4xl font-bold text-foreground mb-3">
             ¡Hola, {firstName}! 👋
           </h1>
-          <p className="text-slate-400 text-lg max-w-xl mx-auto">
+          <p className="text-muted-foreground text-lg max-w-xl mx-auto">
             Tu cuenta en <span className="text-emerald-400 font-semibold">KobraPay</span> está lista.
             Sigue estos pasos para empezar a cobrar hoy mismo.
           </p>
@@ -101,7 +101,7 @@ export default function Welcome() {
           {STEPS.map((step, i) => (
             <div
               key={i}
-              className="bg-white/5 border border-white/10 rounded-2xl p-5 flex items-center gap-5 hover:bg-white/8 transition-colors"
+              className="bg-white/5 border border-border rounded-2xl p-5 flex items-center gap-5 hover:bg-white/8 transition-colors"
             >
               <div className="flex-shrink-0">
                 <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${step.color}`}>
@@ -111,15 +111,15 @@ export default function Welcome() {
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1">
                   <span className="text-xs text-slate-500 font-medium">Paso {i + 1}</span>
-                  <span className="text-xs bg-slate-700 text-slate-300 rounded-full px-2 py-0.5">{step.time}</span>
+                  <span className="text-xs bg-slate-700 text-muted-foreground rounded-full px-2 py-0.5">{step.time}</span>
                 </div>
-                <h3 className="text-white font-semibold text-base">{step.title}</h3>
-                <p className="text-slate-400 text-sm mt-0.5">{step.description}</p>
+                <h3 className="text-foreground font-semibold text-base">{step.title}</h3>
+                <p className="text-muted-foreground text-sm mt-0.5">{step.description}</p>
               </div>
               <Button
                 variant="outline"
                 size="sm"
-                className="flex-shrink-0 border-white/20 text-white hover:bg-white/10 bg-transparent"
+                className="flex-shrink-0 border-border text-foreground hover:bg-white/10 bg-transparent"
                 onClick={() => handleGoTo(step.href)}
               >
                 {step.action}
@@ -130,15 +130,15 @@ export default function Welcome() {
         </div>
 
         {/* Features */}
-        <div className="bg-white/5 border border-white/10 rounded-2xl p-5 mb-8">
-          <p className="text-slate-400 text-sm font-medium mb-4">Lo que tienes disponible desde hoy:</p>
+        <div className="bg-white/5 border border-border rounded-2xl p-5 mb-8">
+          <p className="text-muted-foreground text-sm font-medium mb-4">Lo que tienes disponible desde hoy:</p>
           <div className="grid grid-cols-2 gap-3">
             {FEATURES.map((f, i) => (
               <div key={i} className="flex items-center gap-2.5">
                 <div className="w-7 h-7 rounded-lg bg-emerald-500/10 flex items-center justify-center flex-shrink-0">
                   <f.icon className="w-3.5 h-3.5 text-emerald-400" />
                 </div>
-                <span className="text-slate-300 text-sm">{f.label}</span>
+                <span className="text-muted-foreground text-sm">{f.label}</span>
               </div>
             ))}
           </div>
@@ -148,7 +148,7 @@ export default function Welcome() {
         <div className="text-center">
           <Button
             size="lg"
-            className="bg-emerald-500 hover:bg-emerald-600 text-white font-semibold px-10 py-3 rounded-xl text-base"
+            className="bg-emerald-500 hover:bg-emerald-600 text-foreground font-semibold px-10 py-3 rounded-xl text-base"
             onClick={handleStart}
             disabled={markWelcomeShown.isPending}
           >

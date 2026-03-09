@@ -65,8 +65,8 @@ export default function SecurityAudit() {
           <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mb-4">
             <Lock className="w-10 h-10 text-red-500" />
           </div>
-          <h2 className="text-xl font-bold text-gray-900 mb-2">Acceso Restringido</h2>
-          <p className="text-gray-500 max-w-sm">
+          <h2 className="text-xl font-bold text-foreground mb-2">Acceso Restringido</h2>
+          <p className="text-muted-foreground max-w-sm">
             Esta sección es exclusiva del administrador de la plataforma KobraPay. No tienes permisos para acceder a esta área.
           </p>
           <Link href="/dashboard" className="mt-6 text-sm text-emerald-600 hover:underline">
@@ -86,10 +86,10 @@ export default function SecurityAudit() {
             <Shield className="w-5 h-5 text-emerald-600" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Centro de Seguridad</h1>
-            <p className="text-sm text-gray-500">Panel exclusivo del superadmin — acceso total a la plataforma</p>
+            <h1 className="text-2xl font-bold text-foreground">Centro de Seguridad</h1>
+            <p className="text-sm text-muted-foreground">Panel exclusivo del superadmin — acceso total a la plataforma</p>
           </div>
-          <Badge className="ml-auto bg-emerald-500 text-white">Superadmin</Badge>
+          <Badge className="ml-auto bg-emerald-500 text-foreground">Superadmin</Badge>
         </div>
 
         {/* Platform Stats */}
@@ -108,7 +108,7 @@ export default function SecurityAudit() {
                     <Icon className={`w-5 h-5 ${color}`} />
                   </div>
                   <div>
-                    <p className="text-xs text-gray-500">{label}</p>
+                    <p className="text-xs text-muted-foreground">{label}</p>
                     <p className={`text-lg font-bold ${color}`}>{value}</p>
                   </div>
                 </CardContent>
@@ -123,7 +123,7 @@ export default function SecurityAudit() {
             {[
               { label: "Peticiones (24h)", value: secStats.total, icon: Activity, color: "text-blue-600", bg: "bg-blue-50" },
               { label: "Advertencias (24h)", value: secStats.warnings, icon: AlertTriangle, color: "text-yellow-600", bg: "bg-yellow-50" },
-              { label: "Alertas críticas", value: secStats.critical, icon: AlertTriangle, color: secStats.critical > 0 ? "text-red-600" : "text-gray-400", bg: secStats.critical > 0 ? "bg-red-50" : "bg-gray-50" },
+              { label: "Alertas críticas", value: secStats.critical, icon: AlertTriangle, color: secStats.critical > 0 ? "text-red-600" : "text-muted-foreground", bg: secStats.critical > 0 ? "bg-red-50" : "bg-gray-50" },
               { label: "IPs sospechosas", value: secStats.blockedIps, icon: Shield, color: secStats.blockedIps > 0 ? "text-red-600" : "text-emerald-600", bg: secStats.blockedIps > 0 ? "bg-red-50" : "bg-emerald-50" },
             ].map(({ label, value, icon: Icon, color, bg }) => (
               <Card key={label} className="border-0 shadow-sm">
@@ -132,7 +132,7 @@ export default function SecurityAudit() {
                     <Icon className={`w-5 h-5 ${color}`} />
                   </div>
                   <div>
-                    <p className="text-xs text-gray-500">{label}</p>
+                    <p className="text-xs text-muted-foreground">{label}</p>
                     <p className={`text-lg font-bold ${color}`}>{value}</p>
                   </div>
                 </CardContent>
@@ -162,8 +162,8 @@ export default function SecurityAudit() {
                 <div key={label} className="flex items-start gap-3 p-3 bg-gray-50 rounded-xl">
                   <CheckCircle2 className="w-4 h-4 text-emerald-500 flex-shrink-0 mt-0.5" />
                   <div>
-                    <p className="text-sm font-medium text-gray-800">{label}</p>
-                    <p className="text-xs text-gray-500">{desc}</p>
+                    <p className="text-sm font-medium text-foreground">{label}</p>
+                    <p className="text-xs text-muted-foreground">{desc}</p>
                   </div>
                 </div>
               ))}
@@ -185,23 +185,23 @@ export default function SecurityAudit() {
                 <table className="w-full">
                   <thead className="sticky top-0 bg-gray-50">
                     <tr>
-                      <th className="text-left text-xs font-semibold text-gray-500 px-4 py-2">Usuario</th>
-                      <th className="text-left text-xs font-semibold text-gray-500 px-2 py-2">Rol</th>
-                      <th className="text-center text-xs font-semibold text-gray-500 px-2 py-2">Estado</th>
+                      <th className="text-left text-xs font-semibold text-muted-foreground px-4 py-2">Usuario</th>
+                      <th className="text-left text-xs font-semibold text-muted-foreground px-2 py-2">Rol</th>
+                      <th className="text-center text-xs font-semibold text-muted-foreground px-2 py-2">Estado</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-50">
                     {allUsers?.map((u) => (
                       <tr key={u.id} className="hover:bg-gray-50">
                         <td className="px-4 py-2.5">
-                          <p className="text-sm font-medium text-gray-800 truncate max-w-[160px]">{u.name || "Sin nombre"}</p>
-                          <p className="text-xs text-gray-400 truncate max-w-[160px]">{u.email}</p>
+                          <p className="text-sm font-medium text-foreground truncate max-w-[160px]">{u.name || "Sin nombre"}</p>
+                          <p className="text-xs text-muted-foreground truncate max-w-[160px]">{u.email}</p>
                         </td>
                         <td className="px-2 py-2.5">
                           <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
                             u.role === "superadmin" ? "bg-purple-100 text-purple-700" :
                             u.role === "admin" ? "bg-blue-100 text-blue-700" :
-                            "bg-gray-100 text-gray-600"
+                            "bg-gray-100 text-muted-foreground"
                           }`}>
                             {u.role}
                           </span>
@@ -241,25 +241,25 @@ export default function SecurityAudit() {
                   <table className="w-full">
                     <thead className="sticky top-0 bg-gray-50">
                       <tr>
-                        <th className="text-left text-xs font-semibold text-gray-500 px-4 py-2">Hora</th>
-                        <th className="text-left text-xs font-semibold text-gray-500 px-2 py-2">Método</th>
-                        <th className="text-left text-xs font-semibold text-gray-500 px-2 py-2">Ruta</th>
-                        <th className="text-center text-xs font-semibold text-gray-500 px-2 py-2">Código</th>
+                        <th className="text-left text-xs font-semibold text-muted-foreground px-4 py-2">Hora</th>
+                        <th className="text-left text-xs font-semibold text-muted-foreground px-2 py-2">Método</th>
+                        <th className="text-left text-xs font-semibold text-muted-foreground px-2 py-2">Ruta</th>
+                        <th className="text-center text-xs font-semibold text-muted-foreground px-2 py-2">Código</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-50">
                       {auditLogs.map((log, i) => (
                         <tr key={i} className={`hover:bg-gray-50 ${log.statusCode && log.statusCode >= 400 ? "bg-red-50/30" : ""}`}>
-                          <td className="px-4 py-2 text-xs text-gray-500">{formatTime((log as any).timestamp || (log as any).createdAt?.toISOString?.() || String((log as any).createdAt))}</td>
+                          <td className="px-4 py-2 text-xs text-muted-foreground">{formatTime((log as any).timestamp || (log as any).createdAt?.toISOString?.() || String((log as any).createdAt))}</td>
                           <td className="px-2 py-2">
-                            <span className={`text-xs px-1.5 py-0.5 rounded font-mono font-medium ${METHOD_COLORS[log.action] || "bg-gray-100 text-gray-600"}`}>
+                            <span className={`text-xs px-1.5 py-0.5 rounded font-mono font-medium ${METHOD_COLORS[log.action] || "bg-gray-100 text-muted-foreground"}`}>
                               {log.action}
                             </span>
                           </td>
-                          <td className="px-2 py-2 text-xs text-gray-600 font-mono truncate max-w-[140px]">{log.resource}</td>
+                          <td className="px-2 py-2 text-xs text-muted-foreground font-mono truncate max-w-[140px]">{log.resource}</td>
                           <td className="px-2 py-2 text-center">
                             <span className={`text-xs font-mono font-medium ${
-                              !log.statusCode ? "text-gray-400" :
+                              !log.statusCode ? "text-muted-foreground" :
                               log.statusCode < 300 ? "text-green-600" :
                               log.statusCode < 400 ? "text-yellow-600" :
                               "text-red-600"
@@ -272,7 +272,7 @@ export default function SecurityAudit() {
                     </tbody>
                   </table>
                 ) : (
-                  <div className="p-8 text-center text-gray-400 text-sm">
+                  <div className="p-8 text-center text-muted-foreground text-sm">
                     No hay registros de auditoría aún
                   </div>
                 )}

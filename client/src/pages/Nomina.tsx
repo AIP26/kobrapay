@@ -203,7 +203,7 @@ export default function Nomina() {
                 <Label>Fecha fin</Label>
                 <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
               </div>
-              <Button onClick={handleCalculate} className="gap-2 bg-blue-600 hover:bg-blue-700 text-white">
+              <Button onClick={handleCalculate} className="gap-2 bg-blue-600 hover:bg-blue-700 text-foreground">
                 <Calculator className="w-4 h-4" /> Calcular Nómina
               </Button>
             </div>

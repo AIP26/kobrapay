@@ -201,7 +201,7 @@ function PaymentForm({ token }: { token: string }) {
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
           <Loader2 className="w-10 h-10 animate-spin text-blue-500 mx-auto mb-3" />
-          <p className="text-gray-500 text-sm">Cargando información del pago...</p>
+          <p className="text-muted-foreground text-sm">Cargando información del pago...</p>
         </div>
       </div>
     );
@@ -230,7 +230,7 @@ function PaymentForm({ token }: { token: string }) {
 
   if (linkData.status === "cancelled") {
     return (
-      <StatusPage icon={<XCircle className="w-12 h-12 text-gray-400" />} title="Enlace cancelado"
+      <StatusPage icon={<XCircle className="w-12 h-12 text-muted-foreground" />} title="Enlace cancelado"
         message="Este enlace de pago fue cancelado por el vendedor." color="gray" />
     );
   }
@@ -572,25 +572,25 @@ function PaymentForm({ token }: { token: string }) {
             <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-5">
               <CheckCircle2 className="w-12 h-12 text-green-500" />
             </div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-1">¡Pago exitoso!</h2>
-            <p className="text-gray-500 text-sm mb-6">Tu pago fue procesado correctamente.</p>
+            <h2 className="text-2xl font-bold text-foreground mb-1">¡Pago exitoso!</h2>
+            <p className="text-muted-foreground text-sm mb-6">Tu pago fue procesado correctamente.</p>
             <div className="bg-gray-50 rounded-xl p-4 text-left space-y-3 mb-5">
               <div className="flex justify-between text-sm">
-                <span className="text-gray-500">Negocio</span>
+                <span className="text-muted-foreground">Negocio</span>
                 <span className="font-semibold">{successData.businessName}</span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-gray-500">Concepto</span>
+                <span className="text-muted-foreground">Concepto</span>
                 <span className="font-semibold text-right max-w-[200px]">{successData.description}</span>
               </div>
               <div className="flex justify-between border-t pt-3">
-                <span className="text-gray-700 font-medium">Total pagado</span>
+                <span className="text-foreground font-medium">Total pagado</span>
                 <span className="text-2xl font-bold text-green-600">
                   {formatMXN(successData.amount)}
                 </span>
               </div>
             </div>
-            <p className="text-xs text-gray-400">Recibo enviado a <strong>{successData.email}</strong></p>
+            <p className="text-xs text-muted-foreground">Recibo enviado a <strong>{successData.email}</strong></p>
           </div>
         </div>
         <PageFooter lang={lang} />
@@ -608,7 +608,7 @@ function PaymentForm({ token }: { token: string }) {
         <div className="w-full max-w-2xl">
           <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
             {/* Banner del pago */}
-            <div className="bg-gradient-to-r from-blue-600 to-blue-700 p-6 text-white">
+            <div className="bg-gradient-to-r from-blue-600 to-blue-700 p-6 text-foreground">
               <div className="flex items-center gap-4">
                 <div className="w-14 h-14 bg-white/20 rounded-full flex items-center justify-center text-2xl font-bold">
                   {businessName.charAt(0).toUpperCase()}
@@ -628,7 +628,7 @@ function PaymentForm({ token }: { token: string }) {
               {/* PASO 1: Información */}
               {step === "info" && (
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-800 mb-4">{lang === "en" ? "Payment information" : "Información del pago"}</h3>
+                  <h3 className="text-lg font-semibold text-foreground mb-4">{lang === "en" ? "Payment information" : "Información del pago"}</h3>
                   <div className="space-y-2 mb-5">
                     <InfoRow label={lang === "en" ? "To" : "Para"} value={linkData.clientName} />
                     <InfoRow label={lang === "en" ? "Concept" : "Concepto"} value={linkData.description} />
@@ -642,7 +642,7 @@ function PaymentForm({ token }: { token: string }) {
                     </div>
                   )}
                   <Button
-                    className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 text-base font-semibold rounded-xl"
+                    className="w-full bg-blue-600 hover:bg-blue-700 text-foreground py-3 text-base font-semibold rounded-xl"
                     onClick={() => setStep("customer")}
                   >
                     {lang === "en" ? "Continue" : "Continuar"} <ChevronRight className="w-5 h-5 ml-1" />
@@ -653,35 +653,35 @@ function PaymentForm({ token }: { token: string }) {
               {/* PASO 2: Datos del cliente */}
               {step === "customer" && (
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-800 mb-4">{lang === "en" ? "Your information" : "Tus datos"}</h3>
+                  <h3 className="text-lg font-semibold text-foreground mb-4">{lang === "en" ? "Your information" : "Tus datos"}</h3>
                   <div className="grid grid-cols-2 gap-4 mb-4">
                     <div>
-                      <Label className="text-gray-600 text-sm mb-1 block">{lang === "en" ? "First name" : "Nombre(s)"}</Label>
+                      <Label className="text-muted-foreground text-sm mb-1 block">{lang === "en" ? "First name" : "Nombre(s)"}</Label>
                       <div className="relative">
-                        <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                        <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                         <Input className="pl-9" placeholder={lang === "en" ? "John" : "Juan"} value={customer.firstName}
                           onChange={(e) => setCustomer({ ...customer, firstName: e.target.value })} />
                       </div>
                     </div>
                     <div>
-                      <Label className="text-gray-600 text-sm mb-1 block">{lang === "en" ? "Last name" : "Apellidos"}</Label>
+                      <Label className="text-muted-foreground text-sm mb-1 block">{lang === "en" ? "Last name" : "Apellidos"}</Label>
                       <div className="relative">
-                        <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                        <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                         <Input className="pl-9" placeholder={lang === "en" ? "Smith" : "García López"} value={customer.lastName}
                           onChange={(e) => setCustomer({ ...customer, lastName: e.target.value })} />
                       </div>
                     </div>
                   </div>
                   <div className="mb-4">
-                    <Label className="text-gray-600 text-sm mb-1 block">{lang === "en" ? "Email" : "Correo electrónico"}</Label>
+                    <Label className="text-muted-foreground text-sm mb-1 block">{lang === "en" ? "Email" : "Correo electrónico"}</Label>
                     <div className="relative">
-                      <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                      <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                       <Input className="pl-9" type="email" placeholder={lang === "en" ? "email@example.com" : "correo@ejemplo.com"} value={customer.email}
                         onChange={(e) => setCustomer({ ...customer, email: e.target.value })} />
                     </div>
                   </div>
                   <div className="mb-6">
-                    <Label className="text-gray-600 text-sm mb-1 block">{lang === "en" ? "Phone" : "Teléfono"}</Label>
+                    <Label className="text-muted-foreground text-sm mb-1 block">{lang === "en" ? "Phone" : "Teléfono"}</Label>
                     <div className="border border-gray-200 rounded-xl px-3 py-2.5 bg-white focus-within:border-blue-400 focus-within:ring-2 focus-within:ring-blue-100 transition-all">
                       <PhoneInput
                         international
@@ -698,7 +698,7 @@ function PaymentForm({ token }: { token: string }) {
                       <ArrowLeft className="w-4 h-4 mr-1" /> {lang === "en" ? "Back" : "Atrás"}
                     </Button>
                     <Button
-                      className="flex-[2] bg-blue-600 hover:bg-blue-700 text-white py-3 font-semibold rounded-xl"
+                      className="flex-[2] bg-blue-600 hover:bg-blue-700 text-foreground py-3 font-semibold rounded-xl"
                       disabled={!customer.firstName || !customer.email}
                       onClick={() => setStep(getNextStep("customer"))}
                     >
@@ -711,8 +711,8 @@ function PaymentForm({ token }: { token: string }) {
               {/* PASO 3: OTP */}
               {step === "otp" && (
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-800 mb-2">Verificación de identidad</h3>
-                  <p className="text-gray-500 text-sm mb-6">
+                  <h3 className="text-lg font-semibold text-foreground mb-2">Verificación de identidad</h3>
+                  <p className="text-muted-foreground text-sm mb-6">
                     Enviaremos un código a <strong>{customer.email}</strong>
                   </p>
                   {!otpSent ? (
@@ -720,7 +720,7 @@ function PaymentForm({ token }: { token: string }) {
                       <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
                         <Mail className="w-8 h-8 text-blue-600" />
                       </div>
-                      <Button className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-xl"
+                      <Button className="bg-blue-600 hover:bg-blue-700 text-foreground px-8 py-3 rounded-xl"
                         onClick={handleSendOtp} disabled={sendOtp.isPending}>
                         {sendOtp.isPending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Mail className="w-4 h-4 mr-2" />}
                         Enviar código
@@ -733,11 +733,11 @@ function PaymentForm({ token }: { token: string }) {
                     </div>
                   ) : (
                     <div>
-                      <Label className="text-gray-600 text-sm mb-2 block">Código de 6 dígitos</Label>
+                      <Label className="text-muted-foreground text-sm mb-2 block">Código de 6 dígitos</Label>
                       <Input className="text-center text-2xl tracking-widest font-mono mb-4" maxLength={6}
                         placeholder="000000" value={otpCode}
                         onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ""))} />
-                      <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl mb-3"
+                      <Button className="w-full bg-blue-600 hover:bg-blue-700 text-foreground py-3 rounded-xl mb-3"
                         onClick={handleVerifyOtp} disabled={otpCode.length !== 6 || verifyOtp.isPending}>
                         {verifyOtp.isPending && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
                         Verificar código
@@ -754,13 +754,13 @@ function PaymentForm({ token }: { token: string }) {
               {/* PASO 4: Selfie */}
               {step === "selfie" && (
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-800 mb-2">Verificación facial</h3>
-                  <p className="text-gray-500 text-sm mb-4">Toma una selfie con buena iluminación para verificar tu identidad.</p>
+                  <h3 className="text-lg font-semibold text-foreground mb-2">Verificación facial</h3>
+                  <p className="text-muted-foreground text-sm mb-4">Toma una selfie con buena iluminación para verificar tu identidad.</p>
                   {selfieVerified ? (
                     <div className="text-center py-4">
                       <CheckCircle2 className="w-16 h-16 text-green-500 mx-auto mb-3" />
                       <p className="text-green-700 font-semibold">¡Identidad verificada!</p>
-                      <p className="text-gray-400 text-sm">Coincidencia: {faceMatchScore.toFixed(0)}%</p>
+                      <p className="text-muted-foreground text-sm">Coincidencia: {faceMatchScore.toFixed(0)}%</p>
                     </div>
                   ) : selfiePreview ? (
                     <div className="text-center py-4">
@@ -775,8 +775,8 @@ function PaymentForm({ token }: { token: string }) {
                       <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
                         <Camera className="w-10 h-10 text-blue-600" />
                       </div>
-                      <p className="text-gray-500 text-sm mb-4">Asegúrate de tener buena iluminación y que tu rostro sea visible.</p>
-                      <Button className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-xl" onClick={startCamera}>
+                      <p className="text-muted-foreground text-sm mb-4">Asegúrate de tener buena iluminación y que tu rostro sea visible.</p>
+                      <Button className="bg-blue-600 hover:bg-blue-700 text-foreground px-8 py-3 rounded-xl" onClick={startCamera}>
                         <Camera className="w-4 h-4 mr-2" /> Activar cámara
                       </Button>
                     </div>
@@ -795,13 +795,13 @@ function PaymentForm({ token }: { token: string }) {
                         </div>
                       </div>
                       <canvas ref={canvasRef} style={{ display: "none" }} />
-                      <p className="text-gray-400 text-xs mb-4">Centra tu rostro en el óvalo y toma la foto</p>
+                      <p className="text-muted-foreground text-xs mb-4">Centra tu rostro en el óvalo y toma la foto</p>
                       <div className="flex gap-3 justify-center">
                         <Button variant="outline" onClick={() => {
                           if (streamRef.current) streamRef.current.getTracks().forEach((t) => t.stop());
                           setCameraActive(false);
                         }}>Cancelar</Button>
-                        <Button className="bg-blue-600 hover:bg-blue-700 text-white px-6 rounded-xl"
+                        <Button className="bg-blue-600 hover:bg-blue-700 text-foreground px-6 rounded-xl"
                           onClick={takeSelfie} disabled={uploadSelfie.isPending}>
                           {uploadSelfie.isPending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Camera className="w-4 h-4 mr-2" />}
                           Tomar foto
@@ -815,8 +815,8 @@ function PaymentForm({ token }: { token: string }) {
               {/* PASO 5: Firma digital */}
               {step === "signature" && (
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-800 mb-2">Firma digital</h3>
-                  <p className="text-gray-500 text-sm mb-4">Firma con tu dedo (celular) o mouse (computadora) en el recuadro de abajo.</p>
+                  <h3 className="text-lg font-semibold text-foreground mb-2">Firma digital</h3>
+                  <p className="text-muted-foreground text-sm mb-4">Firma con tu dedo (celular) o mouse (computadora) en el recuadro de abajo.</p>
                   {signatureConfirmed ? (
                     <div className="text-center py-4">
                       <CheckCircle2 className="w-16 h-16 text-green-500 mx-auto mb-3" />
@@ -830,8 +830,8 @@ function PaymentForm({ token }: { token: string }) {
                       >
                         {!hasDrawn && (
                           <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                            <PenLine className="w-8 h-8 text-gray-300 mb-2" />
-                            <p className="text-gray-300 text-sm">Dibuja tu firma aquí</p>
+                            <PenLine className="w-8 h-8 text-muted-foreground mb-2" />
+                            <p className="text-muted-foreground text-sm">Dibuja tu firma aquí</p>
                           </div>
                         )}
                         <canvas
@@ -848,7 +848,7 @@ function PaymentForm({ token }: { token: string }) {
                           onTouchEnd={stopDraw}
                         />
                       </div>
-                      <p className="text-gray-400 text-xs text-center mb-3">
+                      <p className="text-muted-foreground text-xs text-center mb-3">
                         {hasDrawn ? "¡Firma lista! Presiona \"Confirmar firma\" para continuar." : "Usa tu dedo o mouse para firmar"}
                       </p>
                       <div className="bg-red-50 border border-red-200 rounded-xl p-3 mb-4">
@@ -859,7 +859,7 @@ function PaymentForm({ token }: { token: string }) {
                           <Trash2 className="w-4 h-4 mr-1" /> Limpiar
                         </Button>
                         <Button
-                          className="flex-[2] bg-green-600 hover:bg-green-700 text-white py-3 rounded-xl font-semibold"
+                          className="flex-[2] bg-green-600 hover:bg-green-700 text-foreground py-3 rounded-xl font-semibold"
                           disabled={!hasDrawn || uploadSignature.isPending}
                           onClick={confirmSignature}
                         >
@@ -875,20 +875,20 @@ function PaymentForm({ token }: { token: string }) {
               {/* PASO 6: Carga de identificación */}
               {step === "id_upload" && (
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-800 mb-2">Cargar identificación</h3>
-                  <p className="text-gray-500 text-sm mb-4">Sube una foto de tu INE, pasaporte o identificación oficial (JPG, PNG o PDF).</p>
+                  <h3 className="text-lg font-semibold text-foreground mb-2">Cargar identificación</h3>
+                  <p className="text-muted-foreground text-sm mb-4">Sube una foto de tu INE, pasaporte o identificación oficial (JPG, PNG o PDF).</p>
                   {idDocumentConfirmed ? (
                     <div className="text-center py-4">
                       <CheckCircle2 className="w-16 h-16 text-green-500 mx-auto mb-3" />
                       <p className="text-green-700 font-semibold">¡Identificación cargada!</p>
-                      <p className="text-gray-400 text-sm">{idFileName}</p>
+                      <p className="text-muted-foreground text-sm">{idFileName}</p>
                     </div>
                   ) : (
                     <div>
                       <label className="block border-2 border-dashed border-gray-300 rounded-xl p-8 text-center cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-all mb-4">
-                        <Upload className="w-10 h-10 text-gray-400 mx-auto mb-3" />
-                        <p className="text-gray-600 font-medium mb-1">{idFileName || "Haz clic para cargar tu ID"}</p>
-                        <p className="text-gray-400 text-xs">(JPG, PNG, PDF — máx. 10 MB)</p>
+                        <Upload className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
+                        <p className="text-muted-foreground font-medium mb-1">{idFileName || "Haz clic para cargar tu ID"}</p>
+                        <p className="text-muted-foreground text-xs">(JPG, PNG, PDF — máx. 10 MB)</p>
                         <input
                           type="file"
                           accept="image/jpeg,image/png,application/pdf"
@@ -929,11 +929,11 @@ function PaymentForm({ token }: { token: string }) {
               {/* PASO 7: Pago con tarjeta */}
               {step === "payment" && (
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-800 mb-4">Método de pago</h3>
+                  <h3 className="text-lg font-semibold text-foreground mb-4">Método de pago</h3>
                   <div className="bg-gray-50 rounded-xl p-4 mb-5">
-                    <p className="text-gray-400 text-xs mb-1">Total a pagar</p>
-                    <p className="text-3xl font-bold text-gray-900">{formatMXN(amount)} <span className="text-lg text-gray-400">{currency}</span></p>
-                    {usdEquivalent && <p className="text-gray-400 text-xs mt-1">≈ USD ${usdEquivalent}</p>}
+                    <p className="text-muted-foreground text-xs mb-1">Total a pagar</p>
+                    <p className="text-3xl font-bold text-foreground">{formatMXN(amount)} <span className="text-lg text-muted-foreground">{currency}</span></p>
+                    {usdEquivalent && <p className="text-muted-foreground text-xs mt-1">≈ USD ${usdEquivalent}</p>}
                   </div>
 
                   {/* Apple Pay / Google Pay — solo mostrar si Stripe confirmó que hay wallet disponible */}
@@ -953,7 +953,7 @@ function PaymentForm({ token }: { token: string }) {
                       />
                       <div className="flex items-center gap-3 my-4">
                         <div className="flex-1 h-px bg-gray-200" />
-                        <span className="text-gray-400 text-xs font-medium">O paga con tarjeta</span>
+                        <span className="text-muted-foreground text-xs font-medium">O paga con tarjeta</span>
                         <div className="flex-1 h-px bg-gray-200" />
                       </div>
                     </div>
@@ -976,14 +976,14 @@ function PaymentForm({ token }: { token: string }) {
                             <div className="flex flex-wrap gap-2 mb-3">
                               <button type="button" onClick={() => { setTipAmount(0); setTipCustom(""); }}
                                 className={`px-3 py-1.5 rounded-lg text-sm font-medium border transition-all ${
-                                  tipAmount === 0 && !tipCustom ? "bg-amber-500 text-white border-amber-500" : "bg-white text-gray-600 border-gray-200 hover:border-amber-300"
+                                  tipAmount === 0 && !tipCustom ? "bg-amber-500 text-foreground border-amber-500" : "bg-white text-muted-foreground border-gray-200 hover:border-amber-300"
                                 }`}>Sin propina</button>
                               {suggestions.map(pct => {
                                 const tipVal = Math.round(baseAmt * pct / 100 * 100) / 100;
                                 return (
                                   <button key={pct} type="button" onClick={() => { setTipAmount(tipVal); setTipCustom(""); }}
                                     className={`px-3 py-1.5 rounded-lg text-sm font-medium border transition-all ${
-                                      tipAmount === tipVal && !tipCustom ? "bg-amber-500 text-white border-amber-500" : "bg-white text-gray-600 border-gray-200 hover:border-amber-300"
+                                      tipAmount === tipVal && !tipCustom ? "bg-amber-500 text-foreground border-amber-500" : "bg-white text-muted-foreground border-gray-200 hover:border-amber-300"
                                     }`}>
                                     {pct}% (+{formatMXN(tipVal)})
                                   </button>
@@ -991,7 +991,7 @@ function PaymentForm({ token }: { token: string }) {
                               })}
                             </div>
                             <div className="flex items-center gap-2">
-                              <span className="text-xs text-gray-500">Otro monto:</span>
+                              <span className="text-xs text-muted-foreground">Otro monto:</span>
                               <input type="number" min="0" step="1" placeholder="$0.00" value={tipCustom}
                                 onChange={e => { setTipCustom(e.target.value); setTipAmount(0); }}
                                 className="border border-gray-200 rounded-lg px-3 py-1.5 text-sm w-28 focus:outline-none focus:border-amber-400" />
@@ -1012,15 +1012,15 @@ function PaymentForm({ token }: { token: string }) {
                         if (!opts || opts.length === 0) return null;
                         return (
                           <div className="mb-4">
-                            <p className="text-sm font-semibold text-gray-700 mb-2">Elige tu plan de pago</p>
+                            <p className="text-sm font-semibold text-foreground mb-2">Elige tu plan de pago</p>
                             <div className="grid grid-cols-2 gap-2">
                               <button
                                 type="button"
                                 onClick={() => setSelectedMsi(null)}
                                 className={`px-3 py-2.5 rounded-xl border text-sm font-medium transition-all ${
                                   selectedMsi === null
-                                    ? "bg-blue-600 text-white border-blue-600"
-                                    : "bg-white text-gray-700 border-gray-200 hover:border-blue-300"
+                                    ? "bg-blue-600 text-foreground border-blue-600"
+                                    : "bg-white text-foreground border-gray-200 hover:border-blue-300"
                                 }`}
                               >
                                 Pago de contado
@@ -1032,8 +1032,8 @@ function PaymentForm({ token }: { token: string }) {
                                   onClick={() => setSelectedMsi(m)}
                                   className={`px-3 py-2.5 rounded-xl border text-sm font-medium transition-all ${
                                     selectedMsi === m
-                                      ? "bg-blue-600 text-white border-blue-600"
-                                      : "bg-white text-gray-700 border-gray-200 hover:border-blue-300"
+                                      ? "bg-blue-600 text-foreground border-blue-600"
+                                      : "bg-white text-foreground border-gray-200 hover:border-blue-300"
                                   }`}
                                 >
                                   {m} meses sin intereses
@@ -1048,7 +1048,7 @@ function PaymentForm({ token }: { token: string }) {
                           </div>
                         );
                       })()}
-                      <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl mb-4 font-semibold"
+                      <Button className="w-full bg-blue-600 hover:bg-blue-700 text-foreground py-3 rounded-xl mb-4 font-semibold"
                         onClick={handleCreateIntent} disabled={processing}>
                         {processing ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <CreditCard className="w-4 h-4 mr-2" />}
                         Ingresar datos de tarjeta
@@ -1060,15 +1060,15 @@ function PaymentForm({ token }: { token: string }) {
                       {/* Selector de método — UI mejorada */}
                       {allowedPaymentMethods.length > 0 && (
                         <div className="mb-5">
-                          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Método de pago</p>
+                          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Método de pago</p>
                           <div className={`grid gap-2 mb-2`} style={{gridTemplateColumns: `repeat(${Math.min(allowedPaymentMethods.filter(m => ['card','oxxo','spei'].includes(m)).length, 3)}, 1fr)`}}>
                             {allowedPaymentMethods.includes('card') && (
                               <button type="button" onClick={() => setSelectedPayMethod('card')}
                                 className={`border-2 rounded-xl py-3 px-2 flex flex-col items-center justify-center gap-1 transition-all ${
                                   selectedPayMethod === 'card' ? 'border-blue-500 bg-blue-50 shadow-sm' : 'border-gray-200 bg-white hover:border-blue-300'
                                 }`}>
-                                <CreditCard className={`w-5 h-5 ${selectedPayMethod === 'card' ? 'text-blue-600' : 'text-gray-400'}`} />
-                                <span className={`text-xs font-bold ${selectedPayMethod === 'card' ? 'text-blue-700' : 'text-gray-500'}`}>Tarjeta</span>
+                                <CreditCard className={`w-5 h-5 ${selectedPayMethod === 'card' ? 'text-blue-600' : 'text-muted-foreground'}`} />
+                                <span className={`text-xs font-bold ${selectedPayMethod === 'card' ? 'text-blue-700' : 'text-muted-foreground'}`}>Tarjeta</span>
                                 {selectedPayMethod === 'card' && <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />}
                               </button>
                             )}
@@ -1078,7 +1078,7 @@ function PaymentForm({ token }: { token: string }) {
                                   selectedPayMethod === 'oxxo' ? 'border-orange-500 bg-orange-50 shadow-sm' : 'border-gray-200 bg-white hover:border-orange-300'
                                 }`}>
                                 <span className="text-xl leading-none">🏪</span>
-                                <span className={`text-xs font-bold ${selectedPayMethod === 'oxxo' ? 'text-orange-700' : 'text-gray-500'}`}>OXXO</span>
+                                <span className={`text-xs font-bold ${selectedPayMethod === 'oxxo' ? 'text-orange-700' : 'text-muted-foreground'}`}>OXXO</span>
                                 {selectedPayMethod === 'oxxo' && <span className="w-1.5 h-1.5 rounded-full bg-orange-500" />}
                               </button>
                             )}
@@ -1088,7 +1088,7 @@ function PaymentForm({ token }: { token: string }) {
                                   selectedPayMethod === 'spei' ? 'border-green-500 bg-green-50 shadow-sm' : 'border-gray-200 bg-white hover:border-green-300'
                                 }`}>
                                 <span className="text-xl leading-none">🏦</span>
-                                <span className={`text-xs font-bold ${selectedPayMethod === 'spei' ? 'text-green-700' : 'text-gray-500'}`}>SPEI</span>
+                                <span className={`text-xs font-bold ${selectedPayMethod === 'spei' ? 'text-green-700' : 'text-muted-foreground'}`}>SPEI</span>
                                 {selectedPayMethod === 'spei' && <span className="w-1.5 h-1.5 rounded-full bg-green-500" />}
                               </button>
                             )}
@@ -1101,20 +1101,20 @@ function PaymentForm({ token }: { token: string }) {
 
                       {selectedPayMethod === 'card' && <div className="space-y-4 mb-5">
                         <div>
-                          <Label className="text-gray-600 text-sm mb-1.5 block">Número de tarjeta</Label>
+                          <Label className="text-muted-foreground text-sm mb-1.5 block">Número de tarjeta</Label>
                           <div className="border border-gray-200 rounded-xl px-4 py-3.5 bg-white focus-within:border-blue-400 focus-within:ring-2 focus-within:ring-blue-100 transition-all">
                             <CardNumberElement options={STRIPE_STYLE} />
                           </div>
                         </div>
                         <div className="grid grid-cols-2 gap-4">
                           <div>
-                            <Label className="text-gray-600 text-sm mb-1.5 block">Vigencia</Label>
+                            <Label className="text-muted-foreground text-sm mb-1.5 block">Vigencia</Label>
                             <div className="border border-gray-200 rounded-xl px-4 py-3.5 bg-white focus-within:border-blue-400 focus-within:ring-2 focus-within:ring-blue-100 transition-all">
                               <CardExpiryElement options={STRIPE_STYLE} />
                             </div>
                           </div>
                           <div>
-                            <Label className="text-gray-600 text-sm mb-1.5 block">Código CVV</Label>
+                            <Label className="text-muted-foreground text-sm mb-1.5 block">Código CVV</Label>
                             <div className="border border-gray-200 rounded-xl px-4 py-3.5 bg-white focus-within:border-blue-400 focus-within:ring-2 focus-within:ring-blue-100 transition-all">
                               <CardCvcElement options={STRIPE_STYLE} />
                             </div>
@@ -1142,13 +1142,13 @@ function PaymentForm({ token }: { token: string }) {
                           <div className={`w-5 h-5 rounded border-2 flex-shrink-0 mt-0.5 flex items-center justify-center transition-colors ${
                             consentChecked ? 'bg-green-500 border-green-500' : 'border-gray-400 bg-white'
                           }`}>
-                            {consentChecked && <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}
+                            {consentChecked && <svg className="w-3 h-3 text-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}
                           </div>
                           <div>
-                            <p className="text-xs font-semibold text-gray-800 mb-0.5">
+                            <p className="text-xs font-semibold text-foreground mb-0.5">
                               {lang === 'en' ? 'I agree to the payment terms and conditions' : 'Acepto los términos y condiciones del pago'}
                             </p>
-                            <p className="text-xs text-gray-500">
+                            <p className="text-xs text-muted-foreground">
                               {lang === 'en'
                                 ? `I authorize the charge of ${formatMXN(amount + tipAmount)} ${currency} to my payment method. I understand this charge is non-refundable per the cancellation policy.`
                                 : `Autorizo el cargo de ${formatMXN(amount + tipAmount)} ${currency} a mi método de pago. Entiendo que este cargo no es reembolsable según la política de cancelación.`
@@ -1179,8 +1179,8 @@ function PaymentForm({ token }: { token: string }) {
                         <Button type="submit"
                           className={`w-full py-4 rounded-xl font-bold text-base transition-all ${
                             consentChecked
-                              ? 'bg-gray-900 hover:bg-gray-800 text-white'
-                              : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                              ? 'bg-card hover:bg-muted text-foreground'
+                              : 'bg-gray-300 text-muted-foreground cursor-not-allowed'
                           }`}
                           disabled={processing || !stripe || !consentChecked}>
                           {processing ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : <Lock className="w-5 h-5 mr-2" />}
@@ -1202,24 +1202,24 @@ function PaymentForm({ token }: { token: string }) {
                               <p className="text-base font-bold text-orange-800 mb-1">¡Voucher listo! Pago pendiente</p>
                               <p className="text-xs text-orange-700 mb-3">Ve a cualquier tienda OXXO, muestra este código en caja y paga en efectivo. Tienes <strong>2 días</strong> para pagar antes de que expire.</p>
                               <a href={oxxoVoucherUrl} target="_blank" rel="noopener noreferrer"
-                                className="inline-flex items-center justify-center gap-2 bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 px-6 rounded-xl text-sm w-full">
+                                className="inline-flex items-center justify-center gap-2 bg-orange-500 hover:bg-orange-600 text-foreground font-bold py-3 px-6 rounded-xl text-sm w-full">
                                 📄 Ver e imprimir voucher OXXO
                               </a>
                             </div>
                             <div className="bg-gray-50 rounded-xl p-3">
-                              <p className="text-xs font-semibold text-gray-700 mb-2">Pasos para pagar:</p>
-                              <ol className="text-xs text-gray-600 space-y-1">
+                              <p className="text-xs font-semibold text-foreground mb-2">Pasos para pagar:</p>
+                              <ol className="text-xs text-muted-foreground space-y-1">
                                 <li>1️⃣ Abre el voucher y muéstralo en caja del OXXO</li>
                                 <li>2️⃣ Indica que quieres pagar un "servicio" o "pago en línea"</li>
                                 <li>3️⃣ Entrega el efectivo al cajero</li>
                                 <li>4️⃣ Guarda tu ticket como comprobante</li>
                               </ol>
                             </div>
-                            <p className="text-xs text-center text-gray-400">La confirmación del pago es automática al realizarlo en OXXO</p>
+                            <p className="text-xs text-center text-muted-foreground">La confirmación del pago es automática al realizarlo en OXXO</p>
                           </div>
                         ) : (
                           <Button
-                            className="w-full bg-orange-500 hover:bg-orange-600 text-white py-4 rounded-xl font-bold text-base"
+                            className="w-full bg-orange-500 hover:bg-orange-600 text-foreground py-4 rounded-xl font-bold text-base"
                             disabled={processing || !stripe}
                             onClick={async () => {
                               if (!stripe) return;
@@ -1256,13 +1256,13 @@ function PaymentForm({ token }: { token: string }) {
                         {speiReference ? (
                           <div className="bg-white border border-green-300 rounded-xl p-4">
                             <p className="text-sm text-green-700 font-semibold mb-2">✅ CLABE generada</p>
-                            <p className="text-xs text-gray-500 mb-1">Transfiere exactamente <strong>{formatMXN(amount)} MXN</strong> a:</p>
-                            <div className="bg-gray-50 rounded-lg p-3 font-mono text-sm text-gray-800 break-all select-all">{speiReference}</div>
-                            <p className="text-xs text-gray-400 mt-2">Banco: STP (Sistema de Transferencias y Pagos)</p>
+                            <p className="text-xs text-muted-foreground mb-1">Transfiere exactamente <strong>{formatMXN(amount)} MXN</strong> a:</p>
+                            <div className="bg-gray-50 rounded-lg p-3 font-mono text-sm text-foreground break-all select-all">{speiReference}</div>
+                            <p className="text-xs text-muted-foreground mt-2">Banco: STP (Sistema de Transferencias y Pagos)</p>
                           </div>
                         ) : (
                           <Button
-                            className="w-full bg-green-600 hover:bg-green-700 text-white py-4 rounded-xl font-bold text-base"
+                            className="w-full bg-green-600 hover:bg-green-700 text-foreground py-4 rounded-xl font-bold text-base"
                             disabled={processing || !stripe}
                             onClick={async () => {
                               if (!stripe) return;
@@ -1316,8 +1316,8 @@ function StatusPage({ icon, title, message, color }: { icon: React.ReactNode; ti
         <div className={`w-20 h-20 ${bg[color] || "bg-gray-50"} rounded-full flex items-center justify-center mx-auto mb-4`}>
           {icon}
         </div>
-        <h2 className="text-xl font-bold text-gray-800 mb-2">{title}</h2>
-        <p className="text-gray-500 text-sm">{message}</p>
+        <h2 className="text-xl font-bold text-foreground mb-2">{title}</h2>
+        <p className="text-muted-foreground text-sm">{message}</p>
       </div>
     </div>
   );
@@ -1333,23 +1333,23 @@ function PageHeader({ businessName, lang, onToggleLang }: { businessName: string
           className="w-8 h-8 object-contain"
         />
         <div>
-          <p className="font-bold text-gray-800 text-sm leading-tight">KobraPay</p>
-          <p className="text-gray-400 text-xs">Cobra fácil, cobra global</p>
+          <p className="font-bold text-foreground text-sm leading-tight">KobraPay</p>
+          <p className="text-muted-foreground text-xs">Cobra fácil, cobra global</p>
         </div>
       </div>
       <div className="flex items-center gap-3">
         {onToggleLang && (
           <button
             onClick={onToggleLang}
-            className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-gray-200 text-xs font-semibold text-gray-600 hover:bg-gray-50 transition-colors"
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-gray-200 text-xs font-semibold text-muted-foreground hover:bg-gray-50 transition-colors"
           >
             <span className="text-base">{lang === "es" ? "🇲🇽" : "🇺🇸"}</span>
             {lang === "es" ? "ES" : "EN"}
           </button>
         )}
         <div className="text-right">
-          <p className="text-xs text-gray-400">{lang === "en" ? "Payment from" : "Cobro de"}</p>
-          <p className="text-sm font-semibold text-gray-700 truncate max-w-[160px]">{businessName}</p>
+          <p className="text-xs text-muted-foreground">{lang === "en" ? "Payment from" : "Cobro de"}</p>
+          <p className="text-sm font-semibold text-foreground truncate max-w-[160px]">{businessName}</p>
         </div>
       </div>
     </div>
@@ -1359,31 +1359,31 @@ function PageHeader({ businessName, lang, onToggleLang }: { businessName: string
 function PageFooter({ lang }: { lang?: "es" | "en" }) {
   return (
     <div className="py-6 px-4 text-center">
-      <p className="text-gray-400 text-xs mb-3">{lang === "en" ? "Payment securely processed with:" : "Pago procesado de manera segura con:"}</p>
+      <p className="text-muted-foreground text-xs mb-3">{lang === "en" ? "Payment securely processed with:" : "Pago procesado de manera segura con:"}</p>
       <div className="flex items-center justify-center gap-6 flex-wrap">
         <div className="flex items-center gap-1.5">
-          <div className="w-10 h-6 bg-blue-700 rounded text-white text-xs font-bold flex items-center justify-center">VISA</div>
-          <span className="text-gray-400 text-xs">Verified</span>
+          <div className="w-10 h-6 bg-blue-700 rounded text-foreground text-xs font-bold flex items-center justify-center">VISA</div>
+          <span className="text-muted-foreground text-xs">Verified</span>
         </div>
         <div className="flex items-center gap-1.5">
-          <div className="w-10 h-6 bg-red-600 rounded text-white text-xs font-bold flex items-center justify-center">MC</div>
-          <span className="text-gray-400 text-xs">SecureCode</span>
+          <div className="w-10 h-6 bg-red-600 rounded text-foreground text-xs font-bold flex items-center justify-center">MC</div>
+          <span className="text-muted-foreground text-xs">SecureCode</span>
         </div>
         <div className="flex items-center gap-1.5">
-          <div className="w-10 h-6 bg-blue-500 rounded text-white text-xs font-bold flex items-center justify-center">AMEX</div>
-          <span className="text-gray-400 text-xs">SafeKey</span>
+          <div className="w-10 h-6 bg-blue-500 rounded text-foreground text-xs font-bold flex items-center justify-center">AMEX</div>
+          <span className="text-muted-foreground text-xs">SafeKey</span>
         </div>
         <div className="flex items-center gap-1.5">
           <Lock className="w-4 h-4 text-green-500" />
-          <span className="text-gray-400 text-xs">SSL 256-bit</span>
+          <span className="text-muted-foreground text-xs">SSL 256-bit</span>
         </div>
       </div>
       <div className="flex items-center justify-center gap-4 mt-4 flex-wrap">
-        <a href="/legal" target="_blank" rel="noopener noreferrer" className="text-gray-400 text-xs hover:text-gray-600 underline underline-offset-2 transition-colors">{lang === "en" ? "Terms of Use" : "Términos de Uso"}</a>
-        <span className="text-gray-300 text-xs">·</span>
-        <a href="/privacidad" target="_blank" rel="noopener noreferrer" className="text-gray-400 text-xs hover:text-gray-600 underline underline-offset-2 transition-colors">{lang === "en" ? "Privacy Policy" : "Aviso de Privacidad"}</a>
-        <span className="text-gray-300 text-xs">·</span>
-        <span className="text-gray-400 text-xs">© {new Date().getFullYear()} KobraPay</span>
+        <a href="/legal" target="_blank" rel="noopener noreferrer" className="text-muted-foreground text-xs hover:text-muted-foreground underline underline-offset-2 transition-colors">{lang === "en" ? "Terms of Use" : "Términos de Uso"}</a>
+        <span className="text-muted-foreground text-xs">·</span>
+        <a href="/privacidad" target="_blank" rel="noopener noreferrer" className="text-muted-foreground text-xs hover:text-muted-foreground underline underline-offset-2 transition-colors">{lang === "en" ? "Privacy Policy" : "Aviso de Privacidad"}</a>
+        <span className="text-muted-foreground text-xs">·</span>
+        <span className="text-muted-foreground text-xs">© {new Date().getFullYear()} KobraPay</span>
       </div>
     </div>
   );
@@ -1392,8 +1392,8 @@ function PageFooter({ lang }: { lang?: "es" | "en" }) {
 function InfoRow({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex justify-between py-2 border-b border-gray-100 last:border-0">
-      <span className="text-gray-500 text-sm">{label}</span>
-      <span className="text-gray-800 font-medium text-sm text-right max-w-[200px]">{value}</span>
+      <span className="text-muted-foreground text-sm">{label}</span>
+      <span className="text-foreground font-medium text-sm text-right max-w-[200px]">{value}</span>
     </div>
   );
 }
@@ -1414,11 +1414,11 @@ function StepProgress({ step, requireOtp, requireSelfie, requireSignature, requi
       <div className="flex items-center justify-center gap-1 max-w-sm mx-auto">
         {steps.map((s, i) => (
           <div key={s.id} className="flex items-center gap-1">
-            <div className={`flex items-center gap-1.5 ${i <= currentIndex ? "text-blue-600" : "text-gray-300"}`}>
+            <div className={`flex items-center gap-1.5 ${i <= currentIndex ? "text-blue-600" : "text-muted-foreground"}`}>
               <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold border-2 ${
-                i < currentIndex ? "bg-blue-600 border-blue-600 text-white" :
+                i < currentIndex ? "bg-blue-600 border-blue-600 text-foreground" :
                 i === currentIndex ? "border-blue-600 text-blue-600 bg-white" :
-                "border-gray-200 text-gray-300 bg-white"
+                "border-gray-200 text-muted-foreground bg-white"
               }`}>
                 {i < currentIndex ? "✓" : i + 1}
               </div>
@@ -1439,7 +1439,7 @@ export default function PayPage() {
   if (!token) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <p className="text-gray-500">Token de pago inválido</p>
+        <p className="text-muted-foreground">Token de pago inválido</p>
       </div>
     );
   }

@@ -243,12 +243,12 @@ export default function POS() {
         <div className="flex-1 space-y-4 min-w-0">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-bold text-white">Punto de Venta</h1>
-              <p className="text-gray-400 text-sm">Selecciona productos o ingresa un cobro manual</p>
+              <h1 className="text-2xl font-bold text-foreground">Punto de Venta</h1>
+              <p className="text-muted-foreground text-sm">Selecciona productos o ingresa un cobro manual</p>
             </div>
             <Button
               variant="outline"
-              className="border-gray-600 text-gray-300 gap-2 hidden sm:flex"
+              className="border-gray-600 text-muted-foreground gap-2 hidden sm:flex"
               onClick={() => navigate("/dashboard/catalog")}
             >
               <Package className="w-4 h-4" /> Catálogo
@@ -256,16 +256,16 @@ export default function POS() {
           </div>
 
           <Tabs defaultValue="catalog">
-            <TabsList className="bg-[#1e2436] border border-gray-700">
+            <TabsList className="bg-[#1e2436] border border-border">
               <TabsTrigger
                 value="catalog"
-                className="data-[state=active]:bg-emerald-600 data-[state=active]:text-white text-gray-400 gap-2"
+                className="data-[state=active]:bg-emerald-600 data-[state=active]:text-foreground text-muted-foreground gap-2"
               >
                 <Package className="w-4 h-4" /> Productos
               </TabsTrigger>
               <TabsTrigger
                 value="manual"
-                className="data-[state=active]:bg-emerald-600 data-[state=active]:text-white text-gray-400 gap-2"
+                className="data-[state=active]:bg-emerald-600 data-[state=active]:text-foreground text-muted-foreground gap-2"
               >
                 <Keyboard className="w-4 h-4" /> Cobro manual
               </TabsTrigger>
@@ -274,12 +274,12 @@ export default function POS() {
             {/* ── Tab: Catálogo ── */}
             <TabsContent value="catalog" className="mt-4 space-y-4">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input
                   placeholder="Buscar producto..."
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  className="pl-9 bg-[#1e2436] border-gray-700 text-white placeholder:text-gray-500"
+                  className="pl-9 bg-[#1e2436] border-border text-foreground placeholder:text-muted-foreground"
                 />
               </div>
 
@@ -291,18 +291,18 @@ export default function POS() {
                 </div>
               ) : filtered.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-16 text-center">
-                  <Package className="w-14 h-14 text-gray-600 mb-3" />
-                  <p className="text-white font-semibold">
+                  <Package className="w-14 h-14 text-muted-foreground mb-3" />
+                  <p className="text-foreground font-semibold">
                     {search ? "Sin resultados" : "Sin productos en el catálogo"}
                   </p>
-                  <p className="text-gray-400 text-sm mt-1">
+                  <p className="text-muted-foreground text-sm mt-1">
                     {search
                       ? "Prueba con otro término."
                       : "Agrega productos en el módulo de Catálogo."}
                   </p>
                   {!search && (
                     <Button
-                      className="mt-4 bg-emerald-500 hover:bg-emerald-600 text-white gap-2"
+                      className="mt-4 bg-emerald-500 hover:bg-emerald-600 text-foreground gap-2"
                       onClick={() => navigate("/dashboard/catalog")}
                     >
                       <Plus className="w-4 h-4" /> Ir al Catálogo
@@ -321,10 +321,10 @@ export default function POS() {
                         disabled={outOfStock}
                         className={`relative bg-[#1e2436] rounded-xl overflow-hidden border text-left transition-all group ${
                           outOfStock
-                            ? "border-gray-700/30 opacity-50 cursor-not-allowed"
+                            ? "border-border/30 opacity-50 cursor-not-allowed"
                             : inCart
                             ? "border-emerald-500/60 hover:border-emerald-400"
-                            : "border-gray-700/50 hover:border-emerald-500/40"
+                            : "border-border/50 hover:border-emerald-500/40"
                         }`}
                       >
                         <div className="h-28 bg-[#151929] flex items-center justify-center overflow-hidden">
@@ -335,7 +335,7 @@ export default function POS() {
                               className="w-full h-full object-cover group-hover:scale-105 transition-transform"
                             />
                           ) : (
-                            <Package className="w-10 h-10 text-gray-600" />
+                            <Package className="w-10 h-10 text-muted-foreground" />
                           )}
                           {outOfStock && (
                             <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
@@ -344,14 +344,14 @@ export default function POS() {
                           )}
                         </div>
                         {inCart && (
-                          <div className="absolute top-2 right-2 bg-emerald-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                          <div className="absolute top-2 right-2 bg-emerald-500 text-foreground text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
                             {inCart.quantity}
                           </div>
                         )}
                         <div className="p-3">
-                          <p className="text-white text-sm font-semibold truncate">{product.name}</p>
+                          <p className="text-foreground text-sm font-semibold truncate">{product.name}</p>
                           {product.category && (
-                            <p className="text-gray-400 text-xs truncate">{product.category}</p>
+                            <p className="text-muted-foreground text-xs truncate">{product.category}</p>
                           )}
                           <p className="text-emerald-400 font-bold text-sm mt-1">
                             {formatPrice(parseFloat(product.price))}
@@ -361,7 +361,7 @@ export default function POS() {
                               className={`text-xs mt-0.5 ${
                                 product.stock <= product.lowStockAlert
                                   ? "text-amber-400"
-                                  : "text-gray-500"
+                                  : "text-muted-foreground"
                               }`}
                             >
                               Stock: {product.stock}
@@ -377,10 +377,10 @@ export default function POS() {
 
             {/* ── Tab: Cobro manual ── */}
             <TabsContent value="manual" className="mt-4">
-              <div className="bg-[#1e2436] rounded-xl p-6 border border-gray-700 max-w-md space-y-4">
+              <div className="bg-[#1e2436] rounded-xl p-6 border border-border max-w-md space-y-4">
                 <div>
-                  <p className="text-white font-semibold">Cobro rápido</p>
-                  <p className="text-gray-400 text-sm mt-0.5">
+                  <p className="text-foreground font-semibold">Cobro rápido</p>
+                  <p className="text-muted-foreground text-sm mt-0.5">
                     Genera un cobro sin usar el catálogo de productos.
                   </p>
                 </div>
@@ -388,9 +388,9 @@ export default function POS() {
                 {!manualCreatedLink ? (
                   <>
                     <div className="space-y-1">
-                      <Label className="text-gray-300">Monto (MXN) *</Label>
+                      <Label className="text-muted-foreground">Monto (MXN) *</Label>
                       <div className="relative">
-                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 font-semibold">$</span>
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-semibold">$</span>
                         <Input
                           type="number"
                           min="1"
@@ -398,40 +398,40 @@ export default function POS() {
                           placeholder="0.00"
                           value={manualAmount}
                           onChange={(e) => setManualAmount(e.target.value)}
-                          className="pl-7 bg-[#151929] border-gray-600 text-white text-xl font-bold h-12"
+                          className="pl-7 bg-[#151929] border-gray-600 text-foreground text-xl font-bold h-12"
                         />
                       </div>
                     </div>
                     <div className="space-y-1">
-                      <Label className="text-gray-300">Descripción *</Label>
+                      <Label className="text-muted-foreground">Descripción *</Label>
                       <Input
                         placeholder="Ej: Servicio de consultoría"
                         value={manualDescription}
                         onChange={(e) => setManualDescription(e.target.value)}
-                        className="bg-[#151929] border-gray-600 text-white"
+                        className="bg-[#151929] border-gray-600 text-foreground"
                       />
                     </div>
                     <div className="space-y-1">
-                      <Label className="text-gray-300">Email del cliente *</Label>
+                      <Label className="text-muted-foreground">Email del cliente *</Label>
                       <Input
                         type="email"
                         placeholder="cliente@email.com"
                         value={manualEmail}
                         onChange={(e) => setManualEmail(e.target.value)}
-                        className="bg-[#151929] border-gray-600 text-white"
+                        className="bg-[#151929] border-gray-600 text-foreground"
                       />
                     </div>
                     <div className="space-y-1">
-                      <Label className="text-gray-300">Nombre (opcional)</Label>
+                      <Label className="text-muted-foreground">Nombre (opcional)</Label>
                       <Input
                         placeholder="Nombre del cliente"
                         value={manualName}
                         onChange={(e) => setManualName(e.target.value)}
-                        className="bg-[#151929] border-gray-600 text-white"
+                        className="bg-[#151929] border-gray-600 text-foreground"
                       />
                     </div>
                     <Button
-                      className="w-full bg-emerald-500 hover:bg-emerald-600 text-white gap-2 h-11"
+                      className="w-full bg-emerald-500 hover:bg-emerald-600 text-foreground gap-2 h-11"
                       onClick={handleCreateManualLink}
                       disabled={manualCreating}
                     >
@@ -450,16 +450,16 @@ export default function POS() {
                       <div className="w-14 h-14 bg-emerald-500/20 rounded-full flex items-center justify-center mx-auto mb-2">
                         <CheckCircle className="w-8 h-8 text-emerald-400" />
                       </div>
-                      <p className="text-white font-bold text-lg">
+                      <p className="text-foreground font-bold text-lg">
                         {formatPrice(parseFloat(manualAmount))}
                       </p>
-                      <p className="text-gray-400 text-sm">{manualDescription}</p>
+                      <p className="text-muted-foreground text-sm">{manualDescription}</p>
                     </div>
                     <div className="bg-[#151929] rounded-xl p-3 flex items-center gap-2">
                       <p className="text-emerald-400 text-sm flex-1 truncate">{manualCreatedLink}</p>
                       <button
                         onClick={copyManualLink}
-                        className="shrink-0 text-gray-400 hover:text-white transition-colors"
+                        className="shrink-0 text-muted-foreground hover:text-foreground transition-colors"
                       >
                         {manualCopied ? (
                           <CheckCircle className="w-4 h-4 text-emerald-400" />
@@ -470,21 +470,21 @@ export default function POS() {
                     </div>
                     <div className="grid grid-cols-3 gap-2">
                       <Button
-                        className="bg-green-600 hover:bg-green-700 text-white gap-1 text-xs"
+                        className="bg-green-600 hover:bg-green-700 text-foreground gap-1 text-xs"
                         onClick={() => shareWhatsApp(manualCreatedLink)}
                       >
                         <MessageCircle className="w-3.5 h-3.5" /> WhatsApp
                       </Button>
                       <Button
                         variant="outline"
-                        className="border-gray-600 text-gray-300 gap-1 text-xs"
+                        className="border-gray-600 text-muted-foreground gap-1 text-xs"
                         onClick={copyManualLink}
                       >
                         <Copy className="w-3.5 h-3.5" /> Copiar
                       </Button>
                       <Button
                         variant="outline"
-                        className="border-gray-600 text-gray-300 gap-1 text-xs"
+                        className="border-gray-600 text-muted-foreground gap-1 text-xs"
                         onClick={() => setShowManualQR(true)}
                       >
                         <QrCode className="w-3.5 h-3.5" /> QR
@@ -492,7 +492,7 @@ export default function POS() {
                     </div>
                     <Button
                       variant="outline"
-                      className="w-full border-gray-600 text-gray-300"
+                      className="w-full border-gray-600 text-muted-foreground"
                       onClick={clearManual}
                     >
                       Nuevo cobro
@@ -506,20 +506,20 @@ export default function POS() {
 
         {/* ── Panel derecho: Carrito ─────────────────────────────────── */}
         <div className="lg:w-80 xl:w-96 shrink-0">
-          <div className="bg-[#1e2436] rounded-xl border border-gray-700 overflow-hidden sticky top-6">
+          <div className="bg-[#1e2436] rounded-xl border border-border overflow-hidden sticky top-6">
             {/* Header */}
-            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-700">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-border">
               <div className="flex items-center gap-2">
                 <ShoppingCart className="w-5 h-5 text-emerald-400" />
-                <span className="text-white font-semibold">Carrito</span>
+                <span className="text-foreground font-semibold">Carrito</span>
                 {cartCount > 0 && (
-                  <Badge className="bg-emerald-500 text-white text-xs">{cartCount}</Badge>
+                  <Badge className="bg-emerald-500 text-foreground text-xs">{cartCount}</Badge>
                 )}
               </div>
               {cart.length > 0 && (
                 <button
                   onClick={() => setCart([])}
-                  className="text-gray-400 hover:text-red-400 transition-colors"
+                  className="text-muted-foreground hover:text-red-400 transition-colors"
                 >
                   <X className="w-4 h-4" />
                 </button>
@@ -530,9 +530,9 @@ export default function POS() {
             <div className="max-h-[calc(100vh-340px)] overflow-y-auto">
               {cart.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-12 text-center px-4">
-                  <ShoppingCart className="w-12 h-12 text-gray-600 mb-3" />
-                  <p className="text-gray-400 text-sm">El carrito está vacío</p>
-                  <p className="text-gray-500 text-xs mt-1">Toca un producto para agregarlo</p>
+                  <ShoppingCart className="w-12 h-12 text-muted-foreground mb-3" />
+                  <p className="text-muted-foreground text-sm">El carrito está vacío</p>
+                  <p className="text-muted-foreground text-xs mt-1">Toca un producto para agregarlo</p>
                 </div>
               ) : (
                 <div className="divide-y divide-gray-700/50">
@@ -546,34 +546,34 @@ export default function POS() {
                             className="w-full h-full object-cover"
                           />
                         ) : (
-                          <Package className="w-5 h-5 text-gray-600" />
+                          <Package className="w-5 h-5 text-muted-foreground" />
                         )}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-white text-sm font-medium truncate">{item.name}</p>
-                        <p className="text-gray-400 text-xs">
+                        <p className="text-foreground text-sm font-medium truncate">{item.name}</p>
+                        <p className="text-muted-foreground text-xs">
                           {formatPrice(parseFloat(item.price))}
                         </p>
                       </div>
                       <div className="flex items-center gap-1 shrink-0">
                         <button
                           onClick={() => updateQty(item.id, -1)}
-                          className="w-6 h-6 rounded-md bg-gray-700 hover:bg-gray-600 flex items-center justify-center text-white transition-colors"
+                          className="w-6 h-6 rounded-md bg-gray-700 hover:bg-gray-600 flex items-center justify-center text-foreground transition-colors"
                         >
                           <Minus className="w-3 h-3" />
                         </button>
-                        <span className="text-white text-sm font-semibold w-6 text-center">
+                        <span className="text-foreground text-sm font-semibold w-6 text-center">
                           {item.quantity}
                         </span>
                         <button
                           onClick={() => updateQty(item.id, 1)}
-                          className="w-6 h-6 rounded-md bg-gray-700 hover:bg-gray-600 flex items-center justify-center text-white transition-colors"
+                          className="w-6 h-6 rounded-md bg-gray-700 hover:bg-gray-600 flex items-center justify-center text-foreground transition-colors"
                         >
                           <Plus className="w-3 h-3" />
                         </button>
                         <button
                           onClick={() => removeFromCart(item.id)}
-                          className="w-6 h-6 rounded-md hover:bg-red-900/30 flex items-center justify-center text-gray-400 hover:text-red-400 transition-colors ml-1"
+                          className="w-6 h-6 rounded-md hover:bg-red-900/30 flex items-center justify-center text-muted-foreground hover:text-red-400 transition-colors ml-1"
                         >
                           <Trash2 className="w-3 h-3" />
                         </button>
@@ -586,15 +586,15 @@ export default function POS() {
 
             {/* Total y cobrar */}
             {cart.length > 0 && (
-              <div className="border-t border-gray-700 p-4 space-y-3">
+              <div className="border-t border-border p-4 space-y-3">
                 <div className="flex justify-between items-center">
-                  <span className="text-gray-400 text-sm">
+                  <span className="text-muted-foreground text-sm">
                     {cartCount} {cartCount === 1 ? "producto" : "productos"}
                   </span>
-                  <span className="text-white font-bold text-xl">{formatPrice(cartTotal)}</span>
+                  <span className="text-foreground font-bold text-xl">{formatPrice(cartTotal)}</span>
                 </div>
                 <Button
-                  className="w-full bg-emerald-500 hover:bg-emerald-600 text-white gap-2 h-11 font-semibold"
+                  className="w-full bg-emerald-500 hover:bg-emerald-600 text-foreground gap-2 h-11 font-semibold"
                   onClick={() => setShowCheckout(true)}
                 >
                   <CreditCard className="w-4 h-4" /> Cobrar {formatPrice(cartTotal)}
@@ -613,7 +613,7 @@ export default function POS() {
           if (!v && !createdLink) setShowCheckout(false);
         }}
       >
-        <DialogContent className="bg-[#1e2436] border-gray-700 text-white max-w-md">
+        <DialogContent className="bg-[#1e2436] border-border text-foreground max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <ReceiptText className="w-5 h-5 text-emerald-400" />
@@ -627,8 +627,8 @@ export default function POS() {
                 <div className="w-16 h-16 bg-emerald-500/20 rounded-full flex items-center justify-center mx-auto mb-3">
                   <CheckCircle className="w-9 h-9 text-emerald-400" />
                 </div>
-                <p className="text-white font-bold text-lg">{formatPrice(cartTotal)}</p>
-                <p className="text-gray-400 text-sm mt-1">
+                <p className="text-foreground font-bold text-lg">{formatPrice(cartTotal)}</p>
+                <p className="text-muted-foreground text-sm mt-1">
                   Enlace de pago listo. Compártelo con tu cliente.
                 </p>
               </div>
@@ -636,7 +636,7 @@ export default function POS() {
                 <p className="text-emerald-400 text-sm flex-1 truncate">{createdLink}</p>
                 <button
                   onClick={copyLink}
-                  className="shrink-0 text-gray-400 hover:text-white transition-colors"
+                  className="shrink-0 text-muted-foreground hover:text-foreground transition-colors"
                 >
                   {copied ? (
                     <CheckCircle className="w-4 h-4 text-emerald-400" />
@@ -646,39 +646,39 @@ export default function POS() {
                 </button>
               </div>
               <div className="bg-[#151929] rounded-xl p-3 space-y-1">
-                <p className="text-gray-400 text-xs font-medium mb-2">Resumen</p>
+                <p className="text-muted-foreground text-xs font-medium mb-2">Resumen</p>
                 {cart.map((item) => (
                   <div key={item.id} className="flex justify-between text-sm">
-                    <span className="text-gray-300">
+                    <span className="text-muted-foreground">
                       {item.name} ×{item.quantity}
                     </span>
-                    <span className="text-white">
+                    <span className="text-foreground">
                       {formatPrice(parseFloat(item.price) * item.quantity)}
                     </span>
                   </div>
                 ))}
-                <div className="flex justify-between font-bold pt-2 border-t border-gray-700 mt-1">
-                  <span className="text-white">Total</span>
+                <div className="flex justify-between font-bold pt-2 border-t border-border mt-1">
+                  <span className="text-foreground">Total</span>
                   <span className="text-emerald-400">{formatPrice(cartTotal)}</span>
                 </div>
               </div>
               <div className="grid grid-cols-3 gap-2">
                 <Button
-                  className="bg-green-600 hover:bg-green-700 text-white gap-1 text-xs"
+                  className="bg-green-600 hover:bg-green-700 text-foreground gap-1 text-xs"
                   onClick={() => shareWhatsApp(createdLink)}
                 >
                   <MessageCircle className="w-3.5 h-3.5" /> WhatsApp
                 </Button>
                 <Button
                   variant="outline"
-                  className="border-gray-600 text-gray-300 gap-1 text-xs"
+                  className="border-gray-600 text-muted-foreground gap-1 text-xs"
                   onClick={copyLink}
                 >
                   <Copy className="w-3.5 h-3.5" /> Copiar
                 </Button>
                 <Button
                   variant="outline"
-                  className="border-gray-600 text-gray-300 gap-1 text-xs"
+                  className="border-gray-600 text-muted-foreground gap-1 text-xs"
                   onClick={() => setShowQR(true)}
                 >
                   <QrCode className="w-3.5 h-3.5" /> QR
@@ -687,51 +687,51 @@ export default function POS() {
             </div>
           ) : (
             <div className="space-y-4 py-2">
-              <p className="text-gray-400 text-sm">
+              <p className="text-muted-foreground text-sm">
                 Ingresa los datos del cliente para generar el enlace de pago.
               </p>
               <div className="space-y-1">
-                <Label className="text-gray-300">Email del cliente *</Label>
+                <Label className="text-muted-foreground">Email del cliente *</Label>
                 <Input
                   type="email"
                   placeholder="cliente@email.com"
                   value={customerEmail}
                   onChange={(e) => setCustomerEmail(e.target.value)}
-                  className="bg-[#151929] border-gray-600 text-white"
+                  className="bg-[#151929] border-gray-600 text-foreground"
                 />
               </div>
               <div className="space-y-1">
-                <Label className="text-gray-300">Nombre (opcional)</Label>
+                <Label className="text-muted-foreground">Nombre (opcional)</Label>
                 <Input
                   placeholder="Nombre del cliente"
                   value={customerName}
                   onChange={(e) => setCustomerName(e.target.value)}
-                  className="bg-[#151929] border-gray-600 text-white"
+                  className="bg-[#151929] border-gray-600 text-foreground"
                 />
               </div>
               <div className="space-y-1">
-                <Label className="text-gray-300">Teléfono (opcional)</Label>
+                <Label className="text-muted-foreground">Teléfono (opcional)</Label>
                 <Input
                   placeholder="+52 55 1234 5678"
                   value={customerPhone}
                   onChange={(e) => setCustomerPhone(e.target.value)}
-                  className="bg-[#151929] border-gray-600 text-white"
+                  className="bg-[#151929] border-gray-600 text-foreground"
                 />
               </div>
               <div className="bg-[#151929] rounded-xl p-3 space-y-1">
-                <p className="text-gray-400 text-xs font-medium mb-2">Resumen del cobro</p>
+                <p className="text-muted-foreground text-xs font-medium mb-2">Resumen del cobro</p>
                 {cart.map((item) => (
                   <div key={item.id} className="flex justify-between text-sm">
-                    <span className="text-gray-300">
+                    <span className="text-muted-foreground">
                       {item.name} ×{item.quantity}
                     </span>
-                    <span className="text-white">
+                    <span className="text-foreground">
                       {formatPrice(parseFloat(item.price) * item.quantity)}
                     </span>
                   </div>
                 ))}
-                <div className="flex justify-between font-bold pt-2 border-t border-gray-700 mt-1">
-                  <span className="text-white">Total</span>
+                <div className="flex justify-between font-bold pt-2 border-t border-border mt-1">
+                  <span className="text-foreground">Total</span>
                   <span className="text-emerald-400">{formatPrice(cartTotal)}</span>
                 </div>
               </div>
@@ -744,12 +744,12 @@ export default function POS() {
                 <Button
                   variant="outline"
                   onClick={clearCart}
-                  className="border-gray-600 text-gray-300"
+                  className="border-gray-600 text-muted-foreground"
                 >
                   Nuevo cobro
                 </Button>
                 <Button
-                  className="bg-emerald-500 hover:bg-emerald-600 text-white gap-2"
+                  className="bg-emerald-500 hover:bg-emerald-600 text-foreground gap-2"
                   onClick={() => window.open(createdLink, "_blank")}
                 >
                   <CreditCard className="w-4 h-4" /> Abrir enlace
@@ -760,14 +760,14 @@ export default function POS() {
                 <Button
                   variant="outline"
                   onClick={() => setShowCheckout(false)}
-                  className="border-gray-600 text-gray-300"
+                  className="border-gray-600 text-muted-foreground"
                 >
                   Cancelar
                 </Button>
                 <Button
                   onClick={handleCreateLink}
                   disabled={creatingLink}
-                  className="bg-emerald-500 hover:bg-emerald-600 text-white gap-2"
+                  className="bg-emerald-500 hover:bg-emerald-600 text-foreground gap-2"
                 >
                   {creatingLink ? (
                     "Generando..."
@@ -785,7 +785,7 @@ export default function POS() {
 
       {/* ── Modal QR (carrito) ─────────────────────────────────────────── */}
       <Dialog open={showQR} onOpenChange={setShowQR}>
-        <DialogContent className="bg-[#1e2436] border-gray-700 text-white max-w-sm">
+        <DialogContent className="bg-[#1e2436] border-border text-foreground max-w-sm">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <QrCode className="w-5 h-5 text-emerald-400" /> Código QR de pago
@@ -795,7 +795,7 @@ export default function POS() {
             <div className="bg-white p-4 rounded-2xl">
               {createdLink && <QRCodeSVG value={createdLink} size={200} />}
             </div>
-            <p className="text-gray-400 text-sm text-center">
+            <p className="text-muted-foreground text-sm text-center">
               El cliente puede escanear este código para acceder al enlace de pago.
             </p>
             <p className="text-emerald-400 text-xs text-center break-all">{createdLink}</p>
@@ -804,7 +804,7 @@ export default function POS() {
             <Button
               variant="outline"
               onClick={() => setShowQR(false)}
-              className="border-gray-600 text-gray-300 w-full"
+              className="border-gray-600 text-muted-foreground w-full"
             >
               Cerrar
             </Button>
@@ -814,7 +814,7 @@ export default function POS() {
 
       {/* ── Modal QR (cobro manual) ────────────────────────────────────── */}
       <Dialog open={showManualQR} onOpenChange={setShowManualQR}>
-        <DialogContent className="bg-[#1e2436] border-gray-700 text-white max-w-sm">
+        <DialogContent className="bg-[#1e2436] border-border text-foreground max-w-sm">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <QrCode className="w-5 h-5 text-emerald-400" /> Código QR de pago
@@ -824,7 +824,7 @@ export default function POS() {
             <div className="bg-white p-4 rounded-2xl">
               {manualCreatedLink && <QRCodeSVG value={manualCreatedLink} size={200} />}
             </div>
-            <p className="text-gray-400 text-sm text-center">
+            <p className="text-muted-foreground text-sm text-center">
               El cliente puede escanear este código para acceder al enlace de pago.
             </p>
             <p className="text-emerald-400 text-xs text-center break-all">{manualCreatedLink}</p>
@@ -833,7 +833,7 @@ export default function POS() {
             <Button
               variant="outline"
               onClick={() => setShowManualQR(false)}
-              className="border-gray-600 text-gray-300 w-full"
+              className="border-gray-600 text-muted-foreground w-full"
             >
               Cerrar
             </Button>

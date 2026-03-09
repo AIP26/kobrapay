@@ -88,8 +88,8 @@ export default function AssistantAdvisor() {
     return (
       <DashboardLayout title="KobraPay Advisor — Asistente">
         <div className="flex flex-col items-center justify-center h-64 text-center">
-          <Bot className="w-12 h-12 text-gray-300 mb-3" />
-          <p className="text-gray-500">Esta sección es exclusiva para el equipo de asistentes de KobraPay.</p>
+          <Bot className="w-12 h-12 text-muted-foreground mb-3" />
+          <p className="text-muted-foreground">Esta sección es exclusiva para el equipo de asistentes de KobraPay.</p>
         </div>
       </DashboardLayout>
     );
@@ -102,17 +102,17 @@ export default function AssistantAdvisor() {
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center shadow-lg">
-              <Bot className="w-6 h-6 text-white" />
+              <Bot className="w-6 h-6 text-foreground" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h1 className="text-2xl font-bold text-gray-900">KobraPay Advisor</h1>
+                <h1 className="text-2xl font-bold text-foreground">KobraPay Advisor</h1>
                 <Badge className="bg-violet-100 text-violet-700 border-violet-200 gap-1" variant="outline">
                   <Sparkles className="w-3 h-3" />
                   Equipo Interno
                 </Badge>
               </div>
-              <p className="text-sm text-gray-500 mt-0.5">Asistente de IA para el equipo de soporte y gestión de clientes</p>
+              <p className="text-sm text-muted-foreground mt-0.5">Asistente de IA para el equipo de soporte y gestión de clientes</p>
             </div>
           </div>
         </div>
@@ -130,7 +130,7 @@ export default function AssistantAdvisor() {
               <div className={`p-1.5 rounded-lg ${color} flex-shrink-0`}>
                 <Icon className="w-4 h-4" />
               </div>
-              <span className="text-xs font-medium text-gray-700">{label}</span>
+              <span className="text-xs font-medium text-foreground">{label}</span>
             </button>
           ))}
         </div>
@@ -148,7 +148,7 @@ export default function AssistantAdvisor() {
           />
         </div>
 
-        <p className="text-xs text-gray-400 text-center">
+        <p className="text-xs text-muted-foreground text-center">
           🔒 Esta conversación es privada y solo el equipo interno puede acceder a esta sección.
         </p>
       </div>

@@ -36,7 +36,7 @@ export default function ImpersonationBar() {
       style={{ background: "linear-gradient(90deg, #d97706 0%, #b45309 100%)" }}
     >
       {/* Izquierda: ícono + texto */}
-      <div className="flex items-center gap-2.5 text-white">
+      <div className="flex items-center gap-2.5 text-foreground">
         <Eye className="w-5 h-5 flex-shrink-0" />
         <div>
           <p className="text-sm font-bold leading-tight">Modo Impersonación Activo</p>

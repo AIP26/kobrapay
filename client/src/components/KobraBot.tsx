@@ -83,12 +83,12 @@ export default function KobraBot() {
         aria-label="Abrir KobraBot"
       >
         {open ? (
-          <X className="w-6 h-6 text-white" />
+          <X className="w-6 h-6 text-foreground" />
         ) : (
           <>
-            <MessageCircle className="w-6 h-6 text-white" />
+            <MessageCircle className="w-6 h-6 text-foreground" />
             {unread > 0 && (
-              <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center font-bold">
+              <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-foreground text-xs rounded-full flex items-center justify-center font-bold">
                 {unread}
               </span>
             )}
@@ -100,14 +100,14 @@ export default function KobraBot() {
       {open && (
         <div className="fixed bottom-24 right-6 z-50 w-[360px] max-h-[560px] flex flex-col rounded-2xl shadow-2xl border border-gray-200 overflow-hidden bg-white">
           {/* Header */}
-          <div className="flex items-center gap-3 px-4 py-3 text-white" style={{ background: "linear-gradient(135deg, #0f2744 0%, #0c3b5e 100%)" }}>
+          <div className="flex items-center gap-3 px-4 py-3 text-foreground" style={{ background: "linear-gradient(135deg, #0f2744 0%, #0c3b5e 100%)" }}>
             <img src={LOGO_NAVY} alt="KobraBot" className="w-9 h-9 object-contain rounded-lg" />
             <div className="flex-1">
               <p className="font-bold text-sm">KobraBot</p>
               <p className="text-xs text-cyan-300">Asistente inteligente · siempre disponible</p>
             </div>
             <button onClick={() => setOpen(false)} className="p-1 rounded-lg hover:bg-white/10">
-              <ChevronDown className="w-5 h-5 text-white/70" />
+              <ChevronDown className="w-5 h-5 text-foreground/70" />
             </button>
           </div>
 
@@ -117,19 +117,19 @@ export default function KobraBot() {
               <div className="space-y-4">
                 <div className="flex items-start gap-2">
                   <div className="w-7 h-7 rounded-full flex items-center justify-center shrink-0 overflow-hidden" style={{ background: "linear-gradient(135deg, #00c896, #0ea5e9)" }}>
-                    <Sparkles className="w-4 h-4 text-white" />
+                    <Sparkles className="w-4 h-4 text-foreground" />
                   </div>
-                  <div className="bg-gray-100 rounded-2xl rounded-tl-sm px-3 py-2 text-sm text-gray-700 max-w-[260px]">
+                  <div className="bg-gray-100 rounded-2xl rounded-tl-sm px-3 py-2 text-sm text-foreground max-w-[260px]">
                     ¡Hola! Soy KobraBot 👋 Estoy aquí para ayudarte con cualquier duda sobre KobraPay. ¿En qué puedo ayudarte?
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <p className="text-xs text-gray-400 font-medium">Sugerencias rápidas:</p>
+                  <p className="text-xs text-muted-foreground font-medium">Sugerencias rápidas:</p>
                   {suggested.map((s, i) => (
                     <button
                       key={i}
                       onClick={() => sendMessage(s)}
-                      className="w-full text-left text-xs px-3 py-2 rounded-xl border border-gray-200 hover:border-cyan-300 hover:bg-cyan-50 text-gray-600 transition-colors"
+                      className="w-full text-left text-xs px-3 py-2 rounded-xl border border-gray-200 hover:border-cyan-300 hover:bg-cyan-50 text-muted-foreground transition-colors"
                     >
                       {s}
                     </button>
@@ -142,14 +142,14 @@ export default function KobraBot() {
                   <div key={i} className={`flex items-start gap-2 ${msg.role === "user" ? "flex-row-reverse" : ""}`}>
                     {msg.role === "assistant" && (
                       <div className="w-7 h-7 rounded-full flex items-center justify-center shrink-0 overflow-hidden" style={{ background: "linear-gradient(135deg, #00c896, #0ea5e9)" }}>
-                        <Sparkles className="w-4 h-4 text-white" />
+                        <Sparkles className="w-4 h-4 text-foreground" />
                       </div>
                     )}
                     <div
                       className={`rounded-2xl px-3 py-2 text-sm max-w-[260px] ${
                         msg.role === "user"
-                          ? "text-white rounded-tr-sm"
-                          : "bg-gray-100 text-gray-700 rounded-tl-sm"
+                          ? "text-foreground rounded-tr-sm"
+                          : "bg-gray-100 text-foreground rounded-tl-sm"
                       }`}
                       style={msg.role === "user" ? { background: "linear-gradient(135deg, #00c896, #0ea5e9)" } : {}}
                     >
@@ -164,10 +164,10 @@ export default function KobraBot() {
                 {isLoading && (
                   <div className="flex items-start gap-2">
                     <div className="w-7 h-7 rounded-full flex items-center justify-center shrink-0" style={{ background: "linear-gradient(135deg, #00c896, #0ea5e9)" }}>
-                      <Sparkles className="w-4 h-4 text-white" />
+                      <Sparkles className="w-4 h-4 text-foreground" />
                     </div>
                     <div className="bg-gray-100 rounded-2xl rounded-tl-sm px-3 py-2">
-                      <Loader2 className="w-4 h-4 text-gray-400 animate-spin" />
+                      <Loader2 className="w-4 h-4 text-muted-foreground animate-spin" />
                     </div>
                   </div>
                 )}

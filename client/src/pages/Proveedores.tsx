@@ -38,7 +38,7 @@ const SUPPLIER_CATEGORIES: Record<string, { label: string; emoji: string; color:
   health:      { label: "Salud y Farmacia",     emoji: "💊", color: "bg-red-100 text-red-800" },
   transport:   { label: "Transporte y Logística", emoji: "🚚", color: "bg-yellow-100 text-yellow-800" },
   office:      { label: "Papelería y Oficina",  emoji: "📎", color: "bg-indigo-100 text-indigo-800" },
-  maintenance: { label: "Mantenimiento",        emoji: "🔧", color: "bg-gray-100 text-gray-800" },
+  maintenance: { label: "Mantenimiento",        emoji: "🔧", color: "bg-gray-100 text-foreground" },
   marketing:   { label: "Marketing y Publicidad", emoji: "📣", color: "bg-pink-100 text-pink-800" },
   finance:     { label: "Finanzas y Contabilidad", emoji: "💰", color: "bg-green-100 text-green-800" },
   legal:       { label: "Legal y Notaría",      emoji: "⚖️", color: "bg-purple-100 text-purple-800" },
@@ -197,7 +197,7 @@ function SupplierFormModal({
           <Button
             onClick={handleSave}
             disabled={isPending || !form.name.trim()}
-            className="bg-orange-500 hover:bg-orange-600 text-white"
+            className="bg-orange-500 hover:bg-orange-600 text-foreground"
           >
             {isPending ? "Guardando..." : supplier ? "Guardar cambios" : "Agregar proveedor"}
           </Button>
@@ -226,12 +226,12 @@ function SupplierCard({
       <div className="flex items-start justify-between mb-3">
         <div className="flex items-center gap-3 min-w-0">
           <div className="w-10 h-10 rounded-full bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center shrink-0 shadow-sm">
-            <span className="text-white font-bold text-base">{supplier.name.charAt(0).toUpperCase()}</span>
+            <span className="text-foreground font-bold text-base">{supplier.name.charAt(0).toUpperCase()}</span>
           </div>
           <div className="min-w-0">
-            <p className="font-bold text-gray-900 truncate">{supplier.name}</p>
+            <p className="font-bold text-foreground truncate">{supplier.name}</p>
             {supplier.company && (
-              <p className="text-sm text-gray-500 truncate flex items-center gap-1">
+              <p className="text-sm text-muted-foreground truncate flex items-center gap-1">
                 <Building2 className="w-3 h-3 shrink-0" />
                 {supplier.company}
               </p>
@@ -241,14 +241,14 @@ function SupplierCard({
         <div className="flex items-center gap-1 shrink-0 ml-2">
           <button
             onClick={onEdit}
-            className="p-1.5 text-gray-400 hover:text-orange-600 hover:bg-orange-50 rounded-lg transition-colors"
+            className="p-1.5 text-muted-foreground hover:text-orange-600 hover:bg-orange-50 rounded-lg transition-colors"
             title="Editar"
           >
             <Edit3 className="w-3.5 h-3.5" />
           </button>
           <button
             onClick={onDelete}
-            className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+            className="p-1.5 text-muted-foreground hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
             title="Eliminar"
           >
             <Trash2 className="w-3.5 h-3.5" />
@@ -268,23 +268,23 @@ function SupplierCard({
         {supplier.phone && (
           <a
             href={`tel:${supplier.phone}`}
-            className="flex items-center gap-2 text-sm text-gray-700 hover:text-orange-600 transition-colors group"
+            className="flex items-center gap-2 text-sm text-foreground hover:text-orange-600 transition-colors group"
           >
-            <Phone className="w-3.5 h-3.5 text-gray-400 group-hover:text-orange-500 shrink-0" />
+            <Phone className="w-3.5 h-3.5 text-muted-foreground group-hover:text-orange-500 shrink-0" />
             <span className="truncate">{supplier.phone}</span>
           </a>
         )}
         {supplier.email && (
           <a
             href={`mailto:${supplier.email}`}
-            className="flex items-center gap-2 text-sm text-gray-700 hover:text-orange-600 transition-colors group"
+            className="flex items-center gap-2 text-sm text-foreground hover:text-orange-600 transition-colors group"
           >
-            <Mail className="w-3.5 h-3.5 text-gray-400 group-hover:text-orange-500 shrink-0" />
+            <Mail className="w-3.5 h-3.5 text-muted-foreground group-hover:text-orange-500 shrink-0" />
             <span className="truncate">{supplier.email}</span>
           </a>
         )}
         {!supplier.phone && !supplier.email && (
-          <p className="text-xs text-gray-400 italic">Sin datos de contacto</p>
+          <p className="text-xs text-muted-foreground italic">Sin datos de contacto</p>
         )}
       </div>
 
@@ -293,14 +293,14 @@ function SupplierCard({
         <div className="mt-3 pt-3 border-t border-gray-100">
           <button
             onClick={() => setShowNotes(v => !v)}
-            className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-700 transition-colors w-full text-left"
+            className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors w-full text-left"
           >
             <StickyNote className="w-3 h-3" />
             <span>Notas</span>
             <ChevronDown className={`w-3 h-3 ml-auto transition-transform ${showNotes ? "rotate-180" : ""}`} />
           </button>
           {showNotes && (
-            <p className="mt-2 text-xs text-gray-600 bg-amber-50 rounded-lg p-2 border border-amber-100 leading-relaxed">
+            <p className="mt-2 text-xs text-muted-foreground bg-amber-50 rounded-lg p-2 border border-amber-100 leading-relaxed">
               {supplier.notes}
             </p>
           )}
@@ -330,7 +330,7 @@ function SupplierCard({
         {!supplier.phone && !supplier.email && (
           <button
             onClick={onEdit}
-            className="flex-1 flex items-center justify-center gap-1.5 text-xs font-medium text-gray-600 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-lg py-1.5 transition-colors"
+            className="flex-1 flex items-center justify-center gap-1.5 text-xs font-medium text-muted-foreground bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-lg py-1.5 transition-colors"
           >
             <Edit3 className="w-3 h-3" /> Agregar contacto
           </button>
@@ -395,17 +395,17 @@ export default function Proveedores() {
         {/* Header */}
         <div className="flex items-center justify-between flex-wrap gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+            <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
               <BookUser className="w-6 h-6 text-orange-500" />
               Agenda de Proveedores
             </h1>
-            <p className="text-gray-500 text-sm mt-0.5">
+            <p className="text-muted-foreground text-sm mt-0.5">
               Registra y encuentra rápidamente tus contactos de proveedores
             </p>
           </div>
           <Button
             onClick={() => setShowCreate(true)}
-            className="bg-orange-500 hover:bg-orange-600 text-white"
+            className="bg-orange-500 hover:bg-orange-600 text-foreground"
           >
             <Plus className="w-4 h-4 mr-1" /> Nuevo Proveedor
           </Button>
@@ -413,7 +413,7 @@ export default function Proveedores() {
 
         {/* Buscador */}
         <div className="relative">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <input
             type="text"
             value={search}
@@ -424,7 +424,7 @@ export default function Proveedores() {
           {search && (
             <button
               onClick={() => setSearch("")}
-              className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+              className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-muted-foreground"
             >
               <X className="w-4 h-4" />
             </button>
@@ -437,8 +437,8 @@ export default function Proveedores() {
             onClick={() => setActiveCategory("all")}
             className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
               activeCategory === "all"
-                ? "bg-gray-900 text-white"
-                : "bg-white border border-gray-300 text-gray-600 hover:border-gray-400"
+                ? "bg-card text-foreground"
+                : "bg-white border border-gray-300 text-muted-foreground hover:border-gray-400"
             }`}
           >
             Todos {suppliers.length > 0 && <span className="ml-1 opacity-70">({suppliers.length})</span>}
@@ -452,8 +452,8 @@ export default function Proveedores() {
                 onClick={() => setActiveCategory(k)}
                 className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
                   activeCategory === k
-                    ? "bg-gray-900 text-white"
-                    : "bg-white border border-gray-300 text-gray-600 hover:border-gray-400"
+                    ? "bg-card text-foreground"
+                    : "bg-white border border-gray-300 text-muted-foreground hover:border-gray-400"
                 }`}
               >
                 {v.emoji} {v.label} {count > 0 && <span className="ml-1 opacity-70">({count})</span>}
@@ -467,32 +467,32 @@ export default function Proveedores() {
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <div className="bg-white rounded-xl border border-gray-200 p-4 text-center">
               <p className="text-2xl font-bold text-orange-600">{suppliers.length}</p>
-              <p className="text-xs text-gray-500 mt-0.5">Total proveedores</p>
+              <p className="text-xs text-muted-foreground mt-0.5">Total proveedores</p>
             </div>
             <div className="bg-white rounded-xl border border-gray-200 p-4 text-center">
               <p className="text-2xl font-bold text-green-600">
                 {(suppliers as Supplier[]).filter(s => s.phone).length}
               </p>
-              <p className="text-xs text-gray-500 mt-0.5">Con teléfono</p>
+              <p className="text-xs text-muted-foreground mt-0.5">Con teléfono</p>
             </div>
             <div className="bg-white rounded-xl border border-gray-200 p-4 text-center">
               <p className="text-2xl font-bold text-blue-600">
                 {(suppliers as Supplier[]).filter(s => s.email).length}
               </p>
-              <p className="text-xs text-gray-500 mt-0.5">Con correo</p>
+              <p className="text-xs text-muted-foreground mt-0.5">Con correo</p>
             </div>
             <div className="bg-white rounded-xl border border-gray-200 p-4 text-center">
               <p className="text-2xl font-bold text-purple-600">
                 {Object.keys(countByCategory).length}
               </p>
-              <p className="text-xs text-gray-500 mt-0.5">Categorías</p>
+              <p className="text-xs text-muted-foreground mt-0.5">Categorías</p>
             </div>
           </div>
         )}
 
         {/* Resultado de búsqueda */}
         {search && (
-          <p className="text-sm text-gray-500">
+          <p className="text-sm text-muted-foreground">
             {filtered.length === 0
               ? `Sin resultados para "${search}"`
               : `${filtered.length} resultado${filtered.length !== 1 ? "s" : ""} para "${search}"`}
@@ -523,8 +523,8 @@ export default function Proveedores() {
               // Estado vacío inicial
               <div className="max-w-sm mx-auto">
                 <div className="text-6xl mb-4">📒</div>
-                <h3 className="text-xl font-bold text-gray-900 mb-2">Tu agenda está vacía</h3>
-                <p className="text-gray-500 text-sm mb-6">
+                <h3 className="text-xl font-bold text-foreground mb-2">Tu agenda está vacía</h3>
+                <p className="text-muted-foreground text-sm mb-6">
                   Agrega tus proveedores para tenerlos siempre a la mano. Podrás buscarlos rápidamente cuando los necesites.
                 </p>
                 <div className="grid grid-cols-2 gap-3 mb-6 text-left">
@@ -536,13 +536,13 @@ export default function Proveedores() {
                   ].map((item, i) => (
                     <div key={i} className="bg-gray-50 rounded-xl p-3 border border-gray-200">
                       <span className="text-xl">{item.icon}</span>
-                      <p className="text-xs text-gray-600 mt-1">{item.text}</p>
+                      <p className="text-xs text-muted-foreground mt-1">{item.text}</p>
                     </div>
                   ))}
                 </div>
                 <Button
                   onClick={() => setShowCreate(true)}
-                  className="bg-orange-500 hover:bg-orange-600 text-white"
+                  className="bg-orange-500 hover:bg-orange-600 text-foreground"
                 >
                   <Plus className="w-4 h-4 mr-1" /> Agregar primer proveedor
                 </Button>
@@ -551,8 +551,8 @@ export default function Proveedores() {
               // Sin resultados de búsqueda
               <div>
                 <div className="text-5xl mb-3">🔍</div>
-                <p className="text-lg font-medium text-gray-700">Sin resultados</p>
-                <p className="text-sm text-gray-500 mt-1">
+                <p className="text-lg font-medium text-foreground">Sin resultados</p>
+                <p className="text-sm text-muted-foreground mt-1">
                   No encontramos proveedores con "{search}"
                 </p>
                 <button

@@ -74,8 +74,8 @@ function MagazineViewer({ magazine, onClose, onEdit }: { magazine: Magazine; onC
         <DialogHeader>
           <div className="flex items-center justify-between">
             <div>
-              <DialogTitle className="text-2xl font-bold text-gray-900">{magazine.title}</DialogTitle>
-              {magazine.subtitle && <p className="text-gray-500 mt-1">{magazine.subtitle}</p>}
+              <DialogTitle className="text-2xl font-bold text-foreground">{magazine.title}</DialogTitle>
+              {magazine.subtitle && <p className="text-muted-foreground mt-1">{magazine.subtitle}</p>}
               {magazine.edition && <Badge variant="outline" className="mt-2">{magazine.edition}</Badge>}
             </div>
             <Button variant="outline" size="sm" onClick={onEdit}>
@@ -85,7 +85,7 @@ function MagazineViewer({ magazine, onClose, onEdit }: { magazine: Magazine; onC
         </DialogHeader>
 
         {sections.length === 0 ? (
-          <div className="text-center py-12 text-gray-400">
+          <div className="text-center py-12 text-muted-foreground">
             <Newspaper className="w-12 h-12 mx-auto mb-3 opacity-40" />
             <p className="font-medium">Sin contenido todavía</p>
             <p className="text-sm mt-1">Usa el generador de IA para crear el contenido</p>
@@ -94,14 +94,14 @@ function MagazineViewer({ magazine, onClose, onEdit }: { magazine: Magazine; onC
           <div className="space-y-6 mt-4">
             {sections.map((section, i) => (
               <div key={i} className="border-l-4 border-orange-400 pl-5">
-                <h3 className="font-bold text-lg text-gray-900 mb-2">{section.title}</h3>
-                <div className="text-gray-700 text-sm leading-relaxed whitespace-pre-wrap">{section.body}</div>
+                <h3 className="font-bold text-lg text-foreground mb-2">{section.title}</h3>
+                <div className="text-foreground text-sm leading-relaxed whitespace-pre-wrap">{section.body}</div>
               </div>
             ))}
           </div>
         )}
 
-        <div className="text-xs text-gray-400 mt-6 pt-4 border-t">
+        <div className="text-xs text-muted-foreground mt-6 pt-4 border-t">
           Creada el {new Date(magazine.createdAt).toLocaleDateString("es-MX", { year: "numeric", month: "long", day: "numeric" })}
           {magazine.isPublished && <span className="ml-3 text-green-600 font-medium">✓ Publicada</span>}
         </div>
@@ -244,7 +244,7 @@ function MagazineFormModal({
                   type="button"
                   onClick={() => setMode('ai')}
                   className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg border text-sm font-medium transition-colors ${
-                    mode === 'ai' ? 'bg-orange-500 text-white border-orange-500' : 'bg-white text-gray-600 border-gray-200 hover:border-orange-300'
+                    mode === 'ai' ? 'bg-orange-500 text-foreground border-orange-500' : 'bg-white text-muted-foreground border-gray-200 hover:border-orange-300'
                   }`}
                 >
                   <Wand2 className="w-4 h-4" /> Crear con IA
@@ -253,7 +253,7 @@ function MagazineFormModal({
                   type="button"
                   onClick={() => setMode('upload')}
                   className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg border text-sm font-medium transition-colors ${
-                    mode === 'upload' ? 'bg-blue-500 text-white border-blue-500' : 'bg-white text-gray-600 border-gray-200 hover:border-blue-300'
+                    mode === 'upload' ? 'bg-blue-500 text-foreground border-blue-500' : 'bg-white text-muted-foreground border-gray-200 hover:border-blue-300'
                   }`}
                 >
                   <Upload className="w-4 h-4" /> Subir mi revista
@@ -273,8 +273,8 @@ function MagazineFormModal({
                 <img src={coverPreview} alt="Portada" className="h-24 mx-auto object-contain rounded" />
               ) : (
                 <div className="flex flex-col items-center gap-1 py-2">
-                  <ImageIcon className="w-6 h-6 text-gray-300" />
-                  <span className="text-xs text-gray-400">Haz clic para subir imagen de portada</span>
+                  <ImageIcon className="w-6 h-6 text-muted-foreground" />
+                  <span className="text-xs text-muted-foreground">Haz clic para subir imagen de portada</span>
                 </div>
               )}
             </div>
@@ -311,12 +311,12 @@ function MagazineFormModal({
                       </button>
                     </div>
                   ))}
-                  <p className="text-xs text-gray-400 text-center mt-1">Haz clic para agregar más archivos</p>
+                  <p className="text-xs text-muted-foreground text-center mt-1">Haz clic para agregar más archivos</p>
                 </div>
               ) : (
                 <div className="flex flex-col items-center gap-1 py-2">
-                  <Upload className="w-6 h-6 text-gray-300" />
-                  <span className="text-xs text-gray-400">Haz clic para subir PDF, fotos, documentos</span>
+                  <Upload className="w-6 h-6 text-muted-foreground" />
+                  <span className="text-xs text-muted-foreground">Haz clic para subir PDF, fotos, documentos</span>
                 </div>
               )}
             </div>
@@ -362,7 +362,7 @@ function MagazineFormModal({
                 <Button
                   onClick={handleUploadForExisting}
                   disabled={uploading}
-                  className="bg-blue-500 hover:bg-blue-600 text-white"
+                  className="bg-blue-500 hover:bg-blue-600 text-foreground"
                 >
                   {uploading ? <><RefreshCw className="w-4 h-4 mr-2 animate-spin" /> Subiendo...</> : <><Upload className="w-4 h-4 mr-2" /> Subir archivos</>}
                 </Button>
@@ -370,7 +370,7 @@ function MagazineFormModal({
               <Button
                 onClick={handleGenerateForExisting}
                 disabled={generating || !aiPrompt.trim()}
-                className="bg-orange-500 hover:bg-orange-600 text-white"
+                className="bg-orange-500 hover:bg-orange-600 text-foreground"
               >
                 {generating ? <><RefreshCw className="w-4 h-4 mr-2 animate-spin" /> Generando...</> : <><Sparkles className="w-4 h-4 mr-2" /> Generar con IA</>}
               </Button>
@@ -379,7 +379,7 @@ function MagazineFormModal({
             <Button
               onClick={handleCreate}
               disabled={generating || !title.trim()}
-              className="bg-orange-500 hover:bg-orange-600 text-white"
+              className="bg-orange-500 hover:bg-orange-600 text-foreground"
             >
               {generating ? <><RefreshCw className="w-4 h-4 mr-2 animate-spin" /> Creando...</> : <><Plus className="w-4 h-4 mr-2" /> Crear Revista</>}
             </Button>
@@ -413,14 +413,14 @@ function MiRevista() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+          <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
             <Newspaper className="w-5 h-5 text-orange-500" /> Mi Revista Interna
           </h2>
-          <p className="text-sm text-gray-500 mt-0.5">
+          <p className="text-sm text-muted-foreground mt-0.5">
             Crea y gestiona la revista informativa de tu empresa con ayuda de IA
           </p>
         </div>
-        <Button onClick={() => setShowCreate(true)} className="bg-orange-500 hover:bg-orange-600 text-white">
+        <Button onClick={() => setShowCreate(true)} className="bg-orange-500 hover:bg-orange-600 text-foreground">
           <Plus className="w-4 h-4 mr-1" /> Nueva Revista
         </Button>
       </div>
@@ -429,8 +429,8 @@ function MiRevista() {
       {!isLoading && magazines.length === 0 && (
         <div className="bg-gradient-to-br from-orange-50 to-amber-50 border border-orange-200 rounded-2xl p-8 text-center">
           <div className="text-6xl mb-4">📰</div>
-          <h3 className="text-xl font-bold text-gray-900 mb-2">¡Crea tu primera revista!</h3>
-          <p className="text-gray-600 max-w-md mx-auto mb-6">
+          <h3 className="text-xl font-bold text-foreground mb-2">¡Crea tu primera revista!</h3>
+          <p className="text-muted-foreground max-w-md mx-auto mb-6">
             La revista interna es una excelente forma de mantener a tu equipo informado, motivado y conectado.
             Nuestra IA puede generar el contenido por ti en segundos.
           </p>
@@ -442,12 +442,12 @@ function MiRevista() {
             ].map((item, i) => (
               <div key={i} className="bg-white rounded-xl p-3 border border-orange-100">
                 <div className="text-2xl mb-1">{item.icon}</div>
-                <p className="font-semibold text-gray-800 text-sm">{item.title}</p>
-                <p className="text-xs text-gray-500 mt-0.5">{item.desc}</p>
+                <p className="font-semibold text-foreground text-sm">{item.title}</p>
+                <p className="text-xs text-muted-foreground mt-0.5">{item.desc}</p>
               </div>
             ))}
           </div>
-          <Button onClick={() => setShowCreate(true)} className="bg-orange-500 hover:bg-orange-600 text-white">
+          <Button onClick={() => setShowCreate(true)} className="bg-orange-500 hover:bg-orange-600 text-foreground">
             <Sparkles className="w-4 h-4 mr-2" /> Crear mi primera revista
           </Button>
         </div>
@@ -474,8 +474,8 @@ function MiRevista() {
                 <CardContent className="p-5">
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex-1 min-w-0">
-                      <h3 className="font-bold text-gray-900 truncate">{mag.title}</h3>
-                      {mag.subtitle && <p className="text-xs text-gray-500 truncate mt-0.5">{mag.subtitle}</p>}
+                      <h3 className="font-bold text-foreground truncate">{mag.title}</h3>
+                      {mag.subtitle && <p className="text-xs text-muted-foreground truncate mt-0.5">{mag.subtitle}</p>}
                     </div>
                     <Badge
                       variant={mag.isPublished ? "default" : "outline"}
@@ -489,7 +489,7 @@ function MiRevista() {
                     <p className="text-xs text-orange-600 font-medium mb-2">📅 {mag.edition}</p>
                   )}
 
-                  <p className="text-xs text-gray-500 mb-4">
+                  <p className="text-xs text-muted-foreground mb-4">
                     {sectionCount > 0 ? `${sectionCount} secciones` : "Sin contenido"} · {new Date(mag.createdAt).toLocaleDateString("es-MX")}
                   </p>
 
@@ -513,7 +513,7 @@ function MiRevista() {
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-8 w-8 text-gray-400 hover:text-green-600"
+                      className="h-8 w-8 text-muted-foreground hover:text-green-600"
                       title={mag.isPublished ? "Despublicar" : "Publicar"}
                       onClick={() => publishMutation.mutate({ id: mag.id, isPublished: !mag.isPublished })}
                     >
@@ -522,7 +522,7 @@ function MiRevista() {
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-8 w-8 text-gray-400 hover:text-red-500"
+                      className="h-8 w-8 text-muted-foreground hover:text-red-500"
                       onClick={() => {
                         if (confirm(`¿Eliminar la revista "${mag.title}"?`)) {
                           deleteMutation.mutate({ id: mag.id });
@@ -593,7 +593,7 @@ export default function HR() {
                   className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
                     isActive
                       ? "border-orange-500 text-orange-600"
-                      : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                      : "border-transparent text-muted-foreground hover:text-foreground hover:border-gray-300"
                   }`}
                 >
                   <Icon className="w-4 h-4" />

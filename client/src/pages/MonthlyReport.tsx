@@ -208,14 +208,14 @@ export default function MonthlyReport() {
               <FileText className="w-5 h-5 text-blue-400" />
             </div>
             <div>
-              <h1 className="text-xl font-bold text-white">Reporte Mensual</h1>
-              <p className="text-sm text-gray-400">Resumen de ventas y comisiones por mes</p>
+              <h1 className="text-xl font-bold text-foreground">Reporte Mensual</h1>
+              <p className="text-sm text-muted-foreground">Resumen de ventas y comisiones por mes</p>
             </div>
           </div>
           {data && (
             <Button
               onClick={generatePDF}
-              className="bg-emerald-500 hover:bg-emerald-600 text-white gap-2"
+              className="bg-emerald-500 hover:bg-emerald-600 text-foreground gap-2"
             >
               <Download className="w-4 h-4" />
               Descargar PDF
@@ -224,23 +224,23 @@ export default function MonthlyReport() {
         </div>
 
         {/* Month selector */}
-        <div className="bg-[#1a1f2e] border border-white/10 rounded-2xl p-4 mb-6 flex items-center justify-between">
+        <div className="bg-[#1a1f2e] border border-border rounded-2xl p-4 mb-6 flex items-center justify-between">
           <button
             onClick={prevMonth}
             className="w-9 h-9 rounded-xl bg-white/5 hover:bg-white/10 flex items-center justify-center transition-colors"
           >
-            <ChevronLeft className="w-4 h-4 text-gray-400" />
+            <ChevronLeft className="w-4 h-4 text-muted-foreground" />
           </button>
           <div className="text-center">
-            <p className="text-lg font-bold text-white">{MONTHS_ES[month - 1]} {year}</p>
-            <p className="text-xs text-gray-500">Selecciona el período a consultar</p>
+            <p className="text-lg font-bold text-foreground">{MONTHS_ES[month - 1]} {year}</p>
+            <p className="text-xs text-muted-foreground">Selecciona el período a consultar</p>
           </div>
           <button
             onClick={nextMonth}
             disabled={isCurrentOrFuture}
             className="w-9 h-9 rounded-xl bg-white/5 hover:bg-white/10 flex items-center justify-center transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
           >
-            <ChevronRight className="w-4 h-4 text-gray-400" />
+            <ChevronRight className="w-4 h-4 text-muted-foreground" />
           </button>
         </div>
 
@@ -252,52 +252,52 @@ export default function MonthlyReport() {
           <>
             {/* KPI Cards */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
-              <div className="bg-[#1a1f2e] border border-white/10 rounded-2xl p-4">
+              <div className="bg-[#1a1f2e] border border-border rounded-2xl p-4">
                 <div className="flex items-center gap-2 mb-2">
                   <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                  <span className="text-xs text-gray-400">Exitosas</span>
+                  <span className="text-xs text-muted-foreground">Exitosas</span>
                 </div>
-                <p className="text-2xl font-bold text-white">{data.totalTransactions}</p>
+                <p className="text-2xl font-bold text-foreground">{data.totalTransactions}</p>
               </div>
-              <div className="bg-[#1a1f2e] border border-white/10 rounded-2xl p-4">
+              <div className="bg-[#1a1f2e] border border-border rounded-2xl p-4">
                 <div className="flex items-center gap-2 mb-2">
                   <XCircle className="w-4 h-4 text-red-400" />
-                  <span className="text-xs text-gray-400">Fallidas</span>
+                  <span className="text-xs text-muted-foreground">Fallidas</span>
                 </div>
-                <p className="text-2xl font-bold text-white">{data.failedTransactions}</p>
+                <p className="text-2xl font-bold text-foreground">{data.failedTransactions}</p>
               </div>
-              <div className="bg-[#1a1f2e] border border-white/10 rounded-2xl p-4 col-span-2">
+              <div className="bg-[#1a1f2e] border border-border rounded-2xl p-4 col-span-2">
                 <div className="flex items-center gap-2 mb-2">
                   <DollarSign className="w-4 h-4 text-blue-400" />
-                  <span className="text-xs text-gray-400">Monto Bruto</span>
+                  <span className="text-xs text-muted-foreground">Monto Bruto</span>
                 </div>
-                <p className="text-2xl font-bold text-white">${fmt(data.totalBruto)}</p>
-                <p className="text-xs text-gray-500 mt-1">MXN cobrado en el período</p>
+                <p className="text-2xl font-bold text-foreground">${fmt(data.totalBruto)}</p>
+                <p className="text-xs text-muted-foreground mt-1">MXN cobrado en el período</p>
               </div>
               <div className="bg-[#1a1f2e] border border-amber-500/20 rounded-2xl p-4 col-span-2">
                 <div className="flex items-center gap-2 mb-2">
                   <Percent className="w-4 h-4 text-amber-400" />
-                  <span className="text-xs text-gray-400">Comisión ({data.commissionRate}%)</span>
+                  <span className="text-xs text-muted-foreground">Comisión ({data.commissionRate}%)</span>
                 </div>
                 <p className="text-2xl font-bold text-amber-400">${fmt(data.totalComision)}</p>
-                <p className="text-xs text-gray-500 mt-1">Comisión de la plataforma</p>
+                <p className="text-xs text-muted-foreground mt-1">Comisión de la plataforma</p>
               </div>
               <div className="bg-[#1a1f2e] border border-emerald-500/20 rounded-2xl p-4 col-span-2">
                 <div className="flex items-center gap-2 mb-2">
                   <TrendingUp className="w-4 h-4 text-emerald-400" />
-                  <span className="text-xs text-gray-400">Monto Neto</span>
+                  <span className="text-xs text-muted-foreground">Monto Neto</span>
                 </div>
                 <p className="text-2xl font-bold text-emerald-400">${fmt(data.totalNeto)}</p>
-                <p className="text-xs text-gray-500 mt-1">Lo que recibes después de comisión</p>
+                <p className="text-xs text-muted-foreground mt-1">Lo que recibes después de comisión</p>
               </div>
             </div>
 
             {/* Bar chart by day */}
             {data.totalTransactions > 0 && (
-              <div className="bg-[#1a1f2e] border border-white/10 rounded-2xl p-5 mb-6">
+              <div className="bg-[#1a1f2e] border border-border rounded-2xl p-5 mb-6">
                 <div className="flex items-center gap-2 mb-4">
                   <BarChart3 className="w-4 h-4 text-blue-400" />
-                  <h2 className="text-sm font-semibold text-white">Ventas por día</h2>
+                  <h2 className="text-sm font-semibold text-foreground">Ventas por día</h2>
                 </div>
                 <div className="flex items-end gap-0.5 h-24 overflow-x-auto pb-2">
                   {dayBars.map(({ day, total }) => (
@@ -308,7 +308,7 @@ export default function MonthlyReport() {
                         title={total > 0 ? `Día ${day}: $${fmt(total)}` : `Día ${day}: sin ventas`}
                       />
                       {daysInMonth <= 31 && (
-                        <span className="text-[8px] text-gray-600">{day}</span>
+                        <span className="text-[8px] text-muted-foreground">{day}</span>
                       )}
                     </div>
                   ))}
@@ -317,42 +317,42 @@ export default function MonthlyReport() {
             )}
 
             {/* Transactions table */}
-            <div className="bg-[#1a1f2e] border border-white/10 rounded-2xl overflow-hidden">
-              <div className="p-4 border-b border-white/10 flex items-center gap-2">
-                <CreditCard className="w-4 h-4 text-gray-400" />
-                <h2 className="text-sm font-semibold text-white">
+            <div className="bg-[#1a1f2e] border border-border rounded-2xl overflow-hidden">
+              <div className="p-4 border-b border-border flex items-center gap-2">
+                <CreditCard className="w-4 h-4 text-muted-foreground" />
+                <h2 className="text-sm font-semibold text-foreground">
                   Transacciones del período ({data.transactions.length})
                 </h2>
               </div>
               {data.transactions.length === 0 ? (
                 <div className="py-12 text-center">
-                  <Calendar className="w-10 h-10 text-gray-600 mx-auto mb-3" />
-                  <p className="text-gray-400 text-sm">No hay transacciones exitosas en {MONTHS_ES[month - 1]} {year}</p>
+                  <Calendar className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
+                  <p className="text-muted-foreground text-sm">No hay transacciones exitosas en {MONTHS_ES[month - 1]} {year}</p>
                 </div>
               ) : (
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead>
-                      <tr className="border-b border-white/10">
-                        <th className="text-left px-4 py-3 text-xs text-gray-500 font-medium">#Op</th>
-                        <th className="text-left px-4 py-3 text-xs text-gray-500 font-medium">Fecha</th>
-                        <th className="text-left px-4 py-3 text-xs text-gray-500 font-medium">Cliente</th>
-                        <th className="text-right px-4 py-3 text-xs text-gray-500 font-medium">Monto</th>
-                        <th className="text-right px-4 py-3 text-xs text-gray-500 font-medium">Comisión</th>
-                        <th className="text-right px-4 py-3 text-xs text-gray-500 font-medium">Neto</th>
-                        <th className="text-left px-4 py-3 text-xs text-gray-500 font-medium">Tarjeta</th>
+                      <tr className="border-b border-border">
+                        <th className="text-left px-4 py-3 text-xs text-muted-foreground font-medium">#Op</th>
+                        <th className="text-left px-4 py-3 text-xs text-muted-foreground font-medium">Fecha</th>
+                        <th className="text-left px-4 py-3 text-xs text-muted-foreground font-medium">Cliente</th>
+                        <th className="text-right px-4 py-3 text-xs text-muted-foreground font-medium">Monto</th>
+                        <th className="text-right px-4 py-3 text-xs text-muted-foreground font-medium">Comisión</th>
+                        <th className="text-right px-4 py-3 text-xs text-muted-foreground font-medium">Neto</th>
+                        <th className="text-left px-4 py-3 text-xs text-muted-foreground font-medium">Tarjeta</th>
                       </tr>
                     </thead>
                     <tbody>
                       {data.transactions.map((t) => (
-                        <tr key={t.id} className="border-b border-white/5 hover:bg-white/3 transition-colors">
-                          <td className="px-4 py-3 text-gray-400 font-mono text-xs">{t.operationNumber || `#${t.id}`}</td>
-                          <td className="px-4 py-3 text-gray-300 text-xs">{new Date(t.date).toLocaleDateString("es-MX")}</td>
-                          <td className="px-4 py-3 text-white text-xs">{t.payerName || "—"}</td>
-                          <td className="px-4 py-3 text-right text-white font-medium text-xs">${fmt(t.amount)}</td>
+                        <tr key={t.id} className="border-b border-border hover:bg-white/3 transition-colors">
+                          <td className="px-4 py-3 text-muted-foreground font-mono text-xs">{t.operationNumber || `#${t.id}`}</td>
+                          <td className="px-4 py-3 text-muted-foreground text-xs">{new Date(t.date).toLocaleDateString("es-MX")}</td>
+                          <td className="px-4 py-3 text-foreground text-xs">{t.payerName || "—"}</td>
+                          <td className="px-4 py-3 text-right text-foreground font-medium text-xs">${fmt(t.amount)}</td>
                           <td className="px-4 py-3 text-right text-amber-400 text-xs">${fmt(t.commissionAmount)}</td>
                           <td className="px-4 py-3 text-right text-emerald-400 font-semibold text-xs">${fmt(t.netAmount)}</td>
-                          <td className="px-4 py-3 text-gray-400 text-xs">
+                          <td className="px-4 py-3 text-muted-foreground text-xs">
                             {t.cardBrand ? `${t.cardBrand} ****${t.cardLast4}` : "—"}
                             {t.msiMonths ? <span className="ml-1 text-blue-400">{t.msiMonths}MSI</span> : null}
                           </td>
@@ -361,8 +361,8 @@ export default function MonthlyReport() {
                     </tbody>
                     <tfoot>
                       <tr className="bg-white/3">
-                        <td colSpan={3} className="px-4 py-3 text-xs font-semibold text-gray-400">Total</td>
-                        <td className="px-4 py-3 text-right text-white font-bold text-xs">${fmt(data.totalBruto)}</td>
+                        <td colSpan={3} className="px-4 py-3 text-xs font-semibold text-muted-foreground">Total</td>
+                        <td className="px-4 py-3 text-right text-foreground font-bold text-xs">${fmt(data.totalBruto)}</td>
                         <td className="px-4 py-3 text-right text-amber-400 font-bold text-xs">${fmt(data.totalComision)}</td>
                         <td className="px-4 py-3 text-right text-emerald-400 font-bold text-xs">${fmt(data.totalNeto)}</td>
                         <td />

@@ -55,7 +55,7 @@ const statusConfig = {
   processing: { label: "Procesando", color: "bg-blue-100 text-blue-700 border-blue-200", icon: Clock },
   succeeded: { label: "Pagado", color: "bg-green-100 text-green-700 border-green-200", icon: CheckCircle2 },
   failed: { label: "Fallido", color: "bg-red-100 text-red-700 border-red-200", icon: XCircle },
-  refunded: { label: "Reembolsado", color: "bg-gray-100 text-gray-600 border-gray-200", icon: RefreshCw },
+  refunded: { label: "Reembolsado", color: "bg-gray-100 text-muted-foreground border-gray-200", icon: RefreshCw },
 };
 
 // Mapa de códigos de error de Stripe a mensajes en español
@@ -419,17 +419,17 @@ function TransactionDetailModal({
       <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <div className="flex items-center gap-2">
-            <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+            <button onClick={onClose} className="text-muted-foreground hover:text-muted-foreground">
               <ArrowLeft className="w-4 h-4" />
             </button>
-            <DialogTitle className="text-gray-800">Detalle de la transacción</DialogTitle>
+            <DialogTitle className="text-foreground">Detalle de la transacción</DialogTitle>
           </div>
         </DialogHeader>
 
         <div className="space-y-5">
           {/* Monto y estatus */}
           <div className="text-center py-4">
-            <p className={`text-4xl font-black mb-2 ${tx.status === "succeeded" ? "text-gray-900" : "text-gray-400 line-through"}`}>
+            <p className={`text-4xl font-black mb-2 ${tx.status === "succeeded" ? "text-foreground" : "text-muted-foreground line-through"}`}>
               {formatCurrency(gross, tx.currency)}
             </p>
             {tx.status === "pending" ? (
@@ -440,7 +440,7 @@ function TransactionDetailModal({
                   <svg className="w-3.5 h-3.5 ml-0.5 opacity-60" fill="none" viewBox="0 0 24 24" stroke="currentColor"><circle cx="12" cy="12" r="10" strokeWidth="2"/><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 16v-4M12 8h.01"/></svg>
                 </span>
                 {/* Tooltip burbuja */}
-                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-72 bg-gray-900 text-white text-xs rounded-xl shadow-xl p-3 opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-200 z-50">
+                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-72 bg-card text-foreground text-xs rounded-xl shadow-xl p-3 opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-200 z-50">
                   <p className="font-semibold text-amber-300 mb-1.5">¿Por qué está pendiente?</p>
                   <ul className="space-y-1 text-gray-200">
                     <li className="flex items-start gap-1.5"><span className="text-amber-400 mt-0.5">•</span> El cliente abrió el enlace pero no completó el pago</li>
@@ -449,7 +449,7 @@ function TransactionDetailModal({
                     <li className="flex items-start gap-1.5"><span className="text-amber-400 mt-0.5">•</span> El banco requirió verificación adicional (3D Secure) y no la completó</li>
                     <li className="flex items-start gap-1.5"><span className="text-amber-400 mt-0.5">•</span> El pago está en proceso de autorización</li>
                   </ul>
-                  <p className="text-gray-400 mt-2 text-[10px]">Si el cliente ya pagó y sigue pendiente, espera unos minutos y actualiza.</p>
+                  <p className="text-muted-foreground mt-2 text-[10px]">Si el cliente ya pagó y sigue pendiente, espera unos minutos y actualiza.</p>
                   {/* Flecha del tooltip */}
                   <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-900" />
                 </div>
@@ -460,7 +460,7 @@ function TransactionDetailModal({
                 {cfg.label}
               </span>
             )}
-            <p className="text-xs text-gray-400 mt-2">{formatDate(tx.createdAt)}</p>
+            <p className="text-xs text-muted-foreground mt-2">{formatDate(tx.createdAt)}</p>
           </div>
 
           {/* Alerta de fallo */}
@@ -481,10 +481,10 @@ function TransactionDetailModal({
           <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs text-gray-400 font-semibold uppercase tracking-wide mb-1 flex items-center gap-1">
+                <p className="text-xs text-muted-foreground font-semibold uppercase tracking-wide mb-1 flex items-center gap-1">
                   <Hash className="w-3 h-3" /> N.° de Operación
                 </p>
-                <p className="text-lg font-black text-gray-800 font-mono tracking-wide">{operationNumber}</p>
+                <p className="text-lg font-black text-foreground font-mono tracking-wide">{operationNumber}</p>
               </div>
               <button
                 onClick={copyOperationNumber}
@@ -497,41 +497,41 @@ function TransactionDetailModal({
 
           {/* Datos del cliente */}
           <div>
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Datos del cliente</p>
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3">Datos del cliente</p>
             <div className="space-y-2">
               {tx.payerName && (
                 <div className="flex items-center gap-3 py-2 border-b border-gray-100">
-                  <User className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                  <User className="w-4 h-4 text-muted-foreground flex-shrink-0" />
                   <div>
-                    <p className="text-xs text-gray-400">Nombre</p>
-                    <p className="text-sm font-medium text-gray-800">{tx.payerName}</p>
+                    <p className="text-xs text-muted-foreground">Nombre</p>
+                    <p className="text-sm font-medium text-foreground">{tx.payerName}</p>
                   </div>
                 </div>
               )}
               {tx.payerEmail && (
                 <div className="flex items-center gap-3 py-2 border-b border-gray-100">
-                  <Mail className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                  <Mail className="w-4 h-4 text-muted-foreground flex-shrink-0" />
                   <div>
-                    <p className="text-xs text-gray-400">Email</p>
-                    <p className="text-sm font-medium text-gray-800">{tx.payerEmail}</p>
+                    <p className="text-xs text-muted-foreground">Email</p>
+                    <p className="text-sm font-medium text-foreground">{tx.payerEmail}</p>
                   </div>
                 </div>
               )}
               {tx.payerPhone && (
                 <div className="flex items-center gap-3 py-2 border-b border-gray-100">
-                  <Phone className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                  <Phone className="w-4 h-4 text-muted-foreground flex-shrink-0" />
                   <div>
-                    <p className="text-xs text-gray-400">Teléfono</p>
-                    <p className="text-sm font-medium text-gray-800">{tx.payerPhone}</p>
+                    <p className="text-xs text-muted-foreground">Teléfono</p>
+                    <p className="text-sm font-medium text-foreground">{tx.payerPhone}</p>
                   </div>
                 </div>
               )}
               {tx.cardBrand && tx.cardLast4 && (
                 <div className="flex items-center gap-3 py-2 border-b border-gray-100">
-                  <CreditCard className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                  <CreditCard className="w-4 h-4 text-muted-foreground flex-shrink-0" />
                   <div>
-                    <p className="text-xs text-gray-400">Medio de pago</p>
-                    <p className="text-sm font-medium text-gray-800 capitalize">
+                    <p className="text-xs text-muted-foreground">Medio de pago</p>
+                    <p className="text-sm font-medium text-foreground capitalize">
                       {tx.cardBrand} •••• {tx.cardLast4}
                     </p>
                   </div>
@@ -539,10 +539,10 @@ function TransactionDetailModal({
               )}
               {description && (
                 <div className="flex items-center gap-3 py-2 border-b border-gray-100">
-                  <Calendar className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                  <Calendar className="w-4 h-4 text-muted-foreground flex-shrink-0" />
                   <div>
-                    <p className="text-xs text-gray-400">Concepto</p>
-                    <p className="text-sm font-medium text-gray-800">{description}</p>
+                    <p className="text-xs text-muted-foreground">Concepto</p>
+                    <p className="text-sm font-medium text-foreground">{description}</p>
                   </div>
                 </div>
               )}
@@ -555,18 +555,18 @@ function TransactionDetailModal({
               <p className="text-xs font-semibold text-green-700 uppercase tracking-wide mb-3">Desglose financiero</p>
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">Monto bruto</span>
-                  <span className="font-semibold text-gray-800">{formatCurrency(gross, tx.currency)}</span>
+                  <span className="text-muted-foreground">Monto bruto</span>
+                  <span className="font-semibold text-foreground">{formatCurrency(gross, tx.currency)}</span>
                 </div>
                  {commRate > 0 && (
                   <>
                     <div className="flex justify-between text-sm">
-                      <span className="text-gray-600">Comisión KobraPay ({commRate}%)</span>
+                      <span className="text-muted-foreground">Comisión KobraPay ({commRate}%)</span>
                       <span className="font-semibold text-red-600">-{formatCurrency(commAmt)}</span>
                     </div>
                     {ivaRate > 0 && (
                       <div className="flex justify-between text-sm">
-                        <span className="text-gray-600">IVA sobre comisión ({(ivaRate * 100).toFixed(0)}%)</span>
+                        <span className="text-muted-foreground">IVA sobre comisión ({(ivaRate * 100).toFixed(0)}%)</span>
                         <span className="font-semibold text-orange-600">-{formatCurrency(ivaAmt)}</span>
                       </div>
                     )}
@@ -577,7 +577,7 @@ function TransactionDetailModal({
                       </div>
                     )}
                     <div className="flex justify-between text-sm border-t border-green-200 pt-2">
-                      <span className="font-bold text-gray-800">Monto neto para ti</span>
+                      <span className="font-bold text-foreground">Monto neto para ti</span>
                       <span className="font-black text-green-700 text-base">{formatCurrency(net)}</span>
                     </div>
                   </>
@@ -589,7 +589,7 @@ function TransactionDetailModal({
           {/* Evidencia del cliente */}
           {(tx.selfieUrl || tx.signatureUrl || tx.idDocumentUrl) && (
             <div>
-              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3 flex items-center gap-1">
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3 flex items-center gap-1">
                 <ShieldCheck className="w-3.5 h-3.5" /> Evidencia de identidad
               </p>
               <div className="grid grid-cols-3 gap-2">
@@ -597,7 +597,7 @@ function TransactionDetailModal({
                   <a href={tx.selfieUrl} target="_blank" rel="noopener noreferrer" className="block">
                     <div className="border border-gray-200 rounded-xl overflow-hidden bg-gray-50 hover:border-blue-400 transition-colors">
                       <img src={tx.selfieUrl} alt="Selfie" className="w-full h-24 object-cover" />
-                      <p className="text-center text-xs text-gray-500 py-1.5 font-medium">Foto</p>
+                      <p className="text-center text-xs text-muted-foreground py-1.5 font-medium">Foto</p>
                     </div>
                   </a>
                 )}
@@ -605,7 +605,7 @@ function TransactionDetailModal({
                   <a href={tx.signatureUrl} target="_blank" rel="noopener noreferrer" className="block">
                     <div className="border border-gray-200 rounded-xl overflow-hidden bg-gray-50 hover:border-blue-400 transition-colors">
                       <img src={tx.signatureUrl} alt="Firma" className="w-full h-24 object-contain p-2" />
-                      <p className="text-center text-xs text-gray-500 py-1.5 font-medium">Firma</p>
+                      <p className="text-center text-xs text-muted-foreground py-1.5 font-medium">Firma</p>
                     </div>
                   </a>
                 )}
@@ -613,7 +613,7 @@ function TransactionDetailModal({
                   <a href={tx.idDocumentUrl} target="_blank" rel="noopener noreferrer" className="block">
                     <div className="border border-gray-200 rounded-xl overflow-hidden bg-gray-50 hover:border-blue-400 transition-colors">
                       <img src={tx.idDocumentUrl} alt="ID" className="w-full h-24 object-cover" />
-                      <p className="text-center text-xs text-gray-500 py-1.5 font-medium">ID</p>
+                      <p className="text-center text-xs text-muted-foreground py-1.5 font-medium">ID</p>
                     </div>
                   </a>
                 )}
@@ -629,8 +629,8 @@ function TransactionDetailModal({
           {/* Referencia Stripe */}
           {tx.stripePaymentIntentId && (
             <div className="text-center">
-              <p className="text-xs text-gray-400">Referencia Stripe</p>
-              <p className="text-xs font-mono text-gray-500 mt-0.5">{tx.stripePaymentIntentId}</p>
+              <p className="text-xs text-muted-foreground">Referencia Stripe</p>
+              <p className="text-xs font-mono text-muted-foreground mt-0.5">{tx.stripePaymentIntentId}</p>
             </div>
           )}
 
@@ -640,7 +640,7 @@ function TransactionDetailModal({
               <Button
                 onClick={handleDownloadEvidencePdf}
                 disabled={isGeneratingEvidencePdf}
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+                className="w-full bg-blue-600 hover:bg-blue-700 text-foreground"
               >
                 <ShieldCheck className="w-4 h-4 mr-2" />
                 {isGeneratingEvidencePdf ? "Generando PDF..." : "Descargar evidencia (PDF)"}
@@ -656,7 +656,7 @@ function TransactionDetailModal({
                   window.open(`https://wa.me/${phone}?text=${msg}`, "_blank");
                   toast.success("Abriendo WhatsApp...");
                 }}
-                className="w-full bg-[#25D366] hover:bg-[#1ebe57] text-white"
+                className="w-full bg-[#25D366] hover:bg-[#1ebe57] text-foreground"
               >
                 <MessageCircle className="w-4 h-4 mr-2" />
                 Enviar comprobante por WhatsApp
@@ -683,26 +683,26 @@ function TransactionDetailModal({
                       <p className="text-xs text-amber-700">La comisión de KobraPay ya fue descontada automáticamente al momento del pago y <strong>no es recuperable</strong>. El costo del reembolso es absorbido por el negocio.</p>
                     </div>
                     <div className="space-y-1">
-                      <p className="text-xs font-medium text-gray-600">Tipo de reembolso:</p>
+                      <p className="text-xs font-medium text-muted-foreground">Tipo de reembolso:</p>
                       <div className="flex gap-2">
                         <button
                           type="button"
                           onClick={() => setRefundType('full')}
-                          className={`flex-1 text-xs py-2 rounded-lg border font-medium transition-colors ${refundType === 'full' ? 'bg-red-600 text-white border-red-600' : 'bg-white text-gray-600 border-gray-200 hover:border-red-300'}`}
+                          className={`flex-1 text-xs py-2 rounded-lg border font-medium transition-colors ${refundType === 'full' ? 'bg-red-600 text-foreground border-red-600' : 'bg-white text-muted-foreground border-gray-200 hover:border-red-300'}`}
                         >
                           Total ({formatCurrency(tx.amount, tx.currency)})
                         </button>
                         <button
                           type="button"
                           onClick={() => setRefundType('partial')}
-                          className={`flex-1 text-xs py-2 rounded-lg border font-medium transition-colors ${refundType === 'partial' ? 'bg-red-600 text-white border-red-600' : 'bg-white text-gray-600 border-gray-200 hover:border-red-300'}`}
+                          className={`flex-1 text-xs py-2 rounded-lg border font-medium transition-colors ${refundType === 'partial' ? 'bg-red-600 text-foreground border-red-600' : 'bg-white text-muted-foreground border-gray-200 hover:border-red-300'}`}
                         >
                           Parcial
                         </button>
                       </div>
                       {refundType === 'partial' && (
                         <div className="mt-2">
-                          <p className="text-xs text-gray-500 mb-1">Monto a reembolsar (máx. {formatCurrency(tx.amount, tx.currency)}):</p>
+                          <p className="text-xs text-muted-foreground mb-1">Monto a reembolsar (máx. {formatCurrency(tx.amount, tx.currency)}):</p>
                           <input
                             type="number"
                             min="1"
@@ -717,7 +717,7 @@ function TransactionDetailModal({
                       )}
                     </div>
                     <div className="space-y-1">
-                      <p className="text-xs font-medium text-gray-600">Motivo:</p>
+                      <p className="text-xs font-medium text-muted-foreground">Motivo:</p>
                       <select
                         value={refundReason}
                         onChange={(e) => setRefundReason(e.target.value as typeof refundReason)}
@@ -740,7 +740,7 @@ function TransactionDetailModal({
                           refundMutation.mutate({ transactionId: tx.id, reason: refundReason, amountCents });
                         }}
                         disabled={refundMutation.isPending}
-                        className="flex-1 bg-red-600 hover:bg-red-700 text-white text-sm"
+                        className="flex-1 bg-red-600 hover:bg-red-700 text-foreground text-sm"
                       >
                         {refundMutation.isPending ? (isEmployee ? 'Enviando...' : 'Procesando...') : (isEmployee ? 'Enviar Solicitud' : 'Confirmar Reembolso')}
                       </Button>
@@ -771,7 +771,7 @@ function TransactionDetailModal({
               {tx.status === "succeeded" && (
                 <Button
                   onClick={handleDownloadReceipt}
-                  className="flex-1 bg-green-600 hover:bg-green-700 text-white"
+                  className="flex-1 bg-green-600 hover:bg-green-700 text-foreground"
                 >
                   <Download className="w-4 h-4 mr-2" />
                   Descargar
@@ -794,7 +794,7 @@ function TransactionDetailModal({
                   <div className="flex-1">
                     <p className={`text-sm font-bold mb-1 ${
                       txChargeback.status === 'won' ? 'text-green-800'
-                      : txChargeback.status === 'lost' ? 'text-gray-700'
+                      : txChargeback.status === 'lost' ? 'text-foreground'
                       : txChargeback.status === 'under_review' ? 'text-blue-800'
                       : 'text-red-800'
                     }`}>
@@ -804,7 +804,7 @@ function TransactionDetailModal({
                       {txChargeback.status === 'open' && '⚠️ Contracargo — Requiere respuesta'}
                       {!['won','lost','under_review','open'].includes(txChargeback.status) && `⚠️ Contracargo — ${txChargeback.reasonEs || txChargeback.status}`}
                     </p>
-                    <p className="text-xs text-gray-600">
+                    <p className="text-xs text-muted-foreground">
                       {txChargeback.status === 'won' && 'Disputamos el contracargo y se resolvió a tu favor. El dinero fue devuelto a tu cuenta.'}
                       {txChargeback.status === 'lost' && 'Disputamos el contracargo y se resolvió a favor del cliente. El banco te debitó el monto.'}
                       {txChargeback.status === 'under_review' && 'La evidencia fue enviada a Stripe y está siendo revisada por el banco emisor.'}
@@ -826,7 +826,7 @@ function TransactionDetailModal({
                         });
                       }}
                       disabled={isSubmittingEvidence}
-                      className="flex-shrink-0 bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white text-xs font-bold px-3 py-2 rounded-lg flex items-center gap-1.5 transition-colors"
+                      className="flex-shrink-0 bg-red-600 hover:bg-red-700 disabled:opacity-50 text-foreground text-xs font-bold px-3 py-2 rounded-lg flex items-center gap-1.5 transition-colors"
                     >
                       {isSubmittingEvidence ? (
                         <>⏳ Enviando...</>
@@ -1042,8 +1042,8 @@ export default function Sales() {
               {pendingRefunds.map((tx) => (
                 <div key={tx.id} className="bg-white border border-amber-100 rounded-lg p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-800">{tx.payerName || 'Cliente'} — {formatCurrency(tx.amount, tx.currency)}</p>
-                    <p className="text-xs text-gray-500">{tx.payerEmail || ''} · {formatDate(tx.createdAt)}</p>
+                    <p className="text-sm font-medium text-foreground">{tx.payerName || 'Cliente'} — {formatCurrency(tx.amount, tx.currency)}</p>
+                    <p className="text-xs text-muted-foreground">{tx.payerEmail || ''} · {formatDate(tx.createdAt)}</p>
                     <p className="text-xs text-amber-700 mt-0.5">Motivo: {tx.refundRequestReason === 'duplicate' ? 'Pago duplicado' : tx.refundRequestReason === 'fraudulent' ? 'Transacción fraudulenta' : 'Solicitado por el cliente'}</p>
                   </div>
                   <div className="flex gap-2 shrink-0">
@@ -1058,7 +1058,7 @@ export default function Sales() {
                     </Button>
                     <Button
                       size="sm"
-                      className="bg-green-600 hover:bg-green-700 text-white text-xs"
+                      className="bg-green-600 hover:bg-green-700 text-foreground text-xs"
                       disabled={approveRefundMutation.isPending}
                       onClick={() => approveRefundMutation.mutate({ transactionId: tx.id, action: 'approve' })}
                     >
@@ -1114,8 +1114,8 @@ export default function Sales() {
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-xs text-gray-500 font-medium">{label}</p>
-                    <p className="text-xl font-bold text-gray-800 mt-0.5">{value}</p>
+                    <p className="text-xs text-muted-foreground font-medium">{label}</p>
+                    <p className="text-xl font-bold text-foreground mt-0.5">{value}</p>
                   </div>
                   <div className={`w-10 h-10 ${iconBg} rounded-xl flex items-center justify-center`}>
                     <Icon className={`w-5 h-5 ${iconColor}`} />
@@ -1130,7 +1130,7 @@ export default function Sales() {
         <Card className="border-gray-200 shadow-sm">
           <CardHeader className="pb-3 border-b border-gray-100">
             <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-              <CardTitle className="text-base font-semibold text-gray-800 flex-1">
+              <CardTitle className="text-base font-semibold text-foreground flex-1">
                 Historial de transacciones
               </CardTitle>
               <div className="flex items-center gap-2">
@@ -1171,7 +1171,7 @@ export default function Sales() {
             <div className="flex flex-col gap-2 mt-3">
               <div className="flex flex-col sm:flex-row gap-2">
                 <div className="relative flex-1">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
                   <Input
                     placeholder="Buscar por cliente, email o N.° de operación..."
                     value={search}
@@ -1186,8 +1186,8 @@ export default function Sales() {
                       onClick={() => setFilter(f)}
                       className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
                         filter === f
-                          ? "bg-cyan-500 text-white"
-                          : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                          ? "bg-cyan-500 text-foreground"
+                          : "bg-gray-100 text-muted-foreground hover:bg-gray-200"
                       }`}
                     >
                       {f === "all" ? "Todos" : f === "succeeded" ? "Pagados" : f === "pending" ? "Pendientes" : "Fallidos"}
@@ -1198,15 +1198,15 @@ export default function Sales() {
               {/* Date range filters */}
               <div className="flex flex-col sm:flex-row gap-2 items-center">
                 <div className="flex items-center gap-2 flex-1">
-                  <Calendar className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
-                  <span className="text-xs text-gray-500 flex-shrink-0">Desde</span>
+                  <Calendar className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
+                  <span className="text-xs text-muted-foreground flex-shrink-0">Desde</span>
                   <Input
                     type="date"
                     value={dateFrom}
                     onChange={(e) => setDateFrom(e.target.value)}
                     className="h-8 text-xs border-gray-200 flex-1"
                   />
-                  <span className="text-xs text-gray-500 flex-shrink-0">Hasta</span>
+                  <span className="text-xs text-muted-foreground flex-shrink-0">Hasta</span>
                   <Input
                     type="date"
                     value={dateTo}
@@ -1252,7 +1252,7 @@ export default function Sales() {
                   {selectedIds.size > 0 && (
                     <Button
                       size="sm"
-                      className="h-8 text-xs bg-red-600 hover:bg-red-700 text-white"
+                      className="h-8 text-xs bg-red-600 hover:bg-red-700 text-foreground"
                       onClick={() => { setBulkDeleteOpen(true); setBulkPin(["", "", "", ""]); }}
                     >
                       <Trash2 className="w-3.5 h-3.5 mr-1.5" />
@@ -1261,7 +1261,7 @@ export default function Sales() {
                   )}
                   <button
                     onClick={() => { setSelectMode(false); setSelectedIds(new Set()); }}
-                    className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+                    className="p-1.5 rounded-lg text-muted-foreground hover:text-muted-foreground hover:bg-gray-100 transition-colors"
                   >
                     <X className="w-4 h-4" />
                   </button>
@@ -1285,12 +1285,12 @@ export default function Sales() {
             ) : filtered.length === 0 ? (
               <div className="text-center py-16">
                 <div className="w-14 h-14 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-3">
-                  <BarChart3 className="w-7 h-7 text-gray-400" />
+                  <BarChart3 className="w-7 h-7 text-muted-foreground" />
                 </div>
-                <p className="font-medium text-gray-600 mb-1">
+                <p className="font-medium text-muted-foreground mb-1">
                   {search || filter !== "all" || dateFrom || dateTo ? "Sin resultados" : "Sin transacciones aún"}
                 </p>
-                <p className="text-sm text-gray-400">
+                <p className="text-sm text-muted-foreground">
                   {search || filter !== "all" || dateFrom || dateTo
                     ? "Intenta con otros filtros o cambia el rango de fechas"
                     : "Las transacciones aparecerán aquí cuando tus clientes paguen"}
@@ -1304,7 +1304,7 @@ export default function Sales() {
                     <div key={label}>
                       {/* Separador de fecha */}
                       <div className="px-6 py-2 bg-gray-50/70 border-b border-gray-100">
-                        <p className="text-xs font-semibold text-gray-500 capitalize">{label}</p>
+                        <p className="text-xs font-semibold text-muted-foreground capitalize">{label}</p>
                       </div>
                       {/* Items del día */}
                       {items.map((tx) => {
@@ -1349,7 +1349,7 @@ export default function Sales() {
                                   {isSelected ? (
                                     <CheckSquare className="w-5 h-5 text-cyan-600" />
                                   ) : (
-                                    <Square className="w-5 h-5 text-gray-300 hover:text-gray-500" />
+                                    <Square className="w-5 h-5 text-muted-foreground hover:text-muted-foreground" />
                                   )}
                                 </button>
                               </div>
@@ -1363,13 +1363,13 @@ export default function Sales() {
                                   ? "bg-gray-100 border-red-200"
                                   : "bg-gray-100 border-gray-200"
                               }`}>
-                                <svg className="w-5 h-5 text-gray-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                                <svg className="w-5 h-5 text-muted-foreground" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
                                   <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 10.5V6a3.75 3.75 0 10-7.5 0v4.5m11.356-1.993l1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 01-1.12-1.243l1.264-12A1.125 1.125 0 015.513 7.5h12.974c.576 0 1.059.435 1.119 1.007zM8.625 10.5a.375.375 0 11-.75 0 .375.375 0 01.75 0zm6.75 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
                                 </svg>
                               </div>
                               {tx.status === "failed" && (
                                 <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 bg-red-500 rounded-full flex items-center justify-center">
-                                  <span className="text-white text-xs font-bold leading-none">!</span>
+                                  <span className="text-foreground text-xs font-bold leading-none">!</span>
                                 </div>
                               )}
                             </div>
@@ -1377,18 +1377,18 @@ export default function Sales() {
                             {/* Info central */}
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2">
-                                <p className="text-sm font-semibold text-gray-800 truncate">
+                                <p className="text-sm font-semibold text-foreground truncate">
                                   {tx.status === "failed" ? (
                                     <span className="text-red-600">Rechazado</span>
                                   ) : tx.status === "succeeded" ? (
-                                    <span className="text-gray-800">Venta</span>
+                                    <span className="text-foreground">Venta</span>
                                   ) : (
                                     <span className="text-amber-600">Pendiente</span>
                                   )}
                                   {tx.payerName ? ` · ${tx.payerName}` : ""}
                                 </p>
                               </div>
-                              <p className="text-xs text-gray-400 mt-0.5 font-mono">Operación {opNum}</p>
+                              <p className="text-xs text-muted-foreground mt-0.5 font-mono">Operación {opNum}</p>
                               {failInfo && (
                                 <p className="text-xs text-red-500 mt-0.5">{failInfo.title}</p>
                               )}
@@ -1398,7 +1398,7 @@ export default function Sales() {
                                   txChargeback.status === 'won'
                                     ? 'bg-green-100 text-green-700'
                                     : txChargeback.status === 'lost'
-                                    ? 'bg-gray-100 text-gray-600 line-through'
+                                    ? 'bg-gray-100 text-muted-foreground line-through'
                                     : txChargeback.status === 'under_review'
                                     ? 'bg-blue-100 text-blue-700'
                                     : 'bg-red-100 text-red-700'
@@ -1417,20 +1417,20 @@ export default function Sales() {
                               <p className={`font-bold text-sm ${
                                 tx.status === "succeeded"
                                   ? "text-green-600"
-                                  : "text-gray-400 line-through"
+                                  : "text-muted-foreground line-through"
                               }`}>
                                 {tx.status === "succeeded" ? "+" : ""}{formatCurrency(tx.status === "succeeded" ? net : gross, tx.currency)}
                               </p>
                               {commAmt > 0 && tx.status === "succeeded" && (
                                 <p className="text-xs text-orange-400">-{formatCurrency(commAmt)} comisión</p>
                               )}
-                              <p className="text-xs text-gray-400 mt-0.5">{timeStr} hs</p>
+                              <p className="text-xs text-muted-foreground mt-0.5">{timeStr} hs</p>
                             </div>
                             {/* Botón eliminar (solo superadmin) */}
                             {isSuperAdmin && (
                               <button
                                 onClick={(e) => { e.stopPropagation(); setDeleteTarget(tx as Transaction); setDeletePin(["","","",""]); }}
-                                className="ml-1 p-1.5 rounded-lg text-gray-300 hover:text-red-500 hover:bg-red-50 transition-colors flex-shrink-0"
+                                className="ml-1 p-1.5 rounded-lg text-muted-foreground hover:text-red-500 hover:bg-red-50 transition-colors flex-shrink-0"
                                 title="Eliminar transacción"
                               >
                                 <Trash2 className="w-4 h-4" />
@@ -1446,24 +1446,24 @@ export default function Sales() {
                 {/* Summary Footer */}
                 <div className="px-6 py-3 bg-gray-50 border-t border-gray-100">
                   <div className="flex flex-wrap items-center justify-between gap-3">
-                    <p className="text-xs text-gray-500">
+                    <p className="text-xs text-muted-foreground">
                       {filtered.length} transacción{filtered.length !== 1 ? "es" : ""}
                       {" · "}
-                      <span className="text-gray-400">Haz clic en una fila para ver el detalle</span>
+                      <span className="text-muted-foreground">Haz clic en una fila para ver el detalle</span>
                     </p>
                     <div className="flex items-center gap-4">
                       {totalCommission > 0 && (
                         <>
                           <div className="text-right">
-                            <p className="text-xs text-gray-400">Bruto</p>
-                            <p className="text-sm font-semibold text-gray-700">{formatCurrency(totalFiltered)}</p>
+                            <p className="text-xs text-muted-foreground">Bruto</p>
+                            <p className="text-sm font-semibold text-foreground">{formatCurrency(totalFiltered)}</p>
                           </div>
                           <div className="text-right">
-                            <p className="text-xs text-gray-400">Comisión</p>
+                            <p className="text-xs text-muted-foreground">Comisión</p>
                             <p className="text-sm font-semibold text-orange-600">-{formatCurrency(totalCommission)}</p>
                           </div>
                           <div className="text-right">
-                            <p className="text-xs text-gray-400">Neto</p>
+                            <p className="text-xs text-muted-foreground">Neto</p>
                             <p className="text-sm font-bold text-green-600">{formatCurrency(totalNet)}</p>
                           </div>
                         </>
@@ -1516,8 +1516,8 @@ export default function Sales() {
                   <p className="text-xs text-red-500 mt-1">Esta acción es <strong>irreversible</strong>. Los registros se borrarán permanentemente.</p>
                 </div>
                 <div>
-                  <p className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
-                    <Lock className="w-4 h-4 text-gray-500" />
+                  <p className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
+                    <Lock className="w-4 h-4 text-muted-foreground" />
                     Ingresa tu PIN de seguridad
                   </p>
                   <div className="flex gap-3 justify-center">
@@ -1550,7 +1550,7 @@ export default function Sales() {
                     Cancelar
                   </Button>
                   <Button
-                    className="flex-1 bg-red-600 hover:bg-red-700 text-white"
+                    className="flex-1 bg-red-600 hover:bg-red-700 text-foreground"
                     onClick={handleBulkDeleteConfirm}
                     disabled={isBulkDeleting || bulkPin.join("").length !== 4}
                   >
@@ -1592,8 +1592,8 @@ export default function Sales() {
                   <p className="text-xs text-red-500 mt-1">Esta acción es <strong>irreversible</strong>. El registro se borrará permanentemente.</p>
                 </div>
                 <div>
-                  <p className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
-                    <Lock className="w-4 h-4 text-gray-500" />
+                  <p className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
+                    <Lock className="w-4 h-4 text-muted-foreground" />
                     Ingresa tu PIN de seguridad
                   </p>
                   <div className="flex gap-3 justify-center">
@@ -1626,7 +1626,7 @@ export default function Sales() {
                     Cancelar
                   </Button>
                   <Button
-                    className="flex-1 bg-red-600 hover:bg-red-700 text-white"
+                    className="flex-1 bg-red-600 hover:bg-red-700 text-foreground"
                     onClick={handleDeleteConfirm}
                     disabled={isDeleting || deletePin.join("").length !== 4}
                   >

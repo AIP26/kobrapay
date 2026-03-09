@@ -25,7 +25,7 @@ const statusConfig = {
   processing: { label: "Procesando",  variant: "secondary" as const, icon: Clock,        color: "text-blue-600",   bg: "bg-blue-50" },
   succeeded:  { label: "Exitoso",     variant: "default" as const,   icon: CheckCircle2, color: "text-green-600",  bg: "bg-green-50" },
   failed:     { label: "Fallido",     variant: "destructive" as const, icon: XCircle,    color: "text-red-600",    bg: "bg-red-50" },
-  refunded:   { label: "Reembolsado", variant: "outline" as const,   icon: XCircle,      color: "text-gray-600",   bg: "bg-gray-50" },
+  refunded:   { label: "Reembolsado", variant: "outline" as const,   icon: XCircle,      color: "text-muted-foreground",   bg: "bg-gray-50" },
 };
 
 export default function Transactions() {

@@ -282,7 +282,7 @@ function NewSubscriptionModal({ open, onClose }: { open: boolean; onClose: () =>
               <Input
                 readOnly
                 value={createdLink.url}
-                className="text-xs font-mono bg-gray-50 text-gray-600 border-gray-200"
+                className="text-xs font-mono bg-gray-50 text-muted-foreground border-gray-200"
               />
               <Button
                 size="sm"
@@ -313,7 +313,7 @@ function NewSubscriptionModal({ open, onClose }: { open: boolean; onClose: () =>
               </Button>
             </>
           ) : (
-            <Button onClick={() => { setCreatedLink(null); onClose(); }} className="w-full bg-cyan-500 hover:bg-cyan-400 text-white">
+            <Button onClick={() => { setCreatedLink(null); onClose(); }} className="w-full bg-cyan-500 hover:bg-cyan-400 text-foreground">
               <CheckCircle2 className="w-4 h-4 mr-2" /> Listo
             </Button>
           )}

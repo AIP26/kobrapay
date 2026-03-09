@@ -111,14 +111,14 @@ function CreateClientDialog({ onSuccess }: { onSuccess: () => void }) {
   return (
     <Dialog open={open} onOpenChange={(v) => { if (!v) handleClose(); else setOpen(true); }}>
       <DialogTrigger asChild>
-        <Button className="bg-cyan-500 hover:bg-cyan-400 text-white gap-2">
+        <Button className="bg-cyan-500 hover:bg-cyan-400 text-foreground gap-2">
           <Plus className="w-4 h-4" />
           Nuevo Cliente
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle className="text-gray-800">
+          <DialogTitle className="text-foreground">
             {createdClient ? "✅ Cliente creado" : "Crear nuevo cliente"}
           </DialogTitle>
         </DialogHeader>
@@ -132,30 +132,30 @@ function CreateClientDialog({ onSuccess }: { onSuccess: () => void }) {
               <div className="space-y-2">
                 <div className="flex items-center justify-between bg-white rounded-lg px-3 py-2 border border-green-200">
                   <div>
-                    <p className="text-xs text-gray-500">Email</p>
-                    <p className="text-sm font-mono font-medium text-gray-800">{createdClient.email}</p>
+                    <p className="text-xs text-muted-foreground">Email</p>
+                    <p className="text-sm font-mono font-medium text-foreground">{createdClient.email}</p>
                   </div>
                   <button
                     onClick={() => { navigator.clipboard.writeText(createdClient.email); toast.success("Email copiado"); }}
-                    className="text-gray-400 hover:text-gray-600"
+                    className="text-muted-foreground hover:text-muted-foreground"
                   >
                     <Copy className="w-4 h-4" />
                   </button>
                 </div>
                 <div className="flex items-center justify-between bg-white rounded-lg px-3 py-2 border border-green-200">
                   <div>
-                    <p className="text-xs text-gray-500">Contraseña temporal</p>
-                    <p className="text-sm font-mono font-medium text-gray-800">
+                    <p className="text-xs text-muted-foreground">Contraseña temporal</p>
+                    <p className="text-sm font-mono font-medium text-foreground">
                       {showPassword ? createdClient.tempPassword : "••••••••••"}
                     </p>
                   </div>
                   <div className="flex gap-2">
-                    <button onClick={() => setShowPassword(!showPassword)} className="text-gray-400 hover:text-gray-600">
+                    <button onClick={() => setShowPassword(!showPassword)} className="text-muted-foreground hover:text-muted-foreground">
                       {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
                     <button
                       onClick={() => { navigator.clipboard.writeText(createdClient.tempPassword); toast.success("Contraseña copiada"); }}
-                      className="text-gray-400 hover:text-gray-600"
+                      className="text-muted-foreground hover:text-muted-foreground"
                     >
                       <Copy className="w-4 h-4" />
                     </button>
@@ -164,7 +164,7 @@ function CreateClientDialog({ onSuccess }: { onSuccess: () => void }) {
               </div>
               <p className="text-xs text-green-600 mt-2">⚠️ Comparte estas credenciales de forma segura.</p>
             </div>
-            <Button onClick={handleClose} className="w-full bg-cyan-500 hover:bg-cyan-400 text-white">
+            <Button onClick={handleClose} className="w-full bg-cyan-500 hover:bg-cyan-400 text-foreground">
               Cerrar
             </Button>
           </div>
@@ -172,7 +172,7 @@ function CreateClientDialog({ onSuccess }: { onSuccess: () => void }) {
           <form onSubmit={handleSubmit((data) => createClient.mutate(data))} className="space-y-4">
             <div className="grid grid-cols-2 gap-3">
               <div className="col-span-2 space-y-1.5">
-                <Label htmlFor="name" className="text-sm text-gray-700">Nombre completo *</Label>
+                <Label htmlFor="name" className="text-sm text-foreground">Nombre completo *</Label>
                 <Input
                   id="name"
                   placeholder="Juan García"
@@ -182,7 +182,7 @@ function CreateClientDialog({ onSuccess }: { onSuccess: () => void }) {
                 {errors.name && <p className="text-xs text-red-500">{errors.name.message}</p>}
               </div>
               <div className="col-span-2 space-y-1.5">
-                <Label htmlFor="email" className="text-sm text-gray-700">Email *</Label>
+                <Label htmlFor="email" className="text-sm text-foreground">Email *</Label>
                 <Input
                   id="email"
                   type="email"
@@ -193,15 +193,15 @@ function CreateClientDialog({ onSuccess }: { onSuccess: () => void }) {
                 {errors.email && <p className="text-xs text-red-500">{errors.email.message}</p>}
               </div>
               <div className="col-span-2 space-y-1.5">
-                <Label htmlFor="businessName" className="text-sm text-gray-700">Nombre del negocio</Label>
+                <Label htmlFor="businessName" className="text-sm text-foreground">Nombre del negocio</Label>
                 <Input id="businessName" placeholder="Mi Empresa S.A." {...register("businessName")} />
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="phone" className="text-sm text-gray-700">Teléfono</Label>
+                <Label htmlFor="phone" className="text-sm text-foreground">Teléfono</Label>
                 <Input id="phone" placeholder="+52 55 1234 5678" {...register("phone")} />
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="commissionRate" className="text-sm text-gray-700">Comisión %</Label>
+                <Label htmlFor="commissionRate" className="text-sm text-foreground">Comisión %</Label>
                 <Input
                   id="commissionRate"
                   type="number"
@@ -216,7 +216,7 @@ function CreateClientDialog({ onSuccess }: { onSuccess: () => void }) {
             <Button
               type="submit"
               disabled={createClient.isPending}
-              className="w-full bg-cyan-500 hover:bg-cyan-400 text-white"
+              className="w-full bg-cyan-500 hover:bg-cyan-400 text-foreground"
             >
               {createClient.isPending ? "Creando..." : "Crear Cliente"}
             </Button>
@@ -278,7 +278,7 @@ function ClientDetailPanel({ clientId, onBack }: { clientId: number; onBack: () 
   if (isLoading) {
     return (
       <div className="space-y-4">
-        <button onClick={onBack} className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700">
+        <button onClick={onBack} className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
           <ArrowLeft className="w-4 h-4" /> Volver a clientes
         </button>
         <div className="animate-pulse space-y-3">
@@ -311,7 +311,7 @@ function ClientDetailPanel({ clientId, onBack }: { clientId: number; onBack: () 
   return (
     <div className="space-y-5">
       {/* Back */}
-      <button onClick={onBack} className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700 transition-colors">
+      <button onClick={onBack} className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
         <ArrowLeft className="w-4 h-4" /> Volver a clientes
       </button>
 
@@ -322,11 +322,11 @@ function ClientDetailPanel({ clientId, onBack }: { clientId: number; onBack: () 
             <div className="w-14 h-14 bg-gradient-to-br from-cyan-400 to-blue-500 rounded-2xl flex items-center justify-center flex-shrink-0">
               {profile?.avatarUrl
                 ? <img src={profile.avatarUrl} alt={client.name} className="w-14 h-14 rounded-2xl object-cover" />
-                : <span className="text-white text-lg font-bold">{initials}</span>}
+                : <span className="text-foreground text-lg font-bold">{initials}</span>}
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-3 flex-wrap">
-                <h2 className="text-lg font-bold text-gray-800">{client.name}</h2>
+                <h2 className="text-lg font-bold text-foreground">{client.name}</h2>
                 <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium ${cfg.color}`}>
                   <StatusIcon className="w-3 h-3" />{cfg.label}
                 </span>
@@ -335,15 +335,15 @@ function ClientDetailPanel({ clientId, onBack }: { clientId: number; onBack: () 
                 )}
               </div>
               {(client.businessName || vendorConfig?.businessName) && (
-                <p className="text-sm text-gray-500 flex items-center gap-1 mt-0.5">
+                <p className="text-sm text-muted-foreground flex items-center gap-1 mt-0.5">
                   <Building2 className="w-3.5 h-3.5" />{client.businessName || vendorConfig?.businessName}
                 </p>
               )}
               <div className="flex items-center gap-4 mt-1.5 flex-wrap">
-                <span className="text-xs text-gray-400 flex items-center gap-1"><Mail className="w-3 h-3" />{client.email}</span>
-                {client.phone && <span className="text-xs text-gray-400 flex items-center gap-1"><Phone className="w-3 h-3" />{client.phone}</span>}
+                <span className="text-xs text-muted-foreground flex items-center gap-1"><Mail className="w-3 h-3" />{client.email}</span>
+                {client.phone && <span className="text-xs text-muted-foreground flex items-center gap-1"><Phone className="w-3 h-3" />{client.phone}</span>}
                 {userAccount?.lastSignedIn && (
-                  <span className="text-xs text-gray-400">Último acceso: {formatDate(userAccount.lastSignedIn)}</span>
+                  <span className="text-xs text-muted-foreground">Último acceso: {formatDate(userAccount.lastSignedIn)}</span>
                 )}
               </div>
             </div>
@@ -358,13 +358,13 @@ function ClientDetailPanel({ clientId, onBack }: { clientId: number; onBack: () 
                     className="w-20 text-sm border border-cyan-300 rounded-lg px-2 py-1.5 text-center focus:outline-none focus:ring-2 focus:ring-cyan-400"
                     autoFocus
                   />
-                  <span className="text-sm text-gray-500">%</span>
-                  <Button size="sm" className="bg-cyan-500 hover:bg-cyan-400 text-white h-8 px-3"
+                  <span className="text-sm text-muted-foreground">%</span>
+                  <Button size="sm" className="bg-cyan-500 hover:bg-cyan-400 text-foreground h-8 px-3"
                     disabled={updateClient.isPending}
                     onClick={() => updateClient.mutate({ id: client.id as number, commissionRate: parseFloat(commissionValue) })}>
                     {updateClient.isPending ? "..." : "✓"}
                   </Button>
-                  <Button size="sm" variant="ghost" className="h-8 px-2 text-gray-400" onClick={() => setEditingCommission(false)}>✕</Button>
+                  <Button size="sm" variant="ghost" className="h-8 px-2 text-muted-foreground" onClick={() => setEditingCommission(false)}>✕</Button>
                 </div>
               ) : (
                 <button
@@ -389,7 +389,7 @@ function ClientDetailPanel({ clientId, onBack }: { clientId: number; onBack: () 
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
             className={`flex-shrink-0 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-              activeTab === tab.id ? "bg-white text-gray-800 shadow-sm" : "text-gray-500 hover:text-gray-700"
+              activeTab === tab.id ? "bg-white text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
             }`}
           >{tab.label}</button>
         ))}
@@ -409,8 +409,8 @@ function ClientDetailPanel({ clientId, onBack }: { clientId: number; onBack: () 
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-xs text-gray-500 font-medium">{label}</p>
-                      <p className="text-lg font-bold text-gray-800 mt-0.5">{value}</p>
+                      <p className="text-xs text-muted-foreground font-medium">{label}</p>
+                      <p className="text-lg font-bold text-foreground mt-0.5">{value}</p>
                     </div>
                     <div className={`w-9 h-9 ${iconBg} rounded-xl flex items-center justify-center`}>
                       <Icon className={`w-4 h-4 ${iconColor}`} />
@@ -425,8 +425,8 @@ function ClientDetailPanel({ clientId, onBack }: { clientId: number; onBack: () 
               <CardContent className="p-4 flex items-center gap-3">
                 <div className="w-9 h-9 bg-indigo-100 rounded-xl flex items-center justify-center"><Link2 className="w-4 h-4 text-indigo-600" /></div>
                 <div>
-                  <p className="text-xs text-gray-500">Enlaces de pago</p>
-                  <p className="text-base font-bold text-gray-800">{stats.totalLinks} total · {stats.activeLinks} pendientes · {(stats as any).paidLinks ?? 0} pagados</p>
+                  <p className="text-xs text-muted-foreground">Enlaces de pago</p>
+                  <p className="text-base font-bold text-foreground">{stats.totalLinks} total · {stats.activeLinks} pendientes · {(stats as any).paidLinks ?? 0} pagados</p>
                 </div>
               </CardContent>
             </Card>
@@ -434,8 +434,8 @@ function ClientDetailPanel({ clientId, onBack }: { clientId: number; onBack: () 
               <CardContent className="p-4 flex items-center gap-3">
                 <div className="w-9 h-9 bg-orange-100 rounded-xl flex items-center justify-center"><AlertCircle className="w-4 h-4 text-orange-600" /></div>
                 <div>
-                  <p className="text-xs text-gray-500">Total de transacciones</p>
-                  <p className="text-base font-bold text-gray-800">{stats.totalTransactions} registros</p>
+                  <p className="text-xs text-muted-foreground">Total de transacciones</p>
+                  <p className="text-base font-bold text-foreground">{stats.totalTransactions} registros</p>
                 </div>
               </CardContent>
             </Card>
@@ -444,22 +444,22 @@ function ClientDetailPanel({ clientId, onBack }: { clientId: number; onBack: () 
           {recentTransactions && recentTransactions.length > 0 && (
             <Card className="border-gray-200 shadow-sm">
               <CardHeader className="pb-3 border-b border-gray-100">
-                <CardTitle className="text-base font-semibold text-gray-800 flex items-center gap-2">
+                <CardTitle className="text-base font-semibold text-foreground flex items-center gap-2">
                   <CreditCard className="w-4 h-4 text-cyan-500" />Últimas transacciones
                 </CardTitle>
               </CardHeader>
               <CardContent className="p-0">
                 <div className="divide-y divide-gray-100">
                   {recentTransactions.slice(0, 5).map((tx) => {
-                    const txCfg = txStatusConfig[tx.status] ?? { label: tx.status, color: "bg-gray-100 text-gray-600" };
+                    const txCfg = txStatusConfig[tx.status] ?? { label: tx.status, color: "bg-gray-100 text-muted-foreground" };
                     return (
                       <div key={tx.id} className="flex items-center gap-4 px-5 py-3 hover:bg-gray-50/50 transition-colors">
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-gray-800 truncate">{tx.payerName || "—"}</p>
-                          <p className="text-xs text-gray-400">{tx.operationNumber} · {formatDate(tx.createdAt)}</p>
+                          <p className="text-sm font-medium text-foreground truncate">{tx.payerName || "—"}</p>
+                          <p className="text-xs text-muted-foreground">{tx.operationNumber} · {formatDate(tx.createdAt)}</p>
                         </div>
                         <div className="text-right flex-shrink-0">
-                          <p className="text-sm font-bold text-gray-800">{formatCurrency(tx.amount)}</p>
+                          <p className="text-sm font-bold text-foreground">{formatCurrency(tx.amount)}</p>
                           <p className="text-xs text-cyan-600">Comisión: {formatCurrency(tx.commissionAmount)}</p>
                         </div>
                         <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${txCfg.color} flex-shrink-0`}>{txCfg.label}</span>
@@ -481,21 +481,21 @@ function ClientDetailPanel({ clientId, onBack }: { clientId: number; onBack: () 
           {recentLinks && recentLinks.length > 0 && (
             <Card className="border-gray-200 shadow-sm">
               <CardHeader className="pb-3 border-b border-gray-100">
-                <CardTitle className="text-base font-semibold text-gray-800 flex items-center gap-2">
+                <CardTitle className="text-base font-semibold text-foreground flex items-center gap-2">
                   <Link2 className="w-4 h-4 text-indigo-500" />Últimos enlaces de pago
                 </CardTitle>
               </CardHeader>
               <CardContent className="p-0">
                 <div className="divide-y divide-gray-100">
                   {recentLinks.slice(0, 5).map((l: any) => {
-                    const lCfg = txStatusConfig[l.status] ?? { label: l.status, color: "bg-gray-100 text-gray-600" };
+                    const lCfg = txStatusConfig[l.status] ?? { label: l.status, color: "bg-gray-100 text-muted-foreground" };
                     return (
                       <div key={l.id} className="flex items-center gap-4 px-5 py-3 hover:bg-gray-50/50 transition-colors">
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-gray-800 truncate">{l.clientName}</p>
-                          <p className="text-xs text-gray-400">{formatDate(l.createdAt)}</p>
+                          <p className="text-sm font-medium text-foreground truncate">{l.clientName}</p>
+                          <p className="text-xs text-muted-foreground">{formatDate(l.createdAt)}</p>
                         </div>
-                        <p className="text-sm font-bold text-gray-800 flex-shrink-0">{formatCurrency(l.amount)}</p>
+                        <p className="text-sm font-bold text-foreground flex-shrink-0">{formatCurrency(l.amount)}</p>
                         <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${lCfg.color} flex-shrink-0`}>{lCfg.label}</span>
                       </div>
                     );
@@ -513,13 +513,13 @@ function ClientDetailPanel({ clientId, onBack }: { clientId: number; onBack: () 
       {activeTab === "perfil" && (
         <Card className="border-gray-200 shadow-sm">
           <CardHeader className="pb-3 border-b border-gray-100">
-            <CardTitle className="text-base font-semibold text-gray-800">Perfil Personal y Fiscal</CardTitle>
+            <CardTitle className="text-base font-semibold text-foreground">Perfil Personal y Fiscal</CardTitle>
           </CardHeader>
           <CardContent className="p-5">
             {!profile ? (
               <div className="text-center py-10">
-                <Users className="w-8 h-8 text-gray-300 mx-auto mb-2" />
-                <p className="text-sm text-gray-400">Este cliente aún no ha completado su perfil</p>
+                <Users className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
+                <p className="text-sm text-muted-foreground">Este cliente aún no ha completado su perfil</p>
               </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -539,8 +539,8 @@ function ClientDetailPanel({ clientId, onBack }: { clientId: number; onBack: () 
                   { label: "Sitio web", value: profile.sitioWeb },
                 ].map(({ label, value }) => value ? (
                   <div key={label} className="bg-gray-50 rounded-xl p-3">
-                    <p className="text-xs text-gray-400 font-medium mb-0.5">{label}</p>
-                    <p className="text-sm text-gray-800 font-medium">{value}</p>
+                    <p className="text-xs text-muted-foreground font-medium mb-0.5">{label}</p>
+                    <p className="text-sm text-foreground font-medium">{value}</p>
                   </div>
                 ) : null)}
                 {/* Datos bancarios */}
@@ -548,9 +548,9 @@ function ClientDetailPanel({ clientId, onBack }: { clientId: number; onBack: () 
                   <div className="sm:col-span-2 bg-cyan-50 rounded-xl p-4 border border-cyan-100">
                     <p className="text-xs font-semibold text-cyan-700 mb-2">Datos bancarios (SPEI)</p>
                     <div className="grid grid-cols-2 gap-3">
-                      {profile.clabe && <div><p className="text-xs text-gray-400">CLABE</p><p className="text-sm font-mono font-bold text-gray-800">{profile.clabe}</p></div>}
-                      {profile.banco && <div><p className="text-xs text-gray-400">Banco</p><p className="text-sm font-medium text-gray-800">{profile.banco}</p></div>}
-                      {profile.titularCuenta && <div><p className="text-xs text-gray-400">Titular</p><p className="text-sm font-medium text-gray-800">{profile.titularCuenta}</p></div>}
+                      {profile.clabe && <div><p className="text-xs text-muted-foreground">CLABE</p><p className="text-sm font-mono font-bold text-foreground">{profile.clabe}</p></div>}
+                      {profile.banco && <div><p className="text-xs text-muted-foreground">Banco</p><p className="text-sm font-medium text-foreground">{profile.banco}</p></div>}
+                      {profile.titularCuenta && <div><p className="text-xs text-muted-foreground">Titular</p><p className="text-sm font-medium text-foreground">{profile.titularCuenta}</p></div>}
                     </div>
                   </div>
                 )}
@@ -559,7 +559,7 @@ function ClientDetailPanel({ clientId, onBack }: { clientId: number; onBack: () 
                     {profile.profileCompleted ? "✓ Perfil completado" : "⚠ Perfil incompleto"}
                   </span>
                   {userAccount?.emailVerified !== undefined && (
-                    <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${userAccount.emailVerified ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"}`}>
+                    <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${userAccount.emailVerified ? "bg-green-100 text-green-700" : "bg-gray-100 text-muted-foreground"}`}>
                       {userAccount.emailVerified ? "✓ Email verificado" : "Email no verificado"}
                     </span>
                   )}
@@ -574,13 +574,13 @@ function ClientDetailPanel({ clientId, onBack }: { clientId: number; onBack: () 
       {activeTab === "negocio" && (
         <Card className="border-gray-200 shadow-sm">
           <CardHeader className="pb-3 border-b border-gray-100">
-            <CardTitle className="text-base font-semibold text-gray-800">Configuración del Negocio</CardTitle>
+            <CardTitle className="text-base font-semibold text-foreground">Configuración del Negocio</CardTitle>
           </CardHeader>
           <CardContent className="p-5">
             {!vendorConfig ? (
               <div className="text-center py-10">
-                <Building2 className="w-8 h-8 text-gray-300 mx-auto mb-2" />
-                <p className="text-sm text-gray-400">Sin configuración de negocio aún</p>
+                <Building2 className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
+                <p className="text-sm text-muted-foreground">Sin configuración de negocio aún</p>
               </div>
             ) : (
               <div className="space-y-4">
@@ -594,8 +594,8 @@ function ClientDetailPanel({ clientId, onBack }: { clientId: number; onBack: () 
                     { label: "Sitio web", value: vendorConfig.websiteUrl },
                   ].map(({ label, value }) => value ? (
                     <div key={label} className="bg-gray-50 rounded-xl p-3">
-                      <p className="text-xs text-gray-400 font-medium mb-0.5">{label}</p>
-                      <p className="text-sm text-gray-800 font-medium">{value}</p>
+                      <p className="text-xs text-muted-foreground font-medium mb-0.5">{label}</p>
+                      <p className="text-sm text-foreground font-medium">{value}</p>
                     </div>
                   ) : null)}
                 </div>
@@ -606,11 +606,11 @@ function ClientDetailPanel({ clientId, onBack }: { clientId: number; onBack: () 
                     <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${
                       vendorConfig.stripeConnectStatus === "active" ? "bg-green-100 text-green-700" :
                       vendorConfig.stripeConnectStatus === "pending" ? "bg-amber-100 text-amber-700" :
-                      "bg-gray-100 text-gray-500"
+                      "bg-gray-100 text-muted-foreground"
                     }`}>
                       Estado: {vendorConfig.stripeConnectStatus}
                     </span>
-                    <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${vendorConfig.stripeConnectChargesEnabled ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"}`}>
+                    <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${vendorConfig.stripeConnectChargesEnabled ? "bg-green-100 text-green-700" : "bg-gray-100 text-muted-foreground"}`}>
                       {vendorConfig.stripeConnectChargesEnabled ? "✓ Cobros habilitados" : "✗ Cobros no habilitados"}
                     </span>
                     <span className="text-xs px-2.5 py-1 rounded-full font-medium bg-cyan-100 text-cyan-700">
@@ -619,7 +619,7 @@ function ClientDetailPanel({ clientId, onBack }: { clientId: number; onBack: () 
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${vendorConfig.publicProfileEnabled ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"}`}>
+                  <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${vendorConfig.publicProfileEnabled ? "bg-green-100 text-green-700" : "bg-gray-100 text-muted-foreground"}`}>
                     {vendorConfig.publicProfileEnabled ? "✓ Perfil público activo" : "Perfil público inactivo"}
                   </span>
                 </div>
@@ -633,11 +633,11 @@ function ClientDetailPanel({ clientId, onBack }: { clientId: number; onBack: () 
       {activeTab === "asociado" && (
         <Card className="border-gray-200 shadow-sm">
           <CardHeader className="pb-3 border-b border-gray-100">
-            <CardTitle className="text-base font-semibold text-gray-800 flex items-center gap-2">
+            <CardTitle className="text-base font-semibold text-foreground flex items-center gap-2">
               <Users className="w-4 h-4 text-cyan-500" />
               Asociado Referidor
             </CardTitle>
-            <p className="text-xs text-gray-500 mt-1">
+            <p className="text-xs text-muted-foreground mt-1">
               Indica qué asociado refirió a este cliente. Cuando el cliente procesa pagos, el asociado recibe su comisión automáticamente.
             </p>
           </CardHeader>
@@ -647,16 +647,16 @@ function ClientDetailPanel({ clientId, onBack }: { clientId: number; onBack: () 
                 <div className="bg-gradient-to-r from-cyan-50 to-blue-50 rounded-xl p-4 border border-cyan-100">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 bg-gradient-to-br from-cyan-400 to-blue-500 rounded-xl flex items-center justify-center flex-shrink-0">
-                      <span className="text-white text-sm font-bold">
+                      <span className="text-foreground text-sm font-bold">
                         {referringAssociate.associateName.charAt(0).toUpperCase()}
                       </span>
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-bold text-gray-800">{referringAssociate.associateName}</p>
-                      <p className="text-xs text-gray-500">{referringAssociate.associateEmail}</p>
+                      <p className="text-sm font-bold text-foreground">{referringAssociate.associateName}</p>
+                      <p className="text-xs text-muted-foreground">{referringAssociate.associateEmail}</p>
                     </div>
                     <div className="text-right flex-shrink-0">
-                      <p className="text-xs text-gray-400">Comisión del asociado</p>
+                      <p className="text-xs text-muted-foreground">Comisión del asociado</p>
                       <p className="text-lg font-bold text-cyan-600">{referringAssociate.commissionRate?.toFixed(1)}%</p>
                     </div>
                   </div>
@@ -666,7 +666,7 @@ function ClientDetailPanel({ clientId, onBack }: { clientId: number; onBack: () 
                     }`}>
                       Estado: {referringAssociate.status}
                     </span>
-                    <span className="text-xs text-gray-400">ID registro: #{referringAssociate.commissionRecordId}</span>
+                    <span className="text-xs text-muted-foreground">ID registro: #{referringAssociate.commissionRecordId}</span>
                   </div>
                 </div>
                 {availableAssociates && availableAssociates.length > 0 && (
@@ -695,7 +695,7 @@ function ClientDetailPanel({ clientId, onBack }: { clientId: number; onBack: () 
                             </option>
                           ))}
                         </select>
-                        <Button size="sm" className="bg-cyan-500 hover:bg-cyan-400 text-white"
+                        <Button size="sm" className="bg-cyan-500 hover:bg-cyan-400 text-foreground"
                           disabled={!selectedAssocCommId || assignAssociate.isPending}
                           onClick={() => assignAssociate.mutate({ clientId: client.id as number, associateCommissionId: parseInt(selectedAssocCommId) })}>
                           {assignAssociate.isPending ? "..." : "Guardar"}
@@ -709,9 +709,9 @@ function ClientDetailPanel({ clientId, onBack }: { clientId: number; onBack: () 
             ) : (
               <div className="space-y-4">
                 <div className="text-center py-8">
-                  <Users className="w-10 h-10 text-gray-300 mx-auto mb-3" />
-                  <p className="text-sm font-medium text-gray-500">Sin asociado asignado</p>
-                  <p className="text-xs text-gray-400 mt-1">Este cliente no tiene un asociado referidor</p>
+                  <Users className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
+                  <p className="text-sm font-medium text-muted-foreground">Sin asociado asignado</p>
+                  <p className="text-xs text-muted-foreground mt-1">Este cliente no tiene un asociado referidor</p>
                 </div>
                 {!client.userId ? (
                   <p className="text-xs text-center text-amber-600 bg-amber-50 rounded-lg p-3">
@@ -720,7 +720,7 @@ function ClientDetailPanel({ clientId, onBack }: { clientId: number; onBack: () 
                 ) : availableAssociates && availableAssociates.length > 0 ? (
                   <div>
                     {!assigningAssociate ? (
-                      <Button size="sm" className="w-full bg-cyan-500 hover:bg-cyan-400 text-white" onClick={() => setAssigningAssociate(true)}>
+                      <Button size="sm" className="w-full bg-cyan-500 hover:bg-cyan-400 text-foreground" onClick={() => setAssigningAssociate(true)}>
                         + Asignar asociado referidor
                       </Button>
                     ) : (
@@ -737,7 +737,7 @@ function ClientDetailPanel({ clientId, onBack }: { clientId: number; onBack: () 
                             </option>
                           ))}
                         </select>
-                        <Button size="sm" className="bg-cyan-500 hover:bg-cyan-400 text-white"
+                        <Button size="sm" className="bg-cyan-500 hover:bg-cyan-400 text-foreground"
                           disabled={!selectedAssocCommId || assignAssociate.isPending}
                           onClick={() => assignAssociate.mutate({ clientId: client.id as number, associateCommissionId: parseInt(selectedAssocCommId) })}>
                           {assignAssociate.isPending ? "Asignando..." : "Asignar"}
@@ -747,7 +747,7 @@ function ClientDetailPanel({ clientId, onBack }: { clientId: number; onBack: () 
                     )}
                   </div>
                 ) : (
-                  <p className="text-xs text-center text-gray-400 bg-gray-50 rounded-lg p-3">
+                  <p className="text-xs text-center text-muted-foreground bg-gray-50 rounded-lg p-3">
                     No hay asociados registrados en la plataforma
                   </p>
                 )}
@@ -762,17 +762,17 @@ function ClientDetailPanel({ clientId, onBack }: { clientId: number; onBack: () 
         <Card className="border-gray-200 shadow-sm">
           <CardHeader className="pb-3 border-b border-gray-100">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-base font-semibold text-gray-800 flex items-center gap-2">
+              <CardTitle className="text-base font-semibold text-foreground flex items-center gap-2">
                 <Shield className="w-4 h-4 text-cyan-500" />Accesos y Permisos
               </CardTitle>
               {permsDirty && (
                 <Button onClick={() => updatePerms.mutate({ clientId: client.id as number, permissions: JSON.stringify(localPerms) })}
-                  disabled={updatePerms.isPending} size="sm" className="bg-cyan-500 hover:bg-cyan-400 text-white gap-1.5">
+                  disabled={updatePerms.isPending} size="sm" className="bg-cyan-500 hover:bg-cyan-400 text-foreground gap-1.5">
                   <Save className="w-3.5 h-3.5" />{updatePerms.isPending ? "Guardando..." : "Guardar cambios"}
                 </Button>
               )}
             </div>
-            <p className="text-xs text-gray-500 mt-1">Activa o desactiva los módulos que este negocio puede usar en su panel.</p>
+            <p className="text-xs text-muted-foreground mt-1">Activa o desactiva los módulos que este negocio puede usar en su panel.</p>
           </CardHeader>
           <CardContent className="p-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -785,12 +785,12 @@ function ClientDetailPanel({ clientId, onBack }: { clientId: number; onBack: () 
                     }`}>
                     <div className={`mt-0.5 w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 ${enabled ? "bg-cyan-500" : "bg-gray-300"}`}>
                       {enabled
-                        ? <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
-                        : <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>}
+                        ? <svg className="w-3 h-3 text-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+                        : <svg className="w-3 h-3 text-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>}
                     </div>
                     <div className="min-w-0">
-                      <p className={`text-xs font-semibold ${enabled ? "text-cyan-800" : "text-gray-500"}`}>{label}</p>
-                      <p className="text-xs text-gray-400 mt-0.5 leading-tight">{description}</p>
+                      <p className={`text-xs font-semibold ${enabled ? "text-cyan-800" : "text-muted-foreground"}`}>{label}</p>
+                      <p className="text-xs text-muted-foreground mt-0.5 leading-tight">{description}</p>
                     </div>
                   </button>
                 );
@@ -804,28 +804,28 @@ function ClientDetailPanel({ clientId, onBack }: { clientId: number; onBack: () 
       {activeTab === "transacciones" && (
         <Card className="border-gray-200 shadow-sm">
           <CardHeader className="pb-3 border-b border-gray-100">
-            <CardTitle className="text-base font-semibold text-gray-800 flex items-center gap-2">
+            <CardTitle className="text-base font-semibold text-foreground flex items-center gap-2">
               <CreditCard className="w-4 h-4 text-cyan-500" />Todas las transacciones ({recentTransactions?.length ?? 0})
             </CardTitle>
           </CardHeader>
           <CardContent className="p-0">
             {!recentTransactions || recentTransactions.length === 0 ? (
               <div className="text-center py-10">
-                <CreditCard className="w-8 h-8 text-gray-300 mx-auto mb-2" />
-                <p className="text-sm text-gray-400">Este cliente aún no tiene transacciones</p>
+                <CreditCard className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
+                <p className="text-sm text-muted-foreground">Este cliente aún no tiene transacciones</p>
               </div>
             ) : (
               <div className="divide-y divide-gray-100">
                 {recentTransactions.map((tx) => {
-                  const txCfg = txStatusConfig[tx.status] ?? { label: tx.status, color: "bg-gray-100 text-gray-600" };
+                  const txCfg = txStatusConfig[tx.status] ?? { label: tx.status, color: "bg-gray-100 text-muted-foreground" };
                   return (
                     <div key={tx.id} className="flex items-center gap-4 px-5 py-3 hover:bg-gray-50/50 transition-colors">
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-gray-800 truncate">{tx.payerName || "—"}</p>
-                        <p className="text-xs text-gray-400">{tx.operationNumber} · {formatDate(tx.createdAt)}</p>
+                        <p className="text-sm font-medium text-foreground truncate">{tx.payerName || "—"}</p>
+                        <p className="text-xs text-muted-foreground">{tx.operationNumber} · {formatDate(tx.createdAt)}</p>
                       </div>
                       <div className="text-right flex-shrink-0">
-                        <p className="text-sm font-bold text-gray-800">{formatCurrency(tx.amount)}</p>
+                        <p className="text-sm font-bold text-foreground">{formatCurrency(tx.amount)}</p>
                         <p className="text-xs text-cyan-600">Comisión: {formatCurrency(tx.commissionAmount)}</p>
                       </div>
                       <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${txCfg.color} flex-shrink-0`}>{txCfg.label}</span>
@@ -875,7 +875,7 @@ function ClientKYCSection({ clientEmail }: { clientEmail: string }) {
   return (
     <Card className="border-gray-200 shadow-sm">
       <CardHeader className="pb-3 border-b border-gray-100">
-        <CardTitle className="text-base font-semibold text-gray-800 flex items-center gap-2">
+        <CardTitle className="text-base font-semibold text-foreground flex items-center gap-2">
           <Shield className="w-4 h-4 text-cyan-500" />
           Expediente KYC y Documentos
           {contract.signedAt && (
@@ -888,8 +888,8 @@ function ClientKYCSection({ clientEmail }: { clientEmail: string }) {
       <CardContent className="p-4">
         {!hasKycData ? (
           <div className="text-center py-6">
-            <Shield className="w-8 h-8 text-gray-300 mx-auto mb-2" />
-            <p className="text-sm text-gray-400">El cliente aún no ha subido documentos</p>
+            <Shield className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
+            <p className="text-sm text-muted-foreground">El cliente aún no ha subido documentos</p>
           </div>
         ) : (
           <div className="space-y-4">
@@ -899,13 +899,13 @@ function ClientKYCSection({ clientEmail }: { clientEmail: string }) {
                 <p className="text-xs font-semibold text-cyan-700 mb-2">Datos de empresa</p>
                 <div className="grid grid-cols-2 gap-2 text-sm">
                   {contract.razonSocial && (
-                    <div><span className="text-gray-500 text-xs">Razón Social:</span><br/><strong className="text-gray-800">{contract.razonSocial}</strong></div>
+                    <div><span className="text-muted-foreground text-xs">Razón Social:</span><br/><strong className="text-foreground">{contract.razonSocial}</strong></div>
                   )}
                   {contract.representanteLegal && (
-                    <div><span className="text-gray-500 text-xs">Representante Legal:</span><br/><strong className="text-gray-800">{contract.representanteLegal}</strong></div>
+                    <div><span className="text-muted-foreground text-xs">Representante Legal:</span><br/><strong className="text-foreground">{contract.representanteLegal}</strong></div>
                   )}
                   {contract.rfcEmpresa && (
-                    <div><span className="text-gray-500 text-xs">RFC Empresa:</span><br/><strong className="text-gray-800">{contract.rfcEmpresa}</strong></div>
+                    <div><span className="text-muted-foreground text-xs">RFC Empresa:</span><br/><strong className="text-foreground">{contract.rfcEmpresa}</strong></div>
                   )}
                 </div>
               </div>
@@ -913,7 +913,7 @@ function ClientKYCSection({ clientEmail }: { clientEmail: string }) {
             {/* Documentos */}
             {docs.length > 0 && (
               <div>
-                <p className="text-xs font-semibold text-gray-600 mb-2">Documentos subidos</p>
+                <p className="text-xs font-semibold text-muted-foreground mb-2">Documentos subidos</p>
                 <div className="grid grid-cols-2 gap-2">
                   {docs.map(({ key, url }) => (
                     <a
@@ -924,7 +924,7 @@ function ClientKYCSection({ clientEmail }: { clientEmail: string }) {
                       className="flex items-center gap-2 p-2.5 bg-gray-50 rounded-lg border border-gray-200 hover:bg-cyan-50 hover:border-cyan-200 transition-colors"
                     >
                       <CheckCircle2 className="w-4 h-4 text-green-500 flex-shrink-0" />
-                      <span className="text-xs text-gray-700 truncate">{docLabels[key] || key}</span>
+                      <span className="text-xs text-foreground truncate">{docLabels[key] || key}</span>
                     </a>
                   ))}
                 </div>
@@ -932,7 +932,7 @@ function ClientKYCSection({ clientEmail }: { clientEmail: string }) {
             )}
             {/* Firmas */}
             <div className="grid grid-cols-2 gap-3">
-              <div className={`p-2.5 rounded-lg border text-xs text-center ${contract.signedAt ? 'bg-green-50 border-green-200 text-green-700' : 'bg-gray-50 border-gray-200 text-gray-400'}`}>
+              <div className={`p-2.5 rounded-lg border text-xs text-center ${contract.signedAt ? 'bg-green-50 border-green-200 text-green-700' : 'bg-gray-50 border-gray-200 text-muted-foreground'}`}>
                 {contract.signedAt ? `✓ Cliente firmó el ${formatDate(contract.signedAt)}` : 'Pendiente firma del cliente'}
               </div>
               <div className={`p-2.5 rounded-lg border text-xs text-center ${contract.adminSignedAt ? 'bg-green-50 border-green-200 text-green-700' : 'bg-amber-50 border-amber-200 text-amber-700'}`}>
@@ -980,7 +980,7 @@ function CommissionBreakdownPanel({ onSelectClient }: { onSelectClient: (id: num
       {/* Breakdown table */}
       <Card className="border-gray-200 shadow-sm">
         <CardHeader className="pb-3 border-b border-gray-100">
-          <CardTitle className="text-base font-semibold text-gray-800 flex items-center gap-2">
+          <CardTitle className="text-base font-semibold text-foreground flex items-center gap-2">
             <BarChart3 className="w-4 h-4 text-cyan-500" />
             Desglose por negocio
           </CardTitle>
@@ -988,8 +988,8 @@ function CommissionBreakdownPanel({ onSelectClient }: { onSelectClient: (id: num
         <CardContent className="p-0">
           {data.breakdown.length === 0 ? (
             <div className="text-center py-10">
-              <BarChart3 className="w-8 h-8 text-gray-300 mx-auto mb-2" />
-              <p className="text-sm text-gray-400">Aún no hay datos de comisiones</p>
+              <BarChart3 className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
+              <p className="text-sm text-muted-foreground">Aún no hay datos de comisiones</p>
             </div>
           ) : (
             <div className="divide-y divide-gray-100">
@@ -1004,14 +1004,14 @@ function CommissionBreakdownPanel({ onSelectClient }: { onSelectClient: (id: num
                     <div className="flex items-center gap-4">
                       {/* Rank */}
                       <div className="w-7 h-7 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                        <span className="text-xs font-bold text-gray-500">#{idx + 1}</span>
+                        <span className="text-xs font-bold text-muted-foreground">#{idx + 1}</span>
                       </div>
                       {/* Info */}
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <p className="text-sm font-semibold text-gray-800">{b.clientName}</p>
+                          <p className="text-sm font-semibold text-foreground">{b.clientName}</p>
                           {b.businessName && (
-                            <span className="text-xs text-gray-400 flex items-center gap-1">
+                            <span className="text-xs text-muted-foreground flex items-center gap-1">
                               <Building2 className="w-3 h-3" />{b.businessName}
                             </span>
                           )}
@@ -1019,12 +1019,12 @@ function CommissionBreakdownPanel({ onSelectClient }: { onSelectClient: (id: num
                             <StatusIcon className="w-3 h-3" />{cfg.label}
                           </span>
                         </div>
-                        <div className="flex items-center gap-3 mt-1 flex-wrap text-xs text-gray-500">
+                        <div className="flex items-center gap-3 mt-1 flex-wrap text-xs text-muted-foreground">
                           <span>{b.transactionCount} transacciones exitosas</span>
                           <span>·</span>
                           <span>Comisión: <strong className="text-cyan-600">{b.commissionRate.toFixed(1)}%</strong></span>
                           <span>·</span>
-                          <span>Volumen: <strong className="text-gray-700">{formatCurrency(b.totalVolume)}</strong></span>
+                          <span>Volumen: <strong className="text-foreground">{formatCurrency(b.totalVolume)}</strong></span>
                         </div>
                         {/* Progress bar */}
                         <div className="mt-2 h-1.5 bg-gray-100 rounded-full overflow-hidden">
@@ -1037,12 +1037,12 @@ function CommissionBreakdownPanel({ onSelectClient }: { onSelectClient: (id: num
                       {/* Commission amount */}
                       <div className="text-right flex-shrink-0">
                         <p className="text-base font-bold text-cyan-700">{formatCurrency(b.totalCommission)}</p>
-                        <p className="text-xs text-gray-400">{pct.toFixed(1)}% del total</p>
+                        <p className="text-xs text-muted-foreground">{pct.toFixed(1)}% del total</p>
                       </div>
                       {/* View detail */}
                       <button
                         onClick={() => onSelectClient(b.clientId)}
-                        className="flex-shrink-0 p-1.5 text-gray-400 hover:text-cyan-600 hover:bg-cyan-50 rounded-lg transition-colors"
+                        className="flex-shrink-0 p-1.5 text-muted-foreground hover:text-cyan-600 hover:bg-cyan-50 rounded-lg transition-colors"
                         title="Ver detalle del cliente"
                       >
                         <ChevronRight className="w-4 h-4" />
@@ -1102,8 +1102,8 @@ export default function Clients() {
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-xs text-gray-500 font-medium">{label}</p>
-                    <p className="text-xl font-bold text-gray-800 mt-0.5">{value}</p>
+                    <p className="text-xs text-muted-foreground font-medium">{label}</p>
+                    <p className="text-xl font-bold text-foreground mt-0.5">{value}</p>
                   </div>
                   <div className={`w-10 h-10 ${iconBg} rounded-xl flex items-center justify-center`}>
                     <Icon className={`w-5 h-5 ${iconColor}`} />
@@ -1120,8 +1120,8 @@ export default function Clients() {
             onClick={() => setActiveTab("clients")}
             className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
               activeTab === "clients"
-                ? "bg-white text-gray-800 shadow-sm"
-                : "text-gray-500 hover:text-gray-700"
+                ? "bg-white text-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground"
             }`}
           >
             <span className="flex items-center gap-2">
@@ -1133,8 +1133,8 @@ export default function Clients() {
             onClick={() => setActiveTab("commissions")}
             className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
               activeTab === "commissions"
-                ? "bg-white text-gray-800 shadow-sm"
-                : "text-gray-500 hover:text-gray-700"
+                ? "bg-white text-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground"
             }`}
           >
             <span className="flex items-center gap-2">
@@ -1153,7 +1153,7 @@ export default function Clients() {
             <Card className="border-gray-200 shadow-sm">
               <CardHeader className="pb-3 border-b border-gray-100">
                 <div className="flex items-center justify-between">
-                  <CardTitle className="text-base font-semibold text-gray-800 flex items-center gap-2">
+                  <CardTitle className="text-base font-semibold text-foreground flex items-center gap-2">
                     <Users className="w-4 h-4 text-cyan-500" />
                     Clientes de la Plataforma
                   </CardTitle>
@@ -1176,10 +1176,10 @@ export default function Clients() {
                 ) : !clients || clients.length === 0 ? (
                   <div className="text-center py-14">
                     <div className="w-14 h-14 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                      <Users className="w-7 h-7 text-gray-400" />
+                      <Users className="w-7 h-7 text-muted-foreground" />
                     </div>
-                    <p className="text-gray-600 font-medium mb-1">Sin clientes aún</p>
-                    <p className="text-sm text-gray-400 mb-4">Crea tu primer cliente para que pueda usar la plataforma</p>
+                    <p className="text-muted-foreground font-medium mb-1">Sin clientes aún</p>
+                    <p className="text-sm text-muted-foreground mb-4">Crea tu primer cliente para que pueda usar la plataforma</p>
                     <CreateClientDialog onSuccess={() => refetch()} />
                   </div>
                 ) : (
@@ -1193,27 +1193,27 @@ export default function Clients() {
                         <div key={client.id} className="flex items-center gap-4 px-5 py-4 hover:bg-cyan-50/40 transition-colors cursor-pointer" onClick={() => setSelectedClientId(client.id)}>
                           {/* Avatar */}
                           <div className="w-10 h-10 bg-gradient-to-br from-cyan-400 to-blue-500 rounded-xl flex items-center justify-center flex-shrink-0">
-                            <span className="text-white text-sm font-bold">{initials}</span>
+                            <span className="text-foreground text-sm font-bold">{initials}</span>
                           </div>
 
                           {/* Info */}
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 flex-wrap">
-                              <p className="text-sm font-semibold text-gray-800">{client.name}</p>
+                              <p className="text-sm font-semibold text-foreground">{client.name}</p>
                               {client.businessName && (
-                                <span className="text-xs text-gray-400 flex items-center gap-1">
+                                <span className="text-xs text-muted-foreground flex items-center gap-1">
                                   <Building2 className="w-3 h-3" />
                                   {client.businessName}
                                 </span>
                               )}
                             </div>
                             <div className="flex items-center gap-3 mt-0.5 flex-wrap">
-                              <span className="text-xs text-gray-400 flex items-center gap-1">
+                              <span className="text-xs text-muted-foreground flex items-center gap-1">
                                 <Mail className="w-3 h-3" />
                                 {client.email}
                               </span>
                               {client.phone && (
-                                <span className="text-xs text-gray-400 flex items-center gap-1">
+                                <span className="text-xs text-muted-foreground flex items-center gap-1">
                                   <Phone className="w-3 h-3" />
                                   {client.phone}
                                 </span>
@@ -1259,7 +1259,7 @@ export default function Clients() {
                           {/* Ver detalle */}
                           <button
                             onClick={() => setSelectedClientId(client.id)}
-                            className="flex-shrink-0 p-1.5 text-gray-400 hover:text-cyan-600 hover:bg-cyan-50 rounded-lg transition-colors"
+                            className="flex-shrink-0 p-1.5 text-muted-foreground hover:text-cyan-600 hover:bg-cyan-50 rounded-lg transition-colors"
                             title="Ver detalle del cliente"
                           >
                             <ChevronRight className="w-4 h-4" />

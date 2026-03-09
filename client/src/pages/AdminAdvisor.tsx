@@ -88,8 +88,8 @@ export default function AdminAdvisor() {
     return (
       <DashboardLayout title="Business Advisor">
         <div className="flex flex-col items-center justify-center h-64 text-center">
-          <Bot className="w-12 h-12 text-gray-300 mb-3" />
-          <p className="text-gray-500">Esta sección es exclusiva para administradores de KobraPay.</p>
+          <Bot className="w-12 h-12 text-muted-foreground mb-3" />
+          <p className="text-muted-foreground">Esta sección es exclusiva para administradores de KobraPay.</p>
         </div>
       </DashboardLayout>
     );
@@ -102,17 +102,17 @@ export default function AdminAdvisor() {
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg">
-              <Bot className="w-6 h-6 text-white" />
+              <Bot className="w-6 h-6 text-foreground" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h1 className="text-2xl font-bold text-gray-900">Business Advisor</h1>
+                <h1 className="text-2xl font-bold text-foreground">Business Advisor</h1>
                 <Badge className="bg-blue-100 text-blue-700 border-blue-200 gap-1" variant="outline">
                   <Sparkles className="w-3 h-3" />
                   Consultoría IA
                 </Badge>
               </div>
-              <p className="text-sm text-gray-500 mt-0.5">Tu consultor de negocios personal — estrategias, finanzas y crecimiento</p>
+              <p className="text-sm text-muted-foreground mt-0.5">Tu consultor de negocios personal — estrategias, finanzas y crecimiento</p>
             </div>
           </div>
         </div>
@@ -130,7 +130,7 @@ export default function AdminAdvisor() {
               <div className={`p-1.5 rounded-lg ${color} flex-shrink-0`}>
                 <Icon className="w-4 h-4" />
               </div>
-              <span className="text-xs font-medium text-gray-700">{label}</span>
+              <span className="text-xs font-medium text-foreground">{label}</span>
             </button>
           ))}
         </div>
@@ -148,7 +148,7 @@ export default function AdminAdvisor() {
           />
         </div>
 
-        <p className="text-xs text-gray-400 text-center">
+        <p className="text-xs text-muted-foreground text-center">
           💼 Este consultor de IA está especializado en negocios mexicanos y en el uso óptimo de KobraPay.
         </p>
       </div>

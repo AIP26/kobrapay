@@ -118,7 +118,7 @@ export default function CompleteProfile() {
   ];
 
   return (
-    <div className="min-h-screen bg-[#0f1420] flex flex-col items-center justify-center px-4 py-12">
+    <div className="min-h-screen bg-card flex flex-col items-center justify-center px-4 py-12">
       {/* Logo */}
       <div className="flex flex-col items-center mb-8">
         <img src={KOBRAPAY_ICON} alt="KobraPay" className="w-14 h-14 object-contain mb-3" />
@@ -135,9 +135,9 @@ export default function CompleteProfile() {
             return (
               <div key={i} className="flex items-center gap-2">
                 <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
-                  isActive ? "bg-emerald-500 text-white" :
+                  isActive ? "bg-emerald-500 text-foreground" :
                   isDone ? "bg-emerald-500/20 text-emerald-400" :
-                  "bg-white/5 text-gray-500"
+                  "bg-white/5 text-muted-foreground"
                 }`}>
                   {isDone ? <CheckCircle2 className="w-3.5 h-3.5" /> : <Icon className="w-3.5 h-3.5" />}
                   {s.label}
@@ -149,12 +149,12 @@ export default function CompleteProfile() {
         </div>
 
         {/* Card */}
-        <div className="bg-[#141c2e] border border-white/10 rounded-2xl p-8 shadow-2xl">
+        <div className="bg-card border border-border rounded-2xl p-8 shadow-2xl">
           <div className="mb-6">
-            <h2 className="text-xl font-bold text-white mb-1">
+            <h2 className="text-xl font-bold text-foreground mb-1">
               {step === 1 ? "Datos personales" : step === 2 ? "Identificación oficial" : "Tu negocio"}
             </h2>
-            <p className="text-sm text-gray-400">
+            <p className="text-sm text-muted-foreground">
               {step === 1 ? "Ingresa tus datos personales para crear tu cuenta." :
                step === 2 ? "Necesitamos tu CURP para verificar tu identidad." :
                "Cuéntanos sobre tu negocio para personalizar tu experiencia."}
@@ -165,17 +165,17 @@ export default function CompleteProfile() {
           {step === 1 && (
             <div className="space-y-4">
               <div>
-                <Label className="text-gray-300 text-sm mb-1.5 block">Nombre completo *</Label>
+                <Label className="text-muted-foreground text-sm mb-1.5 block">Nombre completo *</Label>
                 <Input
                   value={form.fullName}
                   onChange={(e) => set("fullName", e.target.value)}
                   placeholder="Ej. Juan Carlos García López"
-                  className="bg-white/5 border-white/10 text-white placeholder:text-gray-500 focus:border-emerald-500"
+                  className="bg-white/5 border-border text-foreground placeholder:text-muted-foreground focus:border-emerald-500"
                 />
                 {errors.fullName && <p className="text-red-400 text-xs mt-1">{errors.fullName}</p>}
               </div>
               <div>
-                <Label className="text-gray-300 text-sm mb-1.5 block flex items-center gap-1.5">
+                <Label className="text-muted-foreground text-sm mb-1.5 block flex items-center gap-1.5">
                   <Calendar className="w-3.5 h-3.5" /> Fecha de nacimiento *
                 </Label>
                 <Input
@@ -183,12 +183,12 @@ export default function CompleteProfile() {
                   value={form.birthDate}
                   onChange={(e) => set("birthDate", e.target.value)}
                   max={new Date(Date.now() - 18 * 365.25 * 24 * 60 * 60 * 1000).toISOString().split("T")[0]}
-                  className="bg-white/5 border-white/10 text-white focus:border-emerald-500"
+                  className="bg-white/5 border-border text-foreground focus:border-emerald-500"
                 />
                 {errors.birthDate && <p className="text-red-400 text-xs mt-1">{errors.birthDate}</p>}
               </div>
               <div>
-                <Label className="text-gray-300 text-sm mb-1.5 block flex items-center gap-1.5">
+                <Label className="text-muted-foreground text-sm mb-1.5 block flex items-center gap-1.5">
                   <Phone className="w-3.5 h-3.5" /> Teléfono celular *
                 </Label>
                 <Input
@@ -196,7 +196,7 @@ export default function CompleteProfile() {
                   onChange={(e) => set("phone", e.target.value.replace(/[^\d+\-\s()]/g, ""))}
                   placeholder="55 1234 5678"
                   maxLength={15}
-                  className="bg-white/5 border-white/10 text-white placeholder:text-gray-500 focus:border-emerald-500"
+                  className="bg-white/5 border-border text-foreground placeholder:text-muted-foreground focus:border-emerald-500"
                 />
                 {errors.phone && <p className="text-red-400 text-xs mt-1">{errors.phone}</p>}
               </div>
@@ -215,27 +215,27 @@ export default function CompleteProfile() {
                 </div>
               </div>
               <div>
-                <Label className="text-gray-300 text-sm mb-1.5 block">CURP *</Label>
+                <Label className="text-muted-foreground text-sm mb-1.5 block">CURP *</Label>
                 <Input
                   value={form.curp}
                   onChange={(e) => set("curp", e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ""))}
                   placeholder="GACJ850101HMCRLR09"
                   maxLength={18}
-                  className="bg-white/5 border-white/10 text-white placeholder:text-gray-500 focus:border-emerald-500 font-mono tracking-wider"
+                  className="bg-white/5 border-border text-foreground placeholder:text-muted-foreground focus:border-emerald-500 font-mono tracking-wider"
                 />
-                <p className="text-xs text-gray-500 mt-1">18 caracteres. Puedes consultarla en <a href="https://www.gob.mx/curp/" target="_blank" rel="noopener noreferrer" className="text-emerald-400 hover:underline">gob.mx/curp</a></p>
+                <p className="text-xs text-muted-foreground mt-1">18 caracteres. Puedes consultarla en <a href="https://www.gob.mx/curp/" target="_blank" rel="noopener noreferrer" className="text-emerald-400 hover:underline">gob.mx/curp</a></p>
                 {errors.curp && <p className="text-red-400 text-xs mt-1">{errors.curp}</p>}
               </div>
               <div>
-                <Label className="text-gray-300 text-sm mb-1.5 block">RFC (opcional)</Label>
+                <Label className="text-muted-foreground text-sm mb-1.5 block">RFC (opcional)</Label>
                 <Input
                   value={form.rfc}
                   onChange={(e) => set("rfc", e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ""))}
                   placeholder="GACJ850101XXX"
                   maxLength={13}
-                  className="bg-white/5 border-white/10 text-white placeholder:text-gray-500 focus:border-emerald-500 font-mono tracking-wider"
+                  className="bg-white/5 border-border text-foreground placeholder:text-muted-foreground focus:border-emerald-500 font-mono tracking-wider"
                 />
-                <p className="text-xs text-gray-500 mt-1">Requerido para emitir facturas. Puedes agregarlo después.</p>
+                <p className="text-xs text-muted-foreground mt-1">Requerido para emitir facturas. Puedes agregarlo después.</p>
                 {errors.rfc && <p className="text-red-400 text-xs mt-1">{errors.rfc}</p>}
               </div>
             </div>
@@ -245,27 +245,27 @@ export default function CompleteProfile() {
           {step === 3 && (
             <div className="space-y-4">
               <div>
-                <Label className="text-gray-300 text-sm mb-1.5 block flex items-center gap-1.5">
+                <Label className="text-muted-foreground text-sm mb-1.5 block flex items-center gap-1.5">
                   <Building2 className="w-3.5 h-3.5" /> Nombre del negocio *
                 </Label>
                 <Input
                   value={form.businessName}
                   onChange={(e) => set("businessName", e.target.value)}
                   placeholder="Ej. Ferretería García"
-                  className="bg-white/5 border-white/10 text-white placeholder:text-gray-500 focus:border-emerald-500"
+                  className="bg-white/5 border-border text-foreground placeholder:text-muted-foreground focus:border-emerald-500"
                 />
-                <p className="text-xs text-gray-500 mt-1">Aparecerá en los recibos y páginas de pago.</p>
+                <p className="text-xs text-muted-foreground mt-1">Aparecerá en los recibos y páginas de pago.</p>
                 {errors.businessName && <p className="text-red-400 text-xs mt-1">{errors.businessName}</p>}
               </div>
               <div>
-                <Label className="text-gray-300 text-sm mb-1.5 block">Tipo de negocio *</Label>
+                <Label className="text-muted-foreground text-sm mb-1.5 block">Tipo de negocio *</Label>
                 <Select value={form.businessType} onValueChange={(v) => set("businessType", v)}>
-                  <SelectTrigger className="bg-white/5 border-white/10 text-white focus:border-emerald-500">
+                  <SelectTrigger className="bg-white/5 border-border text-foreground focus:border-emerald-500">
                     <SelectValue placeholder="Selecciona una categoría" />
                   </SelectTrigger>
-                  <SelectContent className="bg-[#1a2440] border-white/10">
+                  <SelectContent className="bg-[#1a2440] border-border">
                     {BUSINESS_TYPES.map((t) => (
-                      <SelectItem key={t} value={t} className="text-white hover:bg-white/10 focus:bg-white/10">{t}</SelectItem>
+                      <SelectItem key={t} value={t} className="text-foreground hover:bg-white/10 focus:bg-white/10">{t}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -273,11 +273,11 @@ export default function CompleteProfile() {
               </div>
 
               {/* Verificación anti-bot Cloudflare Turnstile */}
-              <div className="bg-white/5 border border-white/10 rounded-xl p-4">
+              <div className="bg-white/5 border border-border rounded-xl p-4">
                 <div className="flex items-center gap-2 mb-3">
                   <Bot className="w-4 h-4 text-emerald-400" />
-                  <span className="text-xs text-gray-300 font-medium">Verificación de seguridad</span>
-                  <span className="text-xs text-gray-500">— confirma que eres humano</span>
+                  <span className="text-xs text-muted-foreground font-medium">Verificación de seguridad</span>
+                  <span className="text-xs text-muted-foreground">— confirma que eres humano</span>
                 </div>
                 <div className="flex justify-center">
                   <Turnstile
@@ -307,9 +307,9 @@ export default function CompleteProfile() {
                 )}
               </div>
 
-              <div className="bg-white/5 border border-white/10 rounded-xl p-4">
-                <p className="text-xs text-gray-400 leading-relaxed">
-                  Al completar tu registro, tu cuenta quedará en <strong className="text-white">revisión</strong>. Recibirás una notificación cuando sea aprobada (generalmente en menos de 24 horas).
+              <div className="bg-white/5 border border-border rounded-xl p-4">
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  Al completar tu registro, tu cuenta quedará en <strong className="text-foreground">revisión</strong>. Recibirás una notificación cuando sea aprobada (generalmente en menos de 24 horas).
                 </p>
               </div>
             </div>
@@ -321,7 +321,7 @@ export default function CompleteProfile() {
               <Button
                 variant="outline"
                 onClick={() => setStep(step - 1)}
-                className="flex-1 border-white/20 text-white hover:bg-white/10"
+                className="flex-1 border-border text-foreground hover:bg-white/10"
               >
                 Atrás
               </Button>
@@ -329,7 +329,7 @@ export default function CompleteProfile() {
             <Button
               onClick={handleNext}
               disabled={saveMutation.isPending || (step === 3 && !turnstileToken)}
-              className="flex-1 bg-emerald-500 hover:bg-emerald-400 text-white font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex-1 bg-emerald-500 hover:bg-emerald-400 text-foreground font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {saveMutation.isPending ? "Guardando..." :
                step === 3 ? "Completar registro" : "Continuar"}
@@ -337,7 +337,7 @@ export default function CompleteProfile() {
           </div>
         </div>
 
-        <p className="text-center text-xs text-gray-500 mt-6">
+        <p className="text-center text-xs text-muted-foreground mt-6">
           ¿Ya tienes cuenta? <a href="/" className="text-emerald-400 hover:underline">Inicia sesión</a>
         </p>
       </div>

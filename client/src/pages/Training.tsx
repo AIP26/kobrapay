@@ -15,7 +15,7 @@ const CATEGORIES: Record<string, { label: string; emoji: string; color: string }
   sales:     { label: "Ventas",            emoji: "📈", color: "bg-green-100 text-green-800" },
   books:     { label: "Libros",            emoji: "📚", color: "bg-yellow-100 text-yellow-800" },
   health:    { label: "Salud & Bienestar", emoji: "🌿", color: "bg-emerald-100 text-emerald-800" },
-  other:     { label: "Otros",             emoji: "🎓", color: "bg-gray-100 text-gray-800" },
+  other:     { label: "Otros",             emoji: "🎓", color: "bg-gray-100 text-foreground" },
 };
 const LEVELS: Record<string, string> = {
   basic:        "Básico",
@@ -58,7 +58,7 @@ function renderInline(text: string): React.ReactNode {
   const parts = text.split(/(\*\*[^*]+\*\*|\*[^*]+\*|`[^`]+`)/g);
   return parts.map((part, i) => {
     if (part.startsWith("**") && part.endsWith("**")) {
-      return <strong key={i} className="font-semibold text-gray-900">{part.slice(2, -2)}</strong>;
+      return <strong key={i} className="font-semibold text-foreground">{part.slice(2, -2)}</strong>;
     }
     if (part.startsWith("*") && part.endsWith("*")) {
       return <em key={i}>{part.slice(1, -1)}</em>;
@@ -77,9 +77,9 @@ function SimpleMarkdown({ text }: { text: string }) {
   while (i < lines.length) {
     const line = lines[i];
     if (line.startsWith("## ")) {
-      elements.push(<h2 key={i} className="text-base font-bold text-gray-900 mt-4 mb-1">{line.slice(3)}</h2>);
+      elements.push(<h2 key={i} className="text-base font-bold text-foreground mt-4 mb-1">{line.slice(3)}</h2>);
     } else if (line.startsWith("### ")) {
-      elements.push(<h3 key={i} className="text-sm font-semibold text-gray-800 mt-3 mb-1">{line.slice(4)}</h3>);
+      elements.push(<h3 key={i} className="text-sm font-semibold text-foreground mt-3 mb-1">{line.slice(4)}</h3>);
     } else if (line.startsWith("> ")) {
       elements.push(
         <blockquote key={i} className="border-l-4 border-orange-400 pl-3 py-1 my-2 bg-orange-50 rounded-r text-sm text-orange-900 italic">
@@ -88,13 +88,13 @@ function SimpleMarkdown({ text }: { text: string }) {
       );
     } else if (line.startsWith("- ") || line.startsWith("* ")) {
       elements.push(
-        <li key={i} className="text-sm text-gray-700 ml-4 list-disc leading-relaxed">
+        <li key={i} className="text-sm text-foreground ml-4 list-disc leading-relaxed">
           {renderInline(line.slice(2))}
         </li>
       );
     } else if (/^\d+\. /.test(line)) {
       elements.push(
-        <li key={i} className="text-sm text-gray-700 ml-4 list-decimal leading-relaxed">
+        <li key={i} className="text-sm text-foreground ml-4 list-decimal leading-relaxed">
           {renderInline(line.replace(/^\d+\. /, ""))}
         </li>
       );
@@ -112,7 +112,7 @@ function SimpleMarkdown({ text }: { text: string }) {
             {rows.map((row, ri) => (
               <tr key={ri} className={ri === 0 ? "bg-gray-100 font-semibold" : "border-t border-gray-200"}>
                 {row.map((cell, ci) => (
-                  <td key={ci} className="px-2 py-1 border border-gray-200 text-gray-700">{cell}</td>
+                  <td key={ci} className="px-2 py-1 border border-gray-200 text-foreground">{cell}</td>
                 ))}
               </tr>
             ))}
@@ -123,7 +123,7 @@ function SimpleMarkdown({ text }: { text: string }) {
     } else if (line.trim() === "") {
       elements.push(<div key={i} className="h-1" />);
     } else {
-      elements.push(<p key={i} className="text-sm text-gray-700 leading-relaxed">{renderInline(line)}</p>);
+      elements.push(<p key={i} className="text-sm text-foreground leading-relaxed">{renderInline(line)}</p>);
     }
     i++;
   }
@@ -146,15 +146,15 @@ function YouTubeEmbed({ videoId, title }: { videoId: string; title: string }) {
 
   if (hasError) {
     return (
-      <div className="rounded-xl overflow-hidden bg-gray-900 flex flex-col items-center justify-center py-10 px-6 text-center gap-3">
+      <div className="rounded-xl overflow-hidden bg-card flex flex-col items-center justify-center py-10 px-6 text-center gap-3">
         <span className="text-4xl">▶️</span>
-        <p className="text-white font-semibold text-sm">Video no disponible para embedding</p>
-        <p className="text-gray-400 text-xs">El propietario del video desactivó la reproducción en sitios externos</p>
+        <p className="text-foreground font-semibold text-sm">Video no disponible para embedding</p>
+        <p className="text-muted-foreground text-xs">El propietario del video desactivó la reproducción en sitios externos</p>
         <a
           href={`https://www.youtube.com/watch?v=${videoId}`}
           target="_blank"
           rel="noreferrer"
-          className="mt-2 inline-flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
+          className="mt-2 inline-flex items-center gap-2 bg-red-600 hover:bg-red-700 text-foreground text-sm font-medium px-4 py-2 rounded-lg transition-colors"
         >
           🔗 Ver en YouTube
         </a>
@@ -166,7 +166,7 @@ function YouTubeEmbed({ videoId, title }: { videoId: string; title: string }) {
     <div className="rounded-xl overflow-hidden bg-black">
       <div className="relative" style={{ paddingBottom: "56.25%" }}>
         {!loaded && (
-          <div className="absolute inset-0 flex items-center justify-center bg-gray-900">
+          <div className="absolute inset-0 flex items-center justify-center bg-card">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-500" />
           </div>
         )}
@@ -245,27 +245,27 @@ function ModuleItem({
         className="flex items-center gap-3 p-4 cursor-pointer select-none"
         onClick={() => setExpanded(v => !v)}
       >
-        <span className={`text-xl shrink-0 ${isDone ? "text-green-500" : "text-gray-300"}`}>
+        <span className={`text-xl shrink-0 ${isDone ? "text-green-500" : "text-muted-foreground"}`}>
           {isDone ? "✅" : "⭕"}
         </span>
         <div className="flex-1 min-w-0">
-          <p className={`font-medium text-sm ${isDone ? "text-green-800" : "text-gray-800"}`}>{mod.title}</p>
+          <p className={`font-medium text-sm ${isDone ? "text-green-800" : "text-foreground"}`}>{mod.title}</p>
           {mod.description && !expanded && (
-            <p className="text-xs text-gray-500 truncate mt-0.5">{mod.description}</p>
+            <p className="text-xs text-muted-foreground truncate mt-0.5">{mod.description}</p>
           )}
         </div>
         <div className="flex items-center gap-2 shrink-0">
           {ytId && <span className="text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded-full font-medium">▶ Video</span>}
           {isExternal && <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full font-medium">🔗 Enlace</span>}
-          {mod.content && <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full font-medium">📖 Guía</span>}
-          <span className="text-gray-400 text-sm">{expanded ? "▲" : "▼"}</span>
+          {mod.content && <span className="text-xs bg-gray-100 text-muted-foreground px-2 py-0.5 rounded-full font-medium">📖 Guía</span>}
+          <span className="text-muted-foreground text-sm">{expanded ? "▲" : "▼"}</span>
         </div>
       </div>
 
       {expanded && (
         <div className="px-4 pb-4 space-y-4 border-t border-gray-100 pt-3">
           {mod.description && (
-            <p className="text-sm text-gray-600">{mod.description}</p>
+            <p className="text-sm text-muted-foreground">{mod.description}</p>
           )}
           {ytId && <YouTubeEmbed videoId={ytId} title={mod.title} />}
           {isExternal && (
@@ -284,7 +284,7 @@ function ModuleItem({
           )}
           {mod.content && (
             <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
-              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">📖 Contenido del módulo</p>
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3">📖 Contenido del módulo</p>
               <SimpleMarkdown text={mod.content} />
             </div>
           )}
@@ -318,12 +318,12 @@ function ModuleItem({
                   size="sm"
                   onClick={() => markComplete.mutate({ courseId, moduleId: mod.id })}
                   disabled={markComplete.isPending}
-                  className="bg-green-600 hover:bg-green-700 text-white text-xs"
+                  className="bg-green-600 hover:bg-green-700 text-foreground text-xs"
                 >
                   {markComplete.isPending ? "Guardando..." : "✅ Marcar como completado"}
                 </Button>
                 <label className="cursor-pointer">
-                  <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-white text-xs font-medium transition-colors ${uploading ? "bg-orange-300 cursor-not-allowed" : "bg-orange-500 hover:bg-orange-600"}`}>
+                  <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-foreground text-xs font-medium transition-colors ${uploading ? "bg-orange-300 cursor-not-allowed" : "bg-orange-500 hover:bg-orange-600"}`}>
                     {uploading ? "⏳ Subiendo..." : "📎 Subir evidencia"}
                   </span>
                   <input
@@ -413,7 +413,7 @@ function CourseDetailModal({ courseId, onClose }: { courseId: number; onClose: (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
       <div className="bg-white rounded-2xl p-8 text-center">
         <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-orange-500 mx-auto mb-3" />
-        <p className="text-gray-600">Cargando curso...</p>
+        <p className="text-muted-foreground">Cargando curso...</p>
       </div>
     </div>
   );
@@ -434,35 +434,35 @@ function CourseDetailModal({ courseId, onClose }: { courseId: number; onClose: (
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="relative bg-gradient-to-r from-gray-900 to-gray-700 rounded-t-2xl p-6 text-white">
+        <div className="relative bg-gradient-to-r from-gray-900 to-gray-700 rounded-t-2xl p-6 text-foreground">
           <div className="absolute top-4 right-4 flex items-center gap-2">
             {/* Botón de actualizar */}
             <button
               onClick={() => { refetch(); toast.info("Progreso actualizado"); }}
               disabled={isFetching}
-              className="text-white/70 hover:text-white bg-white/10 hover:bg-white/20 rounded-lg p-1.5 transition-colors"
+              className="text-foreground/70 hover:text-foreground bg-white/10 hover:bg-white/20 rounded-lg p-1.5 transition-colors"
               title="Actualizar progreso"
             >
               <RefreshCw className={`w-4 h-4 ${isFetching ? "animate-spin" : ""}`} />
             </button>
-            <button onClick={onClose} className="text-white/70 hover:text-white text-2xl leading-none">×</button>
+            <button onClick={onClose} className="text-foreground/70 hover:text-foreground text-2xl leading-none">×</button>
           </div>
           <div className="flex items-center gap-3 mb-2">
             <span className="text-3xl">{cat.emoji}</span>
             <div>
               <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${cat.color}`}>{cat.label}</span>
-              {course.level && <span className="ml-2 text-xs text-white/70">{LEVELS[course.level] || course.level}</span>}
+              {course.level && <span className="ml-2 text-xs text-foreground/70">{LEVELS[course.level] || course.level}</span>}
               {course.ownerId === null && (
-                <span className="ml-2 text-xs bg-orange-500 text-white px-2 py-0.5 rounded-full font-bold">KobraPay</span>
+                <span className="ml-2 text-xs bg-orange-500 text-foreground px-2 py-0.5 rounded-full font-bold">KobraPay</span>
               )}
             </div>
           </div>
           <h2 className="text-xl font-bold">{course.title}</h2>
-          {course.description && <p className="text-white/80 text-sm mt-1">{course.description}</p>}
-          {course.durationMinutes ? <p className="text-white/60 text-xs mt-1">⏱ {course.durationMinutes} minutos estimados</p> : null}
+          {course.description && <p className="text-foreground/80 text-sm mt-1">{course.description}</p>}
+          {course.durationMinutes ? <p className="text-foreground/60 text-xs mt-1">⏱ {course.durationMinutes} minutos estimados</p> : null}
           {modules.length > 0 && (
             <div className="mt-4">
-              <div className="flex items-center justify-between text-xs text-white/70 mb-1">
+              <div className="flex items-center justify-between text-xs text-foreground/70 mb-1">
                 <span>Progreso del curso</span>
                 <span>{completedModules}/{modules.length} módulos · {progressPct}%</span>
               </div>
@@ -517,12 +517,12 @@ function CourseDetailModal({ courseId, onClose }: { courseId: number; onClose: (
               <Button
                 onClick={() => markComplete.mutate({ courseId })}
                 disabled={markComplete.isPending}
-                className="bg-green-600 hover:bg-green-700 text-white"
+                className="bg-green-600 hover:bg-green-700 text-foreground"
               >
                 {markComplete.isPending ? "Guardando..." : "✅ Marcar como completado"}
               </Button>
               <label className="cursor-pointer">
-                <span className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-white text-sm font-medium transition-colors ${uploading ? "bg-orange-300 cursor-not-allowed" : "bg-orange-500 hover:bg-orange-600"}`}>
+                <span className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-foreground text-sm font-medium transition-colors ${uploading ? "bg-orange-300 cursor-not-allowed" : "bg-orange-500 hover:bg-orange-600"}`}>
                   {uploading ? "⏳ Subiendo..." : "📎 Subir evidencia"}
                 </span>
                 <input ref={fileRef} type="file" className="hidden" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx,.ppt,.pptx" onChange={handleCourseEvidenceUpload} disabled={uploading} />
@@ -552,7 +552,7 @@ function CourseDetailModal({ courseId, onClose }: { courseId: number; onClose: (
           {/* Contenido del curso */}
           {course.content && (
             <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
-              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">📖 Guía del curso</p>
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3">📖 Guía del curso</p>
               <SimpleMarkdown text={course.content} />
             </div>
           )}
@@ -561,14 +561,14 @@ function CourseDetailModal({ courseId, onClose }: { courseId: number; onClose: (
           {modules.length > 0 && (
             <div>
               <div className="flex items-center justify-between mb-3">
-                <h3 className="font-semibold text-gray-800">
+                <h3 className="font-semibold text-foreground">
                   📋 Módulos del curso
-                  <span className="ml-2 text-sm font-normal text-gray-500">({completedModules}/{modules.length} completados)</span>
+                  <span className="ml-2 text-sm font-normal text-muted-foreground">({completedModules}/{modules.length} completados)</span>
                 </h3>
                 <button
                   onClick={() => { refetch(); toast.info("Progreso actualizado"); }}
                   disabled={isFetching}
-                  className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-orange-600 bg-gray-100 hover:bg-orange-50 px-3 py-1.5 rounded-lg transition-colors border border-gray-200"
+                  className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-orange-600 bg-gray-100 hover:bg-orange-50 px-3 py-1.5 rounded-lg transition-colors border border-gray-200"
                 >
                   <RefreshCw className={`w-3 h-3 ${isFetching ? "animate-spin" : ""}`} />
                   Actualizar
@@ -614,12 +614,12 @@ function CourseCard({ course, onOpen }: { course: CourseWithProgress; onOpen: ()
         </div>
       )}
       {course.isCompleted && (
-        <div className="absolute top-3 right-3 bg-green-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+        <div className="absolute top-3 right-3 bg-green-500 text-foreground text-xs font-bold px-2 py-0.5 rounded-full">
           ✓ Completado
         </div>
       )}
       {course.ownerId === null && (
-        <div className={`absolute ${course.coverImageUrl ? "top-3" : "top-3"} left-3 bg-orange-500 text-white text-xs font-bold px-2 py-0.5 rounded-full`}>
+        <div className={`absolute ${course.coverImageUrl ? "top-3" : "top-3"} left-3 bg-orange-500 text-foreground text-xs font-bold px-2 py-0.5 rounded-full`}>
           KobraPay
         </div>
       )}
@@ -629,20 +629,20 @@ function CourseCard({ course, onOpen }: { course: CourseWithProgress; onOpen: ()
           <div>
             <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${cat.color}`}>{cat.label}</span>
             {course.level && course.level !== "general" && (
-              <span className="ml-2 text-xs text-gray-500">{LEVELS[course.level] || course.level}</span>
+              <span className="ml-2 text-xs text-muted-foreground">{LEVELS[course.level] || course.level}</span>
             )}
           </div>
         </div>
-        <h3 className="font-bold text-gray-900 text-base leading-tight mb-1">{course.title}</h3>
+        <h3 className="font-bold text-foreground text-base leading-tight mb-1">{course.title}</h3>
         {course.description && (
-          <p className="text-gray-500 text-sm line-clamp-2">{course.description}</p>
+          <p className="text-muted-foreground text-sm line-clamp-2">{course.description}</p>
         )}
         {course.durationMinutes ? (
-          <p className="text-gray-400 text-xs mt-2">⏱ {course.durationMinutes} min</p>
+          <p className="text-muted-foreground text-xs mt-2">⏱ {course.durationMinutes} min</p>
         ) : null}
         <div className="mt-3 pt-3 border-t border-gray-100 flex items-center justify-between">
           <span className="text-orange-600 text-sm font-medium">Ver curso →</span>
-          {course.externalUrl && <span className="text-xs text-gray-400">🔗 Enlace externo</span>}
+          {course.externalUrl && <span className="text-xs text-muted-foreground">🔗 Enlace externo</span>}
         </div>
       </div>
     </div>
@@ -715,36 +715,36 @@ function NewCourseModal({ onClose, onCreated }: { onClose: () => void; onCreated
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
         <div className="p-6">
           <div className="flex items-center justify-between mb-5">
-            <h2 className="text-xl font-bold text-gray-900">🎓 Nuevo Curso</h2>
-            <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-2xl leading-none">×</button>
+            <h2 className="text-xl font-bold text-foreground">🎓 Nuevo Curso</h2>
+            <button onClick={onClose} className="text-muted-foreground hover:text-muted-foreground text-2xl leading-none">×</button>
           </div>
           <div className="space-y-4">
             {/* Imagen de portada */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Imagen de portada <span className="text-gray-400 font-normal">(opcional)</span>
+              <label className="block text-sm font-medium text-foreground mb-1">
+                Imagen de portada <span className="text-muted-foreground font-normal">(opcional)</span>
               </label>
               {coverImagePreview ? (
                 <div className="relative rounded-xl overflow-hidden border border-gray-200">
                   <img src={coverImagePreview} alt="Portada" className="w-full h-32 object-cover" />
                   <button
                     onClick={() => { setCoverImageFile(null); setCoverImagePreview(null); if (coverImageRef.current) coverImageRef.current.value = ""; }}
-                    className="absolute top-2 right-2 bg-black/60 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-black/80"
+                    className="absolute top-2 right-2 bg-black/60 text-foreground rounded-full w-6 h-6 flex items-center justify-center hover:bg-black/80"
                   >
                     <X className="w-3 h-3" />
                   </button>
                 </div>
               ) : (
                 <label className="flex flex-col items-center justify-center w-full h-24 border-2 border-dashed border-gray-300 rounded-xl cursor-pointer hover:border-orange-400 hover:bg-orange-50 transition-colors">
-                  <ImageIcon className="w-6 h-6 text-gray-400 mb-1" />
-                  <span className="text-xs text-gray-500">Haz clic para subir imagen (JPG, PNG · máx 5 MB)</span>
+                  <ImageIcon className="w-6 h-6 text-muted-foreground mb-1" />
+                  <span className="text-xs text-muted-foreground">Haz clic para subir imagen (JPG, PNG · máx 5 MB)</span>
                   <input ref={coverImageRef} type="file" className="hidden" accept=".jpg,.jpeg,.png,.webp" onChange={handleCoverImageChange} />
                 </label>
               )}
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Título *</label>
+              <label className="block text-sm font-medium text-foreground mb-1">Título *</label>
               <input
                 className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
                 value={form.title}
@@ -754,7 +754,7 @@ function NewCourseModal({ onClose, onCreated }: { onClose: () => void; onCreated
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Categoría</label>
+                <label className="block text-sm font-medium text-foreground mb-1">Categoría</label>
                 <select
                   className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
                   value={form.category}
@@ -766,7 +766,7 @@ function NewCourseModal({ onClose, onCreated }: { onClose: () => void; onCreated
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Nivel</label>
+                <label className="block text-sm font-medium text-foreground mb-1">Nivel</label>
                 <select
                   className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
                   value={form.level}
@@ -779,7 +779,7 @@ function NewCourseModal({ onClose, onCreated }: { onClose: () => void; onCreated
               </div>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Descripción</label>
+              <label className="block text-sm font-medium text-foreground mb-1">Descripción</label>
               <textarea
                 className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 resize-none"
                 rows={3}
@@ -789,8 +789,8 @@ function NewCourseModal({ onClose, onCreated }: { onClose: () => void; onCreated
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Enlace externo <span className="text-gray-400 font-normal">— YouTube, PDF, sitio web (opcional)</span>
+              <label className="block text-sm font-medium text-foreground mb-1">
+                Enlace externo <span className="text-muted-foreground font-normal">— YouTube, PDF, sitio web (opcional)</span>
               </label>
               <input
                 className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
@@ -800,8 +800,8 @@ function NewCourseModal({ onClose, onCreated }: { onClose: () => void; onCreated
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Contenido interno <span className="text-gray-400 font-normal">— guía, tips, temario (soporta Markdown)</span>
+              <label className="block text-sm font-medium text-foreground mb-1">
+                Contenido interno <span className="text-muted-foreground font-normal">— guía, tips, temario (soporta Markdown)</span>
               </label>
               <textarea
                 className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 resize-none font-mono"
@@ -810,10 +810,10 @@ function NewCourseModal({ onClose, onCreated }: { onClose: () => void; onCreated
                 onChange={e => setForm(f => ({ ...f, content: e.target.value }))}
                 placeholder={"## Introducción\n\nEscribe aquí el contenido del curso...\n\n### Tema 1\n- Punto importante\n- **Concepto clave**\n\n> 💡 Consejo útil"}
               />
-              <p className="text-xs text-gray-400 mt-1">Usa ## para títulos, **negrita**, - para listas, &gt; para notas destacadas</p>
+              <p className="text-xs text-muted-foreground mt-1">Usa ## para títulos, **negrita**, - para listas, &gt; para notas destacadas</p>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Duración estimada (minutos)</label>
+              <label className="block text-sm font-medium text-foreground mb-1">Duración estimada (minutos)</label>
               <input
                 type="number"
                 min={0}
@@ -828,7 +828,7 @@ function NewCourseModal({ onClose, onCreated }: { onClose: () => void; onCreated
             <Button
               onClick={handleCreate}
               disabled={!form.title.trim() || create.isPending || uploadingCover}
-              className="flex-1 bg-orange-500 hover:bg-orange-600 text-white"
+              className="flex-1 bg-orange-500 hover:bg-orange-600 text-foreground"
             >
               {create.isPending || uploadingCover ? "Creando..." : "Crear Curso"}
             </Button>
@@ -876,15 +876,15 @@ export function TrainingPanel() {
             <Link href="/dashboard">
               <a className="flex items-center gap-2 hover:opacity-80 transition-opacity" title="Ir al Panel Principal">
                 <div className="w-9 h-9 bg-gradient-to-br from-orange-500 to-orange-700 rounded-xl flex items-center justify-center shadow">
-                  <span className="text-white font-black text-sm">K</span>
+                  <span className="text-foreground font-black text-sm">K</span>
                 </div>
-                <span className="hidden sm:block font-bold text-gray-800 text-sm">KobraPay</span>
+                <span className="hidden sm:block font-bold text-foreground text-sm">KobraPay</span>
               </a>
             </Link>
             <div className="w-px h-8 bg-gray-200" />
             <div>
-              <h1 className="text-xl font-bold text-gray-900">🎓 Capacitaciones</h1>
-              <p className="text-gray-500 text-xs mt-0.5">Cursos para tu crecimiento profesional y personal</p>
+              <h1 className="text-xl font-bold text-foreground">🎓 Capacitaciones</h1>
+              <p className="text-muted-foreground text-xs mt-0.5">Cursos para tu crecimiento profesional y personal</p>
             </div>
           </div>
           <div className="flex items-center gap-3">
@@ -894,22 +894,22 @@ export function TrainingPanel() {
                 <p className="text-xs text-orange-500">Completados</p>
               </div>
               <div className="bg-gray-100 rounded-xl px-4 py-2">
-                <p className="text-xl font-bold text-gray-700">{courses.length}</p>
-                <p className="text-xs text-gray-500">Total cursos</p>
+                <p className="text-xl font-bold text-foreground">{courses.length}</p>
+                <p className="text-xs text-muted-foreground">Total cursos</p>
               </div>
             </div>
             {/* Botón de actualizar progreso */}
             <button
               onClick={() => { refetch(); toast.info("Lista de cursos actualizada"); }}
               disabled={isFetching}
-              className="flex items-center gap-1.5 text-sm text-gray-600 hover:text-orange-600 bg-white border border-gray-200 hover:border-orange-300 px-3 py-2 rounded-xl transition-colors"
+              className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-orange-600 bg-white border border-gray-200 hover:border-orange-300 px-3 py-2 rounded-xl transition-colors"
               title="Actualizar progreso"
             >
               <RefreshCw className={`w-4 h-4 ${isFetching ? "animate-spin" : ""}`} />
               <span className="hidden sm:inline">Actualizar</span>
             </button>
             {isAdmin && (
-              <Button onClick={() => setShowNewCourse(true)} className="bg-orange-500 hover:bg-orange-600 text-white">
+              <Button onClick={() => setShowNewCourse(true)} className="bg-orange-500 hover:bg-orange-600 text-foreground">
                 + Nuevo Curso
               </Button>
             )}
@@ -928,7 +928,7 @@ export function TrainingPanel() {
           <div className="flex flex-wrap gap-2">
             <button
               onClick={() => setActiveCategory("all")}
-              className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${activeCategory === "all" ? "bg-gray-900 text-white" : "bg-white border border-gray-300 text-gray-600 hover:border-gray-400"}`}
+              className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${activeCategory === "all" ? "bg-card text-foreground" : "bg-white border border-gray-300 text-muted-foreground hover:border-gray-400"}`}
             >
               Todos
             </button>
@@ -936,7 +936,7 @@ export function TrainingPanel() {
               <button
                 key={k}
                 onClick={() => setActiveCategory(k)}
-                className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${activeCategory === k ? "bg-gray-900 text-white" : "bg-white border border-gray-300 text-gray-600 hover:border-gray-400"}`}
+                className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${activeCategory === k ? "bg-card text-foreground" : "bg-white border border-gray-300 text-muted-foreground hover:border-gray-400"}`}
               >
                 {v.emoji} {v.label}
               </button>
@@ -945,7 +945,7 @@ export function TrainingPanel() {
         </div>
 
         {kobrapayCount > 0 && activeCategory === "all" && !searchQuery && (
-          <div className="bg-gradient-to-r from-orange-500 to-orange-600 rounded-2xl p-5 mb-6 text-white flex items-center gap-4">
+          <div className="bg-gradient-to-r from-orange-500 to-orange-600 rounded-2xl p-5 mb-6 text-foreground flex items-center gap-4">
             <span className="text-4xl">🐍</span>
             <div>
               <p className="font-bold text-lg">Academia KobraPay</p>
@@ -967,7 +967,7 @@ export function TrainingPanel() {
             ))}
           </div>
         ) : filtered.length === 0 ? (
-          <div className="text-center py-16 text-gray-400">
+          <div className="text-center py-16 text-muted-foreground">
             <p className="text-5xl mb-3">📭</p>
             <p className="text-lg font-medium">No hay cursos disponibles</p>
             {isAdmin && <p className="text-sm mt-1">Crea el primer curso con el botón "+ Nuevo Curso"</p>}
@@ -983,11 +983,11 @@ export function TrainingPanel() {
         {courses.length > 0 && (
           <div className="mt-8 bg-white rounded-2xl border border-gray-200 p-5">
             <div className="flex items-center justify-between mb-3">
-              <h3 className="font-bold text-gray-800">📊 Tu progreso general</h3>
+              <h3 className="font-bold text-foreground">📊 Tu progreso general</h3>
               <button
                 onClick={() => { refetch(); toast.info("Progreso actualizado"); }}
                 disabled={isFetching}
-                className="flex items-center gap-1 text-xs text-gray-500 hover:text-orange-600 transition-colors"
+                className="flex items-center gap-1 text-xs text-muted-foreground hover:text-orange-600 transition-colors"
               >
                 <RefreshCw className={`w-3 h-3 ${isFetching ? "animate-spin" : ""}`} />
                 Actualizar
@@ -1000,7 +1000,7 @@ export function TrainingPanel() {
                   style={{ width: `${courses.length > 0 ? (completedCount / courses.length) * 100 : 0}%` }}
                 />
               </div>
-              <span className="text-sm font-semibold text-gray-700 whitespace-nowrap">
+              <span className="text-sm font-semibold text-foreground whitespace-nowrap">
                 {completedCount} / {courses.length} completados
               </span>
             </div>
@@ -1023,9 +1023,9 @@ export function TrainingPanel() {
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 p-4">
           <div className="bg-white rounded-3xl shadow-2xl max-w-md w-full p-8 text-center">
             <div className="text-7xl mb-4">🎓</div>
-            <h2 className="text-2xl font-black text-gray-900 mb-2">¡Felicidades!</h2>
+            <h2 className="text-2xl font-black text-foreground mb-2">¡Felicidades!</h2>
             <p className="text-lg font-semibold text-orange-600 mb-1">Has completado todos los cursos</p>
-            <p className="text-gray-500 text-sm mb-6">
+            <p className="text-muted-foreground text-sm mb-6">
               ¡Eres un profesional KobraPay! Todos tus logros aparecen en tu perfil profesional.
             </p>
             <div className="flex justify-center gap-2 mb-6 text-4xl">
@@ -1037,7 +1037,7 @@ export function TrainingPanel() {
             </div>
             <button
               onClick={() => setShowGraduation(false)}
-              className="w-full bg-gradient-to-r from-orange-500 to-orange-600 text-white font-bold py-3 rounded-xl hover:from-orange-600 hover:to-orange-700 transition-all"
+              className="w-full bg-gradient-to-r from-orange-500 to-orange-600 text-foreground font-bold py-3 rounded-xl hover:from-orange-600 hover:to-orange-700 transition-all"
             >
               ¡Gracias! Ver mi perfil profesional
             </button>

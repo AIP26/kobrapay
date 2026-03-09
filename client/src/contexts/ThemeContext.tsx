@@ -22,24 +22,18 @@ export function ThemeProvider({
   switchable = false,
 }: ThemeProviderProps) {
   const [theme, setTheme] = useState<Theme>(() => {
-    // Force remove any stored dark theme — KobraPay is always light
-    localStorage.removeItem("theme");
+    // KobraPay siempre usa tema claro — forzar light
+    try { localStorage.removeItem("theme"); localStorage.removeItem("vite-ui-theme"); } catch {}
     document.documentElement.classList.remove("dark");
-    return defaultTheme;
+    document.documentElement.classList.add("light");
+    return "light";
   });
 
   useEffect(() => {
-    const root = document.documentElement;
-    if (theme === "dark") {
-      root.classList.add("dark");
-    } else {
-      root.classList.remove("dark");
-    }
-
-    if (switchable) {
-      localStorage.setItem("theme", theme);
-    }
-  }, [theme, switchable]);
+    // Siempre forzar light
+    document.documentElement.classList.remove("dark");
+    document.documentElement.classList.add("light");
+  }, [theme]);
 
   const toggleTheme = switchable
     ? () => {

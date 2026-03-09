@@ -55,7 +55,7 @@ const DOC_TYPES = [
   { value: "domicilio", label: "Comprobante de Domicilio", icon: Home, color: "text-orange-500" },
   { value: "referencia_laboral", label: "Referencia Laboral", icon: Briefcase, color: "text-purple-500" },
   { value: "referencia_personal", label: "Referencia Personal", icon: Star, color: "text-yellow-500" },
-  { value: "otro", label: "Otro Documento", icon: FileText, color: "text-gray-500" },
+  { value: "otro", label: "Otro Documento", icon: FileText, color: "text-muted-foreground" },
 ] as const;
 
 type DocType = typeof DOC_TYPES[number]["value"];
@@ -516,7 +516,7 @@ function EmployeeDetail({
                   </button>
                   <input ref={photoRef} type="file" className="hidden" accept="image/*" onChange={handlePhotoChange} />
                 </div>
-                <Badge variant={emp.status === "active" ? "default" : "secondary"} className={emp.status === "active" ? "bg-green-600 text-white" : ""}>
+                <Badge variant={emp.status === "active" ? "default" : "secondary"} className={emp.status === "active" ? "bg-green-600 text-foreground" : ""}>
                   {emp.status === "active" ? "Activo" : "Inactivo"}
                 </Badge>
               </div>
@@ -845,7 +845,7 @@ function ColaboradoresInner() {
                         <p className="font-semibold text-foreground truncate">{emp.fullName}</p>
                         <Badge
                           variant={emp.status === "active" ? "default" : "secondary"}
-                          className={`text-xs shrink-0 ${emp.status === "active" ? "bg-green-600 text-white" : ""}`}
+                          className={`text-xs shrink-0 ${emp.status === "active" ? "bg-green-600 text-foreground" : ""}`}
                         >
                           {emp.status === "active" ? "Activo" : "Inactivo"}
                         </Badge>

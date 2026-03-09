@@ -149,7 +149,7 @@ const NAV_GROUPS = [
     id: "principal",
     label: "Principal",
     icon: Home,
-    color: "text-gray-500",
+    color: "text-muted-foreground",
     items: [
       { href: "/dashboard", icon: Home, label: "Panel" },
       { href: "/dashboard/sales", icon: BarChart3, label: "Mis Ventas" },
@@ -263,7 +263,7 @@ const NAV_GROUPS = [
     id: "sistema",
     label: "Sistema",
     icon: Settings,
-    color: "text-gray-500",
+    color: "text-muted-foreground",
     items: [
       { href: "/dashboard/help", icon: HelpCircle, label: "Ayuda" },
       { href: "/dashboard/support", icon: LifeBuoy, label: "Soporte Técnico" },
@@ -329,7 +329,7 @@ function LogoWithProfileSwitcher({
     if (role === 'admin') return 'bg-emerald-100 text-emerald-700';
     if (role === 'assistant') return 'bg-blue-100 text-blue-700';
     if (role === 'associate') return 'bg-amber-100 text-amber-700';
-    return 'bg-gray-100 text-gray-600';
+    return 'bg-gray-100 text-muted-foreground';
   };;
 
   return (

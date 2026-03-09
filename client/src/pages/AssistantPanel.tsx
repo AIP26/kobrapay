@@ -49,9 +49,9 @@ function AssistantPanelInner() {
   if (!isAssistant && !isSuperAdmin) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
-        <ShieldCheck className="w-16 h-16 text-gray-300" />
-        <h2 className="text-xl font-bold text-gray-600">Acceso Restringido</h2>
-        <p className="text-gray-500 text-sm">Solo el asistente o el superadmin pueden acceder a este panel.</p>
+        <ShieldCheck className="w-16 h-16 text-muted-foreground" />
+        <h2 className="text-xl font-bold text-muted-foreground">Acceso Restringido</h2>
+        <p className="text-muted-foreground text-sm">Solo el asistente o el superadmin pueden acceder a este panel.</p>
       </div>
     );
   }
@@ -127,11 +127,11 @@ function AssistantPanelInner() {
       {/* Header */}
       <div className="flex items-center gap-3 mb-6">
         <div className="w-10 h-10 rounded-xl bg-purple-600 flex items-center justify-center">
-          <ShieldCheck className="w-5 h-5 text-white" />
+          <ShieldCheck className="w-5 h-5 text-foreground" />
         </div>
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Panel de Asistente</h1>
-          <p className="text-sm text-gray-500">Gestiona solicitudes de acceso y usuarios de la plataforma</p>
+          <h1 className="text-2xl font-bold text-foreground">Panel de Asistente</h1>
+          <p className="text-sm text-muted-foreground">Gestiona solicitudes de acceso y usuarios de la plataforma</p>
         </div>
       </div>
 
@@ -146,8 +146,8 @@ function AssistantPanelInner() {
           <p className="text-xs text-blue-600 mt-1">Pre-aprobados (en espera del superadmin)</p>
         </div>
         <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 text-center">
-          <p className="text-2xl font-bold text-gray-700">{processed.length}</p>
-          <p className="text-xs text-gray-500 mt-1">Procesados</p>
+          <p className="text-2xl font-bold text-foreground">{processed.length}</p>
+          <p className="text-xs text-muted-foreground mt-1">Procesados</p>
         </div>
       </div>
 
@@ -155,25 +155,25 @@ function AssistantPanelInner() {
       <div className="flex gap-2 mb-6 border-b border-gray-200 flex-wrap">
         <button
           onClick={() => setActiveTab("requests")}
-          className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${activeTab === "requests" ? "border-purple-600 text-purple-700" : "border-transparent text-gray-500 hover:text-gray-700"}`}
+          className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${activeTab === "requests" ? "border-purple-600 text-purple-700" : "border-transparent text-muted-foreground hover:text-foreground"}`}
         >
           <Settings className="w-4 h-4 inline mr-1" />
           Solicitudes de Módulos
         </button>
         <button
           onClick={() => setActiveTab("surveys")}
-          className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors inline-flex items-center gap-1 ${activeTab === "surveys" ? "border-emerald-600 text-emerald-700" : "border-transparent text-gray-500 hover:text-gray-700"}`}
+          className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors inline-flex items-center gap-1 ${activeTab === "surveys" ? "border-emerald-600 text-emerald-700" : "border-transparent text-muted-foreground hover:text-foreground"}`}
         >
           <ClipboardList className="w-4 h-4" />
           Encuestas de Clientes
           {pendingSurveys.length > 0 && (
-            <span className="ml-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold">{pendingSurveys.length}</span>
+            <span className="ml-1 bg-red-500 text-foreground text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold">{pendingSurveys.length}</span>
           )}
         </button>
         {isSuperAdmin && (
           <button
             onClick={() => setActiveTab("users")}
-            className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${activeTab === "users" ? "border-purple-600 text-purple-700" : "border-transparent text-gray-500 hover:text-gray-700"}`}
+            className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${activeTab === "users" ? "border-purple-600 text-purple-700" : "border-transparent text-muted-foreground hover:text-foreground"}`}
           >
             <Users className="w-4 h-4 inline mr-1" />
             Gestión de Usuarios
@@ -181,12 +181,12 @@ function AssistantPanelInner() {
         )}
         <button
           onClick={() => setActiveTab("associates")}
-          className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors inline-flex items-center gap-1 ${activeTab === "associates" ? "border-amber-600 text-amber-700" : "border-transparent text-gray-500 hover:text-gray-700"}`}
+          className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors inline-flex items-center gap-1 ${activeTab === "associates" ? "border-amber-600 text-amber-700" : "border-transparent text-muted-foreground hover:text-foreground"}`}
         >
           <Handshake className="w-4 h-4" />
           Clientes de Asociados
           {pendingAssistantClients.length > 0 && (
-            <span className="ml-1 bg-amber-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold">{pendingAssistantClients.length}</span>
+            <span className="ml-1 bg-amber-500 text-foreground text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold">{pendingAssistantClients.length}</span>
           )}
         </button>
       </div>
@@ -195,9 +195,9 @@ function AssistantPanelInner() {
       {activeTab === "requests" && (
         <div className="space-y-4">
           {isLoading ? (
-            <div className="text-center py-10 text-gray-400">Cargando solicitudes...</div>
+            <div className="text-center py-10 text-muted-foreground">Cargando solicitudes...</div>
           ) : requests.length === 0 ? (
-            <div className="text-center py-10 text-gray-400">
+            <div className="text-center py-10 text-muted-foreground">
               <Clock className="w-12 h-12 mx-auto mb-3 opacity-30" />
               <p>No hay solicitudes pendientes</p>
             </div>
@@ -245,7 +245,7 @@ function AssistantPanelInner() {
               {/* Procesados */}
               {processed.length > 0 && (
                 <div>
-                  <h3 className="text-sm font-semibold text-gray-500 mb-3">Historial procesados ({processed.length})</h3>
+                  <h3 className="text-sm font-semibold text-muted-foreground mb-3">Historial procesados ({processed.length})</h3>
                   <div className="space-y-3">
                     {processed.map(req => (
                       <RequestCard key={req.id} req={req} readonly />
@@ -262,30 +262,30 @@ function AssistantPanelInner() {
       {activeTab === "users" && isSuperAdmin && (
         <div>
           {loadingUsers ? (
-            <div className="text-center py-10 text-gray-400">Cargando usuarios...</div>
+            <div className="text-center py-10 text-muted-foreground">Cargando usuarios...</div>
           ) : (
             <div className="overflow-x-auto rounded-xl border border-gray-200">
               <table className="w-full text-sm">
                 <thead className="bg-gray-50 border-b border-gray-200">
                   <tr>
-                    <th className="text-left px-4 py-3 font-medium text-gray-600">Usuario</th>
-                    <th className="text-left px-4 py-3 font-medium text-gray-600">Email</th>
-                    <th className="text-left px-4 py-3 font-medium text-gray-600">Rol actual</th>
-                    <th className="text-left px-4 py-3 font-medium text-gray-600">Acciones</th>
+                    <th className="text-left px-4 py-3 font-medium text-muted-foreground">Usuario</th>
+                    <th className="text-left px-4 py-3 font-medium text-muted-foreground">Email</th>
+                    <th className="text-left px-4 py-3 font-medium text-muted-foreground">Rol actual</th>
+                    <th className="text-left px-4 py-3 font-medium text-muted-foreground">Acciones</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
                   {allUsers.map((u: any) => (
                     <tr key={u.id} className="hover:bg-gray-50">
-                      <td className="px-4 py-3 font-medium text-gray-900">{u.name || "—"}</td>
-                      <td className="px-4 py-3 text-gray-600">{u.email || "—"}</td>
+                      <td className="px-4 py-3 font-medium text-foreground">{u.name || "—"}</td>
+                      <td className="px-4 py-3 text-muted-foreground">{u.email || "—"}</td>
                       <td className="px-4 py-3">
                         <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
                           u.role === "admin" ? "bg-blue-100 text-blue-700" :
                           u.role === "superadmin" ? "bg-purple-100 text-purple-700" :
                           u.role === "assistant" ? "bg-green-100 text-green-700" :
                           u.role === "associate" ? "bg-amber-100 text-amber-700" :
-                          "bg-gray-100 text-gray-600"
+                          "bg-gray-100 text-muted-foreground"
                         }`}>
                           {u.role === "admin" ? "Administrador" :
                            u.role === "superadmin" ? "SuperAdmin" :
@@ -326,12 +326,12 @@ function AssistantPanelInner() {
             <h3 className="text-sm font-semibold text-amber-700 mb-3 flex items-center gap-2">
               <Clock className="w-4 h-4" />
               Pendientes de tu revisión ({pendingAssistantClients.length})
-              <span className="text-xs font-normal text-gray-500 ml-1">— Pre-aprueba para enviar al superadmin</span>
+              <span className="text-xs font-normal text-muted-foreground ml-1">— Pre-aprueba para enviar al superadmin</span>
             </h3>
             {loadingPendingAssistant ? (
-              <div className="text-center py-6 text-gray-400 text-sm">Cargando...</div>
+              <div className="text-center py-6 text-muted-foreground text-sm">Cargando...</div>
             ) : pendingAssistantClients.length === 0 ? (
-              <div className="text-center py-6 text-gray-400 text-sm bg-gray-50 rounded-xl">
+              <div className="text-center py-6 text-muted-foreground text-sm bg-gray-50 rounded-xl">
                 <Handshake className="w-8 h-8 mx-auto mb-2 opacity-30" />
                 No hay clientes pendientes de revisión
               </div>
@@ -341,19 +341,19 @@ function AssistantPanelInner() {
                   <div key={c.id} className="bg-white border border-amber-200 rounded-xl px-4 py-3 flex items-center justify-between gap-3">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <p className="text-sm font-semibold text-gray-900">{c.clientName}</p>
-                        <span className="text-xs text-gray-400">·</span>
-                        <p className="text-xs text-gray-500">{c.clientEmail}</p>
-                        {c.clientBusinessName && <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">{c.clientBusinessName}</span>}
+                        <p className="text-sm font-semibold text-foreground">{c.clientName}</p>
+                        <span className="text-xs text-muted-foreground">·</span>
+                        <p className="text-xs text-muted-foreground">{c.clientEmail}</p>
+                        {c.clientBusinessName && <span className="text-xs bg-gray-100 text-muted-foreground px-2 py-0.5 rounded-full">{c.clientBusinessName}</span>}
                       </div>
                       <div className="flex items-center gap-2 mt-1 flex-wrap">
                         <span className="text-xs text-amber-700 font-medium">Asociado: {c.associateName}</span>
                         {c.assignedPlan && <span className="text-xs text-emerald-600">Plan sugerido: {c.assignedPlan}</span>}
-                        {c.notes && <span className="text-xs text-gray-400 italic">{c.notes}</span>}
+                        {c.notes && <span className="text-xs text-muted-foreground italic">{c.notes}</span>}
                       </div>
                     </div>
                     <div className="flex gap-2 flex-shrink-0">
-                      <Button size="sm" className="bg-blue-600 hover:bg-blue-700 text-white text-xs h-7"
+                      <Button size="sm" className="bg-blue-600 hover:bg-blue-700 text-foreground text-xs h-7"
                         onClick={() => { setSelectedAssociateClient({ id: c.id, name: c.clientName, currentStatus: 'pending', associateName: c.associateName }); setAssociateClientPlan(c.assignedPlan || 'express'); setAssociateClientCommission(1.5); setAssociateClientNotes(""); }}>
                         <CheckCircle className="w-3 h-3 mr-1" /> Pre-aprobar
                       </Button>
@@ -380,9 +380,9 @@ function AssistantPanelInner() {
                   <div key={c.id} className="bg-blue-50 border border-blue-200 rounded-xl px-4 py-3 flex items-center justify-between gap-3">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <p className="text-sm font-semibold text-gray-900">{c.clientName}</p>
-                        <span className="text-xs text-gray-400">·</span>
-                        <p className="text-xs text-gray-500">{c.clientEmail}</p>
+                        <p className="text-sm font-semibold text-foreground">{c.clientName}</p>
+                        <span className="text-xs text-muted-foreground">·</span>
+                        <p className="text-xs text-muted-foreground">{c.clientEmail}</p>
                       </div>
                       <div className="flex items-center gap-2 mt-1">
                         <span className="text-xs text-amber-700 font-medium">Asociado: {c.associateName}</span>
@@ -391,7 +391,7 @@ function AssistantPanelInner() {
                     </div>
                     <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-medium flex-shrink-0">⏳ Esperando superadmin</span>
                     {isSuperAdmin && (
-                      <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs h-7 flex-shrink-0"
+                      <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-foreground text-xs h-7 flex-shrink-0"
                         onClick={() => { setSelectedAssociateClient({ id: c.id, name: c.clientName, currentStatus: 'assistant_approved', associateName: c.associateName }); setAssociateClientPlan(c.assignedPlan || 'express'); setAssociateClientCommission(1.5); setAssociateClientNotes(""); }}>
                         Aprobar definitivamente
                       </Button>
@@ -405,14 +405,14 @@ function AssistantPanelInner() {
           {/* Vista expandida de todos los asociados (solo superadmin) */}
           {isSuperAdmin && (
             <div>
-              <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+              <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
                 <Users className="w-4 h-4" />
                 Todos los asociados y sus clientes
               </h3>
               {loadingAssociates ? (
-                <div className="text-center py-6 text-gray-400 text-sm">Cargando asociados...</div>
+                <div className="text-center py-6 text-muted-foreground text-sm">Cargando asociados...</div>
               ) : (allAssociates as any[]).length === 0 ? (
-                <div className="text-center py-6 text-gray-400 text-sm bg-gray-50 rounded-xl">
+                <div className="text-center py-6 text-muted-foreground text-sm bg-gray-50 rounded-xl">
                   <p>No hay asociados registrados aún</p>
                   <p className="text-xs mt-1">Asigna el rol de Asociado desde la pestaña Gestión de Usuarios</p>
                 </div>
@@ -431,52 +431,52 @@ function AssistantPanelInner() {
                           <div className="flex items-center gap-3">
                             <div className="w-9 h-9 rounded-full bg-amber-100 flex items-center justify-center text-amber-700 font-bold text-sm">{(assoc.name || 'A').charAt(0).toUpperCase()}</div>
                             <div className="text-left">
-                              <p className="font-semibold text-gray-900 text-sm">{assoc.name || 'Sin nombre'}</p>
-                              <p className="text-xs text-gray-500">{assoc.email}</p>
+                              <p className="font-semibold text-foreground text-sm">{assoc.name || 'Sin nombre'}</p>
+                              <p className="text-xs text-muted-foreground">{assoc.email}</p>
                             </div>
                             <div className="flex gap-2 ml-2">
                               {pendingCount > 0 && <span className="px-2 py-0.5 bg-yellow-100 text-yellow-700 rounded-full text-xs font-medium">{pendingCount} pendiente{pendingCount > 1 ? 's' : ''}</span>}
                               {preApprovedCount > 0 && <span className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full text-xs font-medium">{preApprovedCount} pre-aprobado{preApprovedCount > 1 ? 's' : ''}</span>}
                               {activeCount > 0 && <span className="px-2 py-0.5 bg-green-100 text-green-700 rounded-full text-xs font-medium">{activeCount} activo{activeCount > 1 ? 's' : ''}</span>}
-                              <span className="px-2 py-0.5 bg-gray-100 text-gray-600 rounded-full text-xs">{clients.length} total</span>
+                              <span className="px-2 py-0.5 bg-gray-100 text-muted-foreground rounded-full text-xs">{clients.length} total</span>
                             </div>
                           </div>
                           <div className="flex items-center gap-3">
                             <span className="text-sm font-semibold text-emerald-700">${item.totalEarned.toFixed(2)} MXN</span>
-                            {isExpanded ? <ChevronUp className="w-4 h-4 text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-400" />}
+                            {isExpanded ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
                           </div>
                         </button>
                         {isExpanded && (
                           <div className="border-t border-gray-100 px-5 py-4">
                             {clients.length === 0 ? (
-                              <p className="text-sm text-gray-400 text-center py-4">Este asociado aún no ha registrado clientes</p>
+                              <p className="text-sm text-muted-foreground text-center py-4">Este asociado aún no ha registrado clientes</p>
                             ) : (
                               <div className="space-y-2">
                                 {clients.map((c: any) => (
                                   <div key={c.id} className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0">
                                     <div className="flex-1 min-w-0">
-                                      <p className="text-sm font-medium text-gray-900">{c.clientName}</p>
-                                      <p className="text-xs text-gray-500">{c.clientEmail}{c.clientBusinessName ? ` · ${c.clientBusinessName}` : ''}</p>
+                                      <p className="text-sm font-medium text-foreground">{c.clientName}</p>
+                                      <p className="text-xs text-muted-foreground">{c.clientEmail}{c.clientBusinessName ? ` · ${c.clientBusinessName}` : ''}</p>
                                       {c.assignedPlan && <span className="text-xs text-emerald-600 font-medium">Plan: {c.assignedPlan}</span>}
-                                      {c.notes && <p className="text-xs text-gray-400 italic mt-0.5 truncate max-w-xs">{c.notes}</p>}
+                                      {c.notes && <p className="text-xs text-muted-foreground italic mt-0.5 truncate max-w-xs">{c.notes}</p>}
                                     </div>
                                     <div className="flex items-center gap-2 ml-3">
                                       <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
                                         c.status === 'active' ? 'bg-green-100 text-green-700' :
                                         c.status === 'assistant_approved' ? 'bg-blue-100 text-blue-700' :
                                         c.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
-                                        c.status === 'rejected' ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-600'
+                                        c.status === 'rejected' ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-muted-foreground'
                                       }`}>
                                         {c.status === 'active' ? 'Activo' : c.status === 'assistant_approved' ? 'Pre-aprobado' : c.status === 'pending' ? 'Pendiente' : c.status === 'rejected' ? 'Rechazado' : 'Inactivo'}
                                       </span>
                                       {c.status === 'assistant_approved' && (
-                                        <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs h-7"
+                                        <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-foreground text-xs h-7"
                                           onClick={() => { setSelectedAssociateClient({ id: c.id, name: c.clientName, currentStatus: 'assistant_approved', associateName: assoc.name || assoc.email }); setAssociateClientPlan(c.assignedPlan || 'express'); setAssociateClientCommission(parseFloat(String(c.commissionRate)) || 1.5); setAssociateClientNotes(""); }}>
                                           Aprobar definitivamente
                                         </Button>
                                       )}
                                       {c.status === 'pending' && (
-                                        <Button size="sm" className="bg-blue-600 hover:bg-blue-700 text-white text-xs h-7"
+                                        <Button size="sm" className="bg-blue-600 hover:bg-blue-700 text-foreground text-xs h-7"
                                           onClick={() => { setSelectedAssociateClient({ id: c.id, name: c.clientName, currentStatus: 'pending', associateName: assoc.name || assoc.email }); setAssociateClientPlan(c.assignedPlan || 'express'); setAssociateClientCommission(1.5); setAssociateClientNotes(""); }}>
                                           Pre-aprobar
                                         </Button>
@@ -506,7 +506,7 @@ function AssistantPanelInner() {
                 ? '✅ Aprobación final del cliente'
                 : '⏳ Pre-aprobar cliente (Paso 1 de 2)'}
             </h3>
-            <p className="text-sm text-gray-500 mb-1">{selectedAssociateClient.name}</p>
+            <p className="text-sm text-muted-foreground mb-1">{selectedAssociateClient.name}</p>
             {selectedAssociateClient.associateName && (
               <p className="text-xs text-amber-600 mb-4">Asociado: {selectedAssociateClient.associateName}</p>
             )}
@@ -521,7 +521,7 @@ function AssistantPanelInner() {
             )}
             <div className="space-y-3 mb-4">
               <div>
-                <label className="text-sm font-medium text-gray-700 block mb-1">Plan a asignar</label>
+                <label className="text-sm font-medium text-foreground block mb-1">Plan a asignar</label>
                 <select value={associateClientPlan} onChange={e => setAssociateClientPlan(e.target.value)} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm">
                   <option value="express">Express - Básico</option>
                   <option value="connect">Connect - Estándar</option>
@@ -530,18 +530,18 @@ function AssistantPanelInner() {
                 </select>
               </div>
               <div>
-                <label className="text-sm font-medium text-gray-700 block mb-1">Comisión del asociado (%)</label>
+                <label className="text-sm font-medium text-foreground block mb-1">Comisión del asociado (%)</label>
                 <input type="number" step="0.1" min="0" max="5" value={associateClientCommission} onChange={e => setAssociateClientCommission(parseFloat(e.target.value))} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
               </div>
               <div>
-                <label className="text-sm font-medium text-gray-700 block mb-1">Notas (opcional)</label>
+                <label className="text-sm font-medium text-foreground block mb-1">Notas (opcional)</label>
                 <textarea value={associateClientNotes} onChange={e => setAssociateClientNotes(e.target.value)} placeholder="Notas internas..." className="w-full border border-gray-300 rounded-lg p-2 text-sm resize-none h-16 focus:outline-none focus:ring-2 focus:ring-blue-500" />
               </div>
             </div>
             <div className="flex gap-3">
               {selectedAssociateClient.currentStatus === 'assistant_approved' && isSuperAdmin ? (
                 <>
-                  <Button className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white" onClick={() => updateClientStatus.mutate({ clientId: selectedAssociateClient.id, status: 'active', assignedPlan: associateClientPlan as any, commissionRate: associateClientCommission, notes: associateClientNotes || undefined })} disabled={updateClientStatus.isPending}>
+                  <Button className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-foreground" onClick={() => updateClientStatus.mutate({ clientId: selectedAssociateClient.id, status: 'active', assignedPlan: associateClientPlan as any, commissionRate: associateClientCommission, notes: associateClientNotes || undefined })} disabled={updateClientStatus.isPending}>
                     <CheckCircle className="w-4 h-4 mr-1" /> Activar cliente
                   </Button>
                   <Button variant="outline" className="flex-1 text-red-600 border-red-200 hover:bg-red-50" onClick={() => updateClientStatus.mutate({ clientId: selectedAssociateClient.id, status: 'rejected', notes: associateClientNotes || undefined })} disabled={updateClientStatus.isPending}>
@@ -550,7 +550,7 @@ function AssistantPanelInner() {
                 </>
               ) : (
                 <>
-                  <Button className="flex-1 bg-blue-600 hover:bg-blue-700 text-white" onClick={() => assistantPreApproveClient.mutate({ clientId: selectedAssociateClient.id, assignedPlan: associateClientPlan as any, commissionRate: associateClientCommission, notes: associateClientNotes || undefined })} disabled={assistantPreApproveClient.isPending}>
+                  <Button className="flex-1 bg-blue-600 hover:bg-blue-700 text-foreground" onClick={() => assistantPreApproveClient.mutate({ clientId: selectedAssociateClient.id, assignedPlan: associateClientPlan as any, commissionRate: associateClientCommission, notes: associateClientNotes || undefined })} disabled={assistantPreApproveClient.isPending}>
                     <CheckCircle className="w-4 h-4 mr-1" /> Pre-aprobar
                   </Button>
                   <Button variant="outline" className="flex-1 text-red-600 border-red-200 hover:bg-red-50" onClick={() => assistantRejectClient.mutate({ clientId: selectedAssociateClient.id, notes: associateClientNotes || undefined })} disabled={assistantRejectClient.isPending}>
@@ -567,9 +567,9 @@ function AssistantPanelInner() {
       {activeTab === "surveys" && (
         <div className="space-y-4">
           {loadingSurveys ? (
-            <div className="text-center py-10 text-gray-400">Cargando encuestas...</div>
+            <div className="text-center py-10 text-muted-foreground">Cargando encuestas...</div>
           ) : surveys.length === 0 ? (
-            <div className="text-center py-10 text-gray-400">
+            <div className="text-center py-10 text-muted-foreground">
               <ClipboardList className="w-12 h-12 mx-auto mb-3 opacity-30" />
               <p>No hay encuestas de clientes aun</p>
             </div>
@@ -601,7 +601,7 @@ function AssistantPanelInner() {
               )}
               {doneSurveys.length > 0 && (
                 <div>
-                  <h3 className="text-sm font-semibold text-gray-500 mb-2">Procesados ({doneSurveys.length})</h3>
+                  <h3 className="text-sm font-semibold text-muted-foreground mb-2">Procesados ({doneSurveys.length})</h3>
                   <div className="space-y-3">
                     {doneSurveys.map((row: any) => (
                       <SurveyCard key={row.survey.id} row={row} isSuperAdmin={isSuperAdmin} readonly />
@@ -624,7 +624,7 @@ function AssistantPanelInner() {
             {isSuperAdmin && surveyAction === "approve" && (
               <div className="space-y-3 mb-4">
                 <div>
-                  <label className="text-sm font-medium text-gray-700 block mb-1">Plan a asignar</label>
+                  <label className="text-sm font-medium text-foreground block mb-1">Plan a asignar</label>
                   <select value={finalPlan} onChange={e => setFinalPlan(e.target.value)} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm">
                     <option value="express">Express - Basico</option>
                     <option value="connect">Connect - Estandar</option>
@@ -633,7 +633,7 @@ function AssistantPanelInner() {
                   </select>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-gray-700 block mb-1">Comision (%)</label>
+                  <label className="text-sm font-medium text-foreground block mb-1">Comision (%)</label>
                   <input type="number" step="0.1" min="1" max="10" value={finalCommission} onChange={e => setFinalCommission(parseFloat(e.target.value))} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
                 </div>
               </div>
@@ -646,7 +646,7 @@ function AssistantPanelInner() {
             />
             <div className="flex gap-3 mt-4">
               <Button
-                className={`flex-1 ${surveyAction === "approve" ? "bg-emerald-600 hover:bg-emerald-700" : "bg-red-600 hover:bg-red-700"} text-white`}
+                className={`flex-1 ${surveyAction === "approve" ? "bg-emerald-600 hover:bg-emerald-700" : "bg-red-600 hover:bg-red-700"} text-foreground`}
                 onClick={() => {
                   if (isSuperAdmin) {
                     adminApprove.mutate({ surveyId: selectedSurvey, finalPlan, finalCommission, adminNotes: surveyNotes || undefined, action: surveyAction });
@@ -671,7 +671,7 @@ function AssistantPanelInner() {
             <h3 className="text-lg font-bold mb-3">
               {showNotesFor.action === "approve" ? "✅ Pre-aprobar solicitud" : "❌ Rechazar solicitud"}
             </h3>
-            <p className="text-sm text-gray-500 mb-4">Agrega una nota opcional para el superadmin:</p>
+            <p className="text-sm text-muted-foreground mb-4">Agrega una nota opcional para el superadmin:</p>
             <textarea
               value={notes}
               onChange={e => setNotes(e.target.value)}
@@ -680,7 +680,7 @@ function AssistantPanelInner() {
             />
             <div className="flex gap-3 mt-4">
               <Button
-                className={`flex-1 ${showNotesFor.action === "approve" ? "bg-blue-600 hover:bg-blue-700" : "bg-red-600 hover:bg-red-700"} text-white`}
+                className={`flex-1 ${showNotesFor.action === "approve" ? "bg-blue-600 hover:bg-blue-700" : "bg-red-600 hover:bg-red-700"} text-foreground`}
                 onClick={() => {
                   if (showNotesFor.action === "approve") {
                     preApprove.mutate({ requestId: showNotesFor.id, notes: notes || undefined });
@@ -726,29 +726,29 @@ function RequestCard({
   readonly?: boolean;
   isAssistantView?: boolean;
 }) {
-  const status = STATUS_LABELS[req.status] || { label: req.status, color: "bg-gray-100 text-gray-600" };
+  const status = STATUS_LABELS[req.status] || { label: req.status, color: "bg-gray-100 text-muted-foreground" };
   return (
     <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="font-semibold text-gray-900 text-sm">{req.userName || "Usuario"}</span>
-            <span className="text-gray-400 text-xs">{req.userEmail}</span>
+            <span className="font-semibold text-foreground text-sm">{req.userName || "Usuario"}</span>
+            <span className="text-muted-foreground text-xs">{req.userEmail}</span>
             <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${status.color}`}>{status.label}</span>
           </div>
           <div className="mt-1 flex items-center gap-3 flex-wrap">
-            <span className="text-xs text-gray-500">
-              Módulo: <span className="font-medium text-gray-700">{MODULE_LABELS[req.module] || req.module}</span>
+            <span className="text-xs text-muted-foreground">
+              Módulo: <span className="font-medium text-foreground">{MODULE_LABELS[req.module] || req.module}</span>
             </span>
-            <span className="text-xs text-gray-500">
-              Tipo: <span className="font-medium text-gray-700">{BUSINESS_TYPE_LABELS[req.businessType] || req.businessType}</span>
+            <span className="text-xs text-muted-foreground">
+              Tipo: <span className="font-medium text-foreground">{BUSINESS_TYPE_LABELS[req.businessType] || req.businessType}</span>
             </span>
-            <span className="text-xs text-gray-400">
+            <span className="text-xs text-muted-foreground">
               {new Date(req.requestedAt).toLocaleDateString("es-MX", { day: "2-digit", month: "short", year: "numeric" })}
             </span>
           </div>
           {req.message && (
-            <p className="mt-2 text-xs text-gray-600 bg-gray-50 rounded-lg p-2 italic">"{req.message}"</p>
+            <p className="mt-2 text-xs text-muted-foreground bg-gray-50 rounded-lg p-2 italic">"{req.message}"</p>
           )}
           {req.reviewNotes && (
             <p className="mt-1 text-xs text-blue-600">📝 {req.reviewNotes}</p>
@@ -758,7 +758,7 @@ function RequestCard({
           <div className="flex gap-2 shrink-0">
             <Button
               size="sm"
-              className="bg-blue-600 hover:bg-blue-700 text-white text-xs"
+              className="bg-blue-600 hover:bg-blue-700 text-foreground text-xs"
               onClick={() => setShowNotesFor?.({ id: req.id, action: "approve" })}
               disabled={loading}
             >
@@ -803,15 +803,15 @@ function SurveyCard({ row, isSuperAdmin, onAction, readonly }: {
   readonly?: boolean;
 }) {
   const s = row.survey;
-  const status = SURVEY_STATUS_LABELS[s.status] || { label: s.status, color: "bg-gray-100 text-gray-600" };
+  const status = SURVEY_STATUS_LABELS[s.status] || { label: s.status, color: "bg-gray-100 text-muted-foreground" };
   const services = (() => { try { return JSON.parse(s.interestedModules || "[]"); } catch { return []; } })();
   return (
     <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="font-semibold text-gray-900 text-sm">{row.userName || "Usuario"}</span>
-            <span className="text-gray-400 text-xs">{row.userEmail}</span>
+            <span className="font-semibold text-foreground text-sm">{row.userName || "Usuario"}</span>
+            <span className="text-muted-foreground text-xs">{row.userEmail}</span>
             <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${status.color}`}>{status.label}</span>
             {s.recommendedPlan && (
               <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800">
@@ -820,29 +820,29 @@ function SurveyCard({ row, isSuperAdmin, onAction, readonly }: {
             )}
           </div>
           <div className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1">
-            <span className="text-xs text-gray-500">Tipo: <span className="font-medium text-gray-700">{s.businessType}</span></span>
-            <span className="text-xs text-gray-500">Tamano: <span className="font-medium text-gray-700">{s.businessSize}</span></span>
-            <span className="text-xs text-gray-500">Ingresos: <span className="font-medium text-gray-700">{s.monthlyRevenueEstimate}</span></span>
-            <span className="text-xs text-gray-500">Multi-cuenta: <span className="font-medium text-gray-700">{s.needsMultipleBankAccounts ? "Si" : "No"}</span></span>
+            <span className="text-xs text-muted-foreground">Tipo: <span className="font-medium text-foreground">{s.businessType}</span></span>
+            <span className="text-xs text-muted-foreground">Tamano: <span className="font-medium text-foreground">{s.businessSize}</span></span>
+            <span className="text-xs text-muted-foreground">Ingresos: <span className="font-medium text-foreground">{s.monthlyRevenueEstimate}</span></span>
+            <span className="text-xs text-muted-foreground">Multi-cuenta: <span className="font-medium text-foreground">{s.needsMultipleBankAccounts ? "Si" : "No"}</span></span>
           </div>
           {services.length > 0 && (
             <div className="mt-1 flex flex-wrap gap-1">
               {services.map((svc: string) => (
-                <span key={svc} className="px-1.5 py-0.5 bg-gray-100 text-gray-600 rounded text-xs">{svc}</span>
+                <span key={svc} className="px-1.5 py-0.5 bg-gray-100 text-muted-foreground rounded text-xs">{svc}</span>
               ))}
             </div>
           )}
           {s.mainChallenge && (
-            <p className="mt-2 text-xs text-gray-600 bg-gray-50 rounded-lg p-2 italic">"{s.mainChallenge}"</p>
+            <p className="mt-2 text-xs text-muted-foreground bg-gray-50 rounded-lg p-2 italic">"{s.mainChallenge}"</p>
           )}
           {s.assistantNotes && (
             <p className="mt-1 text-xs text-blue-600">Notas asistente: {s.assistantNotes}</p>
           )}
-          <p className="text-xs text-gray-400 mt-1">{new Date(s.createdAt).toLocaleDateString("es-MX", { day: "2-digit", month: "short", year: "numeric" })}</p>
+          <p className="text-xs text-muted-foreground mt-1">{new Date(s.createdAt).toLocaleDateString("es-MX", { day: "2-digit", month: "short", year: "numeric" })}</p>
         </div>
         {!readonly && onAction && (
           <div className="flex gap-2 shrink-0 flex-col">
-            <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs" onClick={() => onAction(s.id, "approve")}>
+            <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-foreground text-xs" onClick={() => onAction(s.id, "approve")}>
               <CheckCircle className="w-3 h-3 mr-1" /> {isSuperAdmin ? "Aprobar" : "Pre-aprobar"}
             </Button>
             <Button size="sm" variant="outline" className="text-red-600 border-red-200 hover:bg-red-50 text-xs" onClick={() => onAction(s.id, "reject")}>

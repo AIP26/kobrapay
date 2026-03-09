@@ -57,15 +57,15 @@ export default function ResetPassword() {
   if (!token) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 flex items-center justify-center p-4">
-        <Card className="bg-gray-800 border-gray-700 shadow-2xl w-full max-w-md text-center">
+        <Card className="bg-muted border-border shadow-2xl w-full max-w-md text-center">
           <CardContent className="pt-10 pb-8">
             <AlertCircle className="w-16 h-16 text-red-400 mx-auto mb-4" />
-            <h2 className="text-white text-xl font-bold mb-2">Enlace inválido</h2>
-            <p className="text-gray-400 text-sm mb-6">
+            <h2 className="text-foreground text-xl font-bold mb-2">Enlace inválido</h2>
+            <p className="text-muted-foreground text-sm mb-6">
               Este enlace de recuperación es inválido o ha expirado. Solicita uno nuevo.
             </p>
             <Link href="/forgot-password">
-              <Button className="bg-cyan-400 hover:bg-cyan-500 text-gray-900 font-semibold w-full">
+              <Button className="bg-cyan-400 hover:bg-cyan-500 text-foreground font-semibold w-full">
                 Solicitar nuevo enlace
               </Button>
             </Link>
@@ -78,15 +78,15 @@ export default function ResetPassword() {
   if (success) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 flex items-center justify-center p-4">
-        <Card className="bg-gray-800 border-gray-700 shadow-2xl w-full max-w-md text-center">
+        <Card className="bg-muted border-border shadow-2xl w-full max-w-md text-center">
           <CardContent className="pt-10 pb-8">
             <CheckCircle className="w-16 h-16 text-green-400 mx-auto mb-4" />
-            <h2 className="text-white text-xl font-bold mb-2">¡Contraseña actualizada!</h2>
-            <p className="text-gray-400 text-sm mb-6">
+            <h2 className="text-foreground text-xl font-bold mb-2">¡Contraseña actualizada!</h2>
+            <p className="text-muted-foreground text-sm mb-6">
               Tu contraseña ha sido restablecida correctamente. Ya puedes iniciar sesión.
             </p>
             <Link href="/login">
-              <Button className="bg-cyan-400 hover:bg-cyan-500 text-gray-900 font-semibold w-full">
+              <Button className="bg-cyan-400 hover:bg-cyan-500 text-foreground font-semibold w-full">
                 Iniciar sesión
               </Button>
             </Link>
@@ -108,36 +108,36 @@ export default function ResetPassword() {
               className="h-12 w-auto object-contain"
             />
           </div>
-          <p className="text-gray-400 text-sm">Cobra fácil, cobra global</p>
+          <p className="text-muted-foreground text-sm">Cobra fácil, cobra global</p>
         </div>
 
-        <Card className="bg-gray-800 border-gray-700 shadow-2xl">
+        <Card className="bg-muted border-border shadow-2xl">
           <CardHeader className="pb-4">
-            <CardTitle className="text-white text-xl">Nueva contraseña</CardTitle>
-            <CardDescription className="text-gray-400">
+            <CardTitle className="text-foreground text-xl">Nueva contraseña</CardTitle>
+            <CardDescription className="text-muted-foreground">
               Elige una contraseña segura de al menos 8 caracteres
             </CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-1.5">
-                <Label htmlFor="newPassword" className="text-gray-300 text-sm">Nueva contraseña</Label>
+                <Label htmlFor="newPassword" className="text-muted-foreground text-sm">Nueva contraseña</Label>
                 <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                   <Input
                     id="newPassword"
                     type={showPassword ? "text" : "password"}
                     placeholder="Mínimo 8 caracteres"
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
-                    className="pl-9 pr-10 bg-gray-700 border-gray-600 text-white placeholder:text-gray-500 focus:border-cyan-400 focus:ring-cyan-400"
+                    className="pl-9 pr-10 bg-gray-700 border-gray-600 text-foreground placeholder:text-muted-foreground focus:border-cyan-400 focus:ring-cyan-400"
                     autoComplete="new-password"
                     required
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300 transition-colors"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-muted-foreground transition-colors"
                   >
                     {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
@@ -145,16 +145,16 @@ export default function ResetPassword() {
               </div>
 
               <div className="space-y-1.5">
-                <Label htmlFor="confirmPassword" className="text-gray-300 text-sm">Confirmar contraseña</Label>
+                <Label htmlFor="confirmPassword" className="text-muted-foreground text-sm">Confirmar contraseña</Label>
                 <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                   <Input
                     id="confirmPassword"
                     type={showPassword ? "text" : "password"}
                     placeholder="Repite tu nueva contraseña"
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
-                    className="pl-9 bg-gray-700 border-gray-600 text-white placeholder:text-gray-500 focus:border-cyan-400 focus:ring-cyan-400"
+                    className="pl-9 bg-gray-700 border-gray-600 text-foreground placeholder:text-muted-foreground focus:border-cyan-400 focus:ring-cyan-400"
                     autoComplete="new-password"
                     required
                   />
@@ -176,7 +176,7 @@ export default function ResetPassword() {
                       />
                     ))}
                   </div>
-                  <p className="text-xs text-gray-500">
+                  <p className="text-xs text-muted-foreground">
                     {newPassword.length < 8 ? "Contraseña muy corta" :
                      newPassword.length < 12 ? "Contraseña aceptable" :
                      newPassword.length < 16 ? "Contraseña buena" : "Contraseña muy segura"}
@@ -187,14 +187,14 @@ export default function ResetPassword() {
               <Button
                 type="submit"
                 disabled={resetMutation.isPending}
-                className="w-full bg-cyan-400 hover:bg-cyan-500 text-gray-900 font-semibold py-2.5 mt-2"
+                className="w-full bg-cyan-400 hover:bg-cyan-500 text-foreground font-semibold py-2.5 mt-2"
               >
                 {resetMutation.isPending ? "Actualizando..." : "Actualizar contraseña"}
               </Button>
             </form>
 
             <div className="mt-6 text-center">
-              <Link href="/login" className="text-xs text-gray-500 hover:text-gray-400 transition-colors">
+              <Link href="/login" className="text-xs text-muted-foreground hover:text-muted-foreground transition-colors">
                 Volver a iniciar sesión
               </Link>
             </div>

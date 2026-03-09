@@ -162,7 +162,7 @@ export default function SignContract() {
     setStep("done");
   };
 
-  if (!token) return <div className="min-h-screen flex items-center justify-center text-gray-500">Enlace inválido</div>;
+  if (!token) return <div className="min-h-screen flex items-center justify-center text-muted-foreground">Enlace inválido</div>;
   if (isLoading) return (
     <div className="min-h-screen flex items-center justify-center">
       <div className="animate-spin w-8 h-8 border-4 border-cyan-600 border-t-transparent rounded-full" />
@@ -172,8 +172,8 @@ export default function SignContract() {
     <div className="min-h-screen flex items-center justify-center p-4">
       <div className="text-center max-w-sm">
         <AlertTriangle className="w-12 h-12 text-red-400 mx-auto mb-3" />
-        <h2 className="text-xl font-bold text-gray-900 mb-2">Contrato no disponible</h2>
-        <p className="text-gray-500">{error?.message || "Este enlace no es válido o ha expirado."}</p>
+        <h2 className="text-xl font-bold text-foreground mb-2">Contrato no disponible</h2>
+        <p className="text-muted-foreground">{error?.message || "Este enlace no es válido o ha expirado."}</p>
       </div>
     </div>
   );
@@ -184,19 +184,19 @@ export default function SignContract() {
         <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
           <CheckCircle className="w-9 h-9 text-green-600" />
         </div>
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">¡Contrato firmado!</h2>
-        <p className="text-gray-600 mb-4">
+        <h2 className="text-2xl font-bold text-foreground mb-2">¡Contrato firmado!</h2>
+        <p className="text-muted-foreground mb-4">
           Hola <strong>{contract.clientName}</strong>, tu contrato con KobraPay ha sido firmado exitosamente.
           Recibirás una copia por email.
         </p>
         <div className="bg-gray-50 rounded-xl p-4 text-left text-sm space-y-1">
-          <p><span className="text-gray-500">Comisión acordada:</span> <strong className="text-cyan-700">{contract.commissionRate}%</strong></p>
+          <p><span className="text-muted-foreground">Comisión acordada:</span> <strong className="text-cyan-700">{contract.commissionRate}%</strong></p>
           {Number(contract.contractDurationMonths) > 0 && (
-            <p><span className="text-gray-500">Duración:</span> <strong>{contract.contractDurationMonths === 12 ? '1 año (12 meses)' : contract.contractDurationMonths === 24 ? '2 años (24 meses)' : `${contract.contractDurationMonths} meses`}</strong></p>
+            <p><span className="text-muted-foreground">Duración:</span> <strong>{contract.contractDurationMonths === 12 ? '1 año (12 meses)' : contract.contractDurationMonths === 24 ? '2 años (24 meses)' : `${contract.contractDurationMonths} meses`}</strong></p>
           )}
-          <p><span className="text-gray-500">Fecha de firma:</span> <strong>{new Date().toLocaleDateString("es-MX")}</strong></p>
+          <p><span className="text-muted-foreground">Fecha de firma:</span> <strong>{new Date().toLocaleDateString("es-MX")}</strong></p>
         </div>
-        <p className="text-xs text-gray-400 mt-4">Puedes cerrar esta ventana.</p>
+        <p className="text-xs text-muted-foreground mt-4">Puedes cerrar esta ventana.</p>
       </div>
     </div>
   );
@@ -206,21 +206,21 @@ export default function SignContract() {
       <div className="max-w-2xl mx-auto">
         {/* Header */}
         <div className="text-center mb-6">
-          <div className="inline-flex items-center gap-2 bg-cyan-700 text-white px-4 py-2 rounded-full text-sm font-semibold mb-3">
+          <div className="inline-flex items-center gap-2 bg-cyan-700 text-foreground px-4 py-2 rounded-full text-sm font-semibold mb-3">
             <Shield className="w-4 h-4" /> KobraPay — Contrato Digital
           </div>
-          <h1 className="text-2xl font-bold text-gray-900">Contrato de Servicios</h1>
-          <p className="text-gray-500 text-sm mt-1">Hola <strong>{contract.clientName}</strong>, por favor revisa y firma el contrato</p>
+          <h1 className="text-2xl font-bold text-foreground">Contrato de Servicios</h1>
+          <p className="text-muted-foreground text-sm mt-1">Hola <strong>{contract.clientName}</strong>, por favor revisa y firma el contrato</p>
         </div>
 
         {/* Steps indicator */}
         <div className="flex items-center justify-center gap-2 mb-6">
           {["review", "sign", "docs"].map((s, i) => (
             <div key={s} className="flex items-center gap-2">
-              <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold ${step === s ? "bg-cyan-700 text-white" : ["review", "sign", "docs"].indexOf(step) > i ? "bg-green-500 text-white" : "bg-gray-200 text-gray-500"}`}>
+              <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold ${step === s ? "bg-cyan-700 text-foreground" : ["review", "sign", "docs"].indexOf(step) > i ? "bg-green-500 text-foreground" : "bg-gray-200 text-muted-foreground"}`}>
                 {["review", "sign", "docs"].indexOf(step) > i ? "✓" : i + 1}
               </div>
-              <span className="text-xs text-gray-500 hidden sm:block">{["Revisar", "Firmar", "Documentos"][i]}</span>
+              <span className="text-xs text-muted-foreground hidden sm:block">{["Revisar", "Firmar", "Documentos"][i]}</span>
               {i < 2 && <div className="w-8 h-px bg-gray-300" />}
             </div>
           ))}
@@ -229,18 +229,18 @@ export default function SignContract() {
         {/* Step: Review */}
         {step === "review" && (
           <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
-            <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+            <h2 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2">
               <FileText className="w-5 h-5 text-cyan-700" /> Términos del Contrato
             </h2>
 
-            <div className="prose prose-sm max-w-none text-gray-700 space-y-4 text-sm leading-relaxed">
+            <div className="prose prose-sm max-w-none text-foreground space-y-4 text-sm leading-relaxed">
               <p>En la Ciudad de México, a {new Date().toLocaleDateString("es-MX", { day: "numeric", month: "long", year: "numeric" })}, comparecen:</p>
               <p><strong>EL PRESTADOR DE SERVICIOS:</strong> KobraPay, plataforma de procesamiento de pagos digitales.</p>
               <p><strong>EL CLIENTE:</strong> {contract.clientName}{contract.businessName ? ` (${contract.businessName})` : ""}, con RFC {contract.clientRfc || "pendiente"}, domicilio en {contract.clientAddress || "pendiente de registrar"}.</p>
 
               <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
-                <p className="font-semibold text-gray-900 mb-2">CLÁUSULAS PRINCIPALES:</p>
-                <ol className="list-decimal list-inside space-y-2 text-gray-700">
+                <p className="font-semibold text-foreground mb-2">CLÁUSULAS PRINCIPALES:</p>
+                <ol className="list-decimal list-inside space-y-2 text-foreground">
                   <li><strong>Objeto:</strong> KobraPay prestará al Cliente servicios de procesamiento de pagos en línea mediante enlaces de cobro, punto de venta digital, y herramientas de gestión financiera.</li>
                   <li><strong>Comisión:</strong> El Cliente acepta una comisión del <strong className="text-cyan-700">{contract.commissionRate}% + IVA</strong> sobre cada transacción procesada a través de la plataforma.</li>
                   <li><strong>Comisión no reembolsable:</strong> Las comisiones de procesamiento cobradas por KobraPay son definitivas e irrevocables. En caso de reembolso a un cliente final, la comisión ya cobrada no será devuelta al Cliente. El Cliente es responsable de cubrir el monto total del reembolso con sus propios fondos.</li>
@@ -316,7 +316,7 @@ export default function SignContract() {
               </div>
             </div>
 
-            <Button onClick={() => setStep("sign")} className="w-full mt-6 bg-cyan-700 hover:bg-cyan-800 text-white">
+            <Button onClick={() => setStep("sign")} className="w-full mt-6 bg-cyan-700 hover:bg-cyan-800 text-foreground">
               He leído y acepto los términos — Continuar a Firmar
             </Button>
           </div>
@@ -325,8 +325,8 @@ export default function SignContract() {
         {/* Step: Sign */}
         {step === "sign" && (
           <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
-            <h2 className="text-lg font-bold text-gray-900 mb-1">Firma Digital</h2>
-            <p className="text-sm text-gray-500 mb-4">Firma con tu dedo (celular) o mouse (computadora)</p>
+            <h2 className="text-lg font-bold text-foreground mb-1">Firma Digital</h2>
+            <p className="text-sm text-muted-foreground mb-4">Firma con tu dedo (celular) o mouse (computadora)</p>
 
             <div className="border-2 border-dashed border-gray-300 rounded-xl overflow-hidden bg-gray-50">
               <canvas
@@ -349,11 +349,11 @@ export default function SignContract() {
                 <X className="w-4 h-4" /> Limpiar
               </Button>
               {!signatureConfirmed ? (
-                <Button onClick={confirmSignature} disabled={!hasSigned} className="flex-1 bg-cyan-700 hover:bg-cyan-800 text-white">
+                <Button onClick={confirmSignature} disabled={!hasSigned} className="flex-1 bg-cyan-700 hover:bg-cyan-800 text-foreground">
                   Confirmar Firma
                 </Button>
               ) : (
-                <Button onClick={handleSign} disabled={signMutation.isPending} className="flex-1 bg-green-600 hover:bg-green-700 text-white gap-2">
+                <Button onClick={handleSign} disabled={signMutation.isPending} className="flex-1 bg-green-600 hover:bg-green-700 text-foreground gap-2">
                   <CheckCircle className="w-4 h-4" />
                   {signMutation.isPending ? "Firmando..." : "Firmar Contrato"}
                 </Button>
@@ -382,15 +382,15 @@ export default function SignContract() {
         {step === "docs" && (
           <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 space-y-6">
             <div>
-              <h2 className="text-lg font-bold text-gray-900 mb-1">Documentos e Información Fiscal</h2>
-              <p className="text-sm text-gray-500">Completa tu expediente para validar tu identidad y razón social</p>
+              <h2 className="text-lg font-bold text-foreground mb-1">Documentos e Información Fiscal</h2>
+              <p className="text-sm text-muted-foreground">Completa tu expediente para validar tu identidad y razón social</p>
             </div>
 
             {/* Datos de empresa (opcional) */}
             <div className="bg-cyan-50 border border-cyan-200 rounded-xl p-4 space-y-3">
               <p className="text-sm font-semibold text-cyan-800">Datos de tu empresa (opcional pero recomendado)</p>
               <div>
-                <Label className="text-xs text-gray-600">Razón Social</Label>
+                <Label className="text-xs text-muted-foreground">Razón Social</Label>
                 <Input
                   value={razonSocial}
                   onChange={e => setRazonSocial(e.target.value)}
@@ -400,7 +400,7 @@ export default function SignContract() {
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <Label className="text-xs text-gray-600">RFC de la empresa</Label>
+                  <Label className="text-xs text-muted-foreground">RFC de la empresa</Label>
                   <Input
                     value={rfcEmpresa}
                     onChange={e => setRfcEmpresa(e.target.value)}
@@ -409,7 +409,7 @@ export default function SignContract() {
                   />
                 </div>
                 <div>
-                  <Label className="text-xs text-gray-600">Representante Legal</Label>
+                  <Label className="text-xs text-muted-foreground">Representante Legal</Label>
                   <Input
                     value={representanteLegal}
                     onChange={e => setRepresentanteLegal(e.target.value)}
@@ -422,9 +422,9 @@ export default function SignContract() {
 
             {/* Documentos */}
             <div>
-              <p className="text-sm font-semibold text-gray-700 mb-3">
+              <p className="text-sm font-semibold text-foreground mb-3">
                 Documentos de identificación
-                <span className="ml-2 text-xs text-gray-400 font-normal">JPG, PNG o PDF — máx. 10 MB</span>
+                <span className="ml-2 text-xs text-muted-foreground font-normal">JPG, PNG o PDF — máx. 10 MB</span>
               </p>
               <div className="space-y-2">
                 {(["ine", "passport", "addressProof", "situacionFiscal", "rfc", "curp"] as DocType[]).map(docType => {
@@ -437,10 +437,10 @@ export default function SignContract() {
                         {isUploaded ? (
                           <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0" />
                         ) : (
-                          <Upload className="w-5 h-5 text-gray-400 flex-shrink-0" />
+                          <Upload className="w-5 h-5 text-muted-foreground flex-shrink-0" />
                         )}
                         <div className="min-w-0">
-                          <p className="text-sm font-medium text-gray-900 truncate">
+                          <p className="text-sm font-medium text-foreground truncate">
                             {DOC_LABELS[docType]}
                             {isRequired && <span className="ml-1 text-red-500 text-xs">*</span>}
                           </p>
@@ -477,12 +477,12 @@ export default function SignContract() {
                               onChange={e => { if (e.target.files?.[0]) handleDocUpload(docType, e.target.files[0]); }}
                             />
                             {isUploading ? (
-                              <span className="text-xs bg-gray-200 text-gray-500 px-3 py-1.5 rounded-lg flex items-center gap-1">
+                              <span className="text-xs bg-gray-200 text-muted-foreground px-3 py-1.5 rounded-lg flex items-center gap-1">
                                 <div className="w-3 h-3 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" />
                                 Subiendo...
                               </span>
                             ) : (
-                              <span className="text-xs bg-cyan-700 text-white px-3 py-1.5 rounded-lg hover:bg-cyan-800 transition-colors">
+                              <span className="text-xs bg-cyan-700 text-foreground px-3 py-1.5 rounded-lg hover:bg-cyan-800 transition-colors">
                                 Subir
                               </span>
                             )}
@@ -493,12 +493,12 @@ export default function SignContract() {
                   );
                 })}
               </div>
-              <p className="text-xs text-gray-400 mt-3">
+              <p className="text-xs text-muted-foreground mt-3">
                 Los campos marcados con <span className="text-red-500">*</span> son recomendados para completar tu expediente. Todos los documentos son opcionales.
               </p>
             </div>
 
-            <Button onClick={finishDocs} className="w-full bg-green-600 hover:bg-green-700 text-white gap-2">
+            <Button onClick={finishDocs} className="w-full bg-green-600 hover:bg-green-700 text-foreground gap-2">
               <CheckCircle className="w-4 h-4" /> Finalizar y Completar
             </Button>
           </div>
