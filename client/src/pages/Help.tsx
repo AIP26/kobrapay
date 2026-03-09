@@ -320,7 +320,7 @@ function AccordionItem({ q, a }: FAQItem) {
     <div className="border border-border rounded-lg overflow-hidden">
       <button
         onClick={() => setOpen(!open)}
-        className="w-full flex items-center justify-between px-4 py-3 text-left text-sm font-medium text-gray-200 hover:bg-white/5 transition-colors"
+        className="w-full flex items-center justify-between px-4 py-3 text-left text-sm font-medium text-foreground hover:bg-muted transition-colors"
       >
         {q}
         {open ? <ChevronDown className="w-4 h-4 text-muted-foreground flex-shrink-0" /> : <ChevronRight className="w-4 h-4 text-muted-foreground flex-shrink-0" />}
@@ -354,7 +354,7 @@ function SectionCard({ section }: { section: Section }) {
   };
 
   return (
-    <div className="bg-[#1a1f2e] border border-border rounded-2xl overflow-hidden">
+    <div className="bg-card border border-border rounded-2xl overflow-hidden">
       <button
         onClick={() => setExpanded(!expanded)}
         className="w-full flex items-center gap-4 p-5 text-left hover:bg-white/3 transition-colors"
@@ -461,7 +461,7 @@ export default function Help() {
         </div>
 
         {/* Descarga de Manuales */}
-        <div className="bg-[#1a1f2e] border border-border rounded-2xl p-5 mb-6">
+        <div className="bg-card border border-border rounded-2xl p-5 mb-6">
           <div className="flex items-center gap-2 mb-3">
             <Download className="w-4 h-4 text-emerald-400" />
             <h2 className="font-semibold text-foreground text-sm">Descargar Manual PDF</h2>
@@ -567,7 +567,7 @@ export default function Help() {
         </div>
 
         {/* Contact */}
-        <div className="bg-[#1a1f2e] border border-border rounded-2xl p-6">
+        <div className="bg-card border border-border rounded-2xl p-6">
           <h2 className="font-semibold text-foreground mb-1">¿Necesitas más ayuda?</h2>
           <p className="text-sm text-muted-foreground mb-4">Contáctanos y te responderemos a la brevedad.</p>
           <div className="flex flex-col sm:flex-row gap-3">

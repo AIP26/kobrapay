@@ -121,7 +121,7 @@ export default function MyDeposits() {
 
       {/* Resumen */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card className="bg-[#0f1629] border-[#1e2d4a]">
+        <Card className="bg-card border-border">
           <CardContent className="pt-4 pb-4">
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-lg bg-green-500/10">
@@ -134,7 +134,7 @@ export default function MyDeposits() {
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-[#0f1629] border-[#1e2d4a]">
+        <Card className="bg-card border-border">
           <CardContent className="pt-4 pb-4">
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-lg bg-blue-500/10">
@@ -147,7 +147,7 @@ export default function MyDeposits() {
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-[#0f1629] border-[#1e2d4a]">
+        <Card className="bg-card border-border">
           <CardContent className="pt-4 pb-4">
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-lg bg-red-500/10">
@@ -160,7 +160,7 @@ export default function MyDeposits() {
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-[#0f1629] border-[#1e2d4a]">
+        <Card className="bg-card border-border">
           <CardContent className="pt-4 pb-4">
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-lg bg-yellow-500/10">
@@ -178,11 +178,11 @@ export default function MyDeposits() {
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <div className="flex items-center justify-between">
-          <TabsList className="bg-[#0f1629] border border-[#1e2d4a]">
-            <TabsTrigger value="retiros" className="data-[state=active]:bg-[#1e2d4a] data-[state=active]:text-foreground text-muted-foreground">
+          <TabsList className="bg-card border border-border">
+            <TabsTrigger value="retiros" className="data-[state=active]:bg-secondary data-[state=active]:text-foreground text-muted-foreground">
               Retiros de Cobros
             </TabsTrigger>
-            <TabsTrigger value="transferencias" className="data-[state=active]:bg-[#1e2d4a] data-[state=active]:text-foreground text-muted-foreground">
+            <TabsTrigger value="transferencias" className="data-[state=active]:bg-secondary data-[state=active]:text-foreground text-muted-foreground">
               Transferencias
             </TabsTrigger>
           </TabsList>
@@ -194,7 +194,7 @@ export default function MyDeposits() {
                     <Plus className="w-4 h-4 mr-1" /> Solicitar Retiro
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="bg-[#0f1629] border-[#1e2d4a] text-foreground">
+                <DialogContent className="bg-card border-border text-foreground">
                   <DialogHeader>
                     <DialogTitle>Solicitar Retiro</DialogTitle>
                   </DialogHeader>
@@ -209,7 +209,7 @@ export default function MyDeposits() {
                     <Plus className="w-4 h-4 mr-1" /> Nueva Transferencia
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="bg-[#0f1629] border-[#1e2d4a] text-foreground max-w-lg">
+                <DialogContent className="bg-card border-border text-foreground max-w-lg">
                   <DialogHeader>
                     <DialogTitle>Registrar Transferencia</DialogTitle>
                   </DialogHeader>
@@ -222,7 +222,7 @@ export default function MyDeposits() {
 
         {/* Tab: Retiros */}
         <TabsContent value="retiros" className="mt-4">
-          <Card className="bg-[#0f1629] border-[#1e2d4a]">
+          <Card className="bg-card border-border">
             <CardHeader className="pb-3">
               <CardTitle className="text-base text-foreground">Historial de Retiros a Cuenta Bancaria</CardTitle>
             </CardHeader>
@@ -238,7 +238,7 @@ export default function MyDeposits() {
               ) : (
                 <Table>
                   <TableHeader>
-                    <TableRow className="border-[#1e2d4a]">
+                    <TableRow className="border-border">
                       <TableHead className="text-muted-foreground">Fecha</TableHead>
                       <TableHead className="text-muted-foreground">Monto</TableHead>
                       <TableHead className="text-muted-foreground">Comisión</TableHead>
@@ -250,7 +250,7 @@ export default function MyDeposits() {
                   </TableHeader>
                   <TableBody>
                     {deposits.map((d) => (
-                      <TableRow key={d.id} className="border-[#1e2d4a] hover:bg-[#1e2d4a]/30">
+                      <TableRow key={d.id} className="border-border hover:bg-muted/50">
                         <TableCell className="text-muted-foreground text-sm">{formatDate(d.createdAt)}</TableCell>
                         <TableCell className="text-foreground font-medium">{formatCurrency(d.amount, d.currency)}</TableCell>
                         <TableCell className="text-red-400 text-sm">-{formatCurrency(d.fee, d.currency)}</TableCell>
@@ -278,7 +278,7 @@ export default function MyDeposits() {
 
         {/* Tab: Transferencias */}
         <TabsContent value="transferencias" className="mt-4">
-          <Card className="bg-[#0f1629] border-[#1e2d4a]">
+          <Card className="bg-card border-border">
             <CardHeader className="pb-3">
               <CardTitle className="text-base text-foreground">Historial de Transferencias</CardTitle>
             </CardHeader>
@@ -301,7 +301,7 @@ export default function MyDeposits() {
               ) : (
                 <Table>
                   <TableHeader>
-                    <TableRow className="border-[#1e2d4a]">
+                    <TableRow className="border-border">
                       <TableHead className="text-muted-foreground">Fecha</TableHead>
                       <TableHead className="text-muted-foreground">Tipo</TableHead>
                       <TableHead className="text-muted-foreground">Dirección</TableHead>
@@ -315,7 +315,7 @@ export default function MyDeposits() {
                     {transfers.map((t) => {
                       const typeCfg = TRANSFER_TYPE_CONFIG[t.transferType] || TRANSFER_TYPE_CONFIG.other;
                       return (
-                        <TableRow key={t.id} className="border-[#1e2d4a] hover:bg-[#1e2d4a]/30">
+                        <TableRow key={t.id} className="border-border hover:bg-muted/50">
                           <TableCell className="text-muted-foreground text-sm">{formatDate(t.createdAt)}</TableCell>
                           <TableCell>
                             <div className={`flex items-center gap-1.5 text-sm ${typeCfg.color}`}>

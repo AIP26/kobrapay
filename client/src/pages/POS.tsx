@@ -248,7 +248,7 @@ export default function POS() {
             </div>
             <Button
               variant="outline"
-              className="border-gray-600 text-muted-foreground gap-2 hidden sm:flex"
+              className="border-border text-muted-foreground gap-2 hidden sm:flex"
               onClick={() => navigate("/dashboard/catalog")}
             >
               <Package className="w-4 h-4" /> Catálogo
@@ -256,7 +256,7 @@ export default function POS() {
           </div>
 
           <Tabs defaultValue="catalog">
-            <TabsList className="bg-[#1e2436] border border-border">
+            <TabsList className="bg-muted border border-border">
               <TabsTrigger
                 value="catalog"
                 className="data-[state=active]:bg-emerald-600 data-[state=active]:text-foreground text-muted-foreground gap-2"
@@ -279,14 +279,14 @@ export default function POS() {
                   placeholder="Buscar producto..."
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  className="pl-9 bg-[#1e2436] border-border text-foreground placeholder:text-muted-foreground"
+                  className="pl-9 bg-muted border-border text-foreground placeholder:text-muted-foreground"
                 />
               </div>
 
               {isLoading ? (
                 <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3">
                   {[1, 2, 3, 4, 5, 6].map((i) => (
-                    <div key={i} className="bg-[#1e2436] rounded-xl h-44 animate-pulse" />
+                    <div key={i} className="bg-muted rounded-xl h-44 animate-pulse" />
                   ))}
                 </div>
               ) : filtered.length === 0 ? (
@@ -319,7 +319,7 @@ export default function POS() {
                         key={product.id}
                         onClick={() => addToCart(product)}
                         disabled={outOfStock}
-                        className={`relative bg-[#1e2436] rounded-xl overflow-hidden border text-left transition-all group ${
+                        className={`relative bg-muted rounded-xl overflow-hidden border text-left transition-all group ${
                           outOfStock
                             ? "border-border/30 opacity-50 cursor-not-allowed"
                             : inCart
@@ -327,7 +327,7 @@ export default function POS() {
                             : "border-border/50 hover:border-emerald-500/40"
                         }`}
                       >
-                        <div className="h-28 bg-[#151929] flex items-center justify-center overflow-hidden">
+                        <div className="h-28 bg-muted flex items-center justify-center overflow-hidden">
                           {product.imageUrl ? (
                             <img
                               src={product.imageUrl}
@@ -377,7 +377,7 @@ export default function POS() {
 
             {/* ── Tab: Cobro manual ── */}
             <TabsContent value="manual" className="mt-4">
-              <div className="bg-[#1e2436] rounded-xl p-6 border border-border max-w-md space-y-4">
+              <div className="bg-muted rounded-xl p-6 border border-border max-w-md space-y-4">
                 <div>
                   <p className="text-foreground font-semibold">Cobro rápido</p>
                   <p className="text-muted-foreground text-sm mt-0.5">
@@ -398,7 +398,7 @@ export default function POS() {
                           placeholder="0.00"
                           value={manualAmount}
                           onChange={(e) => setManualAmount(e.target.value)}
-                          className="pl-7 bg-[#151929] border-gray-600 text-foreground text-xl font-bold h-12"
+                          className="pl-7 bg-muted border-border text-foreground text-xl font-bold h-12"
                         />
                       </div>
                     </div>
@@ -408,7 +408,7 @@ export default function POS() {
                         placeholder="Ej: Servicio de consultoría"
                         value={manualDescription}
                         onChange={(e) => setManualDescription(e.target.value)}
-                        className="bg-[#151929] border-gray-600 text-foreground"
+                        className="bg-muted border-border text-foreground"
                       />
                     </div>
                     <div className="space-y-1">
@@ -418,7 +418,7 @@ export default function POS() {
                         placeholder="cliente@email.com"
                         value={manualEmail}
                         onChange={(e) => setManualEmail(e.target.value)}
-                        className="bg-[#151929] border-gray-600 text-foreground"
+                        className="bg-muted border-border text-foreground"
                       />
                     </div>
                     <div className="space-y-1">
@@ -427,7 +427,7 @@ export default function POS() {
                         placeholder="Nombre del cliente"
                         value={manualName}
                         onChange={(e) => setManualName(e.target.value)}
-                        className="bg-[#151929] border-gray-600 text-foreground"
+                        className="bg-muted border-border text-foreground"
                       />
                     </div>
                     <Button
@@ -455,7 +455,7 @@ export default function POS() {
                       </p>
                       <p className="text-muted-foreground text-sm">{manualDescription}</p>
                     </div>
-                    <div className="bg-[#151929] rounded-xl p-3 flex items-center gap-2">
+                    <div className="bg-muted rounded-xl p-3 flex items-center gap-2">
                       <p className="text-emerald-400 text-sm flex-1 truncate">{manualCreatedLink}</p>
                       <button
                         onClick={copyManualLink}
@@ -477,14 +477,14 @@ export default function POS() {
                       </Button>
                       <Button
                         variant="outline"
-                        className="border-gray-600 text-muted-foreground gap-1 text-xs"
+                        className="border-border text-muted-foreground gap-1 text-xs"
                         onClick={copyManualLink}
                       >
                         <Copy className="w-3.5 h-3.5" /> Copiar
                       </Button>
                       <Button
                         variant="outline"
-                        className="border-gray-600 text-muted-foreground gap-1 text-xs"
+                        className="border-border text-muted-foreground gap-1 text-xs"
                         onClick={() => setShowManualQR(true)}
                       >
                         <QrCode className="w-3.5 h-3.5" /> QR
@@ -492,7 +492,7 @@ export default function POS() {
                     </div>
                     <Button
                       variant="outline"
-                      className="w-full border-gray-600 text-muted-foreground"
+                      className="w-full border-border text-muted-foreground"
                       onClick={clearManual}
                     >
                       Nuevo cobro
@@ -506,7 +506,7 @@ export default function POS() {
 
         {/* ── Panel derecho: Carrito ─────────────────────────────────── */}
         <div className="lg:w-80 xl:w-96 shrink-0">
-          <div className="bg-[#1e2436] rounded-xl border border-border overflow-hidden sticky top-6">
+          <div className="bg-muted rounded-xl border border-border overflow-hidden sticky top-6">
             {/* Header */}
             <div className="flex items-center justify-between px-4 py-3 border-b border-border">
               <div className="flex items-center gap-2">
@@ -538,7 +538,7 @@ export default function POS() {
                 <div className="divide-y divide-gray-700/50">
                   {cart.map((item) => (
                     <div key={item.id} className="flex items-center gap-3 px-4 py-3">
-                      <div className="w-10 h-10 bg-[#151929] rounded-lg overflow-hidden shrink-0 flex items-center justify-center">
+                      <div className="w-10 h-10 bg-muted rounded-lg overflow-hidden shrink-0 flex items-center justify-center">
                         {item.imageUrl ? (
                           <img
                             src={item.imageUrl}
@@ -558,7 +558,7 @@ export default function POS() {
                       <div className="flex items-center gap-1 shrink-0">
                         <button
                           onClick={() => updateQty(item.id, -1)}
-                          className="w-6 h-6 rounded-md bg-gray-700 hover:bg-gray-600 flex items-center justify-center text-foreground transition-colors"
+                          className="w-6 h-6 rounded-md bg-muted hover:bg-gray-600 flex items-center justify-center text-foreground transition-colors"
                         >
                           <Minus className="w-3 h-3" />
                         </button>
@@ -567,7 +567,7 @@ export default function POS() {
                         </span>
                         <button
                           onClick={() => updateQty(item.id, 1)}
-                          className="w-6 h-6 rounded-md bg-gray-700 hover:bg-gray-600 flex items-center justify-center text-foreground transition-colors"
+                          className="w-6 h-6 rounded-md bg-muted hover:bg-gray-600 flex items-center justify-center text-foreground transition-colors"
                         >
                           <Plus className="w-3 h-3" />
                         </button>
@@ -613,7 +613,7 @@ export default function POS() {
           if (!v && !createdLink) setShowCheckout(false);
         }}
       >
-        <DialogContent className="bg-[#1e2436] border-border text-foreground max-w-md">
+        <DialogContent className="bg-muted border-border text-foreground max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <ReceiptText className="w-5 h-5 text-emerald-400" />
@@ -632,7 +632,7 @@ export default function POS() {
                   Enlace de pago listo. Compártelo con tu cliente.
                 </p>
               </div>
-              <div className="bg-[#151929] rounded-xl p-3 flex items-center gap-2">
+              <div className="bg-muted rounded-xl p-3 flex items-center gap-2">
                 <p className="text-emerald-400 text-sm flex-1 truncate">{createdLink}</p>
                 <button
                   onClick={copyLink}
@@ -645,7 +645,7 @@ export default function POS() {
                   )}
                 </button>
               </div>
-              <div className="bg-[#151929] rounded-xl p-3 space-y-1">
+              <div className="bg-muted rounded-xl p-3 space-y-1">
                 <p className="text-muted-foreground text-xs font-medium mb-2">Resumen</p>
                 {cart.map((item) => (
                   <div key={item.id} className="flex justify-between text-sm">
@@ -671,14 +671,14 @@ export default function POS() {
                 </Button>
                 <Button
                   variant="outline"
-                  className="border-gray-600 text-muted-foreground gap-1 text-xs"
+                  className="border-border text-muted-foreground gap-1 text-xs"
                   onClick={copyLink}
                 >
                   <Copy className="w-3.5 h-3.5" /> Copiar
                 </Button>
                 <Button
                   variant="outline"
-                  className="border-gray-600 text-muted-foreground gap-1 text-xs"
+                  className="border-border text-muted-foreground gap-1 text-xs"
                   onClick={() => setShowQR(true)}
                 >
                   <QrCode className="w-3.5 h-3.5" /> QR
@@ -697,7 +697,7 @@ export default function POS() {
                   placeholder="cliente@email.com"
                   value={customerEmail}
                   onChange={(e) => setCustomerEmail(e.target.value)}
-                  className="bg-[#151929] border-gray-600 text-foreground"
+                  className="bg-muted border-border text-foreground"
                 />
               </div>
               <div className="space-y-1">
@@ -706,7 +706,7 @@ export default function POS() {
                   placeholder="Nombre del cliente"
                   value={customerName}
                   onChange={(e) => setCustomerName(e.target.value)}
-                  className="bg-[#151929] border-gray-600 text-foreground"
+                  className="bg-muted border-border text-foreground"
                 />
               </div>
               <div className="space-y-1">
@@ -715,10 +715,10 @@ export default function POS() {
                   placeholder="+52 55 1234 5678"
                   value={customerPhone}
                   onChange={(e) => setCustomerPhone(e.target.value)}
-                  className="bg-[#151929] border-gray-600 text-foreground"
+                  className="bg-muted border-border text-foreground"
                 />
               </div>
-              <div className="bg-[#151929] rounded-xl p-3 space-y-1">
+              <div className="bg-muted rounded-xl p-3 space-y-1">
                 <p className="text-muted-foreground text-xs font-medium mb-2">Resumen del cobro</p>
                 {cart.map((item) => (
                   <div key={item.id} className="flex justify-between text-sm">
@@ -744,7 +744,7 @@ export default function POS() {
                 <Button
                   variant="outline"
                   onClick={clearCart}
-                  className="border-gray-600 text-muted-foreground"
+                  className="border-border text-muted-foreground"
                 >
                   Nuevo cobro
                 </Button>
@@ -760,7 +760,7 @@ export default function POS() {
                 <Button
                   variant="outline"
                   onClick={() => setShowCheckout(false)}
-                  className="border-gray-600 text-muted-foreground"
+                  className="border-border text-muted-foreground"
                 >
                   Cancelar
                 </Button>
@@ -785,7 +785,7 @@ export default function POS() {
 
       {/* ── Modal QR (carrito) ─────────────────────────────────────────── */}
       <Dialog open={showQR} onOpenChange={setShowQR}>
-        <DialogContent className="bg-[#1e2436] border-border text-foreground max-w-sm">
+        <DialogContent className="bg-muted border-border text-foreground max-w-sm">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <QrCode className="w-5 h-5 text-emerald-400" /> Código QR de pago
@@ -804,7 +804,7 @@ export default function POS() {
             <Button
               variant="outline"
               onClick={() => setShowQR(false)}
-              className="border-gray-600 text-muted-foreground w-full"
+              className="border-border text-muted-foreground w-full"
             >
               Cerrar
             </Button>
@@ -814,7 +814,7 @@ export default function POS() {
 
       {/* ── Modal QR (cobro manual) ────────────────────────────────────── */}
       <Dialog open={showManualQR} onOpenChange={setShowManualQR}>
-        <DialogContent className="bg-[#1e2436] border-border text-foreground max-w-sm">
+        <DialogContent className="bg-muted border-border text-foreground max-w-sm">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <QrCode className="w-5 h-5 text-emerald-400" /> Código QR de pago
@@ -833,7 +833,7 @@ export default function POS() {
             <Button
               variant="outline"
               onClick={() => setShowManualQR(false)}
-              className="border-gray-600 text-muted-foreground w-full"
+              className="border-border text-muted-foreground w-full"
             >
               Cerrar
             </Button>

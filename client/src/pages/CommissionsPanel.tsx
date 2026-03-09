@@ -1160,7 +1160,7 @@ function AssociateCommissionsSection() {
       ) : associates.length === 0 ? (
         <Card>
           <CardContent className="py-12 text-center">
-            <Handshake className="w-12 h-12 text-gray-200 mx-auto mb-3" />
+            <Handshake className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
             <p className="text-muted-foreground font-medium">No hay asociados registrados aún</p>
             <p className="text-sm text-muted-foreground">Los asociados aparecerán aquí cuando se registren en la plataforma</p>
           </CardContent>

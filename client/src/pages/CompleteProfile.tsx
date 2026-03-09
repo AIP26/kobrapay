@@ -263,7 +263,7 @@ export default function CompleteProfile() {
                   <SelectTrigger className="bg-white/5 border-border text-foreground focus:border-emerald-500">
                     <SelectValue placeholder="Selecciona una categoría" />
                   </SelectTrigger>
-                  <SelectContent className="bg-[#1a2440] border-border">
+                  <SelectContent className="bg-card border-border">
                     {BUSINESS_TYPES.map((t) => (
                       <SelectItem key={t} value={t} className="text-foreground hover:bg-white/10 focus:bg-white/10">{t}</SelectItem>
                     ))}

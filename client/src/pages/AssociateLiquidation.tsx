@@ -123,7 +123,7 @@ export default function AssociateLiquidation() {
           </div>
         ) : filtered.length === 0 ? (
           <div className="text-center py-16 bg-white rounded-2xl border border-gray-200">
-            <TrendingUp className="w-12 h-12 text-gray-200 mx-auto mb-3" />
+            <TrendingUp className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
             <p className="text-muted-foreground font-medium">Sin asociados con comisiones pendientes</p>
             <p className="text-sm text-muted-foreground mt-1">Las comisiones aparecerán aquí cuando los clientes de los asociados procesen pagos</p>
           </div>

@@ -224,10 +224,10 @@ export default function MonthlyReport() {
         </div>
 
         {/* Month selector */}
-        <div className="bg-[#1a1f2e] border border-border rounded-2xl p-4 mb-6 flex items-center justify-between">
-          <button
-            onClick={prevMonth}
-            className="w-9 h-9 rounded-xl bg-white/5 hover:bg-white/10 flex items-center justify-center transition-colors"
+        <div className="bg-card border border-border rounded-2xl p-4 mb-6 flex items-center justify-between">
+                        <button
+                          onClick={prevMonth}
+                                className="w-9 h-9 rounded-xl bg-secondary hover:bg-secondary/80 flex items-center justify-center transition-colors"
           >
             <ChevronLeft className="w-4 h-4 text-muted-foreground" />
           </button>
@@ -238,7 +238,7 @@ export default function MonthlyReport() {
           <button
             onClick={nextMonth}
             disabled={isCurrentOrFuture}
-            className="w-9 h-9 rounded-xl bg-white/5 hover:bg-white/10 flex items-center justify-center transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+            className="w-9 h-9 rounded-xl bg-secondary hover:bg-secondary/80 flex items-center justify-center transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
           >
             <ChevronRight className="w-4 h-4 text-muted-foreground" />
           </button>
@@ -252,21 +252,21 @@ export default function MonthlyReport() {
           <>
             {/* KPI Cards */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
-              <div className="bg-[#1a1f2e] border border-border rounded-2xl p-4">
+              <div className="bg-card border border-border rounded-2xl p-4">
                 <div className="flex items-center gap-2 mb-2">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                  <CheckCircle2 className="w-4 h-4 text-emerald-500" />
                   <span className="text-xs text-muted-foreground">Exitosas</span>
                 </div>
                 <p className="text-2xl font-bold text-foreground">{data.totalTransactions}</p>
               </div>
-              <div className="bg-[#1a1f2e] border border-border rounded-2xl p-4">
+              <div className="bg-card border border-border rounded-2xl p-4">
                 <div className="flex items-center gap-2 mb-2">
-                  <XCircle className="w-4 h-4 text-red-400" />
+                  <XCircle className="w-4 h-4 text-red-500" />
                   <span className="text-xs text-muted-foreground">Fallidas</span>
                 </div>
                 <p className="text-2xl font-bold text-foreground">{data.failedTransactions}</p>
               </div>
-              <div className="bg-[#1a1f2e] border border-border rounded-2xl p-4 col-span-2">
+              <div className="bg-card border border-border rounded-2xl p-4 col-span-2">
                 <div className="flex items-center gap-2 mb-2">
                   <DollarSign className="w-4 h-4 text-blue-400" />
                   <span className="text-xs text-muted-foreground">Monto Bruto</span>
@@ -274,7 +274,7 @@ export default function MonthlyReport() {
                 <p className="text-2xl font-bold text-foreground">${fmt(data.totalBruto)}</p>
                 <p className="text-xs text-muted-foreground mt-1">MXN cobrado en el período</p>
               </div>
-              <div className="bg-[#1a1f2e] border border-amber-500/20 rounded-2xl p-4 col-span-2">
+              <div className="bg-card border border-amber-500/20 rounded-2xl p-4 col-span-2">
                 <div className="flex items-center gap-2 mb-2">
                   <Percent className="w-4 h-4 text-amber-400" />
                   <span className="text-xs text-muted-foreground">Comisión ({data.commissionRate}%)</span>
@@ -282,7 +282,7 @@ export default function MonthlyReport() {
                 <p className="text-2xl font-bold text-amber-400">${fmt(data.totalComision)}</p>
                 <p className="text-xs text-muted-foreground mt-1">Comisión de la plataforma</p>
               </div>
-              <div className="bg-[#1a1f2e] border border-emerald-500/20 rounded-2xl p-4 col-span-2">
+              <div className="bg-card border border-emerald-500/20 rounded-2xl p-4 col-span-2">
                 <div className="flex items-center gap-2 mb-2">
                   <TrendingUp className="w-4 h-4 text-emerald-400" />
                   <span className="text-xs text-muted-foreground">Monto Neto</span>
@@ -294,7 +294,7 @@ export default function MonthlyReport() {
 
             {/* Bar chart by day */}
             {data.totalTransactions > 0 && (
-              <div className="bg-[#1a1f2e] border border-border rounded-2xl p-5 mb-6">
+              <div className="bg-card border border-border rounded-2xl p-5 mb-6">
                 <div className="flex items-center gap-2 mb-4">
                   <BarChart3 className="w-4 h-4 text-blue-400" />
                   <h2 className="text-sm font-semibold text-foreground">Ventas por día</h2>
@@ -308,7 +308,7 @@ export default function MonthlyReport() {
                         title={total > 0 ? `Día ${day}: $${fmt(total)}` : `Día ${day}: sin ventas`}
                       />
                       {daysInMonth <= 31 && (
-                        <span className="text-[8px] text-muted-foreground">{day}</span>
+                        <span className="text-[8px] text-foreground/60">{day}</span>
                       )}
                     </div>
                   ))}
@@ -317,7 +317,7 @@ export default function MonthlyReport() {
             )}
 
             {/* Transactions table */}
-            <div className="bg-[#1a1f2e] border border-border rounded-2xl overflow-hidden">
+            <div className="bg-card border border-border rounded-2xl overflow-hidden">
               <div className="p-4 border-b border-border flex items-center gap-2">
                 <CreditCard className="w-4 h-4 text-muted-foreground" />
                 <h2 className="text-sm font-semibold text-foreground">

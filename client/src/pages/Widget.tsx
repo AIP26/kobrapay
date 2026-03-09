@@ -258,7 +258,7 @@ export default function Widget() {
           </CardHeader>
           <CardContent className="p-4">
             <div className="relative">
-              <pre className="bg-card text-gray-100 rounded-xl p-4 text-xs overflow-x-auto font-mono leading-relaxed">
+              <pre className="bg-slate-800 text-gray-100 rounded-xl p-4 text-xs overflow-x-auto font-mono leading-relaxed">
                 {widgetCode}
               </pre>
               <Button
@@ -267,7 +267,7 @@ export default function Widget() {
                 className={`absolute top-3 right-3 h-8 text-xs transition-all ${
                   copied === "button"
                     ? "bg-green-500 hover:bg-green-500 text-foreground"
-                    : "bg-gray-700 hover:bg-gray-600 text-foreground"
+                    : "bg-secondary hover:bg-secondary/80 text-foreground"
                 }`}
               >
                 {copied === "button" ? (
@@ -298,7 +298,7 @@ export default function Widget() {
           </CardHeader>
           <CardContent className="p-4">
             <div className="relative">
-              <pre className="bg-card text-gray-100 rounded-xl p-4 text-xs overflow-x-auto font-mono leading-relaxed">
+              <pre className="bg-slate-800 text-gray-100 rounded-xl p-4 text-xs overflow-x-auto font-mono leading-relaxed">
                 {iframeCode}
               </pre>
               <Button
@@ -307,7 +307,7 @@ export default function Widget() {
                 className={`absolute top-3 right-3 h-8 text-xs transition-all ${
                   copied === "iframe"
                     ? "bg-green-500 hover:bg-green-500 text-foreground"
-                    : "bg-gray-700 hover:bg-gray-600 text-foreground"
+                    : "bg-secondary hover:bg-secondary/80 text-foreground"
                 }`}
               >
                 {copied === "iframe" ? (

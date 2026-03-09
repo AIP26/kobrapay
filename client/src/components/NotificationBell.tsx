@@ -151,7 +151,7 @@ export function NotificationBell() {
           <div className="max-h-[420px] overflow-y-auto divide-y divide-gray-50">
             {notifications.length === 0 ? (
               <div className="py-12 text-center">
-                <Bell className="w-10 h-10 text-gray-200 mx-auto mb-3" />
+                <Bell className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
                 <p className="text-muted-foreground text-sm font-medium">Sin notificaciones</p>
                 <p className="text-muted-foreground text-xs mt-1">Aquí aparecerán los nuevos registros y alertas</p>
               </div>

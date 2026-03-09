@@ -100,7 +100,7 @@ export default function RegisterEmail() {
                     placeholder="Tu nombre"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    className="pl-9 bg-gray-700 border-gray-600 text-foreground placeholder:text-muted-foreground focus:border-cyan-400 focus:ring-cyan-400"
+                    className="pl-9 bg-background border-border text-foreground placeholder:text-muted-foreground focus:border-cyan-400 focus:ring-cyan-400"
                     autoComplete="name"
                     required
                   />
@@ -117,7 +117,7 @@ export default function RegisterEmail() {
                     placeholder="tu@correo.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="pl-9 bg-gray-700 border-gray-600 text-foreground placeholder:text-muted-foreground focus:border-cyan-400 focus:ring-cyan-400"
+                    className="pl-9 bg-background border-border text-foreground placeholder:text-muted-foreground focus:border-cyan-400 focus:ring-cyan-400"
                     autoComplete="email"
                     required
                   />
@@ -134,7 +134,7 @@ export default function RegisterEmail() {
                     placeholder="Mínimo 8 caracteres"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="pl-9 pr-10 bg-gray-700 border-gray-600 text-foreground placeholder:text-muted-foreground focus:border-cyan-400 focus:ring-cyan-400"
+                    className="pl-9 pr-10 bg-background border-border text-foreground placeholder:text-muted-foreground focus:border-cyan-400 focus:ring-cyan-400"
                     autoComplete="new-password"
                     required
                   />
@@ -158,7 +158,7 @@ export default function RegisterEmail() {
                     placeholder="Repite tu contraseña"
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
-                    className="pl-9 bg-gray-700 border-gray-600 text-foreground placeholder:text-muted-foreground focus:border-cyan-400 focus:ring-cyan-400"
+                    className="pl-9 bg-background border-border text-foreground placeholder:text-muted-foreground focus:border-cyan-400 focus:ring-cyan-400"
                     autoComplete="new-password"
                     required
                   />

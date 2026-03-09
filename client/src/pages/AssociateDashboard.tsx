@@ -1156,7 +1156,7 @@ export default function AssociateDashboard() {
                 <div className="border border-gray-200 rounded-xl overflow-hidden">
                   <div className="bg-card p-5 flex items-center justify-center" style={{minHeight:"140px"}}>
                     <div className="text-center">
-                      <div className="w-16 h-24 bg-gray-700 rounded-xl mx-auto mb-2 flex items-center justify-center border-2 border-gray-600">
+                      <div className="w-16 h-24 bg-muted rounded-xl mx-auto mb-2 flex items-center justify-center border-2 border-border">
                         <div className="w-10 h-6 bg-gray-500 rounded-sm" />
                       </div>
                       <span className="text-foreground text-xs font-bold">Stripe Reader S700</span>
@@ -1409,7 +1409,7 @@ export default function AssociateDashboard() {
                 </div>
               ) : myClients.length === 0 ? (
                 <div className="text-center py-16">
-                  <UserPlus className="w-12 h-12 text-gray-200 mx-auto mb-3" />
+                  <UserPlus className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
                   <p className="text-muted-foreground font-medium">Aún no has registrado clientes</p>
                   <p className="text-sm text-muted-foreground mb-4">Registra tu primer cliente para empezar a ganar comisiones</p>
                   <Button onClick={() => setActiveTab("registro")} className="bg-emerald-600 hover:bg-emerald-700 text-foreground">
@@ -1500,7 +1500,7 @@ export default function AssociateDashboard() {
                 </div>
               ) : myEarnings.length === 0 ? (
                 <div className="text-center py-12">
-                  <DollarSign className="w-10 h-10 text-gray-200 mx-auto mb-2" />
+                  <DollarSign className="w-10 h-10 text-muted-foreground mx-auto mb-2" />
                   <p className="text-muted-foreground text-sm font-medium">Sin ganancias registradas aún</p>
                   <p className="text-xs text-muted-foreground mt-1">Cada vez que un cliente tuyo procese un pago, aparecerá aquí automáticamente</p>
                 </div>

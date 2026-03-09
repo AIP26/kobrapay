@@ -115,16 +115,16 @@ function MiniCalendar({
   for (let d = 1; d <= daysInMonth; d++) cells.push(d);
 
   return (
-    <div className="bg-[#1a1f2e] border border-border rounded-xl p-4">
+    <div className="bg-card border border-border rounded-xl p-4">
       <div className="flex items-center justify-between mb-3">
         <button
           onClick={() => setViewDate(new Date(year, month - 1, 1))}
-          className="text-muted-foreground hover:text-foreground px-2 py-1 rounded hover:bg-gray-700"
+          className="text-muted-foreground hover:text-foreground px-2 py-1 rounded hover:bg-muted"
         >‹</button>
         <span className="text-foreground font-semibold text-sm">{monthNames[month]} {year}</span>
         <button
           onClick={() => setViewDate(new Date(year, month + 1, 1))}
-          className="text-muted-foreground hover:text-foreground px-2 py-1 rounded hover:bg-gray-700"
+          className="text-muted-foreground hover:text-foreground px-2 py-1 rounded hover:bg-muted"
         >›</button>
       </div>
       <div className="grid grid-cols-7 gap-1 mb-1">
@@ -536,7 +536,7 @@ function PatientDetailPanel({
               {patient.medicalNotes && (
                 <div className="bg-muted border border-border rounded-lg p-3">
                   <div className="text-xs text-muted-foreground mb-1">Notas médicas</div>
-                  <div className="text-sm text-gray-200 whitespace-pre-wrap">{patient.medicalNotes}</div>
+                  <div className="text-sm text-foreground whitespace-pre-wrap">{patient.medicalNotes}</div>
                 </div>
               )}
               <div className="pt-2">
@@ -586,7 +586,7 @@ function PatientDetailPanel({
                             <Button
                               size="sm"
                               variant="outline"
-                              className="text-xs border-gray-600 text-gray-200 hover:bg-gray-700"
+                              className="text-xs border-border text-muted-foreground hover:bg-muted"
                               onClick={() => setEditingAppt(appt)}
                             >
                               ✏ Reagendar
@@ -637,19 +637,19 @@ function PatientDetailPanel({
                     {rec.diagnosis && (
                       <div>
                         <div className="text-xs text-[#FF6B00] font-semibold mb-1">Diagnóstico</div>
-                        <div className="text-sm text-gray-200">{rec.diagnosis}</div>
+                        <div className="text-sm text-foreground">{rec.diagnosis}</div>
                       </div>
                     )}
                     {rec.treatment && (
                       <div>
                         <div className="text-xs text-blue-400 font-semibold mb-1">Tratamiento</div>
-                        <div className="text-sm text-gray-200">{rec.treatment}</div>
+                        <div className="text-sm text-foreground">{rec.treatment}</div>
                       </div>
                     )}
                     {rec.prescription && (
                       <div>
                         <div className="text-xs text-green-400 font-semibold mb-1">Prescripción</div>
-                        <div className="text-sm text-gray-200">{rec.prescription}</div>
+                        <div className="text-sm text-foreground">{rec.prescription}</div>
                       </div>
                     )}
                     {rec.clinicalNotes && (
@@ -665,7 +665,7 @@ function PatientDetailPanel({
                           <div className="flex flex-wrap gap-2 pt-2">
                             {atts.map((a, i) => (
                               <a key={i} href={a.url} target="_blank" rel="noreferrer"
-                                className="text-xs px-2 py-1 rounded bg-gray-700 text-gray-200 hover:bg-gray-600 border border-gray-600">
+                                className="text-xs px-2 py-1 rounded bg-muted text-foreground hover:bg-secondary border border-border">
                                 📎 {categoryLabel[a.category] || a.category}
                               </a>
                             ))}
@@ -709,7 +709,7 @@ function PatientDetailPanel({
                         return (
                           <div className="mt-2 space-y-1">
                             {meds.map((m: any, i: number) => (
-                              <div key={i} className="text-xs bg-gray-700/50 rounded px-2 py-1">
+                              <div key={i} className="text-xs bg-muted/50 rounded px-2 py-1">
                                 <span className="text-foreground font-medium">{m.name}</span>
                                 {m.dose && <span className="text-muted-foreground ml-2">{m.dose}</span>}
                                 {m.instructions && <span className="text-muted-foreground ml-2">— {m.instructions}</span>}
@@ -735,7 +735,7 @@ function PatientDetailPanel({
                 <div className="text-sm font-semibold text-foreground mb-3">Subir archivo</div>
                 <div className="grid grid-cols-2 gap-3 mb-3">
                   <Select value={uploadCategory} onValueChange={setUploadCategory}>
-                    <SelectTrigger className="bg-gray-700 border-gray-600 text-foreground">
+                    <SelectTrigger className="bg-background border-border text-foreground">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -748,7 +748,7 @@ function PatientDetailPanel({
                   </Select>
                   <Button
                     variant="outline"
-                    className="border-gray-600 text-gray-200 hover:bg-gray-700"
+                    className="border-border text-muted-foreground hover:bg-muted"
                     onClick={() => fileRef.current?.click()}
                     disabled={uploadFile.isPending}
                   >
@@ -763,7 +763,7 @@ function PatientDetailPanel({
                 <div className="grid grid-cols-2 gap-3">
                   {allAttachments.map((a, i) => (
                     <a key={i} href={a.url} target="_blank" rel="noreferrer"
-                      className="bg-muted border border-border rounded-lg p-3 hover:bg-gray-700 transition-colors">
+                      className="bg-muted border border-border rounded-lg p-3 hover:bg-muted transition-colors">
                       <div className="text-xs text-muted-foreground mb-1">{categoryLabel[a.category] || a.category}</div>
                       <div className="text-sm text-foreground truncate">📎 {a.name}</div>
                       <div className="text-xs text-muted-foreground mt-1">{new Date(a.uploadedAt).toLocaleDateString("es-MX")}</div>
@@ -852,7 +852,7 @@ function PatientDetailPanel({
         </Dialog>
         {/* Modal: Editar datos del paciente */}
         <Dialog open={showEditPatient} onOpenChange={setShowEditPatient}>
-          <DialogContent className="bg-[#1a2035] border-border text-foreground max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogContent className="bg-card border-border text-foreground max-w-lg max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle className="text-foreground">✏ Editar datos del paciente</DialogTitle>
             </DialogHeader>
@@ -1041,7 +1041,7 @@ export default function MedicalAgenda() {
 
   return (
     <DashboardLayout>
-      <div className="p-6 max-w-6xl mx-auto bg-[#0f1117] min-h-screen rounded-xl -m-6">
+      <div className="p-6 max-w-6xl mx-auto bg-background min-h-screen rounded-xl -m-6">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div>
@@ -1068,7 +1068,7 @@ export default function MedicalAgenda() {
                 </button>
               </div>
             )}
-            <Button variant="outline" className="border-gray-600 text-gray-200 hover:bg-muted" onClick={() => setShowApptForm(true)}>
+            <Button variant="outline" className="border-border text-muted-foreground hover:bg-muted" onClick={() => setShowApptForm(true)}>
               + Nueva cita
             </Button>
             <Button
@@ -1082,7 +1082,7 @@ export default function MedicalAgenda() {
 
         {/* Panel de campanita de citas del día */}
         {showBellPanel && todayAlertAppts.length > 0 && (
-          <div className="mb-6 bg-[#1a2035] border border-[#FF6B00]/40 rounded-xl p-4">
+          <div className="mb-6 bg-card border border-[#FF6B00]/40 rounded-xl p-4">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
                 <span className="text-xl">🔔</span>
@@ -1122,7 +1122,7 @@ export default function MedicalAgenda() {
 
         {/* Modal de recordatorio Email + WhatsApp */}
         <Dialog open={showReminderModal} onOpenChange={setShowReminderModal}>
-          <DialogContent className="bg-[#1a2035] border-border text-foreground max-w-sm">
+          <DialogContent className="bg-card border-border text-foreground max-w-sm">
             <DialogHeader>
               <DialogTitle className="text-foreground">📨 Enviar recordatorio de cita</DialogTitle>
             </DialogHeader>
@@ -1220,7 +1220,7 @@ export default function MedicalAgenda() {
               return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
             }).length, icon: "📊" },
           ].map(({ label, value, icon }) => (
-            <div key={label} className="bg-[#1a1f2e] rounded-xl p-4 border border-border">
+            <div key={label} className="bg-card rounded-xl p-4 border border-border">
               <div className="text-2xl mb-1">{icon}</div>
               <div className="text-2xl font-bold text-foreground">{value}</div>
               <div className="text-xs text-muted-foreground">{label}</div>
@@ -1262,7 +1262,7 @@ export default function MedicalAgenda() {
                   return (
                     <div
                       key={patient.id}
-                      className="bg-[#1a1f2e] border border-border rounded-xl p-4 flex items-center gap-4 cursor-pointer hover:border-[#FF6B00]/50 hover:bg-[#1f2535] transition-colors"
+                      className="bg-card border border-border rounded-xl p-4 flex items-center gap-4 cursor-pointer hover:border-[#FF6B00]/50 hover:bg-[#1f2535] transition-colors"
                       onClick={() => setSelectedPatient(patient)}
                     >
                       <div className="w-10 h-10 rounded-full bg-[#FF6B00]/20 flex items-center justify-center text-sm font-bold text-[#FF6B00] overflow-hidden flex-shrink-0">
@@ -1338,7 +1338,7 @@ export default function MedicalAgenda() {
                                   onClick={() => sendPostAlert.mutate({ appointmentId: appt.id })}>
                                   ⏰ Alerta
                                 </Button>
-                                <Button size="sm" variant="outline" className="text-xs border-gray-600 text-gray-200 hover:bg-gray-700"
+                                <Button size="sm" variant="outline" className="text-xs border-border text-muted-foreground hover:bg-muted"
                                   onClick={() => setEditingAppt(appt)}>
                                   ✏ Reagendar
                                 </Button>
@@ -1375,7 +1375,7 @@ export default function MedicalAgenda() {
                       const p = patients.find(pt => pt.id === appt.patientId);
                       const d = new Date(appt.appointmentDate);
                       return (
-                        <div key={appt.id} className="bg-[#1a1f2e] border border-border rounded-lg p-4 flex items-center gap-4 flex-wrap">
+                        <div key={appt.id} className="bg-card border border-border rounded-lg p-4 flex items-center gap-4 flex-wrap">
                           <div className="text-center w-16 flex-shrink-0">
                             <div className="text-sm font-bold text-foreground">
                               {d.toLocaleDateString("es-MX", { day: "2-digit", month: "short" })}
@@ -1404,7 +1404,7 @@ export default function MedicalAgenda() {
                               📧 Recordar
                             </Button>
                             <Button
-                              size="sm" variant="outline" className="text-xs border-gray-600 text-gray-200 hover:bg-gray-700"
+                              size="sm" variant="outline" className="text-xs border-border text-muted-foreground hover:bg-muted"
                               onClick={() => setEditingAppt(appt)}
                             >
                               ✏ Reagendar
@@ -1472,7 +1472,7 @@ export default function MedicalAgenda() {
                       const p = patients.find(pt => pt.id === appt.patientId);
                       const st = statusLabel(appt.status);
                       return (
-                        <div key={appt.id} className="bg-[#1a1f2e] border border-border rounded-lg p-4">
+                        <div key={appt.id} className="bg-card border border-border rounded-lg p-4">
                           <div className="flex items-start justify-between">
                             <div className="flex-1">
                               <div className="font-semibold text-foreground">{appt.title}</div>
@@ -1485,7 +1485,7 @@ export default function MedicalAgenda() {
                           </div>
                           {appt.status === "scheduled" && (
                             <div className="flex gap-2 mt-3 flex-wrap">
-                              <Button size="sm" variant="outline" className="text-xs border-gray-600 text-gray-200 hover:bg-gray-700"
+                              <Button size="sm" variant="outline" className="text-xs border-border text-muted-foreground hover:bg-muted"
                                 onClick={() => setEditingAppt(appt)}>
                                 ✏ Reagendar
                               </Button>

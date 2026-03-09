@@ -196,7 +196,7 @@ export default function Catalog() {
               placeholder="Buscar por nombre o categoría..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="pl-9 bg-[#1e2436] border-border text-foreground placeholder:text-muted-foreground"
+              className="pl-9 bg-muted border-border text-foreground placeholder:text-muted-foreground"
             />
           </div>
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -209,7 +209,7 @@ export default function Catalog() {
         {isLoading ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="bg-[#1e2436] rounded-xl h-64 animate-pulse" />
+              <div key={i} className="bg-muted rounded-xl h-64 animate-pulse" />
             ))}
           </div>
         ) : filtered.length === 0 ? (
@@ -230,12 +230,12 @@ export default function Catalog() {
             {filtered.map((product) => (
               <div
                 key={product.id}
-                className={`bg-[#1e2436] rounded-xl overflow-hidden border transition-all ${
+                className={`bg-muted rounded-xl overflow-hidden border transition-all ${
                   product.isActive ? "border-border/50 hover:border-emerald-500/30" : "border-red-900/30 opacity-60"
                 }`}
               >
                 {/* Imagen */}
-                <div className="h-40 bg-[#151929] flex items-center justify-center overflow-hidden">
+                <div className="h-40 bg-muted flex items-center justify-center overflow-hidden">
                   {product.imageUrl ? (
                     <img src={product.imageUrl} alt={product.name} className="w-full h-full object-cover" />
                   ) : (
@@ -278,7 +278,7 @@ export default function Catalog() {
                     <Button
                       size="sm"
                       variant="outline"
-                      className="flex-1 h-8 text-xs border-gray-600 text-muted-foreground hover:text-foreground hover:border-emerald-500"
+                      className="flex-1 h-8 text-xs border-border text-muted-foreground hover:text-foreground hover:border-emerald-500"
                       onClick={() => openEdit(product)}
                     >
                       <Pencil className="w-3 h-3 mr-1" /> Editar
@@ -286,7 +286,7 @@ export default function Catalog() {
                     <Button
                       size="sm"
                       variant="outline"
-                      className={`h-8 px-2 border-gray-600 ${product.isActive ? "text-yellow-400 hover:border-yellow-500" : "text-emerald-400 hover:border-emerald-500"}`}
+                      className={`h-8 px-2 border-border ${product.isActive ? "text-yellow-400 hover:border-yellow-500" : "text-emerald-400 hover:border-emerald-500"}`}
                       onClick={() => toggleActiveMutation.mutate({ id: product.id, isActive: !product.isActive })}
                       title={product.isActive ? "Desactivar" : "Activar"}
                     >
@@ -295,7 +295,7 @@ export default function Catalog() {
                     <Button
                       size="sm"
                       variant="outline"
-                      className="h-8 px-2 border-gray-600 text-red-400 hover:border-red-500"
+                      className="h-8 px-2 border-border text-red-400 hover:border-red-500"
                       onClick={() => setDeleteTarget(product)}
                       title="Eliminar"
                     >
@@ -307,8 +307,8 @@ export default function Catalog() {
                   {product.trackStock && product.isActive && (
                     <div className="flex items-center gap-2 pt-1">
                       <span className="text-xs text-muted-foreground flex-1">Ajustar stock:</span>
-                      <Button size="sm" variant="outline" className="h-7 w-7 p-0 border-gray-600 text-foreground" onClick={() => adjustStockMutation.mutate({ id: product.id, delta: -1 })}>−</Button>
-                      <Button size="sm" variant="outline" className="h-7 w-7 p-0 border-gray-600 text-foreground" onClick={() => adjustStockMutation.mutate({ id: product.id, delta: 1 })}>+</Button>
+                      <Button size="sm" variant="outline" className="h-7 w-7 p-0 border-border text-foreground" onClick={() => adjustStockMutation.mutate({ id: product.id, delta: -1 })}>−</Button>
+                      <Button size="sm" variant="outline" className="h-7 w-7 p-0 border-border text-foreground" onClick={() => adjustStockMutation.mutate({ id: product.id, delta: 1 })}>+</Button>
                     </div>
                   )}
                 </div>
@@ -320,7 +320,7 @@ export default function Catalog() {
 
       {/* Modal Crear/Editar */}
       <Dialog open={showForm} onOpenChange={(v) => !v && closeForm()}>
-        <DialogContent className="bg-[#1e2436] border-border text-foreground max-w-lg max-h-[90vh] overflow-y-auto">
+        <DialogContent className="bg-muted border-border text-foreground max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{editingProduct ? "Editar Producto" : "Nuevo Producto"}</DialogTitle>
           </DialogHeader>
@@ -332,7 +332,7 @@ export default function Catalog() {
                 placeholder="Ej: Camisa talla M"
                 value={form.name}
                 onChange={(e) => setForm({ ...form, name: e.target.value })}
-                className="bg-[#151929] border-gray-600 text-foreground"
+                className="bg-muted border-border text-foreground"
               />
             </div>
 
@@ -346,7 +346,7 @@ export default function Catalog() {
                   step="0.01"
                   value={form.price}
                   onChange={(e) => setForm({ ...form, price: e.target.value })}
-                  className="bg-[#151929] border-gray-600 text-foreground"
+                  className="bg-muted border-border text-foreground"
                 />
               </div>
               <div className="space-y-1">
@@ -355,7 +355,7 @@ export default function Catalog() {
                   placeholder="Ej: Ropa, Electrónica"
                   value={form.category}
                   onChange={(e) => setForm({ ...form, category: e.target.value })}
-                  className="bg-[#151929] border-gray-600 text-foreground"
+                  className="bg-muted border-border text-foreground"
                 />
               </div>
             </div>
@@ -366,7 +366,7 @@ export default function Catalog() {
                 placeholder="Describe el producto..."
                 value={form.description}
                 onChange={(e) => setForm({ ...form, description: e.target.value })}
-                className="bg-[#151929] border-gray-600 text-foreground resize-none"
+                className="bg-muted border-border text-foreground resize-none"
                 rows={3}
               />
             </div>
@@ -379,7 +379,7 @@ export default function Catalog() {
                 placeholder="https://..."
                 value={form.imageUrl}
                 onChange={(e) => setForm({ ...form, imageUrl: e.target.value })}
-                className="bg-[#151929] border-gray-600 text-foreground"
+                className="bg-muted border-border text-foreground"
               />
               {form.imageUrl && (
                 <img src={form.imageUrl} alt="preview" className="w-full h-32 object-cover rounded-lg mt-2" onError={(e) => (e.currentTarget.style.display = "none")} />
@@ -387,7 +387,7 @@ export default function Catalog() {
             </div>
 
             {/* Control de stock */}
-            <div className="bg-[#151929] rounded-xl p-4 space-y-3 border border-border">
+            <div className="bg-muted rounded-xl p-4 space-y-3 border border-border">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-foreground font-medium text-sm">Control de inventario</p>
@@ -408,7 +408,7 @@ export default function Catalog() {
                       min="0"
                       value={form.stock}
                       onChange={(e) => setForm({ ...form, stock: parseInt(e.target.value) || 0 })}
-                      className="bg-[#1e2436] border-gray-600 text-foreground h-8 text-sm"
+                      className="bg-muted border-border text-foreground h-8 text-sm"
                     />
                   </div>
                   <div className="space-y-1">
@@ -418,7 +418,7 @@ export default function Catalog() {
                       min="0"
                       value={form.lowStockAlert}
                       onChange={(e) => setForm({ ...form, lowStockAlert: parseInt(e.target.value) || 0 })}
-                      className="bg-[#1e2436] border-gray-600 text-foreground h-8 text-sm"
+                      className="bg-muted border-border text-foreground h-8 text-sm"
                     />
                   </div>
                 </div>
@@ -427,7 +427,7 @@ export default function Catalog() {
           </div>
 
           <DialogFooter className="gap-2">
-            <Button variant="outline" onClick={closeForm} className="border-gray-600 text-muted-foreground">
+            <Button variant="outline" onClick={closeForm} className="border-border text-muted-foreground">
               Cancelar
             </Button>
             <Button onClick={handleSave} disabled={saving} className="bg-emerald-500 hover:bg-emerald-600 text-foreground">
@@ -439,7 +439,7 @@ export default function Catalog() {
 
       {/* Confirmar eliminación */}
       <AlertDialog open={!!deleteTarget} onOpenChange={(v) => !v && setDeleteTarget(null)}>
-        <AlertDialogContent className="bg-[#1e2436] border-border text-foreground">
+        <AlertDialogContent className="bg-muted border-border text-foreground">
           <AlertDialogHeader>
             <AlertDialogTitle>¿Eliminar producto?</AlertDialogTitle>
             <AlertDialogDescription className="text-muted-foreground">
@@ -447,7 +447,7 @@ export default function Catalog() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel className="border-gray-600 text-muted-foreground bg-transparent">Cancelar</AlertDialogCancel>
+            <AlertDialogCancel className="border-border text-muted-foreground bg-transparent">Cancelar</AlertDialogCancel>
             <AlertDialogAction
               className="bg-red-600 hover:bg-red-700 text-foreground"
               onClick={() => deleteTarget && deleteMutation.mutate({ id: deleteTarget.id })}

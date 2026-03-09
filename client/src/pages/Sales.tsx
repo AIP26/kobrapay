@@ -442,7 +442,7 @@ function TransactionDetailModal({
                 {/* Tooltip burbuja */}
                 <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-72 bg-card text-foreground text-xs rounded-xl shadow-xl p-3 opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-200 z-50">
                   <p className="font-semibold text-amber-300 mb-1.5">¿Por qué está pendiente?</p>
-                  <ul className="space-y-1 text-gray-200">
+                  <ul className="space-y-1 text-muted-foreground">
                     <li className="flex items-start gap-1.5"><span className="text-amber-400 mt-0.5">•</span> El cliente abrió el enlace pero no completó el pago</li>
                     <li className="flex items-start gap-1.5"><span className="text-amber-400 mt-0.5">•</span> No ingresó todos sus datos de tarjeta</li>
                     <li className="flex items-start gap-1.5"><span className="text-amber-400 mt-0.5">•</span> Cerró la ventana antes de confirmar</li>

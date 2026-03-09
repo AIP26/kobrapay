@@ -1095,3 +1095,12 @@
 - [x] 0 errores TypeScript en toda la aplicación
 - [x] Kit de marketing: 9 imágenes para Instagram, Facebook y TikTok
 - [x] Kit de marketing: copies y estrategia de publicación completa
+
+## Revisión completa - Marzo 2026
+- [ ] Corregir visibilidad de texto en todas las páginas del dashboard
+- [ ] Verificar flujo de login y superadmin
+- [ ] Corregir errores en consola del servidor
+- [ ] Revisar Dashboard, Ventas, Links, Cobros, Configuración
+- [ ] Revisar páginas de administración: Clientes, Registros, Métricas, Comisiones
+- [ ] Revisar y mejorar página de Stripe Connect
+- [ ] PENDIENTE: conectar Stripe Connect, activar cuenta y revisar % comisión

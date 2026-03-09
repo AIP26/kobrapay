@@ -130,7 +130,7 @@ export default function ResetPassword() {
                     placeholder="Mínimo 8 caracteres"
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
-                    className="pl-9 pr-10 bg-gray-700 border-gray-600 text-foreground placeholder:text-muted-foreground focus:border-cyan-400 focus:ring-cyan-400"
+                    className="pl-9 pr-10 bg-background border-border text-foreground placeholder:text-muted-foreground focus:border-cyan-400 focus:ring-cyan-400"
                     autoComplete="new-password"
                     required
                   />
@@ -154,7 +154,7 @@ export default function ResetPassword() {
                     placeholder="Repite tu nueva contraseña"
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
-                    className="pl-9 bg-gray-700 border-gray-600 text-foreground placeholder:text-muted-foreground focus:border-cyan-400 focus:ring-cyan-400"
+                    className="pl-9 bg-background border-border text-foreground placeholder:text-muted-foreground focus:border-cyan-400 focus:ring-cyan-400"
                     autoComplete="new-password"
                     required
                   />
