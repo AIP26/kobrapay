@@ -566,7 +566,7 @@ export default function Home() {
           <div className="flex items-center gap-3">
             {!loading && (
               isAuthenticated ? (
-                <Button asChild className="bg-emerald-500 hover:bg-emerald-400 text-white font-semibold">
+                <Button asChild className="bg-emerald-500 hover:bg-emerald-400 text-foreground">
                   <Link href="/dashboard">Ir al Panel <ArrowRight className="w-4 h-4 ml-1" /></Link>
                 </Button>
               ) : (
@@ -574,8 +574,8 @@ export default function Home() {
                   <Button asChild variant="ghost" className="text-muted-foreground hover:text-foreground text-sm">
                     <Link href="/login">Iniciar sesión</Link>
                   </Button>
-                  <Button asChild className="bg-emerald-500 hover:bg-emerald-400 text-white text-sm font-semibold">
-                    <Link href="/register">Crear cuenta gratis</Link>
+                  <Button asChild className="bg-emerald-500 hover:bg-emerald-400 text-foreground text-sm">
+                    <Link href="/register">Crear cuenta</Link>
                   </Button>
                 </>
               )
@@ -626,7 +626,7 @@ export default function Home() {
               </div>
             </div>
             <div className="flex flex-col sm:flex-row gap-2.5">
-              <Button size="sm" asChild className="bg-emerald-500 hover:bg-emerald-400 text-white px-6 h-11 text-sm font-bold shadow-lg shadow-emerald-500/20">
+              <Button size="sm" asChild className="bg-emerald-500 hover:bg-emerald-400 text-foreground px-6 h-11 text-sm font-bold shadow-lg shadow-emerald-500/20">
                 <a href="/register">Crear cuenta gratis <ArrowRight className="w-3.5 h-3.5 ml-1.5" /></a>
               </Button>
               <Button size="sm" variant="outline" asChild className="px-6 h-11 text-sm">

@@ -229,9 +229,11 @@ export const appRouter = router({
         const db = await getDb();
         if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
         const { users } = await import('../drizzle/schema');
-        const { eq } = await import('drizzle-orm');
+        const { eq, sql } = await import('drizzle-orm');
+        // Normalizar email a minúsculas para búsqueda case-insensitive
+        const normalizedEmail = input.email.toLowerCase().trim();
         const found = await db.select().from(users)
-          .where(eq(users.email, input.email)).limit(1);
+          .where(sql`LOWER(${users.email}) = ${normalizedEmail}`).limit(1);
         if (!found.length || !found[0].passwordHash) {
           throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Correo o contraseña incorrectos' });
         }
@@ -266,9 +268,10 @@ export const appRouter = router({
         const db = await getDb();
         if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
         const { users } = await import('../drizzle/schema');
-        const { eq } = await import('drizzle-orm');
+        const { eq, sql } = await import('drizzle-orm');
+        const normalizedEmail = input.email.toLowerCase().trim();
         const found = await db.select({ id: users.id, name: users.name, email: users.email, passwordHash: users.passwordHash })
-          .from(users).where(eq(users.email, input.email)).limit(1);
+          .from(users).where(sql`LOWER(${users.email}) = ${normalizedEmail}`).limit(1);
         // Siempre responder éxito para no revelar si el email existe (anti-enumeración)
         if (!found.length || !found[0].passwordHash) {
           return { success: true, message: 'Si el correo existe, recibirás instrucciones en breve.' };

@@ -56,7 +56,7 @@ export default function RegisterEmail() {
             </p>
             <Button
               onClick={() => navigate("/login")}
-              className="bg-cyan-400 hover:bg-cyan-500 text-gray-900 font-bold w-full"
+              className="bg-cyan-400 hover:bg-cyan-500 text-foreground font-semibold w-full"
             >
               Ir a iniciar sesión
             </Button>
@@ -168,7 +168,7 @@ export default function RegisterEmail() {
               <Button
                 type="submit"
                 disabled={registerMutation.isPending}
-                className="w-full bg-cyan-400 hover:bg-cyan-500 text-gray-900 font-bold py-3 mt-2 text-base"
+                className="w-full bg-cyan-400 hover:bg-cyan-500 text-foreground font-semibold py-2.5 mt-2"
               >
                 {registerMutation.isPending ? "Creando cuenta..." : "Crear cuenta gratis"}
               </Button>
@@ -184,8 +184,8 @@ export default function RegisterEmail() {
             </div>
 
             <div className="mt-4 text-center">
-              <Link href="/" className="inline-flex items-center gap-2 text-sm font-semibold text-white bg-gray-700 hover:bg-gray-600 px-6 py-3 rounded-lg transition-colors border border-gray-500 w-full justify-center">
-                <ArrowLeft className="w-4 h-4" />
+              <Link href="/" className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-muted-foreground transition-colors">
+                <ArrowLeft className="w-3 h-3" />
                 Volver al inicio
               </Link>
             </div>
