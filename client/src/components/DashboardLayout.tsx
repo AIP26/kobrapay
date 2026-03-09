@@ -725,8 +725,13 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   }
 
   const isAdmin = user?.role === "admin";
-  // isSuperAdmin viene del campo que ahora retorna auth.me
-  const isSuperAdmin = (user as Record<string, unknown>)?.isSuperAdmin === true;
+  // isSuperAdmin: campo de auth.me, o si openId coincide con el owner, o role='superadmin'
+  const ownerOpenId = import.meta.env.VITE_OWNER_OPEN_ID as string | undefined;
+  const userOpenId = (user as Record<string, unknown>)?.openId as string | undefined;
+  const isSuperAdmin =
+    (user as Record<string, unknown>)?.isSuperAdmin === true ||
+    (user as Record<string, unknown>)?.role === 'superadmin' ||
+    (!!ownerOpenId && !!userOpenId && userOpenId === ownerOpenId);
 
   // Permisos del usuario: superadmin siempre tiene todo, otros leen de su perfil
   const rawPerms = (user as Record<string, unknown>)?.permissions as string | null | undefined;
