@@ -1428,3 +1428,38 @@ export const associateProfiles = mysqlTable("associate_profiles", {
 });
 export type AssociateProfile = typeof associateProfiles.$inferSelect;
 export type InsertAssociateProfile = typeof associateProfiles.$inferInsert;
+
+// ─── Webhook Endpoints ────────────────────────────────────────────────────────
+/**
+ * URLs registradas por los clientes para recibir notificaciones de eventos de pago
+ */
+export const webhookEndpoints = mysqlTable("webhook_endpoints", {
+  id: int("id").primaryKey().autoincrement(),
+  userId: int("userId").notNull().references(() => users.id),
+  url: varchar("url", { length: 512 }).notNull(),
+  description: varchar("description", { length: 255 }),
+  events: text("events").notNull().default('["payment.success","payment.failed"]'),
+  secret: varchar("secret", { length: 64 }).notNull(),
+  isActive: boolean("isActive").default(true).notNull(),
+  lastTriggeredAt: timestamp("lastTriggeredAt"),
+  lastStatusCode: int("lastStatusCode"),
+  failureCount: int("failureCount").default(0).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type WebhookEndpoint = typeof webhookEndpoints.$inferSelect;
+export type InsertWebhookEndpoint = typeof webhookEndpoints.$inferInsert;
+
+// ─── Webhook Delivery Logs ────────────────────────────────────────────────────
+export const webhookDeliveryLogs = mysqlTable("webhook_delivery_logs", {
+  id: int("id").primaryKey().autoincrement(),
+  webhookEndpointId: int("webhookEndpointId").notNull().references(() => webhookEndpoints.id),
+  event: varchar("event", { length: 64 }).notNull(),
+  payload: text("payload").notNull(),
+  statusCode: int("statusCode"),
+  responseBody: text("responseBody"),
+  success: boolean("success").default(false).notNull(),
+  attemptedAt: timestamp("attemptedAt").defaultNow().notNull(),
+});
+export type WebhookDeliveryLog = typeof webhookDeliveryLogs.$inferSelect;
+export type InsertWebhookDeliveryLog = typeof webhookDeliveryLogs.$inferInsert;

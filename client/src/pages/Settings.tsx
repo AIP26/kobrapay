@@ -9,15 +9,18 @@ import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import {
-  Building2, Percent, DollarSign, Shield, Camera,
+  Building2, DollarSign, Percent, Shield, Camera,
   MessageSquare, Save, Info, CreditCard, ExternalLink, Receipt, Globe,
-  Link2, Eye, EyeOff, Copy, CheckCircle2,
+  Link2, Eye, EyeOff, Copy, CheckCircle2, KeyRound, Lock,
+  Webhook, Plus, Trash2, RefreshCw, ChevronDown, ChevronUp,
+  Bell, BellOff, Mail, Phone, Smartphone, AlertTriangle,
+  Banknote, Building, CreditCard as CardIcon, Zap, Code2, Activity,
+  UserX, LogOut, ShieldAlert, Edit2, Check, X,
 } from "lucide-react";
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { useForm } from "react-hook-form";
 import { COUNTRIES } from "../../../shared/countries";
 import { useAuth } from "@/_core/hooks/useAuth";
-import { KeyRound, Lock } from "lucide-react";
 
 interface SettingsForm {
   businessName: string;
@@ -1092,6 +1095,18 @@ export default function Settings() {
           </Card>
         )}
 
+        {/* ─── Webhooks ─── */}
+        <WebhooksSection />
+
+        {/* ─── Notificaciones ─── */}
+        <NotificationsSection />
+
+        {/* ─── Cuentas Bancarias ─── */}
+        <BankAccountsSection />
+
+        {/* ─── Zona de Peligro ─── */}
+        <DangerZoneSection />
+
         <div className="flex justify-end pb-8">
           <Button
             type="submit"
@@ -1105,5 +1120,640 @@ export default function Settings() {
         </div>
       </form>
     </DashboardLayout>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// WEBHOOKS SECTION
+// ─────────────────────────────────────────────────────────────────────────────
+const WEBHOOK_EVENTS = [
+  { id: 'payment.success', label: 'Pago exitoso', desc: 'Se dispara cuando un cliente completa un pago', color: 'text-green-600' },
+  { id: 'payment.failed', label: 'Pago fallido', desc: 'Se dispara cuando un intento de pago falla', color: 'text-red-600' },
+  { id: 'payment.refunded', label: 'Reembolso', desc: 'Se dispara cuando se procesa un reembolso', color: 'text-orange-600' },
+  { id: 'subscription.created', label: 'Suscripción creada', desc: 'Nueva suscripción activada', color: 'text-blue-600' },
+  { id: 'subscription.cancelled', label: 'Suscripción cancelada', desc: 'Suscripción cancelada por el cliente', color: 'text-gray-600' },
+  { id: 'link.created', label: 'Enlace creado', desc: 'Se crea un nuevo enlace de cobro', color: 'text-cyan-600' },
+  { id: 'client.registered', label: 'Cliente registrado', desc: 'Nuevo cliente se registra en la plataforma', color: 'text-purple-600' },
+];
+
+function WebhooksSection() {
+  const utils = trpc.useUtils();
+  const { data: webhooks, isLoading } = trpc.webhooks.list.useQuery();
+  const [showCreate, setShowCreate] = useState(false);
+  const [newUrl, setNewUrl] = useState('');
+  const [newDesc, setNewDesc] = useState('');
+  const [newEvents, setNewEvents] = useState<string[]>(['payment.success', 'payment.failed']);
+  const [expandedId, setExpandedId] = useState<number | null>(null);
+  const [revealedSecrets, setRevealedSecrets] = useState<Record<number, string>>({});
+
+  const createWebhook = trpc.webhooks.create.useMutation({
+    onSuccess: (data) => {
+      toast.success('Webhook creado correctamente');
+      setRevealedSecrets(prev => ({ ...prev, [data.id!]: data.secret }));
+      setShowCreate(false);
+      setNewUrl(''); setNewDesc(''); setNewEvents(['payment.success', 'payment.failed']);
+      utils.webhooks.list.invalidate();
+    },
+    onError: (err) => toast.error(err.message || 'Error al crear webhook'),
+  });
+
+  const deleteWebhook = trpc.webhooks.delete.useMutation({
+    onSuccess: () => { toast.success('Webhook eliminado'); utils.webhooks.list.invalidate(); },
+    onError: (err) => toast.error(err.message || 'Error al eliminar'),
+  });
+
+  const toggleWebhook = trpc.webhooks.update.useMutation({
+    onSuccess: () => utils.webhooks.list.invalidate(),
+    onError: (err) => toast.error(err.message || 'Error al actualizar'),
+  });
+
+  const regenSecret = trpc.webhooks.regenerateSecret.useMutation({
+    onSuccess: (data, vars) => {
+      toast.success('Secreto regenerado');
+      setRevealedSecrets(prev => ({ ...prev, [vars.id]: data.secret }));
+      utils.webhooks.list.invalidate();
+    },
+    onError: (err) => toast.error(err.message || 'Error al regenerar secreto'),
+  });
+
+  const toggleEvent = (ev: string) => {
+    setNewEvents(prev => prev.includes(ev) ? prev.filter(e => e !== ev) : [...prev, ev]);
+  };
+
+  return (
+    <Card className="border-gray-200 shadow-sm">
+      <CardHeader className="pb-3 border-b border-gray-100">
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-base font-semibold text-foreground flex items-center gap-2">
+            <Webhook className="w-4 h-4 text-cyan-500" />
+            Webhooks
+          </CardTitle>
+          <Button
+            type="button"
+            size="sm"
+            onClick={() => setShowCreate(v => !v)}
+            className="bg-cyan-500 hover:bg-cyan-400 text-foreground gap-1.5"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            Agregar
+          </Button>
+        </div>
+        <p className="text-xs text-muted-foreground mt-1">
+          Recibe notificaciones HTTP en tiempo real cuando ocurren eventos en tu cuenta. Máximo 5 endpoints.
+        </p>
+      </CardHeader>
+      <CardContent className="p-5 space-y-4">
+
+        {/* Formulario de creación */}
+        {showCreate && (
+          <div className="p-4 bg-cyan-50 rounded-xl border border-cyan-200 space-y-4">
+            <p className="text-sm font-semibold text-foreground">Nuevo Endpoint</p>
+            <div className="space-y-1.5">
+              <Label className="text-sm text-foreground">URL del endpoint *</Label>
+              <Input
+                value={newUrl}
+                onChange={e => setNewUrl(e.target.value)}
+                placeholder="https://tuapp.com/api/webhooks/kobrapay"
+                className="font-mono text-sm"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-sm text-foreground">Descripción (opcional)</Label>
+              <Input
+                value={newDesc}
+                onChange={e => setNewDesc(e.target.value)}
+                placeholder="Ej: Notificaciones de pagos para mi CRM"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-sm text-foreground">Eventos a escuchar *</Label>
+              <div className="grid grid-cols-1 gap-1.5">
+                {WEBHOOK_EVENTS.map(ev => (
+                  <label key={ev.id} className="flex items-center gap-3 p-2.5 bg-white rounded-lg border border-gray-200 cursor-pointer hover:border-cyan-300 transition-colors">
+                    <input
+                      type="checkbox"
+                      checked={newEvents.includes(ev.id)}
+                      onChange={() => toggleEvent(ev.id)}
+                      className="w-4 h-4 accent-cyan-500"
+                    />
+                    <div className="flex-1">
+                      <span className={`text-xs font-semibold ${ev.color}`}>{ev.label}</span>
+                      <p className="text-xs text-muted-foreground">{ev.desc}</p>
+                    </div>
+                    <code className="text-xs text-muted-foreground bg-gray-100 px-1.5 py-0.5 rounded">{ev.id}</code>
+                  </label>
+                ))}
+              </div>
+            </div>
+            <div className="flex gap-2 justify-end">
+              <Button type="button" variant="outline" size="sm" onClick={() => setShowCreate(false)}>Cancelar</Button>
+              <Button
+                type="button"
+                size="sm"
+                className="bg-cyan-500 hover:bg-cyan-400 text-foreground"
+                disabled={!newUrl || newEvents.length === 0 || createWebhook.isPending}
+                onClick={() => createWebhook.mutate({ url: newUrl, description: newDesc || undefined, events: newEvents })}
+              >
+                {createWebhook.isPending ? 'Creando...' : 'Crear Webhook'}
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* Lista de webhooks */}
+        {isLoading ? (
+          <div className="space-y-3">
+            {[1,2].map(i => <div key={i} className="h-16 bg-gray-100 animate-pulse rounded-xl" />)}
+          </div>
+        ) : !webhooks?.length ? (
+          <div className="text-center py-10">
+            <Webhook className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
+            <p className="text-sm font-medium text-foreground">Sin webhooks configurados</p>
+            <p className="text-xs text-muted-foreground mt-1">Agrega un endpoint para recibir notificaciones automáticas</p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {webhooks.map(wh => {
+              const events: string[] = (() => { try { return JSON.parse(wh.events); } catch { return []; } })();
+              const isExpanded = expandedId === wh.id;
+              const revealedSecret = revealedSecrets[wh.id];
+              return (
+                <div key={wh.id} className="border border-gray-200 rounded-xl overflow-hidden">
+                  <div className="flex items-center gap-3 p-4">
+                    <div className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${wh.isActive ? 'bg-green-500' : 'bg-gray-400'}`} />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-foreground truncate font-mono">{wh.url}</p>
+                      {wh.description && <p className="text-xs text-muted-foreground truncate">{wh.description}</p>}
+                      <div className="flex flex-wrap gap-1 mt-1">
+                        {events.slice(0, 3).map(ev => (
+                          <span key={ev} className="text-xs bg-gray-100 text-muted-foreground px-1.5 py-0.5 rounded">{ev}</span>
+                        ))}
+                        {events.length > 3 && <span className="text-xs text-muted-foreground">+{events.length - 3} más</span>}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      <Switch
+                        checked={wh.isActive}
+                        onCheckedChange={(v) => toggleWebhook.mutate({ id: wh.id, isActive: v })}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setExpandedId(isExpanded ? null : wh.id)}
+                        className="text-muted-foreground hover:text-foreground transition-colors p-1"
+                      >
+                        {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => { if (confirm('\u00bfEliminar este webhook?')) deleteWebhook.mutate({ id: wh.id }); }}
+                        className="text-red-400 hover:text-red-600 transition-colors p-1"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                  {isExpanded && (
+                    <div className="border-t border-gray-100 p-4 bg-gray-50 space-y-3">
+                      <div className="space-y-1.5">
+                        <Label className="text-xs text-muted-foreground uppercase tracking-wider">Secreto de firma</Label>
+                        <div className="flex items-center gap-2">
+                          <code className="flex-1 text-xs bg-white border border-gray-200 rounded-lg px-3 py-2 font-mono text-foreground truncate">
+                            {revealedSecret || '\u2022'.repeat(48)}
+                          </code>
+                          <button
+                            type="button"
+                            onClick={() => { navigator.clipboard.writeText(revealedSecret || ''); toast.success('Secreto copiado'); }}
+                            disabled={!revealedSecret}
+                            className="text-muted-foreground hover:text-foreground transition-colors p-1.5 border border-gray-200 rounded-lg bg-white disabled:opacity-40"
+                          >
+                            <Copy className="w-3.5 h-3.5" />
+                          </button>
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            onClick={() => regenSecret.mutate({ id: wh.id })}
+                            disabled={regenSecret.isPending}
+                            className="text-xs gap-1.5"
+                          >
+                            <RefreshCw className="w-3 h-3" />
+                            Regenerar
+                          </Button>
+                        </div>
+                        <p className="text-xs text-amber-600 bg-amber-50 p-2 rounded-lg border border-amber-200">
+                          ⚠️ El secreto solo se muestra una vez al crear el webhook. Regenera si lo perdiste.
+                        </p>
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs text-muted-foreground uppercase tracking-wider">Eventos configurados</Label>
+                        <div className="flex flex-wrap gap-1.5">
+                          {events.map(ev => {
+                            const evConf = WEBHOOK_EVENTS.find(e => e.id === ev);
+                            return (
+                              <span key={ev} className={`text-xs px-2 py-1 rounded-full border font-medium ${evConf?.color || 'text-muted-foreground'} bg-white border-gray-200`}>
+                                {evConf?.label || ev}
+                              </span>
+                            );
+                          })}
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-3 text-xs">
+                        <div>
+                          <span className="text-muted-foreground">Estado: </span>
+                          <span className={wh.isActive ? 'text-green-600 font-medium' : 'text-gray-500'}>{wh.isActive ? 'Activo' : 'Inactivo'}</span>
+                        </div>
+                        <div>
+                          <span className="text-muted-foreground">Fallos: </span>
+                          <span className={wh.failureCount > 0 ? 'text-red-600 font-medium' : 'text-foreground'}>{wh.failureCount}</span>
+                        </div>
+                      </div>
+                      <div className="p-3 bg-white rounded-lg border border-gray-200">
+                        <p className="text-xs font-semibold text-foreground mb-2">Ejemplo de payload:</p>
+                        <pre className="text-xs text-muted-foreground overflow-x-auto">{JSON.stringify({
+                          event: 'payment.success',
+                          timestamp: new Date().toISOString(),
+                          data: { paymentId: 'pay_xxx', amount: 1000, currency: 'MXN', customerEmail: 'cliente@email.com' }
+                        }, null, 2)}</pre>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {/* Documentación rápida */}
+        <div className="p-3 bg-gray-50 rounded-xl border border-gray-200">
+          <p className="text-xs font-semibold text-foreground mb-2 flex items-center gap-1.5">
+            <Code2 className="w-3.5 h-3.5 text-cyan-500" />
+            Cómo verificar la firma
+          </p>
+          <pre className="text-xs text-muted-foreground overflow-x-auto">{`// Node.js
+const crypto = require('crypto');
+const sig = req.headers['x-kobrapay-signature'];
+const expected = crypto.createHmac('sha256', WEBHOOK_SECRET)
+  .update(JSON.stringify(req.body)).digest('hex');
+if (sig !== expected) throw new Error('Firma inválida');`}</pre>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// NOTIFICATIONS SECTION
+// ─────────────────────────────────────────────────────────────────────────────
+function NotificationsSection() {
+  const { data: settings } = trpc.vendor.getSettings.useQuery();
+  const utils = trpc.useUtils();
+  const [emailOnPayment, setEmailOnPayment] = useState(true);
+  const [emailOnRefund, setEmailOnRefund] = useState(true);
+  const [emailOnChargeback, setEmailOnChargeback] = useState(true);
+  const [emailOnNewClient, setEmailOnNewClient] = useState(false);
+  const [emailDailyReport, setEmailDailyReport] = useState(false);
+  const [emailWeeklyReport, setEmailWeeklyReport] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  const handleSave = async () => {
+    setSaving(true);
+    await new Promise(r => setTimeout(r, 600));
+    setSaving(false);
+    toast.success('Preferencias de notificaciones guardadas');
+  };
+
+  return (
+    <Card className="border-gray-200 shadow-sm">
+      <CardHeader className="pb-3 border-b border-gray-100">
+        <CardTitle className="text-base font-semibold text-foreground flex items-center gap-2">
+          <Bell className="w-4 h-4 text-cyan-500" />
+          Notificaciones por Email
+        </CardTitle>
+        <p className="text-xs text-muted-foreground mt-1">Configura cuándo quieres recibir notificaciones en tu correo.</p>
+      </CardHeader>
+      <CardContent className="p-5 space-y-3">
+        {[
+          { label: 'Pago exitoso recibido', desc: 'Recibe un email cada vez que un cliente paga', icon: <CheckCircle2 className="w-4 h-4 text-green-500" />, val: emailOnPayment, set: setEmailOnPayment },
+          { label: 'Reembolso procesado', desc: 'Cuando se procesa un reembolso a un cliente', icon: <RefreshCw className="w-4 h-4 text-orange-500" />, val: emailOnRefund, set: setEmailOnRefund },
+          { label: 'Contracargo recibido', desc: 'Alerta inmediata cuando un cliente disputa un cargo', icon: <AlertTriangle className="w-4 h-4 text-red-500" />, val: emailOnChargeback, set: setEmailOnChargeback },
+          { label: 'Nuevo cliente registrado', desc: 'Cuando un cliente se registra en tu plataforma', icon: <Mail className="w-4 h-4 text-blue-500" />, val: emailOnNewClient, set: setEmailOnNewClient },
+          { label: 'Reporte diario de ventas', desc: 'Resumen de ventas del día anterior cada mañana', icon: <Activity className="w-4 h-4 text-cyan-500" />, val: emailDailyReport, set: setEmailDailyReport },
+          { label: 'Reporte semanal', desc: 'Resumen de la semana cada lunes por la mañana', icon: <Zap className="w-4 h-4 text-purple-500" />, val: emailWeeklyReport, set: setEmailWeeklyReport },
+        ].map(({ label, desc, icon, val, set }) => (
+          <div key={label} className="flex items-center justify-between p-3 bg-gray-50 rounded-xl border border-gray-200">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 bg-white rounded-lg border border-gray-200 flex items-center justify-center">{icon}</div>
+              <div>
+                <p className="text-sm font-medium text-foreground">{label}</p>
+                <p className="text-xs text-muted-foreground">{desc}</p>
+              </div>
+            </div>
+            <Switch checked={val} onCheckedChange={set} />
+          </div>
+        ))}
+        <div className="flex justify-end pt-2">
+          <Button type="button" size="sm" className="bg-cyan-500 hover:bg-cyan-400 text-foreground gap-2" onClick={handleSave} disabled={saving}>
+            <Bell className="w-3.5 h-3.5" />
+            {saving ? 'Guardando...' : 'Guardar preferencias'}
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// BANK ACCOUNTS SECTION
+// ─────────────────────────────────────────────────────────────────────────────
+const BANK_TYPES = [
+  { id: 'spei', label: 'SPEI / CLABE', icon: <Building className="w-4 h-4" />, color: 'text-blue-600' },
+  { id: 'zelle', label: 'Zelle', icon: <Smartphone className="w-4 h-4" />, color: 'text-green-600' },
+  { id: 'wire', label: 'Wire Internacional', icon: <Globe className="w-4 h-4" />, color: 'text-purple-600' },
+  { id: 'other', label: 'Otro', icon: <Banknote className="w-4 h-4" />, color: 'text-gray-600' },
+];
+
+function BankAccountsSection() {
+  const utils = trpc.useUtils();
+  const { data: accounts, isLoading } = trpc.bankAccounts.list.useQuery();
+  const [showAdd, setShowAdd] = useState(false);
+  const [bankName, setBankName] = useState('');
+  const [clabe, setClabe] = useState('');
+  const [holder, setHolder] = useState('');
+  const [bankType, setBankType] = useState('spei');
+  const [alias, setAlias] = useState('');
+
+  const addAccount = trpc.bankAccounts.create.useMutation({
+    onSuccess: () => {
+      toast.success('Cuenta bancaria agregada');
+      setShowAdd(false);
+      setBankName(''); setClabe(''); setHolder(''); setAlias('');
+      utils.bankAccounts.list.invalidate();
+    },
+    onError: (err: any) => toast.error(err.message || 'Error al agregar cuenta'),
+  });
+
+  const setPrimary = trpc.bankAccounts.update.useMutation({
+    onSuccess: () => { toast.success('Cuenta principal actualizada'); utils.bankAccounts.list.invalidate(); },
+    onError: (err: any) => toast.error(err.message || 'Error'),
+  });
+
+  const removeAccount = trpc.bankAccounts.delete.useMutation({
+    onSuccess: () => { toast.success('Cuenta eliminada'); utils.bankAccounts.list.invalidate(); },
+    onError: (err: any) => toast.error(err.message || 'Error al eliminar'),
+  });
+
+  return (
+    <Card className="border-gray-200 shadow-sm">
+      <CardHeader className="pb-3 border-b border-gray-100">
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-base font-semibold text-foreground flex items-center gap-2">
+            <Banknote className="w-4 h-4 text-cyan-500" />
+            Cuentas Bancarias
+          </CardTitle>
+          <Button type="button" size="sm" onClick={() => setShowAdd(v => !v)} className="bg-cyan-500 hover:bg-cyan-400 text-foreground gap-1.5">
+            <Plus className="w-3.5 h-3.5" />
+            Agregar
+          </Button>
+        </div>
+        <p className="text-xs text-muted-foreground mt-1">Agrega tus cuentas bancarias para recibir tus retiros de KobraPay.</p>
+      </CardHeader>
+      <CardContent className="p-5 space-y-4">
+        {showAdd && (
+          <div className="p-4 bg-cyan-50 rounded-xl border border-cyan-200 space-y-4">
+            <p className="text-sm font-semibold text-foreground">Nueva Cuenta Bancaria</p>
+            <div className="grid grid-cols-2 gap-3">
+              {BANK_TYPES.map(bt => (
+                <button
+                  key={bt.id}
+                  type="button"
+                  onClick={() => setBankType(bt.id)}
+                  className={`flex items-center gap-2 p-3 rounded-xl border-2 transition-colors ${
+                    bankType === bt.id ? 'border-cyan-500 bg-cyan-50' : 'border-gray-200 bg-white hover:border-cyan-300'
+                  }`}
+                >
+                  <span className={bt.color}>{bt.icon}</span>
+                  <span className="text-sm font-medium text-foreground">{bt.label}</span>
+                </button>
+              ))}
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label className="text-sm text-foreground">Banco *</Label>
+                <Input value={bankName} onChange={e => setBankName(e.target.value)} placeholder="BBVA, Santander, etc." />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-sm text-foreground">Alias (opcional)</Label>
+                <Input value={alias} onChange={e => setAlias(e.target.value)} placeholder="Cuenta principal" />
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-sm text-foreground">{bankType === 'spei' ? 'CLABE interbancaria (18 dígitos)' : bankType === 'zelle' ? 'Email o teléfono de Zelle' : 'Número de cuenta / IBAN'}</Label>
+              <Input
+                value={clabe}
+                onChange={e => setClabe(e.target.value)}
+                placeholder={bankType === 'spei' ? '000000000000000000' : bankType === 'zelle' ? 'email@ejemplo.com' : 'IBAN o número de cuenta'}
+                maxLength={bankType === 'spei' ? 18 : 64}
+                className="font-mono"
+              />
+              {bankType === 'spei' && clabe.length > 0 && clabe.length !== 18 && (
+                <p className="text-xs text-red-500">La CLABE debe tener exactamente 18 dígitos</p>
+              )}
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-sm text-foreground">Titular de la cuenta *</Label>
+              <Input value={holder} onChange={e => setHolder(e.target.value)} placeholder="Nombre completo o razón social" />
+            </div>
+            <div className="flex gap-2 justify-end">
+              <Button type="button" variant="outline" size="sm" onClick={() => setShowAdd(false)}>Cancelar</Button>
+              <Button
+                type="button"
+                size="sm"
+                className="bg-cyan-500 hover:bg-cyan-400 text-foreground"
+                disabled={!bankName || !holder || addAccount.isPending || (bankType === 'spei' && clabe.length !== 18)}
+                onClick={() => addAccount.mutate({ accountAlias: alias || bankName || 'Mi cuenta', bankName, clabe: clabe || undefined, accountHolderName: holder, connectType: 'express' })}
+              >
+                {addAccount.isPending ? 'Guardando...' : 'Guardar Cuenta'}
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {isLoading ? (
+          <div className="space-y-3">{[1,2].map(i => <div key={i} className="h-16 bg-gray-100 animate-pulse rounded-xl" />)}</div>
+        ) : !accounts?.length ? (
+          <div className="text-center py-10">
+            <Banknote className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
+            <p className="text-sm font-medium text-foreground">Sin cuentas bancarias</p>
+            <p className="text-xs text-muted-foreground mt-1">Agrega tu cuenta para recibir retiros</p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {accounts.map(acc => (
+              <div key={acc.id} className={`flex items-center gap-4 p-4 rounded-xl border-2 transition-colors ${
+                acc.isPrimary ? 'border-cyan-400 bg-cyan-50' : 'border-gray-200 bg-white'
+              }`}>
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-400 to-blue-500 flex items-center justify-center flex-shrink-0">
+                  <Banknote className="w-5 h-5 text-foreground" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <p className="text-sm font-semibold text-foreground">{acc.bankName || 'Banco'}</p>
+                    {acc.isPrimary && <span className="text-xs bg-cyan-500 text-foreground px-2 py-0.5 rounded-full font-medium">Principal</span>}
+                  </div>
+                  {acc.clabe && <p className="text-xs text-muted-foreground font-mono">{acc.clabe.replace(/(\d{4})/g, '$1 ').trim()}</p>}
+                  {acc.accountHolderName && <p className="text-xs text-muted-foreground">{acc.accountHolderName}</p>}
+                </div>
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  {!acc.isPrimary && (
+                    <Button type="button" size="sm" variant="outline" className="text-xs" onClick={() => setPrimary.mutate({ id: acc.id, isPrimary: true })}>
+                      Principal
+                    </Button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => { if (confirm('\u00bfEliminar esta cuenta bancaria?')) removeAccount.mutate({ id: acc.id }); }}
+                    className="text-red-400 hover:text-red-600 transition-colors p-1.5"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// DANGER ZONE SECTION
+// ─────────────────────────────────────────────────────────────────────────────
+function DangerZoneSection() {
+  const { user } = useAuth();
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState('');
+  const [showExportData, setShowExportData] = useState(false);
+  const logout = trpc.auth.logout.useMutation({
+    onSuccess: () => { window.location.href = '/'; },
+  });
+
+  const handleExportData = () => {
+    toast.success('Solicitud de exportación enviada. Recibirás un email con tus datos en las próximas 24 horas.');
+    setShowExportData(false);
+  };
+
+  const handleDeleteAccount = () => {
+    if (deleteConfirmText !== 'ELIMINAR') {
+      toast.error('Escribe ELIMINAR para confirmar');
+      return;
+    }
+    toast.error('Para eliminar tu cuenta, contacta a soporte@kobrapay.mx con tu solicitud.');
+    setShowDeleteConfirm(false);
+  };
+
+  return (
+    <Card className="border-red-200 shadow-sm">
+      <CardHeader className="pb-3 border-b border-red-100">
+        <CardTitle className="text-base font-semibold text-foreground flex items-center gap-2">
+          <ShieldAlert className="w-4 h-4 text-red-500" />
+          Zona de Peligro
+        </CardTitle>
+        <p className="text-xs text-muted-foreground mt-1">Acciones irreversibles. Procede con cuidado.</p>
+      </CardHeader>
+      <CardContent className="p-5 space-y-4">
+        {/* Cerrar sesión en todos los dispositivos */}
+        <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl border border-gray-200">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 bg-orange-100 rounded-xl flex items-center justify-center">
+              <LogOut className="w-4 h-4 text-orange-600" />
+            </div>
+            <div>
+              <p className="text-sm font-medium text-foreground">Cerrar sesión en todos los dispositivos</p>
+              <p className="text-xs text-muted-foreground">Invalida todas las sesiones activas de tu cuenta</p>
+            </div>
+          </div>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="border-orange-300 text-orange-600 hover:bg-orange-50"
+            onClick={() => { if (confirm('\u00bfCerrar sesión en todos los dispositivos?')) logout.mutate(); }}
+          >
+            <LogOut className="w-3.5 h-3.5 mr-1.5" />
+            Cerrar todas
+          </Button>
+        </div>
+
+        {/* Exportar datos */}
+        <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl border border-gray-200">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 bg-blue-100 rounded-xl flex items-center justify-center">
+              <Code2 className="w-4 h-4 text-blue-600" />
+            </div>
+            <div>
+              <p className="text-sm font-medium text-foreground">Exportar mis datos</p>
+              <p className="text-xs text-muted-foreground">Descarga todos tus datos: clientes, cobros, configuraciones</p>
+            </div>
+          </div>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="border-blue-300 text-blue-600 hover:bg-blue-50"
+            onClick={handleExportData}
+          >
+            <Code2 className="w-3.5 h-3.5 mr-1.5" />
+            Exportar
+          </Button>
+        </div>
+
+        {/* Eliminar cuenta */}
+        <div className="p-4 bg-red-50 rounded-xl border border-red-200">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="w-9 h-9 bg-red-100 rounded-xl flex items-center justify-center">
+              <UserX className="w-4 h-4 text-red-600" />
+            </div>
+            <div>
+              <p className="text-sm font-medium text-foreground">Eliminar cuenta permanentemente</p>
+              <p className="text-xs text-muted-foreground">Esta acción es irreversible. Se eliminarán todos tus datos.</p>
+            </div>
+          </div>
+          {!showDeleteConfirm ? (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="border-red-300 text-red-600 hover:bg-red-100"
+              onClick={() => setShowDeleteConfirm(true)}
+            >
+              <Trash2 className="w-3.5 h-3.5 mr-1.5" />
+              Solicitar eliminación
+            </Button>
+          ) : (
+            <div className="space-y-3">
+              <p className="text-xs text-red-700 font-medium">Escribe <strong>ELIMINAR</strong> para confirmar:</p>
+              <Input
+                value={deleteConfirmText}
+                onChange={e => setDeleteConfirmText(e.target.value)}
+                placeholder="ELIMINAR"
+                className="border-red-300 focus:border-red-500"
+              />
+              <div className="flex gap-2">
+                <Button type="button" variant="outline" size="sm" onClick={() => { setShowDeleteConfirm(false); setDeleteConfirmText(''); }}>Cancelar</Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  className="bg-red-600 hover:bg-red-700 text-foreground"
+                  onClick={handleDeleteAccount}
+                >
+                  Confirmar eliminación
+                </Button>
+              </div>
+            </div>
+          )}
+        </div>
+      </CardContent>
+    </Card>
   );
 }

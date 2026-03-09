@@ -5,9 +5,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Eye, EyeOff, Lock, Mail, ArrowLeft, AlertCircle } from "lucide-react";
+import { Eye, EyeOff, Lock, Mail, ArrowLeft } from "lucide-react";
 import { Link } from "wouter";
-import { getLoginUrl } from "@/const";
 
 const KOBRAPAY_LOGO = "https://d2xsxph8kpxj0f.cloudfront.net/310519663381362445/Tm7GPbTEGgvmgj5v2qy4Z4/kobrapay_logo_v2_52d63331.png";
 
@@ -15,7 +14,6 @@ export default function LoginEmail() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [showOAuthHint, setShowOAuthHint] = useState(false);
 
   const loginMutation = trpc.auth.loginEmail.useMutation({
     onSuccess: () => {
@@ -26,7 +24,6 @@ export default function LoginEmail() {
       const msg = err.message || "";
       if (msg.includes("contraseña incorrectos")) {
         // Puede ser cuenta OAuth — mostrar sugerencia
-        setShowOAuthHint(true);
         toast.error("Correo o contraseña incorrectos", { duration: 4000 });
       } else if (msg.includes("inactiva")) {
         toast.error("Tu cuenta está inactiva. Contacta a soporte@kobrapay.mx", { duration: 6000 });
@@ -44,7 +41,6 @@ export default function LoginEmail() {
       toast.error("Por favor completa todos los campos");
       return;
     }
-    setShowOAuthHint(false);
     loginMutation.mutate({ email, password });
   };
 
@@ -71,20 +67,6 @@ export default function LoginEmail() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {/* Botón Manus OAuth */}
-            <a
-              href={getLoginUrl("/dashboard")}
-              className="w-full flex items-center justify-center gap-2 border border-border rounded-lg py-2.5 px-4 text-sm font-medium text-foreground hover:bg-accent transition-colors mb-4"
-            >
-              <img src="https://manus.im/favicon.ico" alt="Manus" className="w-4 h-4 object-contain" />
-              Continuar con Manus
-            </a>
-
-            <div className="flex items-center gap-2 my-4">
-              <div className="flex-1 h-px bg-border" />
-              <span className="text-xs text-muted-foreground">o con email y contraseña</span>
-              <div className="flex-1 h-px bg-border" />
-            </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-1.5">
@@ -96,7 +78,7 @@ export default function LoginEmail() {
                     type="email"
                     placeholder="tu@correo.com"
                     value={email}
-                    onChange={(e) => { setEmail(e.target.value); setShowOAuthHint(false); }}
+                    onChange={(e) => setEmail(e.target.value)}
                     className="pl-9"
                     autoComplete="email"
                     required
@@ -134,14 +116,6 @@ export default function LoginEmail() {
               </div>
 
               {/* Sugerencia OAuth si el login falla */}
-              {showOAuthHint && (
-                <div className="flex items-start gap-2 bg-amber-50 border border-amber-200 rounded-lg p-3 text-xs text-amber-800">
-                  <AlertCircle className="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" />
-                  <span>
-                    Si te registraste con tu cuenta Manus, usa el botón <strong>"Continuar con Manus"</strong> de arriba en lugar de email y contraseña.
-                  </span>
-                </div>
-              )}
 
               <Button
                 type="submit"

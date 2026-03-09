@@ -31,6 +31,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
+import { useAuth } from "@/hooks/useAuth";
 import {
   RefreshCw,
   Plus,
@@ -49,6 +50,7 @@ import {
   Copy,
   Link2,
   Send,
+  Trash2,
 } from "lucide-react";
 
 // ─── Tipos ────────────────────────────────────────────────────────────────────
@@ -421,7 +423,10 @@ function SubscriptionCard({ sub, onAction }: { sub: Subscription; onAction: (act
 export default function Recurring() {
   const [showCreate, setShowCreate] = useState(false);
   const [confirmCancel, setConfirmCancel] = useState<number | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState<number | null>(null);
   const [searchParams] = useState(() => new URLSearchParams(window.location.search));
+  const { user } = useAuth();
+  const isSuperAdmin = (user as any)?.isSuperAdmin === true;
 
   const subsQuery = trpc.subscriptions.list.useQuery();
   const utils = trpc.useUtils();
@@ -436,6 +441,10 @@ export default function Recurring() {
   });
   const cancelMutation = trpc.subscriptions.cancel.useMutation({
     onSuccess: () => { toast.success("Suscripción cancelada al final del período"); utils.subscriptions.list.invalidate(); setConfirmCancel(null); },
+    onError: (e) => toast.error(e.message),
+  });
+  const deleteCanceledMutation = trpc.subscriptions.deleteCanceled.useMutation({
+    onSuccess: () => { toast.success("Suscripción eliminada permanentemente"); utils.subscriptions.list.invalidate(); setConfirmDelete(null); },
     onError: (e) => toast.error(e.message),
   });
 
@@ -591,11 +600,47 @@ export default function Recurring() {
             {/* Canceladas */}
             {canceledSubs.length > 0 && (
               <div>
-                <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-2 flex items-center gap-2">
-                  <AlertTriangle className="w-4 h-4 text-destructive" /> Canceladas ({canceledSubs.length})
-                </h2>
+                <div className="flex items-center justify-between mb-2">
+                  <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide flex items-center gap-2">
+                    <AlertTriangle className="w-4 h-4 text-destructive" /> Canceladas ({canceledSubs.length})
+                  </h2>
+                  {isSuperAdmin && (
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      className="text-xs h-7 gap-1"
+                      onClick={() => {
+                        if (canceledSubs.length === 1) {
+                          setConfirmDelete(canceledSubs[0].id);
+                        } else {
+                          // Mostrar selector o eliminar todas
+                          if (confirm(`¿Eliminar las ${canceledSubs.length} suscripciones canceladas? Esta acción no se puede deshacer.`)) {
+                            canceledSubs.forEach(s => deleteCanceledMutation.mutate({ id: s.id }));
+                          }
+                        }
+                      }}
+                    >
+                      <Trash2 className="w-3 h-3" />
+                      Limpiar canceladas
+                    </Button>
+                  )}
+                </div>
                 <div className="space-y-3 opacity-60">
-                  {canceledSubs.map(s => <SubscriptionCard key={s.id} sub={s} onAction={handleAction} />)}
+                  {canceledSubs.map(s => (
+                    <div key={s.id} className="relative">
+                      <SubscriptionCard sub={s} onAction={handleAction} />
+                      {isSuperAdmin && (
+                        <button
+                          type="button"
+                          className="absolute top-2 right-2 p-1.5 rounded-full bg-destructive/10 hover:bg-destructive/20 text-destructive transition-colors"
+                          title="Eliminar permanentemente"
+                          onClick={() => setConfirmDelete(s.id)}
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
+                  ))}
                 </div>
               </div>
             )}
@@ -605,6 +650,29 @@ export default function Recurring() {
 
       {/* Modal de nueva suscripción */}
       <NewSubscriptionModal open={showCreate} onClose={() => setShowCreate(false)} />
+
+      {/* Confirmación de eliminación permanente (superadmin) */}
+      <AlertDialog open={confirmDelete !== null} onOpenChange={() => setConfirmDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 text-destructive">
+              <Trash2 className="w-5 h-5" /> Eliminar suscripción permanentemente
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta acción eliminará el registro de la base de datos de forma permanente. No se puede deshacer.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => confirmDelete !== null && deleteCanceledMutation.mutate({ id: confirmDelete })}
+            >
+              Sí, eliminar permanentemente
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Confirmación de cancelación */}
       <AlertDialog open={confirmCancel !== null} onOpenChange={() => setConfirmCancel(null)}>

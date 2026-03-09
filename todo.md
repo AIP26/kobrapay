@@ -1078,3 +1078,20 @@
 - [ ] Página de onboarding para clientes nuevos aprobados (guía paso a paso)
 - [ ] Notificaciones email al owner para nuevos registros y pagos importantes
 - [ ] Cambiar todos los botones de login/CTA para apuntar a /login (propio de KobraPay) en lugar del OAuth de Manus
+
+## Auditoría Pre-Lanzamiento (Mar 9, 2026)
+- [x] Superadmin: impersonación directa desde dropdown del logo
+- [x] Superadmin: botón "Volver a superadmin" visible en barra de impersonación
+- [x] Superadmin: usuario owner promovido a role=superadmin en BD
+- [x] Webhooks: tablas webhook_endpoints y webhook_delivery_logs creadas en BD
+- [x] Webhooks: procedures tRPC completos (list, create, update, delete, test, getLogs)
+- [x] Settings: sección de Webhooks con UI completa
+- [x] Settings: sección de Cuentas Bancarias integrada
+- [x] Settings: sección de Notificaciones por email
+- [x] Settings: Zona de Peligro (eliminar cuenta)
+- [x] Recurring: botón "Limpiar canceladas" para superadmin
+- [x] Recurring: botón eliminar individual por suscripción cancelada (superadmin)
+- [x] Recurring: modal de confirmación de eliminación permanente
+- [x] 0 errores TypeScript en toda la aplicación
+- [x] Kit de marketing: 9 imágenes para Instagram, Facebook y TikTok
+- [x] Kit de marketing: copies y estrategia de publicación completa

@@ -289,12 +289,26 @@ function LogoWithProfileSwitcher({
   mobile?: boolean;
 }) {
   const [open, setOpen] = useState(false);
+  const [impersonatingId, setImpersonatingId] = useState<number | null>(null);
   const ref = useRef<HTMLDivElement>(null);
   const { data: usersData } = trpc.moduleAccess.listAllUsers.useQuery(undefined, {
     enabled: isSuperAdmin,
     staleTime: 60000,
   });
+  const utils = trpc.useUtils();
   const [, navigate] = useLocation();
+  const startSession = trpc.impersonate.startSession.useMutation({
+    onSuccess: (data) => {
+      setOpen(false);
+      onClose();
+      utils.auth.me.invalidate();
+      setTimeout(() => { window.location.href = '/dashboard'; }, 600);
+    },
+    onError: (err) => {
+      import('sonner').then(({ toast }) => toast.error(err.message || 'Error al iniciar impersonación'));
+      setImpersonatingId(null);
+    },
+  });
 
   // Cerrar al hacer click fuera
   useEffect(() => {
@@ -382,35 +396,42 @@ function LogoWithProfileSwitcher({
                   <button
                     key={profile.id}
                     onClick={() => {
-                      // Navegar al perfil del usuario en la sección de administración
-                      navigate(`/dashboard/clients`);
-                      setOpen(false);
-                      onClose();
+                      if (impersonatingId) return;
+                      setImpersonatingId(profile.id);
+                      startSession.mutate({ userId: profile.id });
                     }}
-                    className="w-full flex items-center gap-2.5 px-2 py-2 rounded-lg hover:bg-accent transition-colors text-left"
+                    disabled={impersonatingId !== null}
+                    className="w-full flex items-center gap-2.5 px-2 py-2 rounded-lg hover:bg-accent transition-colors text-left disabled:opacity-60"
                   >
-                      <div className="w-7 h-7 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0">
-                      <span className="text-xs font-bold text-primary">{profile.initials}</span>
+                    <div className="w-7 h-7 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0">
+                      {impersonatingId === profile.id ? (
+                        <div className="w-3.5 h-3.5 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+                      ) : (
+                        <span className="text-xs font-bold text-primary">{profile.initials}</span>
+                      )}
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-xs font-medium text-foreground truncate">{profile.name}</p>
                       <p className="text-xs text-muted-foreground truncate">{profile.email}</p>
                     </div>
                     <span className={cn('text-xs px-1.5 py-0.5 rounded-full font-medium flex-shrink-0', roleColor(profile.role))}>
-                      {roleLabel(profile.role)}
+                      {impersonatingId === profile.id ? 'Entrando...' : roleLabel(profile.role)}
                     </span>
                   </button>
                 ))}
               </div>
             )}
           </div>
-          <div className="px-3 pb-3 pt-1 border-t border-border mt-1">
+          <div className="px-3 pb-3 pt-1 border-t border-border mt-1 space-y-0.5">
             <button
-              onClick={() => {
-                navigate('/dashboard/registrations');
-                setOpen(false);
-                onClose();
-              }}
+              onClick={() => { navigate('/dashboard/impersonate'); setOpen(false); onClose(); }}
+              className="w-full flex items-center gap-2 px-2 py-2 rounded-lg hover:bg-accent transition-colors text-left"
+            >
+              <Eye className="w-4 h-4 text-purple-500 flex-shrink-0" />
+              <span className="text-xs text-purple-600 font-medium">Ver lista completa</span>
+            </button>
+            <button
+              onClick={() => { navigate('/dashboard/registrations'); setOpen(false); onClose(); }}
               className="w-full flex items-center gap-2 px-2 py-2 rounded-lg hover:bg-accent transition-colors text-left"
             >
               <UserPlus className="w-4 h-4 text-primary flex-shrink-0" />

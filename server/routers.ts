@@ -4029,6 +4029,29 @@ export const appRouter = router({
 
         return { checkoutUrl: session.url, emailSent };
       }),
+
+    // Solo superadmin puede eliminar suscripciones canceladas
+    deleteCanceled: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        if (!isSuperAdmin(ctx.user.openId, ctx.user.role)) {
+          throw new TRPCError({ code: 'FORBIDDEN', message: 'Solo superadmin puede eliminar suscripciones' });
+        }
+        const { getDb } = await import('./db');
+        const db = await getDb();
+        if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
+        const { subscriptions } = await import('../drizzle/schema');
+        const { eq } = await import('drizzle-orm');
+        // Verificar que existe y está cancelada
+        const found = await db.select().from(subscriptions).where(eq(subscriptions.id, input.id)).limit(1);
+        if (!found.length) throw new TRPCError({ code: 'NOT_FOUND' });
+        const sub = found[0];
+        if (sub.status !== 'canceled' && !sub.cancelAtPeriodEnd) {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: 'Solo se pueden eliminar suscripciones canceladas' });
+        }
+        await db.delete(subscriptions).where(eq(subscriptions.id, input.id));
+        return { success: true };
+      }),
   }),
 
   // ─── Nómina ───────────────────────────────────────────────────────────────
@@ -8570,6 +8593,129 @@ Responde SIEMPRE en español mexicano, de forma amigable, clara y práctica. Si 
         const { removeFromBlacklist } = await import('./db');
         await removeFromBlacklist(input.id, ctx.user.id);
         return { success: true };
+      }),
+  }),
+
+  // ─── Webhooks ───────────────────────────────────────────────────────────────
+  webhooks: router({
+    list: protectedProcedure.query(async ({ ctx }) => {
+      const { getDb } = await import('./db');
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
+      const { webhookEndpoints } = await import('../drizzle/schema');
+      const { eq, desc } = await import('drizzle-orm');
+      return db.select().from(webhookEndpoints)
+        .where(eq(webhookEndpoints.userId, ctx.user.id))
+        .orderBy(desc(webhookEndpoints.createdAt));
+    }),
+
+    create: protectedProcedure
+      .input(z.object({
+        url: z.string().url('Debe ser una URL válida').max(512),
+        description: z.string().max(255).optional(),
+        events: z.array(z.string()).min(1, 'Selecciona al menos un evento'),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const { getDb } = await import('./db');
+        const db = await getDb();
+        if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
+        const { webhookEndpoints } = await import('../drizzle/schema');
+        const { eq } = await import('drizzle-orm');
+        // Limit: max 5 webhooks per user
+        const existing = await db.select({ id: webhookEndpoints.id })
+          .from(webhookEndpoints).where(eq(webhookEndpoints.userId, ctx.user.id));
+        if (existing.length >= 5) throw new TRPCError({ code: 'BAD_REQUEST', message: 'Máximo 5 webhooks por cuenta' });
+        const crypto = await import('crypto');
+        const secret = 'whsec_' + crypto.randomBytes(24).toString('hex');
+        const result = await db.insert(webhookEndpoints).values({
+          userId: ctx.user.id,
+          url: input.url,
+          description: input.description || null,
+          events: JSON.stringify(input.events),
+          secret,
+          isActive: true,
+          failureCount: 0,
+        });
+        return { success: true, id: (result as any).insertId, secret };
+      }),
+
+    update: protectedProcedure
+      .input(z.object({
+        id: z.number().int().positive(),
+        url: z.string().url().max(512).optional(),
+        description: z.string().max(255).optional(),
+        events: z.array(z.string()).min(1).optional(),
+        isActive: z.boolean().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const { getDb } = await import('./db');
+        const db = await getDb();
+        if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
+        const { webhookEndpoints } = await import('../drizzle/schema');
+        const { eq, and } = await import('drizzle-orm');
+        const found = await db.select().from(webhookEndpoints)
+          .where(and(eq(webhookEndpoints.id, input.id), eq(webhookEndpoints.userId, ctx.user.id))).limit(1);
+        if (!found.length) throw new TRPCError({ code: 'NOT_FOUND' });
+        const updates: Record<string, unknown> = {};
+        if (input.url !== undefined) updates.url = input.url;
+        if (input.description !== undefined) updates.description = input.description;
+        if (input.events !== undefined) updates.events = JSON.stringify(input.events);
+        if (input.isActive !== undefined) { updates.isActive = input.isActive; if (input.isActive) updates.failureCount = 0; }
+        await db.update(webhookEndpoints).set(updates).where(eq(webhookEndpoints.id, input.id));
+        return { success: true };
+      }),
+
+    delete: protectedProcedure
+      .input(z.object({ id: z.number().int().positive() }))
+      .mutation(async ({ ctx, input }) => {
+        const { getDb } = await import('./db');
+        const db = await getDb();
+        if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
+        const { webhookEndpoints } = await import('../drizzle/schema');
+        const { eq, and } = await import('drizzle-orm');
+        const found = await db.select({ id: webhookEndpoints.id })
+          .from(webhookEndpoints)
+          .where(and(eq(webhookEndpoints.id, input.id), eq(webhookEndpoints.userId, ctx.user.id))).limit(1);
+        if (!found.length) throw new TRPCError({ code: 'NOT_FOUND' });
+        await db.delete(webhookEndpoints).where(eq(webhookEndpoints.id, input.id));
+        return { success: true };
+      }),
+
+    regenerateSecret: protectedProcedure
+      .input(z.object({ id: z.number().int().positive() }))
+      .mutation(async ({ ctx, input }) => {
+        const { getDb } = await import('./db');
+        const db = await getDb();
+        if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
+        const { webhookEndpoints } = await import('../drizzle/schema');
+        const { eq, and } = await import('drizzle-orm');
+        const found = await db.select({ id: webhookEndpoints.id })
+          .from(webhookEndpoints)
+          .where(and(eq(webhookEndpoints.id, input.id), eq(webhookEndpoints.userId, ctx.user.id))).limit(1);
+        if (!found.length) throw new TRPCError({ code: 'NOT_FOUND' });
+        const crypto = await import('crypto');
+        const newSecret = 'whsec_' + crypto.randomBytes(24).toString('hex');
+        await db.update(webhookEndpoints).set({ secret: newSecret }).where(eq(webhookEndpoints.id, input.id));
+        return { success: true, secret: newSecret };
+      }),
+
+    getLogs: protectedProcedure
+      .input(z.object({ webhookId: z.number().int().positive() }))
+      .query(async ({ ctx, input }) => {
+        const { getDb } = await import('./db');
+        const db = await getDb();
+        if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
+        const { webhookEndpoints, webhookDeliveryLogs } = await import('../drizzle/schema');
+        const { eq, and, desc } = await import('drizzle-orm');
+        // Verify ownership
+        const found = await db.select({ id: webhookEndpoints.id })
+          .from(webhookEndpoints)
+          .where(and(eq(webhookEndpoints.id, input.webhookId), eq(webhookEndpoints.userId, ctx.user.id))).limit(1);
+        if (!found.length) throw new TRPCError({ code: 'NOT_FOUND' });
+        return db.select().from(webhookDeliveryLogs)
+          .where(eq(webhookDeliveryLogs.webhookEndpointId, input.webhookId))
+          .orderBy(desc(webhookDeliveryLogs.attemptedAt))
+          .limit(50);
       }),
   }),
 });
