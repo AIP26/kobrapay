@@ -464,13 +464,17 @@ export default function CreateLink() {
               </div>
 
               {/* Preview de comisión */}
-              {previewAmount >= 10 && commissionRate > 0 && (
+              {previewAmount >= 10 && (
                 <div className="bg-cyan-50 border border-cyan-200 rounded-xl p-3 flex items-start gap-2">
                   <Info className="w-4 h-4 text-cyan-600 flex-shrink-0 mt-0.5" />
-                  <div className="text-xs text-cyan-800">
-                    <span className="font-semibold">Desglose:</span>{" "}
-                    Cobras {formatCurrency(previewAmount)} · Comisión {commissionRate}% = {formatCurrency(previewCommission)} · <strong>Neto: {formatCurrency(previewNet)}</strong>
-                    {previewUsd && <span className="ml-1 text-cyan-600">(≈ USD ${previewUsd})</span>}
+                  <div className="text-xs text-cyan-800 space-y-0.5">
+                    <div><span className="font-semibold">Desglose de comisiones:</span></div>
+                    <div>Stripe: {formatCurrency(previewStripeFee)} (3.6% + $3 MXN)</div>
+                    <div>KobraPay: {formatCurrency(previewKobrapayFee)} (0.6% + $0.50 + IVA)</div>
+                    <div className="font-semibold pt-0.5 border-t border-cyan-300 mt-1">
+                      Neto a recibir: <strong>{formatCurrency(previewNet)}</strong>
+                      {previewUsd && <span className="ml-1 text-cyan-600 font-normal">(≈ USD ${previewUsd})</span>}
+                    </div>
                   </div>
                 </div>
               )}
