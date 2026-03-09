@@ -52,6 +52,7 @@ import {
   Banknote,
   Activity,
   Eye,
+  Key,
 } from "lucide-react";
 import { useState, useCallback, useMemo, useEffect, useRef } from "react";
 import GlobalSearch from "./GlobalSearch";
@@ -62,7 +63,7 @@ import { Avatar, AvatarFallback } from "./ui/avatar";
 import PendingApproval from "@/pages/PendingApproval";
 import ImpersonationBar from "./ImpersonationBar";
 
-const KOBRAPAY_ICON = "https://d2xsxph8kpxj0f.cloudfront.net/310519663381362445/Tm7GPbTEGgvmgj5v2qy4Z4/kobrapay_logo_pro_white_fd2cc62e.png";
+const KOBRAPAY_ICON = "https://d2xsxph8kpxj0f.cloudfront.net/310519663381362445/Tm7GPbTEGgvmgj5v2qy4Z4/kobrapay_logo_v2_52d63331.png";
 
 // ─── Mapa de permisos por ítem del sidebar ────────────────────────────────────
 const ITEM_PERMISSION_MAP: Record<string, string> = {
@@ -227,6 +228,16 @@ const NAV_GROUPS = [
     ],
   },
   {
+    id: "integraciones",
+    label: "Integraciones",
+    icon: Key,
+    color: "text-sky-500/70",
+    items: [
+      { href: "/dashboard/api-keys", icon: Key, label: "API Keys" },
+      { href: "/dashboard/api-docs", icon: FileText, label: "Documentación API" },
+    ],
+  },
+  {
     id: "admin",
     label: "Administración",
     icon: Shield,
@@ -307,22 +318,23 @@ function LogoWithProfileSwitcher({
   }, [usersData]);
 
   const roleLabel = (role: string) => {
+    if (role === 'superadmin') return 'Super Admin';
     if (role === 'admin') return 'Admin';
     if (role === 'assistant') return 'Asistente';
     if (role === 'associate') return 'Asociado';
     return role;
   };
-
   const roleColor = (role: string) => {
-    if (role === 'admin') return 'bg-emerald-500/20 text-emerald-300';
-    if (role === 'assistant') return 'bg-blue-500/20 text-blue-300';
-    if (role === 'associate') return 'bg-amber-500/20 text-amber-300';
-    return 'bg-gray-500/20 text-gray-300';
-  };
+    if (role === 'superadmin') return 'bg-violet-100 text-violet-700 ring-1 ring-violet-300';
+    if (role === 'admin') return 'bg-emerald-100 text-emerald-700';
+    if (role === 'assistant') return 'bg-blue-100 text-blue-700';
+    if (role === 'associate') return 'bg-amber-100 text-amber-700';
+    return 'bg-gray-100 text-gray-600';
+  };;
 
   return (
     <div ref={ref} className="relative flex-shrink-0">
-      <div className="flex items-center gap-3 px-4 py-4 border-b border-white/10">
+      <div className="flex items-center gap-3 px-4 py-4 border-b border-sidebar-border">
         {/* Logo clickeable — abre dropdown si es superadmin */}
         <button
           onClick={() => {
@@ -342,14 +354,14 @@ function LogoWithProfileSwitcher({
             className="h-8 w-auto max-w-[140px] object-contain flex-shrink-0"
           />
           <div className="flex-1 min-w-0">
-            <p className="text-xs text-gray-400 leading-tight">Cobra fácil, cobra global</p>
+            <p className="text-xs text-muted-foreground leading-tight">Cobra fácil, cobra global</p>
           </div>
           {isSuperAdmin && (
-            <ChevronDown className={cn('w-4 h-4 text-gray-400 transition-transform flex-shrink-0', open && 'rotate-180')} />
+            <ChevronDown className={cn('w-4 h-4 text-muted-foreground transition-transform flex-shrink-0', open && 'rotate-180')} />
           )}
         </button>
         {mobile && (
-          <button onClick={onClose} className="ml-auto text-gray-400 hover:text-white transition-colors">
+          <button onClick={onClose} className="ml-auto text-muted-foreground hover:text-foreground transition-colors">
             <X className="w-5 h-5" />
           </button>
         )}
@@ -358,13 +370,12 @@ function LogoWithProfileSwitcher({
       {/* Dropdown de perfiles */}
       {isSuperAdmin && open && (
         <div
-          className="absolute left-0 right-0 top-full z-50 shadow-2xl border border-white/10 rounded-b-xl overflow-hidden"
-          style={{ background: '#1a1f2e' }}
+          className="absolute left-0 right-0 top-full z-50 shadow-2xl border border-border rounded-b-xl overflow-hidden bg-popover"
         >
           <div className="px-3 pt-3 pb-1">
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider px-1 mb-2">Perfiles de usuarios</p>
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-1 mb-2">Perfiles de usuarios</p>
             {profiles.length === 0 ? (
-              <p className="text-xs text-gray-500 px-1 pb-2">Cargando...</p>
+              <p className="text-xs text-muted-foreground px-1 pb-2">Cargando...</p>
             ) : (
               <div className="space-y-0.5 max-h-64 overflow-y-auto">
                 {profiles.map(profile => (
@@ -376,14 +387,14 @@ function LogoWithProfileSwitcher({
                       setOpen(false);
                       onClose();
                     }}
-                    className="w-full flex items-center gap-2.5 px-2 py-2 rounded-lg hover:bg-white/5 transition-colors text-left"
+                    className="w-full flex items-center gap-2.5 px-2 py-2 rounded-lg hover:bg-accent transition-colors text-left"
                   >
-                    <div className="w-7 h-7 rounded-full bg-white/10 flex items-center justify-center flex-shrink-0">
-                      <span className="text-xs font-bold text-white">{profile.initials}</span>
+                      <div className="w-7 h-7 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0">
+                      <span className="text-xs font-bold text-primary">{profile.initials}</span>
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-xs font-medium text-white truncate">{profile.name}</p>
-                      <p className="text-xs text-gray-500 truncate">{profile.email}</p>
+                      <p className="text-xs font-medium text-foreground truncate">{profile.name}</p>
+                      <p className="text-xs text-muted-foreground truncate">{profile.email}</p>
                     </div>
                     <span className={cn('text-xs px-1.5 py-0.5 rounded-full font-medium flex-shrink-0', roleColor(profile.role))}>
                       {roleLabel(profile.role)}
@@ -393,17 +404,17 @@ function LogoWithProfileSwitcher({
               </div>
             )}
           </div>
-          <div className="px-3 pb-3 pt-1 border-t border-white/5 mt-1">
+          <div className="px-3 pb-3 pt-1 border-t border-border mt-1">
             <button
               onClick={() => {
                 navigate('/dashboard/registrations');
                 setOpen(false);
                 onClose();
               }}
-              className="w-full flex items-center gap-2 px-2 py-2 rounded-lg hover:bg-white/5 transition-colors text-left"
+              className="w-full flex items-center gap-2 px-2 py-2 rounded-lg hover:bg-accent transition-colors text-left"
             >
-              <UserPlus className="w-4 h-4 text-emerald-400 flex-shrink-0" />
-              <span className="text-xs text-emerald-400 font-medium">Gestionar registros</span>
+              <UserPlus className="w-4 h-4 text-primary flex-shrink-0" />
+              <span className="text-xs text-primary font-medium">Gestionar registros</span>
             </button>
           </div>
         </div>
@@ -483,8 +494,7 @@ function Sidebar({
 
   return (
     <aside
-      className={cn("flex flex-col", mobile ? "w-72 h-full" : "w-64 h-screen")}
-      style={{ background: "#1a1f2e" }}
+      className={cn("flex flex-col bg-sidebar border-r border-sidebar-border", mobile ? "w-72 h-full" : "w-64 h-screen")}
     >
       {/* Logo con dropdown de perfiles para superadmin */}
       <LogoWithProfileSwitcher
@@ -515,11 +525,11 @@ function Sidebar({
                   className={cn(
                     "w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-semibold uppercase tracking-wider transition-all",
                     groupActive
-                      ? "text-emerald-400 bg-emerald-500/10"
-                      : "text-gray-500 hover:text-gray-300 hover:bg-white/5"
+                      ? "text-primary bg-primary/10"
+                      : "text-muted-foreground hover:text-foreground hover:bg-accent"
                   )}
                 >
-                  <GroupIcon className={cn("w-3.5 h-3.5 flex-shrink-0", groupActive ? "text-emerald-400" : group.color)} />
+                  <GroupIcon className={cn("w-3.5 h-3.5 flex-shrink-0", groupActive ? "text-primary" : "text-muted-foreground")} />
                   <span className="flex-1 text-left">{group.label}</span>
                   <ChevronDown
                     className={cn(
@@ -537,7 +547,7 @@ function Sidebar({
                     transition: "max-height 0.22s ease",
                   }}
                 >
-                  <div className="mt-0.5 ml-2 space-y-0.5 border-l border-white/10 pl-2">
+                  <div className="mt-0.5 ml-2 space-y-0.5 border-l border-border pl-2">
                     {visibleItems.map(({ href, icon: Icon, label }) => {
                       const isActive = location === href;
                       return (
@@ -548,11 +558,11 @@ function Sidebar({
                           className={cn(
                             "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all",
                             isActive
-                              ? "bg-gradient-to-r from-emerald-500/20 to-cyan-500/20 text-emerald-400 border border-emerald-500/30"
-                              : "text-gray-300 hover:bg-white/8 hover:text-white"
+                              ? "bg-primary/10 text-primary border border-primary/20"
+                              : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
                           )}
                         >
-                          <Icon className={cn("w-4 h-4 flex-shrink-0", isActive ? "text-emerald-400" : "text-gray-500")} />
+                          <Icon className={cn("w-4 h-4 flex-shrink-0", isActive ? "text-primary" : "text-muted-foreground")} />
                           {label}
                         </Link>
                       );
@@ -566,22 +576,26 @@ function Sidebar({
       </nav>
 
       {/* User Profile — siempre visible al fondo */}
-      <div className="px-3 py-4 border-t border-white/10 space-y-1 flex-shrink-0">
+      <div className="px-3 py-4 border-t border-sidebar-border space-y-1 flex-shrink-0">
         <Link href="/dashboard/profile" onClick={onClose}>
-          <div className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-white/5 transition-colors cursor-pointer group">
+          <div className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-sidebar-accent transition-colors cursor-pointer group">
             <Avatar className="w-8 h-8 flex-shrink-0">
-              <AvatarFallback className="bg-emerald-500/30 text-emerald-300 text-xs font-bold">{initials}</AvatarFallback>
+              <AvatarFallback className="bg-primary/20 text-primary text-xs font-bold">{initials}</AvatarFallback>
             </Avatar>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-white truncate">{userName}</p>
-              <p className="text-xs text-emerald-400/70 group-hover:text-emerald-400 truncate transition-colors">Ver mi perfil</p>
+              <p className="text-sm font-medium text-sidebar-foreground truncate">{userName}</p>
+              {isSuperAdmin ? (
+                <span className="text-xs px-1.5 py-0.5 rounded-full font-medium bg-violet-100 text-violet-700 ring-1 ring-violet-300">Super Admin</span>
+              ) : (
+                <p className="text-xs text-primary/70 group-hover:text-primary truncate transition-colors">Ver mi perfil</p>
+              )}
             </div>
-            <UserCircle2 className="w-4 h-4 text-gray-500 group-hover:text-emerald-400 transition-colors flex-shrink-0" />
+            <UserCircle2 className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors flex-shrink-0" />
           </div>
         </Link>
         <button
           onClick={onLogout}
-          className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-red-500/10 text-gray-400 hover:text-red-400 transition-colors text-sm"
+          className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors text-sm"
         >
           <LogOut className="w-4 h-4" />
           <span>Cerrar sesión</span>
@@ -663,10 +677,10 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#1a1f2e]">
+      <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-3">
           <img src={KOBRAPAY_ICON} alt="KobraPay" className="w-12 h-12 animate-pulse" />
-          <p className="text-gray-400 text-sm">Cargando...</p>
+          <p className="text-muted-foreground text-sm">Cargando...</p>
         </div>
       </div>
     );
@@ -733,7 +747,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   };
 
   return (
-    <div className="flex h-screen bg-[#0a0f1e] overflow-hidden">
+    <div className="flex h-screen bg-background overflow-hidden">
       {/* Barra de impersonación — visible cuando superadmin está viendo como cliente */}
       <ImpersonationBar />
       {/* Desktop Sidebar — altura fija h-screen */}
@@ -754,10 +768,10 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       {/* Main Content */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         {/* Top Bar */}
-        <header className="h-14 flex items-center gap-3 px-4 bg-[#0d1526] border-b border-[#1e2d4a] flex-shrink-0">
+        <header className="h-14 flex items-center gap-3 px-4 bg-card border-b border-border flex-shrink-0">
           <button
             onClick={() => setSidebarOpen(true)}
-            className="lg:hidden text-gray-400 hover:text-gray-200 transition-colors"
+            className="lg:hidden text-muted-foreground hover:text-foreground transition-colors"
           >
             <Menu className="w-5 h-5" />
           </button>

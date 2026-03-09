@@ -171,16 +171,16 @@ function FeatureModal({ feature, onClose }: { feature: typeof FEATURES[0]; onClo
   );
 }
 
-const KOBRAPAY_LOGO = "https://d2xsxph8kpxj0f.cloudfront.net/310519663381362445/Tm7GPbTEGgvmgj5v2qy4Z4/kobrapay_logo_pro_white_fd2cc62e.png";
-const KOBRAPAY_ICON = "https://d2xsxph8kpxj0f.cloudfront.net/310519663381362445/Tm7GPbTEGgvmgj5v2qy4Z4/kobrapay_logo_pro_white_fd2cc62e.png";
+const KOBRAPAY_LOGO = "https://d2xsxph8kpxj0f.cloudfront.net/310519663381362445/Tm7GPbTEGgvmgj5v2qy4Z4/kobrapay_logo_v2_52d63331.png";
+const KOBRAPAY_ICON = "https://d2xsxph8kpxj0f.cloudfront.net/310519663381362445/Tm7GPbTEGgvmgj5v2qy4Z4/kobrapay_logo_v2_52d63331.png";
 
-// Planes KobraPay — tasa base SIN IVA + cargo fijo por transacción
-// Stripe cobra 3.6% + $3 MXN; KobraPay cubre eso + su margen + comisión de asociado (0.30%)
+// Planes KobraPay — tasa base SIN IVA (+ IVA se muestra separado) + cargo fijo por transacción
+// Stripe cobra 2.9% + $3 MXN; KobraPay cobra 3.36% + IVA + $3.50 MXN (asociado recibe $1 MXN por tx)
 const VOLUME_TIERS = [
-  { label: "Starter",    min: 0,       max: 50000,   totalRate: 4.5, fixedFee: 5, color: "emerald" },
-  { label: "Pro",        min: 50001,   max: 150000,  totalRate: 4.2, fixedFee: 5, color: "cyan" },
-  { label: "Business",  min: 150001,  max: 500000,  totalRate: 3.9, fixedFee: 4, color: "violet" },
-  { label: "Enterprise",min: 500001,  max: 9999999, totalRate: 3.5, fixedFee: 0, color: "amber" },
+  { label: "Express",    min: 0,       max: 50000,   totalRate: 3.36, fixedFee: 3.50, color: "emerald" },
+  { label: "Connect",   min: 50001,   max: 150000,  totalRate: 3.10, fixedFee: 3.50, color: "cyan" },
+  { label: "Custom",    min: 150001,  max: 500000,  totalRate: 2.70, fixedFee: 3.50, color: "violet" },
+  { label: "Enterprise",min: 500001,  max: 9999999, totalRate: 2.50, fixedFee: 0,    color: "amber" },
 ];
 
 const FAQ_ITEMS = [
@@ -552,15 +552,15 @@ export default function Home() {
   const [activeTab, setActiveTab] = useState<"acceso" | "registrar">("acceso");
 
   return (
-    <div className="min-h-screen bg-[#0f1420]">
+    <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="border-b border-white/10 bg-[#0f1420]/95 backdrop-blur-sm sticky top-0 z-40">
+      <header className="border-b border-border bg-background/95 backdrop-blur-sm sticky top-0 z-40">
         <div className="container flex items-center justify-between h-16">
           <div className="flex items-center gap-3">
             <img src={KOBRAPAY_ICON} alt="KobraPay" className="w-9 h-9 object-contain" />
             <div>
-              <span className="font-bold text-white text-lg leading-none block">KobraPay</span>
-              <span className="text-xs text-gray-400 leading-none">Cobra fácil, cobra global</span>
+              <span className="font-bold text-foreground text-lg leading-none block">KobraPay</span>
+              <span className="text-xs text-muted-foreground leading-none">Cobra fácil, cobra global</span>
             </div>
           </div>
           <div className="flex items-center gap-3">
@@ -571,7 +571,7 @@ export default function Home() {
                 </Button>
               ) : (
                 <>
-                  <Button asChild variant="ghost" className="text-gray-300 hover:text-white hover:bg-white/10 text-sm">
+                  <Button asChild variant="ghost" className="text-muted-foreground hover:text-foreground text-sm">
                     <Link href="/login">Iniciar sesión</Link>
                   </Button>
                   <Button asChild className="bg-emerald-500 hover:bg-emerald-400 text-white text-sm">
@@ -602,65 +602,65 @@ export default function Home() {
                 Procesado por Stripe
               </span>
             </div>
-            <h1 className="text-3xl lg:text-5xl font-extrabold text-white mb-4 leading-tight">
+            <h1 className="text-3xl lg:text-5xl font-extrabold text-foreground mb-4 leading-tight">
               Cobra con tarjeta<br />
               <span className="bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent">en 2 minutos</span>
             </h1>
-            <p className="text-sm text-gray-400 mb-5 leading-relaxed">
+            <p className="text-sm text-muted-foreground mb-5 leading-relaxed">
               Genera un enlace de pago, compártelo por WhatsApp y recibe el dinero. Sin hardware, sin contratos, sin mensualidad. Solo pagas cuando cobras.
             </p>
             <div className="flex items-center gap-4 mb-6">
               <div className="text-center">
-                <p className="text-xl font-black text-white">3.5%</p>
-                <p className="text-xs text-gray-500">Comisión mínima</p>
+                <p className="text-xl font-black text-foreground">3.36% + IVA*</p>
+                <p className="text-xs text-muted-foreground">Comisión plan Express</p>
               </div>
-              <div className="w-px h-8 bg-white/10" />
+              <div className="w-px h-8 bg-border" />
               <div className="text-center">
-                <p className="text-xl font-black text-emerald-400">2 min</p>
-                <p className="text-xs text-gray-500">Para tu primer cobro</p>
+                <p className="text-xl font-black text-emerald-600">2 min</p>
+                <p className="text-xs text-muted-foreground">Para tu primer cobro</p>
               </div>
-              <div className="w-px h-8 bg-white/10" />
+              <div className="w-px h-8 bg-border" />
               <div className="text-center">
-                <p className="text-xl font-black text-cyan-400">24h</p>
-                <p className="text-xs text-gray-500">Aprobación de cuenta</p>
+                <p className="text-xl font-black text-cyan-600">24h</p>
+                <p className="text-xs text-muted-foreground">Aprobación de cuenta</p>
               </div>
             </div>
             <div className="flex flex-col sm:flex-row gap-2.5">
               <Button size="sm" asChild className="bg-emerald-500 hover:bg-emerald-400 text-white px-6 h-11 text-sm font-bold shadow-lg shadow-emerald-500/20">
                 <a href="/register">Crear cuenta gratis <ArrowRight className="w-3.5 h-3.5 ml-1.5" /></a>
               </Button>
-              <Button size="sm" variant="outline" asChild className="px-6 h-11 border-white/20 text-white hover:bg-white/10 text-sm">
+              <Button size="sm" variant="outline" asChild className="px-6 h-11 text-sm">
                 <a href="#simulador">Ver mis comisiones</a>
               </Button>
             </div>
             <div className="mt-8 space-y-2.5">
-              <p className="text-xs text-gray-500 font-medium">Aceptamos todos los métodos de pago:</p>
+              <p className="text-xs text-muted-foreground font-medium">Aceptamos todos los métodos de pago:</p>
               <div className="flex items-center gap-2 flex-wrap">
-                <span className="bg-blue-600/20 border border-blue-500/30 text-blue-300 text-xs font-black px-2.5 py-1 rounded-lg">VISA</span>
-                <span className="bg-orange-600/20 border border-orange-500/30 text-orange-300 text-xs font-black px-2.5 py-1 rounded-lg">Mastercard</span>
-                <span className="bg-blue-400/20 border border-blue-400/30 text-blue-200 text-xs font-black px-2.5 py-1 rounded-lg">AMEX</span>
-                <span className="bg-red-600/20 border border-red-500/30 text-red-300 text-xs font-bold px-2.5 py-1 rounded-lg">🏪 OXXO</span>
-                <span className="bg-green-600/20 border border-green-500/30 text-green-300 text-xs font-bold px-2.5 py-1 rounded-lg">🏦 SPEI</span>
-                <span className="bg-white/10 border border-white/10 text-white text-xs font-bold px-2.5 py-1 rounded-lg"> Apple Pay</span>
-                <span className="bg-white/10 border border-white/10 text-white text-xs font-bold px-2.5 py-1 rounded-lg">G Pay</span>
+                <span className="bg-blue-100 border border-blue-200 text-blue-700 text-xs font-black px-2.5 py-1 rounded-lg">VISA</span>
+                <span className="bg-orange-100 border border-orange-200 text-orange-700 text-xs font-black px-2.5 py-1 rounded-lg">Mastercard</span>
+                <span className="bg-blue-50 border border-blue-200 text-blue-600 text-xs font-black px-2.5 py-1 rounded-lg">AMEX</span>
+                <span className="bg-red-100 border border-red-200 text-red-700 text-xs font-bold px-2.5 py-1 rounded-lg">🏦 OXXO</span>
+                <span className="bg-green-100 border border-green-200 text-green-700 text-xs font-bold px-2.5 py-1 rounded-lg">🏦 SPEI</span>
+                <span className="bg-gray-100 border border-gray-200 text-gray-700 text-xs font-bold px-2.5 py-1 rounded-lg"> Apple Pay</span>
+                <span className="bg-gray-100 border border-gray-200 text-gray-700 text-xs font-bold px-2.5 py-1 rounded-lg">G Pay</span>
               </div>
-              <p className="text-xs text-gray-600">Procesado por Stripe · SSL 256-bit · PCI DSS</p>
+              <p className="text-xs text-muted-foreground">Procesado por Stripe · SSL 256-bit · PCI DSS</p>
             </div>
           </div>
         </div>
 
         {/* Derecha: card con tabs Acceso / Registrar */}
-        <div className="flex flex-col justify-center items-center px-8 lg:px-12 py-12 bg-[#0a0f1a] border-l border-white/5">
+        <div className="flex flex-col justify-center items-center px-8 lg:px-12 py-12 bg-muted/40 border-l border-border">
           <div className="w-full max-w-sm">
-            <div className="bg-[#141c2e] border border-white/10 rounded-2xl overflow-hidden shadow-2xl">
+            <div className="bg-card border border-border rounded-2xl overflow-hidden shadow-xl">
               {/* Tabs funcionales */}
-              <div className="grid grid-cols-2 border-b border-white/10">
+              <div className="grid grid-cols-2 border-b border-border">
                 <button
                   onClick={() => setActiveTab("acceso")}
-                  className={`py-3 text-center border-r border-white/10 transition-all text-xs font-semibold ${
+                  className={`py-3 text-center border-r border-border transition-all text-xs font-semibold ${
                     activeTab === "acceso"
                       ? "bg-emerald-500 text-white"
-                      : "bg-[#141c2e] text-gray-400 hover:text-white hover:bg-white/5"
+                      : "bg-card text-muted-foreground hover:text-foreground hover:bg-accent"
                   }`}
                 >
                   Acceso
@@ -670,7 +670,7 @@ export default function Home() {
                   className={`py-3 text-center transition-all text-xs font-semibold ${
                     activeTab === "registrar"
                       ? "bg-emerald-500 text-white"
-                      : "bg-[#141c2e] text-gray-400 hover:text-white hover:bg-white/5"
+                      : "bg-card text-muted-foreground hover:text-foreground hover:bg-accent"
                   }`}
                 >
                   Registrar
@@ -680,7 +680,7 @@ export default function Home() {
               {/* Tab: Acceso */}
               {activeTab === "acceso" && (
                 <div className="p-5">
-                  <p className="text-gray-400 text-xs text-center mb-4">
+                  <p className="text-muted-foreground text-xs text-center mb-4">
                     Ingresa a tu panel con tu cuenta existente.
                   </p>
                   <a
@@ -691,21 +691,21 @@ export default function Home() {
                     Iniciar sesión
                   </a>
                   <div className="flex items-center gap-2 my-3">
-                    <div className="flex-1 h-px bg-white/10" />
-                    <span className="text-xs text-gray-600">Acceso seguro</span>
-                    <div className="flex-1 h-px bg-white/10" />
+                    <div className="flex-1 h-px bg-border" />
+                    <span className="text-xs text-muted-foreground">Acceso seguro</span>
+                    <div className="flex-1 h-px bg-border" />
                   </div>
                   <div className="space-y-2">
                     {["Acceso inmediato a tu panel", "Historial de cobros completo", "Seguridad con cifrado SSL"].map((benefit) => (
-                      <div key={benefit} className="flex items-center gap-2 text-xs text-gray-400">
+                      <div key={benefit} className="flex items-center gap-2 text-xs text-muted-foreground">
                         <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 flex-shrink-0" />
                         {benefit}
                       </div>
                     ))}
                   </div>
-                  <p className="text-center text-xs text-gray-500 mt-4">
+                  <p className="text-center text-xs text-muted-foreground mt-4">
                     ¿No tienes cuenta?{" "}
-                    <button onClick={() => setActiveTab("registrar")} className="text-emerald-400 hover:underline">Regístrate aquí</button>
+                    <button onClick={() => setActiveTab("registrar")} className="text-emerald-600 hover:underline">Regístrate aquí</button>
                   </p>
                 </div>
               )}
@@ -713,7 +713,7 @@ export default function Home() {
               {/* Tab: Registrar */}
               {activeTab === "registrar" && (
                 <div className="p-5">
-                  <p className="text-gray-400 text-xs text-center mb-4">
+                  <p className="text-muted-foreground text-xs text-center mb-4">
                     Crea tu cuenta y empieza a cobrar en minutos.
                   </p>
                   <a
@@ -724,40 +724,40 @@ export default function Home() {
                     Crear cuenta gratis
                   </a>
                   <div className="flex items-center gap-2 my-3">
-                    <div className="flex-1 h-px bg-white/10" />
-                    <span className="text-xs text-gray-600">Sin costos fijos</span>
-                    <div className="flex-1 h-px bg-white/10" />
+                    <div className="flex-1 h-px bg-border" />
+                    <span className="text-xs text-muted-foreground">Sin costos fijos</span>
+                    <div className="flex-1 h-px bg-border" />
                   </div>
                   <div className="space-y-2">
                     {["Nombre completo y CURP", "Datos de tu negocio", "Aprobación en menos de 24h"].map((step) => (
-                      <div key={step} className="flex items-center gap-2 text-xs text-gray-400">
+                      <div key={step} className="flex items-center gap-2 text-xs text-muted-foreground">
                         <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 flex-shrink-0" />
                         {step}
                       </div>
                     ))}
                   </div>
-                  <p className="text-center text-xs text-gray-500 mt-4">
+                  <p className="text-center text-xs text-muted-foreground mt-4">
                     ¿Ya tienes cuenta?{" "}
-                    <button onClick={() => setActiveTab("acceso")} className="text-emerald-400 hover:underline">Inicia sesión</button>
+                    <button onClick={() => setActiveTab("acceso")} className="text-emerald-600 hover:underline">Inicia sesión</button>
                   </p>
                 </div>
               )}
             </div>
-            <p className="text-center text-xs text-gray-500 mt-4">
+            <p className="text-center text-xs text-muted-foreground mt-4">
               ¿Tienes dudas?{" "}
-              <a href="mailto:soporte@kobrapay.mx" className="text-emerald-400 hover:underline">soporte@kobrapay.mx</a>
+              <a href="mailto:soporte@kobrapay.mx" className="text-emerald-600 hover:underline">soporte@kobrapay.mx</a>
             </p>
           </div>
         </div>
       </section>
 
       {/* Cómo Funciona */}
-      <section className="py-20 border-t border-white/5">
+      <section className="py-20 border-t border-border">
         <div className="container max-w-4xl mx-auto">
           <div className="text-center mb-12">
             <span className="text-xs font-semibold tracking-widest text-emerald-400 uppercase">Simple y rápido</span>
-            <h2 className="text-2xl lg:text-3xl font-bold text-white mt-2 mb-3">Empieza a cobrar en 3 pasos</h2>
-            <p className="text-gray-400 text-sm">Sin hardware, sin contratos, sin mensualidad.</p>
+            <h2 className="text-2xl lg:text-3xl font-bold text-foreground mt-2 mb-3">Empieza a cobrar en 3 pasos</h2>
+            <p className="text-muted-foreground text-sm">Sin hardware, sin contratos, sin mensualidad.</p>
           </div>
           <div className="grid md:grid-cols-3 gap-6">
             {[
@@ -765,13 +765,13 @@ export default function Home() {
               { step: "02", title: "Genera tu enlace", desc: "Escribe el monto, descripción y el correo de tu cliente. En segundos tienes un enlace listo para compartir por WhatsApp.", icon: "🔗", color: "cyan" },
               { step: "03", title: "Recibe el pago", desc: "Tu cliente paga con tarjeta desde su celular. Tú ves el pago en tiempo real en tu panel y recibes el comprobante automáticamente.", icon: "💰", color: "emerald" },
             ].map((item) => (
-              <div key={item.step} className="relative bg-white/5 border border-white/10 rounded-2xl p-6 hover:border-white/20 transition-all">
+              <div key={item.step} className="relative bg-card border border-border rounded-2xl p-6 hover:border-primary/30 hover:shadow-sm transition-all">
                 <div className="flex items-center gap-3 mb-4">
                   <span className={`text-3xl font-black ${item.color === 'emerald' ? 'text-emerald-500/30' : 'text-cyan-500/30'}`}>{item.step}</span>
                   <span className="text-2xl">{item.icon}</span>
                 </div>
-                <h3 className="font-bold text-white text-lg mb-2">{item.title}</h3>
-                <p className="text-gray-400 text-sm leading-relaxed">{item.desc}</p>
+                <h3 className="font-bold text-foreground text-lg mb-2">{item.title}</h3>
+                <p className="text-muted-foreground text-sm leading-relaxed">{item.desc}</p>
               </div>
             ))}
           </div>
@@ -784,11 +784,11 @@ export default function Home() {
       </section>
 
       {/* Features interactivas */}
-      <section className="py-20 border-t border-white/5">
+      <section className="py-20 border-t border-border">
         <div className="container">
           <div className="text-center mb-12">
-            <h2 className="text-2xl lg:text-3xl font-bold text-white mb-3">Todo lo que necesitas para cobrar</h2>
-            <p className="text-gray-400 max-w-xl mx-auto">Haz clic en cualquier función para ver cómo funciona en el panel.</p>
+            <h2 className="text-2xl lg:text-3xl font-bold text-foreground mb-3">Todo lo que necesitas para cobrar</h2>
+            <p className="text-muted-foreground max-w-xl mx-auto">Haz clic en cualquier función para ver cómo funciona en el panel.</p>
           </div>
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {FEATURES.map((feature) => {
@@ -797,13 +797,13 @@ export default function Home() {
                 <button
                   key={feature.id}
                   onClick={() => setActiveFeature(feature)}
-                  className="bg-white/5 border border-white/10 rounded-2xl p-6 hover:bg-white/8 hover:border-white/20 transition-all text-left group cursor-pointer"
+                  className="bg-card border border-border rounded-2xl p-6 hover:border-primary/30 hover:shadow-sm transition-all text-left group cursor-pointer"
                 >
                   <div className={`w-12 h-12 rounded-xl flex items-center justify-center mb-4 ${feature.color === "emerald" ? "bg-emerald-500/15 group-hover:bg-emerald-500/25" : "bg-cyan-500/15 group-hover:bg-cyan-500/25"} transition-colors`}>
                     <Icon className={`w-6 h-6 ${feature.color === "emerald" ? "text-emerald-400" : "text-cyan-400"}`} />
                   </div>
-                  <h3 className="font-semibold text-white mb-2 group-hover:text-emerald-300 transition-colors">{feature.title}</h3>
-                  <p className="text-gray-400 text-sm leading-relaxed">{feature.shortDesc}</p>
+                  <h3 className="font-semibold text-foreground mb-2 group-hover:text-emerald-600 transition-colors">{feature.title}</h3>
+                  <p className="text-muted-foreground text-sm leading-relaxed">{feature.shortDesc}</p>
                   <div className={`mt-4 text-xs font-medium flex items-center gap-1 ${feature.color === "emerald" ? "text-emerald-500" : "text-cyan-500"}`}>
                     Ver más <ArrowRight className="w-3 h-3" />
                   </div>
@@ -818,31 +818,31 @@ export default function Home() {
       <section id="simulador" className="py-20 border-t border-white/5">
         <div className="container max-w-5xl mx-auto">
           <div className="text-center mb-10">
-            <h2 className="text-2xl lg:text-3xl font-bold text-white mb-3">Simula cuanto te cobraremos</h2>
-            <p className="text-gray-400 max-w-xl mx-auto">Mueve el slider para ver exactamente cuanto recibiras despues de comisiones. A mayor volumen, menor porcentaje.</p>
+            <h2 className="text-2xl lg:text-3xl font-bold text-foreground mb-3">Simula cuanto te cobraremos</h2>
+            <p className="text-muted-foreground max-w-xl mx-auto">Mueve el slider para ver exactamente cuanto recibiras despues de comisiones. A mayor volumen, menor porcentaje.</p>
           </div>
           <PublicQuoteCalculator />
         </div>
       </section>
 
       {/* FAQ */}
-      <section className="py-20 border-t border-white/5">
+      <section className="py-20 border-t border-border">
         <div className="container max-w-3xl mx-auto">
           <div className="text-center mb-12">
             <span className="text-xs font-semibold tracking-widest text-emerald-400 uppercase">Preguntas Frecuentes</span>
-            <h2 className="text-2xl lg:text-3xl font-bold text-white mt-2 mb-3">Todo lo que necesitas saber</h2>
-            <p className="text-gray-400 text-sm">Resolvemos las dudas más comunes antes de que las tengas.</p>
+            <h2 className="text-2xl lg:text-3xl font-bold text-foreground mt-2 mb-3">Todo lo que necesitas saber</h2>
+            <p className="text-muted-foreground text-sm">Resolvemos las dudas más comunes antes de que las tengas.</p>
           </div>
           <FAQSection />
-          <p className="text-center text-sm text-gray-500 mt-8">
+            <p className="text-center text-sm text-muted-foreground mt-8">
             ¿Tienes más preguntas?{" "}
-            <a href="mailto:soporte@kobrapay.mx" className="text-emerald-400 hover:underline">soporte@kobrapay.mx</a>
+              <a href="mailto:soporte@kobrapay.mx" className="text-emerald-600 hover:underline">soporte@kobrapay.mx</a>
           </p>
         </div>
       </section>
 
       {/* CTA */}
-      <section className="py-24 border-t border-white/5 relative overflow-hidden">
+      <section className="py-24 border-t border-border relative overflow-hidden">
         <div className="absolute inset-0 pointer-events-none">
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[300px] bg-emerald-500/8 rounded-full blur-3xl" />
         </div>
@@ -851,20 +851,20 @@ export default function Home() {
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
             Sin costo de registro — solo pagas cuando cobras
           </div>
-          <h2 className="text-3xl lg:text-4xl font-extrabold text-white mb-4">Tu negocio merece cobrar<br /><span className="bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent">como los grandes</span></h2>
-          <p className="text-gray-400 mb-8 text-sm leading-relaxed">Crea tu cuenta en 5 minutos y genera tu primer enlace de pago hoy mismo.<br />Sin hardware, sin contratos, sin mensualidad.</p>
+          <h2 className="text-3xl lg:text-4xl font-extrabold text-foreground mb-4">Tu negocio merece cobrar<br /><span className="bg-gradient-to-r from-emerald-500 to-cyan-500 bg-clip-text text-transparent">como los grandes</span></h2>
+          <p className="text-muted-foreground mb-8 text-sm leading-relaxed">Crea tu cuenta en 5 minutos y genera tu primer enlace de pago hoy mismo.<br />Sin hardware, sin contratos, sin mensualidad.</p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <Button size="lg" asChild className="bg-emerald-500 hover:bg-emerald-400 text-white text-base px-10 h-12 font-bold shadow-xl shadow-emerald-500/25">
               <a href="/register">Crear cuenta gratis <ArrowRight className="w-4 h-4 ml-2" /></a>
             </Button>
-            <Button size="lg" variant="outline" asChild className="h-12 px-8 border-white/20 text-white hover:bg-white/10">
+            <Button size="lg" variant="outline" asChild className="h-12 px-8">
               <a href="mailto:soporte@kobrapay.mx">Hablar con ventas</a>
             </Button>
-            <Button size="lg" variant="outline" asChild className="h-12 px-8 border-cyan-500/40 text-cyan-400 hover:bg-cyan-500/10">
+            <Button size="lg" variant="outline" asChild className="h-12 px-8 border-cyan-500/40 text-cyan-600 hover:bg-cyan-50">
               <a href="/register-associate">Ser Asociado</a>
             </Button>
           </div>
-          <div className="mt-8 flex items-center justify-center gap-6 text-xs text-gray-500">
+          <div className="mt-8 flex items-center justify-center gap-6 text-xs text-muted-foreground">
             <span className="flex items-center gap-1.5"><CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" /> Sin mensualidad</span>
             <span className="flex items-center gap-1.5"><CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" /> Aprobación en 24h</span>
             <span className="flex items-center gap-1.5"><CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" /> Soporte en español</span>
@@ -873,24 +873,24 @@ export default function Home() {
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-white/10 py-8">
+      <footer className="border-t border-border py-8 bg-background">
         <div className="container flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
             <img src={KOBRAPAY_ICON} alt="KobraPay" className="w-6 h-6 object-contain" />
-            <span className="font-semibold text-white text-sm">KobraPay</span>
+            <span className="font-semibold text-foreground text-sm">KobraPay</span>
           </div>
-          <div className="flex items-center gap-1.5 text-sm text-gray-500">
+          <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
             <Shield className="w-3.5 h-3.5" />
             Pagos procesados con Stripe · SSL 256-bit cifrado
           </div>
-          <div className="flex items-center gap-3 text-sm text-gray-500">
+          <div className="flex items-center gap-3 text-sm text-muted-foreground">
             <span>© 2026 KobraPay</span>
             <span>·</span>
-            <Link href="/terminos" className="hover:text-gray-300 transition-colors">Términos de Uso</Link>
+            <Link href="/terminos" className="hover:text-foreground transition-colors">Términos de Uso</Link>
             <span>·</span>
-            <Link href="/privacidad" className="hover:text-gray-300 transition-colors">Privacidad</Link>
+            <Link href="/privacidad" className="hover:text-foreground transition-colors">Privacidad</Link>
             <span>·</span>
-            <Link href="/register-associate" className="hover:text-cyan-400 transition-colors">Programa de Asociados</Link>
+            <Link href="/register-associate" className="hover:text-cyan-600 transition-colors">Programa de Asociados</Link>
           </div>
         </div>
       </footer>

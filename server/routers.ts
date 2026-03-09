@@ -98,6 +98,7 @@ import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { isSuperAdmin, protectedProcedure, publicProcedure, router } from "./_core/trpc";
 import { securityRouter } from "./routers/security";
+import { apiKeysRouter } from "./routers/apiKeys";
 import { notifyOwner } from "./_core/notification";
 import { sendOtpEmail, sendPaymentReceipt, sendWelcomeEmail, sendInvoiceEmail, sendRefundNotification, sendSubscriptionInviteEmail, sendNewRegistrationEmail } from "./_core/email";
 import { ENV } from "./_core/env";
@@ -124,6 +125,7 @@ function calculateCommission(amount: number, commissionRate: number) {
 export const appRouter = router({
   system: systemRouter,
   security: securityRouter,
+  apiKeys: apiKeysRouter,
 
   auth: router({
     me: publicProcedure.query(async (opts) => {
@@ -341,6 +343,61 @@ export const appRouter = router({
           .from(users).where(eq(users.emailVerifyToken, input.token)).limit(1);
         if (!found.length) throw new TRPCError({ code: 'BAD_REQUEST', message: 'Token de verificación inválido' });
         await db.update(users).set({ emailVerified: true, emailVerifyToken: null }).where(eq(users.id, found[0].id));
+        return { success: true };
+      }),
+
+    changePassword: protectedProcedure
+      .input(z.object({
+        currentPassword: z.string().optional(),
+        newPassword: z.string().min(8).max(128),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const bcrypt = await import('bcryptjs');
+        const { getDb } = await import('./db');
+        const db = await getDb();
+        if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
+        const { users } = await import('../drizzle/schema');
+        const { eq } = await import('drizzle-orm');
+        const found = await db.select({ id: users.id, passwordHash: users.passwordHash })
+          .from(users).where(eq(users.id, ctx.user.id)).limit(1);
+        if (!found.length) throw new TRPCError({ code: 'NOT_FOUND' });
+        if (found[0].passwordHash) {
+          if (!input.currentPassword) {
+            throw new TRPCError({ code: 'BAD_REQUEST', message: 'Debes ingresar tu contraseña actual.' });
+          }
+          const valid = await bcrypt.compare(input.currentPassword, found[0].passwordHash as string);
+          if (!valid) throw new TRPCError({ code: 'UNAUTHORIZED', message: 'La contraseña actual es incorrecta.' });
+        }
+        const passwordHash = await bcrypt.hash(input.newPassword, 12);
+        await db.update(users).set({ passwordHash }).where(eq(users.id, ctx.user.id));
+        return { success: true, message: 'Contraseña actualizada correctamente.' };
+      }),
+
+    updateProfile: protectedProcedure
+      .input(z.object({
+        name: z.string().min(1).max(255).optional(),
+        phone: z.string().max(30).optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const { getDb } = await import('./db');
+        const db = await getDb();
+        if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
+        const { users, vendorSettings } = await import('../drizzle/schema');
+        const { eq } = await import('drizzle-orm');
+        // Update name in users table
+        if (input.name) {
+          await db.update(users).set({ name: input.name }).where(eq(users.id, ctx.user.id));
+        }
+        // Update phone in vendorSettings
+        if (input.phone !== undefined) {
+          const existing = await db.select({ id: vendorSettings.id })
+            .from(vendorSettings).where(eq(vendorSettings.userId, ctx.user.id)).limit(1);
+          if (existing.length > 0) {
+            await db.update(vendorSettings).set({ businessPhone: input.phone }).where(eq(vendorSettings.userId, ctx.user.id));
+          } else {
+            await db.insert(vendorSettings).values({ userId: ctx.user.id, businessPhone: input.phone });
+          }
+        }
         return { success: true };
       }),
   }),
@@ -1614,7 +1671,7 @@ export const appRouter = router({
         const connectedAccountId = vendorSettings?.stripeConnectAccountId;
         const connectEnabled = vendorSettings?.stripeConnectChargesEnabled;
 
-        // Comisión de plataforma KobraPay: según plan del comercio (Express 3.5%, Connect 3.1%, Custom 2.7%, Enterprise 2.5%)
+        // Comisión de plataforma KobraPay: según plan del comercio (Express 3.36%, Connect 3.1%, Custom 2.7%, Enterprise 2.5%)
         // Usar la tasa configurada en vendorSettings.commissionRate (asignada por el superadmin según el plan)
         const vendorCommissionRate = parseFloat(String(vendorSettings?.commissionRate ?? 3.5));
         const kobraPayFeeRate = vendorCommissionRate / 100;
@@ -6134,7 +6191,7 @@ export const appRouter = router({
 
         // Calcular plan recomendado basado en respuestas
         let recommendedPlan = 'express';
-        let recommendedCommission = 3.5;
+        let recommendedCommission = 3.36;
         let planReasoning = '';
 
         const revenueMap: Record<string, number> = {
@@ -6157,7 +6214,7 @@ export const appRouter = router({
           planReasoning = 'Negocio mediano con buen volumen. Stripe Connect Express es ideal para recibir pagos directamente con tasa competitiva.';
         } else {
           recommendedPlan = 'express';
-          recommendedCommission = 3.5;
+          recommendedCommission = 3.36;
           planReasoning = 'Negocio pequeño o nuevo. Stripe Connect Express es la mejor opción para empezar sin complicaciones.';
         }
 
@@ -6439,7 +6496,7 @@ Responde SOLO con JSON válido:
 KobraPay es una plataforma de cobros y pagos digitales que opera en México y más de 24 países. Permite a los negocios aceptar pagos con tarjeta (Visa, Mastercard, Amex), OXXO y transferencias SPEI, crear enlaces de pago personalizados, gestionar transacciones y emitir facturas digitales (CFDI).
 
 PLANES Y COMISIONES (con IVA incluido):
-- Plan Express: 3.5% + IVA por transacción. Para negocios con volumen hasta $50,000 MXN/mes. Sin mensualidad, sin hardware, sin permanencia. Activación inmediata.
+- Plan Express: 3.36% + IVA por transacción. Para negocios con volumen hasta $50,000 MXN/mes. Sin mensualidad, sin hardware, sin permanencia. Activación inmediata.
 - Plan Connect: 3.1% + IVA por transacción. Para negocios con volumen entre $50,001 y $150,000 MXN/mes. Incluye soporte prioritario y mejores condiciones.
 - Plan Custom: 2.7% + IVA por transacción. Para negocios con volumen entre $150,001 y $500,000 MXN/mes.
 - Plan Enterprise: 2.5% + IVA por transacción. Para negocios con más de $500,000 MXN/mes. Integración API, gestor dedicado.
@@ -6520,7 +6577,7 @@ Responde SIEMPRE en español mexicano, de forma directa y profesional.`;
 KobraPay es una plataforma de cobros y pagos digitales disponible en México y más de 24 países. Los negocios pueden aceptar pagos con tarjeta (Visa, Mastercard, Amex), OXXO y SPEI, crear enlaces de pago, gestionar transacciones y emitir facturas digitales.
 
 PLANES DISPONIBLES (para que el admin entienda su plan):
-- Plan Express: 3.5% + IVA por transacción. Para negocios hasta $50,000 MXN/mes. Sin mensualidad.
+- Plan Express: 3.36% + IVA por transacción. Para negocios hasta $50,000 MXN/mes. Sin mensualidad.
 - Plan Connect: 3.1% + IVA por transacción. Para negocios medianos con volumen entre $50,001 y $150,000 MXN/mes.
 - Plan Custom: 2.7% + IVA por transacción. Para negocios con volumen entre $150,001 y $500,000 MXN/mes.
 - Plan Enterprise: 2.5% + IVA por transacción. Para negocios con más de $500,000 MXN/mes. Integración API, gestor dedicado.
@@ -6577,7 +6634,7 @@ Responde SIEMPRE en español mexicano, de forma práctica, directa y como si fue
 KobraPay es una plataforma de cobros y pagos digitales disponible en México y más de 24 países. Los negocios pueden aceptar pagos con tarjeta (Visa, Mastercard, Amex), OXXO y SPEI, crear enlaces de pago, gestionar transacciones y emitir facturas digitales — sin mensualidad, sin hardware, sin contratos de permanencia.
 
 PLANES DISPONIBLES (para ofrecer a prospectos):
-- Plan Express: 3.5% + IVA por transacción. Para negocios pequeños hasta $50,000 MXN/mes. Activación inmediata, ideal para empezar.
+- Plan Express: 3.36% + IVA por transacción. Para negocios pequeños hasta $50,000 MXN/mes. Activación inmediata, ideal para empezar.
 - Plan Connect: 3.1% + IVA por transacción. Para negocios medianos con volumen entre $50,001 y $150,000 MXN/mes. Incluye soporte prioritario.
 - Plan Custom: 2.7% + IVA por transacción. Para negocios con volumen entre $150,001 y $500,000 MXN/mes. Módulos personalizados.
 - Plan Enterprise: 2.5% + IVA por transacción. Para negocios con más de $500,000 MXN/mes. Integración API, gestor dedicado, SLA garantizado.
@@ -7096,14 +7153,14 @@ Responde SIEMPRE en español mexicano, de forma motivadora, práctica y orientad
 KobraPay es una plataforma de cobros y pagos digitales que opera en México y más de 24 países. Permite a los negocios aceptar pagos con tarjeta (Visa, Mastercard, Amex), OXXO y transferencias SPEI, crear enlaces de pago personalizados, gestionar transacciones y emitir facturas digitales (CFDI).
 
 PLANES Y ESTRUCTURA DE COMISIONES:
-- Plan Express: 3.5% + IVA por transacción. Para negocios hasta $50,000 MXN/mes. Sin mensualidad.
+- Plan Express: 3.36% + IVA por transacción. Para negocios hasta $50,000 MXN/mes. Sin mensualidad.
 - Plan Connect: 3.1% + IVA por transacción. Para negocios medianos ($50,001-$150,000 MXN/mes). Incluye soporte prioritario.
 - Plan Custom: 2.7% + IVA por transacción. Para negocios con volumen entre $150,001 y $500,000 MXN/mes.
 - Plan Enterprise: 2.5% + IVA por transacción. Para negocios con más de $500,000 MXN/mes. Integración API, gestor dedicado.
 Nota: KobraPay cobra el porcentaje del plan todo incluido (sin cargos fijos adicionales por transacción). El IVA se aplica sobre la comisión.
 
 ESTRUCTURA DE COMISIÓN KOBRAPAY (ejemplo Plan Express):
-- Comisión total al cliente: 3.5% + IVA (Plan Express)
+- Comisión total al cliente: 3.36% + IVA (Plan Express)
 - Margen KobraPay: ~2.8% neto (después de costos de procesamiento)
 - IVA (16%): se cobra al cliente sobre la comisión KobraPay
 
@@ -7269,7 +7326,7 @@ Responde SIEMPRE en español mexicano, de forma directa, práctica y como si fue
 Tu función es ayudar a los usuarios a resolver problemas técnicos con la plataforma KobraPay.
 
 PLANES DISPONIBLES:
-- Plan Express: 3.5% + IVA por transacción. Sin mensualidad. Para negocios hasta $50,000 MXN/mes.
+- Plan Express: 3.36% + IVA por transacción. Sin mensualidad. Para negocios hasta $50,000 MXN/mes.
 - Plan Connect: 3.1% + IVA por transacción. Con soporte prioritario. Para negocios $50,001-$150,000 MXN/mes.
 - Plan Custom: 2.7% + IVA por transacción. Para negocios $150,001-$500,000 MXN/mes.
 - Plan Enterprise: 2.5% + IVA por transacción. Para negocios con más de $500,000 MXN/mes.
@@ -7569,7 +7626,7 @@ Responde SOLO con JSON válido:
         const { invokeLLM } = await import("./_core/llm");
         const { sendQuoteEmail } = await import("./_core/email");
 
-        const stripeFixed = input.mode === "online" ? 0.30 : 0.05;
+        const stripeFixed = input.mode === "online" ? 3.00 : 0.05;
         const stripeRate = input.mode === "online" ? 0.029 : 0.027;
         const stripeFee = input.amount * stripeRate + stripeFixed;
         const kpFee = input.amount * (input.kobrapayRate / 100);
@@ -7580,7 +7637,7 @@ Responde SOLO con JSON válido:
 
         const competitors = input.mode === "online" ? [
           { name: "Mercado Pago", rate: 3.29, fixed: 0 },
-          { name: "PayPal", rate: 3.5, fixed: 0 },
+          { name: "PayPal", rate: 3.5, fixed: 4 },
           { name: "Clip (online)", rate: 3.6, fixed: 0 },
           { name: "Conekta", rate: 2.9, fixed: 0.30 },
         ] : [
@@ -7672,7 +7729,7 @@ Responde SOLO con JSON válido:
         const effectiveRate = (totalDeducted / input.singleAmount) * 100;
         const competitors = [
           { name: "Mercado Pago", rate: 3.29, fixed: 0 },
-          { name: "PayPal", rate: 3.5, fixed: 0 },
+          { name: "PayPal", rate: 3.5, fixed: 4 },
           { name: "Clip", rate: 3.6, fixed: 0 },
           { name: "Conekta", rate: 2.9, fixed: 0.30 },
         ];
@@ -7839,7 +7896,7 @@ Responde SOLO con JSON válido:
           assistant: 'Eres el asistente del equipo interno de KobraPay. Ayudas a revisar solicitudes de onboarding, aprobar o rechazar prospectos, asignar planes (Express/Connect/Enterprise), gestionar el flujo de trabajo del equipo y responder dudas sobre la plataforma.',
           associate: 'Eres el asistente del asociado de KobraPay. Ayudas a entender cómo registrar clientes, cómo funciona el sistema de comisiones escalonadas (0.3% a 5% según cartera), cómo presentar los planes Express/Connect/Enterprise a prospectos y cómo maximizar sus ingresos.',
           employee: 'Eres el asistente del empleado de KobraPay. Ayudas a usar la plataforma: crear enlaces de pago (con tarjeta, OXXO o SPEI), ver transacciones, solicitar reembolsos (que requieren aprobación del admin), entender los reportes y resolver dudas del día a día.',
-          user: 'Eres el asistente del usuario de KobraPay. Ayudas a crear enlaces de pago, entender las comisiones (Express: 3.5% + IVA, Connect: 3.1% + IVA, Custom: 2.7% + IVA, Enterprise: 2.5% + IVA), ver el historial de ventas, gestionar reembolsos y usar todas las funciones de la plataforma de forma sencilla.',
+          user: 'Eres el asistente del usuario de KobraPay. Ayudas a crear enlaces de pago, entender las comisiones (Express: 3.36% + IVA, Connect: 3.1% + IVA, Custom: 2.7% + IVA, Enterprise: 2.5% + IVA), ver el historial de ventas, gestionar reembolsos y usar todas las funciones de la plataforma de forma sencilla.',
         };
 
         const systemPrompt = `Eres KobraBot, el asistente inteligente de KobraPay. ${roleContext[role] || roleContext['user']}
@@ -7857,7 +7914,7 @@ KobraPay es una plataforma de cobros y pagos digitales disponible en México y m
 - Perfil Público del Negocio: página pública /p/slug
 
 PLANES Y COMISIONES:
-- Plan Express: 3.5% + IVA por transacción. Sin mensualidad. Para negocios hasta $50,000 MXN/mes.
+- Plan Express: 3.36% + IVA por transacción. Sin mensualidad. Para negocios hasta $50,000 MXN/mes.
 - Plan Connect: 3.1% + IVA por transacción. Con soporte prioritario. Para negocios medianos $50,001-$150,000 MXN/mes.
 - Plan Custom: 2.7% + IVA por transacción. Para negocios $150,001-$500,000 MXN/mes.
 - Plan Enterprise: 2.5% + IVA por transacción. Para negocios con más de $500,000 MXN/mes.
@@ -8517,3 +8574,5 @@ Responde SIEMPRE en español mexicano, de forma amigable, clara y práctica. Si 
   }),
 });
 export type AppRouter = typeof appRouter;
+
+// NOTE: The apiKeys router is appended below — do not duplicate

@@ -74,6 +74,7 @@ import PlatformConfig from "./pages/PlatformConfig";
 import BusinessProfile from "./pages/BusinessProfile";
 import ImpersonateClient from "./pages/ImpersonateClient";
 import ImpersonationBar from "./components/ImpersonationBar";
+import ApiKeys from "./pages/ApiKeys";
 import KobraBot from "./components/KobraBot";
 import WelcomeOnboarding from "./components/WelcomeOnboarding";
 import { trpc } from "@/lib/trpc";
@@ -167,6 +168,8 @@ function Router() {
       <Route path="/dashboard/impersonate" component={ImpersonateClient} />
       <Route path="/pending">{() => <PendingApproval status="pending" />}</Route>
       <Route path="/dashboard/colaboradores" component={Colaboradores} />
+      <Route path="/dashboard/api-keys" component={ApiKeys} />
+      <Route path="/dashboard/api-docs" component={ApiKeys} />
       <Route path="/login" component={LoginEmail} />
       <Route path="/register" component={RegisterEmail} />
       <Route path="/register-associate" component={RegisterAssociate} />
@@ -184,7 +187,7 @@ function Router() {
 function App() {
   return (
     <ErrorBoundary>
-      <ThemeProvider defaultTheme="dark">
+      <ThemeProvider defaultTheme="light">
         <TooltipProvider>
           <ImpersonationBar />
           <Toaster />

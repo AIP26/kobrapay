@@ -37,6 +37,151 @@ interface SettingsForm {
   publicProfileEnabled: boolean;
 }
 
+function PasswordSection() {
+  const { user } = useAuth();
+  const utils = trpc.useUtils();
+  const [showCurrent, setShowCurrent] = useState(false);
+  const [showNew, setShowNew] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [currentPwd, setCurrentPwd] = useState("");
+  const [newPwd, setNewPwd] = useState("");
+  const [confirmPwd, setConfirmPwd] = useState("");
+  const [profileName, setProfileName] = useState((user as any)?.name || "");
+  const [profilePhone, setProfilePhone] = useState("");
+
+  const changePassword = trpc.auth.changePassword.useMutation({
+    onSuccess: () => {
+      toast.success("Contraseña actualizada correctamente");
+      setCurrentPwd(""); setNewPwd(""); setConfirmPwd("");
+    },
+    onError: (err) => toast.error(err.message || "Error al cambiar contraseña"),
+  });
+
+  const updateProfile = trpc.auth.updateProfile.useMutation({
+    onSuccess: () => {
+      toast.success("Perfil actualizado correctamente");
+      utils.auth.me.invalidate();
+    },
+    onError: (err) => toast.error(err.message || "Error al actualizar perfil"),
+  });
+
+  const handleChangePassword = () => {
+    if (!newPwd || newPwd.length < 8) { toast.error("La contraseña debe tener al menos 8 caracteres"); return; }
+    if (newPwd !== confirmPwd) { toast.error("Las contraseñas no coinciden"); return; }
+    changePassword.mutate({ currentPassword: currentPwd || undefined, newPassword: newPwd });
+  };
+
+  return (
+    <Card className="border-gray-200 shadow-sm">
+      <CardHeader className="pb-3 border-b border-gray-100">
+        <CardTitle className="text-base font-semibold text-gray-800 flex items-center gap-2">
+          <KeyRound className="w-4 h-4 text-emerald-600" />
+          Cuenta y Seguridad
+        </CardTitle>
+        <p className="text-sm text-gray-500">Actualiza tu información personal y contraseña de acceso.</p>
+      </CardHeader>
+      <CardContent className="p-5 space-y-6">
+        {/* Editar nombre */}
+        <div className="space-y-3">
+          <p className="text-sm font-semibold text-gray-700">Información Personal</p>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <Label className="text-sm text-gray-700">Nombre completo</Label>
+              <Input
+                value={profileName}
+                onChange={(e) => setProfileName(e.target.value)}
+                placeholder="Tu nombre"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-sm text-gray-700">Teléfono</Label>
+              <Input
+                value={profilePhone}
+                onChange={(e) => setProfilePhone(e.target.value)}
+                placeholder="+52 55 1234 5678"
+              />
+            </div>
+          </div>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => updateProfile.mutate({ name: profileName || undefined, phone: profilePhone || undefined })}
+            disabled={updateProfile.isPending}
+          >
+            <Save className="w-3.5 h-3.5 mr-1.5" />
+            {updateProfile.isPending ? "Guardando..." : "Guardar Perfil"}
+          </Button>
+        </div>
+        {/* Cambiar contraseña */}
+        <div className="space-y-3 pt-4 border-t border-gray-100">
+          <p className="text-sm font-semibold text-gray-700">Contraseña de Acceso</p>
+          <p className="text-xs text-gray-400">Si iniciaste sesión con Manus OAuth, deja el campo actual en blanco para crear una contraseña nueva.</p>
+          <div className="space-y-3">
+            <div className="space-y-1.5">
+              <Label className="text-sm text-gray-700">Contraseña actual</Label>
+              <div className="relative">
+                <Input
+                  type={showCurrent ? "text" : "password"}
+                  value={currentPwd}
+                  onChange={(e) => setCurrentPwd(e.target.value)}
+                  placeholder="Contraseña actual (dejar vacío si no tienes)"
+                  className="pr-10"
+                />
+                <button type="button" onClick={() => setShowCurrent(v => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                  {showCurrent ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label className="text-sm text-gray-700">Nueva contraseña</Label>
+                <div className="relative">
+                  <Input
+                    type={showNew ? "text" : "password"}
+                    value={newPwd}
+                    onChange={(e) => setNewPwd(e.target.value)}
+                    placeholder="Mínimo 8 caracteres"
+                    className="pr-10"
+                  />
+                  <button type="button" onClick={() => setShowNew(v => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                    {showNew ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-sm text-gray-700">Confirmar contraseña</Label>
+                <div className="relative">
+                  <Input
+                    type={showConfirm ? "text" : "password"}
+                    value={confirmPwd}
+                    onChange={(e) => setConfirmPwd(e.target.value)}
+                    placeholder="Repetir contraseña"
+                    className="pr-10"
+                  />
+                  <button type="button" onClick={() => setShowConfirm(v => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                    {showConfirm ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+            </div>
+            <Button
+              type="button"
+              onClick={handleChangePassword}
+              disabled={changePassword.isPending || !newPwd}
+              className="bg-emerald-600 hover:bg-emerald-500 text-white"
+              size="sm"
+            >
+              <Lock className="w-3.5 h-3.5 mr-1.5" />
+              {changePassword.isPending ? "Actualizando..." : "Actualizar Contraseña"}
+            </Button>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 export default function Settings() {
   const utils = trpc.useUtils();
   const { user } = useAuth();
@@ -811,6 +956,8 @@ export default function Settings() {
           </CardContent>
         </Card>
 
+        {/* ─── Sección Contraseña ─── */}
+        <PasswordSection />
         {/* ─── Sección PIN de Seguridad (solo superadmin) ─── */}
         {isSuperAdmin && (
           <Card className="border-gray-200 shadow-sm">

@@ -22,10 +22,9 @@ export function ThemeProvider({
   switchable = false,
 }: ThemeProviderProps) {
   const [theme, setTheme] = useState<Theme>(() => {
-    if (switchable) {
-      const stored = localStorage.getItem("theme");
-      return (stored as Theme) || defaultTheme;
-    }
+    // Force remove any stored dark theme — KobraPay is always light
+    localStorage.removeItem("theme");
+    document.documentElement.classList.remove("dark");
     return defaultTheme;
   });
 

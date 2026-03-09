@@ -8,6 +8,7 @@ import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
 import { registerStripeWebhook } from "../stripeWebhook";
+import { registerApiV1Routes } from "../apiV1";
 import { registerSecurityMiddleware } from "../security";
 import { getPendingRegistrationsOlderThan, createNotification, getUserByOpenId, hasRecentNotification, deduplicateNotifications } from "../db";
 import { ENV } from "./env";
@@ -52,6 +53,9 @@ async function startServer() {
 
   // OAuth callback under /api/oauth/callback
   registerOAuthRoutes(app);
+
+  // Public API v1 (requires API Key auth)
+  registerApiV1Routes(app as any);
 
   // Image proxy: permite al frontend cargar imágenes de S3 sin bloqueo CORS
   // Solo permite URLs de dominios de confianza (S3/CDN de Manus)

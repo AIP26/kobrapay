@@ -101,7 +101,7 @@ export default function RegisterAssociate() {
           <p className="text-slate-400 text-lg mb-12">Únete a nuestra red de asociados y recibe comisión automática por cada transacción de tus clientes referidos.</p>
           <div className="space-y-6">
             {[
-              { title: "0.03% por transacción", desc: "Comisión automática en cada cobro de tus clientes" },
+              { title: "$1 MXN por transacción", desc: "Comisión automática en cada cobro de tus clientes referidos" },
               { title: "Sin límite de referidos", desc: "Cuantos más clientes registres, más ganas" },
               { title: "Panel de seguimiento", desc: "Ve tus comisiones y clientes en tiempo real" },
               { title: "Pago a tu CLABE", desc: "Liquidación directa a tu cuenta bancaria" },
