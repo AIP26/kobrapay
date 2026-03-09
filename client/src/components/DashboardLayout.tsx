@@ -684,18 +684,9 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   }
 
   if (!isAuthenticated) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-[#1a1f2e]">
-        <div className="text-center space-y-4 max-w-sm mx-auto px-4">
-          <img src={KOBRAPAY_ICON} alt="KobraPay" className="w-16 h-16 mx-auto" />
-          <h1 className="text-2xl font-bold text-white">Acceso requerido</h1>
-          <p className="text-gray-400">Inicia sesión para acceder al panel de KobraPay.</p>
-          <Button asChild className="w-full bg-emerald-500 hover:bg-emerald-400 text-white" size="lg">
-            <a href={getLoginUrl("/dashboard")}>Iniciar Sesión</a>
-          </Button>
-        </div>
-      </div>
-    );
+    // Redirigir al login propio (no al OAuth de Manus)
+    window.location.replace("/login");
+    return null;
   }
 
   const isAdmin = user?.role === "admin";
