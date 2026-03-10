@@ -193,11 +193,11 @@ const VOLUME_TIERS = [
     label: "Connect", 
     min: 50001, 
     max: 150000, 
-    totalRate: 4.0,
+    totalRate: 4.1,
     fixedFee: 3.50,
     stripeRate: 3.6,
     stripeFixed: 3.0,
-    kobrapayRate: 0.4,
+    kobrapayRate: 0.5,
     kobrapayFixed: 0.50,
     color: "cyan" 
   },
@@ -205,11 +205,11 @@ const VOLUME_TIERS = [
     label: "Custom", 
     min: 150001, 
     max: 500000, 
-    totalRate: 3.8,
+    totalRate: 4.0,
     fixedFee: 3.50,
     stripeRate: 3.6,
     stripeFixed: 3.0,
-    kobrapayRate: 0.2,
+    kobrapayRate: 0.4,
     kobrapayFixed: 0.50,
     color: "violet" 
   },
@@ -217,12 +217,12 @@ const VOLUME_TIERS = [
     label: "Enterprise", 
     min: 500001, 
     max: 9999999, 
-    totalRate: 3.6,
-    fixedFee: 3.0,
+    totalRate: 3.9,
+    fixedFee: 3.50,
     stripeRate: 3.6,
     stripeFixed: 3.0,
-    kobrapayRate: 0.0,
-    kobrapayFixed: 0.0,
+    kobrapayRate: 0.3,
+    kobrapayFixed: 0.50,
     color: "amber" 
   },
 ];
@@ -655,7 +655,7 @@ export default function Home() {
             </p>
             <div className="flex items-center gap-4 mb-6">
               <div className="text-center">
-                <p className="text-xl font-black text-foreground">3.36% + IVA*</p>
+                <p className="text-xl font-black text-foreground">4.2% + IVA*</p>
                 <p className="text-xs text-muted-foreground">Comisión plan Express</p>
               </div>
               <div className="w-px h-8 bg-border" />
