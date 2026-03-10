@@ -174,13 +174,57 @@ function FeatureModal({ feature, onClose }: { feature: typeof FEATURES[0]; onClo
 const KOBRAPAY_LOGO = "https://d2xsxph8kpxj0f.cloudfront.net/310519663381362445/Tm7GPbTEGgvmgj5v2qy4Z4/kobrapay_logo_v2_52d63331.png";
 const KOBRAPAY_ICON = "https://d2xsxph8kpxj0f.cloudfront.net/310519663381362445/Tm7GPbTEGgvmgj5v2qy4Z4/kobrapay_logo_v2_52d63331.png";
 
-// Planes KobraPay — tasa base SIN IVA (+ IVA se muestra separado) + cargo fijo por transacción
-// Stripe cobra 2.9% + $3 MXN; KobraPay cobra 3.36% + IVA + $3.50 MXN (asociado recibe $1 MXN por tx)
+// Planes KobraPay — DESGLOSE TRANSPARENTE
+// Stripe: 3.6% + $3 MXN | KobraPay: 0.2-0.6%
 const VOLUME_TIERS = [
-  { label: "Express",    min: 0,       max: 50000,   totalRate: 3.36, fixedFee: 3.50, color: "emerald" },
-  { label: "Connect",   min: 50001,   max: 150000,  totalRate: 3.10, fixedFee: 3.50, color: "cyan" },
-  { label: "Custom",    min: 150001,  max: 500000,  totalRate: 2.70, fixedFee: 3.50, color: "violet" },
-  { label: "Enterprise",min: 500001,  max: 9999999, totalRate: 2.50, fixedFee: 0,    color: "amber" },
+  { 
+    label: "Express", 
+    min: 0, 
+    max: 50000, 
+    totalRate: 4.2,
+    fixedFee: 3.50,
+    stripeRate: 3.6,
+    stripeFixed: 3.0,
+    kobrapayRate: 0.6,
+    kobrapayFixed: 0.50,
+    color: "emerald" 
+  },
+  { 
+    label: "Connect", 
+    min: 50001, 
+    max: 150000, 
+    totalRate: 4.0,
+    fixedFee: 3.50,
+    stripeRate: 3.6,
+    stripeFixed: 3.0,
+    kobrapayRate: 0.4,
+    kobrapayFixed: 0.50,
+    color: "cyan" 
+  },
+  { 
+    label: "Custom", 
+    min: 150001, 
+    max: 500000, 
+    totalRate: 3.8,
+    fixedFee: 3.50,
+    stripeRate: 3.6,
+    stripeFixed: 3.0,
+    kobrapayRate: 0.2,
+    kobrapayFixed: 0.50,
+    color: "violet" 
+  },
+  { 
+    label: "Enterprise", 
+    min: 500001, 
+    max: 9999999, 
+    totalRate: 3.6,
+    fixedFee: 3.0,
+    stripeRate: 3.6,
+    stripeFixed: 3.0,
+    kobrapayRate: 0.0,
+    kobrapayFixed: 0.0,
+    color: "amber" 
+  },
 ];
 
 const FAQ_ITEMS = [
