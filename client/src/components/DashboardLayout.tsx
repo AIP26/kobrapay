@@ -234,6 +234,7 @@ const NAV_GROUPS = [
     color: "text-sky-500/70",
     items: [
       { href: "/dashboard/api-keys", icon: Key, label: "API Keys" },
+      { href: "/dashboard/webhooks", icon: Zap, label: "Webhooks" },
       { href: "/dashboard/api-docs", icon: FileText, label: "Documentación API" },
     ],
   },

@@ -22,6 +22,7 @@ import { notifyOwner } from "./_core/notification";
 import { createNotification } from "./db";
 import { sendRecurringPaymentEmail, sendPaymentReceipt, sendVendorPaymentEmail } from "./_core/email";
 import { getVendorSettings } from "./db";
+import { dispatchWebhookEvent } from "./webhookDispatcher";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "", {
   apiVersion: "2026-02-25.clover",
@@ -198,6 +199,25 @@ export function registerStripeWebhook(app: express.Application) {
                   }
                 } catch (vendorEmailErr) {
                   console.error("[Webhook] Error enviando notificación al vendedor:", vendorEmailErr);
+                }
+                // Disparar webhooks salientes del vendedor
+                try {
+                  await dispatchWebhookEvent(userId, "payment.success", {
+                    paymentLinkToken: token,
+                    paymentIntentId: pi.id,
+                    amount: link.amount,
+                    currency: link.currency || "MXN",
+                    description: link.description || "",
+                    payerName: pi.metadata?.payerName || "",
+                    payerEmail: pi.metadata?.payerEmail || "",
+                    payerPhone: pi.metadata?.payerPhone || "",
+                    cardBrand: cardBrand || "",
+                    cardLast4: cardLast4 || "",
+                    paidAt: new Date().toISOString(),
+                    merchantId: `merchant_${userId}`,
+                  });
+                } catch (whErr) {
+                  console.error("[Webhook] Error disparando webhooks salientes:", whErr);
                 }
               }
             }
