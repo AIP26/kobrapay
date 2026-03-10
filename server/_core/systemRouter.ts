@@ -13,6 +13,20 @@ export const systemRouter = router({
       ok: true,
     })),
 
+  getRegisteredCount: publicProcedure.query(async () => {
+    try {
+      const { getDb } = await import('../db');
+      const db = await getDb();
+      if (!db) return 0;
+      const { users } = await import('../../drizzle/schema');
+      const { count } = await import('drizzle-orm');
+      const result = await db.select({ value: count() }).from(users);
+      return result[0]?.value ?? 0;
+    } catch {
+      return 0;
+    }
+  }),
+
   notifyOwner: adminProcedure
     .input(
       z.object({

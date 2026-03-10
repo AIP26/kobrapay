@@ -80,11 +80,16 @@ export const pricingRouter = router({
       fields.updated_at = Date.now();
       fields.updated_by = ctx.user.id;
 
-      if (Object.keys(fields).length > 2) {
-        const setClauses = Object.keys(fields)
-          .map((k) => `\`${k}\` = ${fields[k] === null ? "NULL" : JSON.stringify(String(fields[k]))}`)
-          .join(", ");
-        await db.execute(sql.raw(`UPDATE pricing_plans SET ${setClauses} WHERE id = ${input.id}`));
+      const fieldKeys = Object.keys(fields);
+      if (fieldKeys.length > 2) {
+        const parts: string[] = [];
+        for (const k of fieldKeys) {
+          const v = fields[k];
+          const safeV = v === null ? "NULL" : ("'" + String(v).replace(/'/g, "''") + "'");
+          parts.push(k + " = " + safeV);
+        }
+        const setClauses = parts.join(", ");
+        await db.execute(sql.raw("UPDATE pricing_plans SET " + setClauses + " WHERE id = " + input.id));
       }
       return { success: true };
     }),

@@ -176,46 +176,11 @@ const KOBRAPAY_ICON = "https://d2xsxph8kpxj0f.cloudfront.net/310519663381362445/
 
 // Planes KobraPay — DESGLOSE TRANSPARENTE
 // Stripe: 3.6% + $3 MXN | KobraPay: 0.2-0.6%
+// Plan único Beta de lanzamiento
 const VOLUME_TIERS = [
   { 
-    label: "Express", 
+    label: "Beta", 
     min: 0, 
-    max: 50000, 
-    totalRate: 4.2,
-    fixedFee: 3.50,
-    stripeRate: 3.6,
-    stripeFixed: 3.0,
-    kobrapayRate: 0.6,
-    kobrapayFixed: 0.50,
-    color: "emerald" 
-  },
-  { 
-    label: "Connect", 
-    min: 50001, 
-    max: 150000, 
-    totalRate: 4.1,
-    fixedFee: 3.50,
-    stripeRate: 3.6,
-    stripeFixed: 3.0,
-    kobrapayRate: 0.5,
-    kobrapayFixed: 0.50,
-    color: "cyan" 
-  },
-  { 
-    label: "Custom", 
-    min: 150001, 
-    max: 500000, 
-    totalRate: 4.0,
-    fixedFee: 3.50,
-    stripeRate: 3.6,
-    stripeFixed: 3.0,
-    kobrapayRate: 0.4,
-    kobrapayFixed: 0.50,
-    color: "violet" 
-  },
-  { 
-    label: "Enterprise", 
-    min: 500001, 
     max: 9999999, 
     totalRate: 3.9,
     fixedFee: 3.50,
@@ -223,7 +188,7 @@ const VOLUME_TIERS = [
     stripeFixed: 3.0,
     kobrapayRate: 0.3,
     kobrapayFixed: 0.50,
-    color: "amber" 
+    color: "emerald" 
   },
 ];
 
@@ -241,15 +206,23 @@ const FAQ_ITEMS = [
     a: "Sí. Los pagos son procesados por Stripe, la plataforma de pagos más confiable del mundo, con cifrado SSL de 256 bits. KobraPay nunca almacena datos de tarjetas. Además, incluimos verificación OTP, captura de selfie del pagador y firma digital para protegerte contra contracargos fraudulentos."
   },
   {
-    q: "¿Cuánto cuesta? ¿Hay mensualidad o costo fijo?",
-    a: "No hay mensualidad ni costo fijo. Solo pagas una comisión por cada transacción exitosa, y a mayor volumen de ventas, menor es tu porcentaje. Puedes simular exactamente cuánto pagarás con nuestro calculador de comisiones en esta misma página."
+    q: "\u00bfCu\u00e1nto cuesta? \u00bfHay mensualidad o costo fijo?",
+    a: "No hay mensualidad ni costo fijo. Solo pagas 3.9% + $3.50 MXN + IVA por cada transacci\u00f3n exitosa. Este es nuestro precio de lanzamiento para los primeros 50 clientes. Puedes simular exactamente cu\u00e1nto pagar\u00e1s con nuestro calculador de comisiones en esta misma p\u00e1gina."
   },
   {
     q: "¿Puedo ofrecer meses sin intereses a mis clientes?",
     a: "Sí. Puedes activar opciones de 3, 6, 9, 12 o 24 meses sin intereses en tus enlaces de pago. El cliente elige su plan antes de ingresar su tarjeta. Compatible con tarjetas de crédito mexicanas."
   },
   {
-    q: "¿Qué diferencia a KobraPay de otras plataformas como Clip o Mercado Pago?",
+    q: "\u00bfEl precio incluye IVA?",
+    a: "No, el IVA (16%) se cobra adicional seg\u00fan la ley mexicana. El costo total efectivo es aproximadamente 4.93%. Por ejemplo, por cada $1,000 cobrados: Stripe se lleva $39 + IVA ($6.24) = $45.24, y KobraPay cobra $3.50 + IVA ($0.56) = $4.06. Total descuentos: $49.30. T\u00fa recibes: $950.70."
+  },
+  {
+    q: "\u00bfPuedo cancelar cuando quiera?",
+    a: "S\u00ed, sin penalizaci\u00f3n. No hay contratos de permanencia. Si decides dejar KobraPay, simplemente dejas de usar la plataforma. No hay cobros por cancelaci\u00f3n ni periodos de aviso."
+  },
+  {
+    q: "\u00bfQu\u00e9 diferencia a KobraPay de otras plataformas como Clip o Mercado Pago?",
     a: "KobraPay está diseñado para negocios que necesitan más que un simple cobro: contratos digitales con firma, cobros recurrentes automatizados, transferencias internacionales (SPEI, Zelle, Wire), panel multi-negocio para gestionar varios clientes, y un sistema de asociados con comisión escalonada. Es una plataforma completa, no solo un lector de tarjetas."
   },
   {
@@ -615,7 +588,10 @@ export default function Home() {
         color: p.color,
       }))
     : VOLUME_TIERS;
-  const expressRate = activeTiers[0]?.totalRate ?? 4.2;
+  const expressRate = activeTiers[0]?.totalRate ?? 3.9;
+  // Contador de espacios: total 50 - usuarios registrados
+  const { data: registeredCount } = trpc.system.getRegisteredCount.useQuery();
+  const spotsLeft = Math.max(0, 50 - (registeredCount ?? 0));
 
   return (
     <div className="min-h-screen bg-background">
