@@ -310,7 +310,12 @@ function FAQSection() {
   );
 }
 
-function PublicQuoteCalculator() {
+type TierType = {
+  label: string; min: number; max: number; totalRate: number; fixedFee: number;
+  stripeRate: number; stripeFixed: number; kobrapayRate: number; kobrapayFixed: number; color: string;
+};
+function PublicQuoteCalculator({ tiers: propTiers }: { tiers?: TierType[] }) {
+  const activeTiers = propTiers && propTiers.length > 0 ? propTiers : VOLUME_TIERS;
   const [monthlyVolume, setMonthlyVolume] = useState(50000);
   const [singleAmount, setSingleAmount] = useState(5000);
   const [simCountry, setSimCountry] = useState("MX");
@@ -594,6 +599,23 @@ export default function Home() {
   const { isAuthenticated, loading } = useAuth();
   const [activeFeature, setActiveFeature] = useState<typeof FEATURES[0] | null>(null);
   const [activeTab, setActiveTab] = useState<"acceso" | "registrar">("acceso");
+  const { data: dbPlans } = trpc.pricing.getAll.useQuery();
+  // Usar planes de la BD si están disponibles, sino usar los hardcodeados como fallback
+  const activeTiers = (dbPlans && dbPlans.length > 0)
+    ? dbPlans.map(p => ({
+        label: p.name,
+        min: p.minVolume,
+        max: p.maxVolume,
+        totalRate: p.totalRate,
+        fixedFee: p.fixedFee,
+        stripeRate: p.stripeRate,
+        stripeFixed: p.stripeFixed,
+        kobrapayRate: p.kobrapayRate,
+        kobrapayFixed: p.kobrapayFixed,
+        color: p.color,
+      }))
+    : VOLUME_TIERS;
+  const expressRate = activeTiers[0]?.totalRate ?? 4.2;
 
   return (
     <div className="min-h-screen bg-background">
@@ -655,7 +677,7 @@ export default function Home() {
             </p>
             <div className="flex items-center gap-4 mb-6">
               <div className="text-center">
-                <p className="text-xl font-black text-foreground">4.2% + IVA*</p>
+                <p className="text-xl font-black text-foreground">{expressRate}% + IVA*</p>
                 <p className="text-xs text-muted-foreground">Comisión plan Express</p>
               </div>
               <div className="w-px h-8 bg-border" />
@@ -865,7 +887,7 @@ export default function Home() {
             <h2 className="text-2xl lg:text-3xl font-bold text-foreground mb-3">Simula cuanto te cobraremos</h2>
             <p className="text-muted-foreground max-w-xl mx-auto">Mueve el slider para ver exactamente cuanto recibiras despues de comisiones. A mayor volumen, menor porcentaje.</p>
           </div>
-          <PublicQuoteCalculator />
+          <PublicQuoteCalculator tiers={activeTiers} />
         </div>
       </section>
 

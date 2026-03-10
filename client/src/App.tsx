@@ -76,6 +76,7 @@ import ImpersonateClient from "./pages/ImpersonateClient";
 import ImpersonationBar from "./components/ImpersonationBar";
 import ApiKeys from "./pages/ApiKeys";
 import Webhooks from "./pages/Webhooks";
+import PricingAdmin from "./pages/PricingAdmin";
 import KobraBot from "./components/KobraBot";
 import WelcomeOnboarding from "./components/WelcomeOnboarding";
 import { trpc } from "@/lib/trpc";
@@ -171,6 +172,7 @@ function Router() {
       <Route path="/dashboard/colaboradores" component={Colaboradores} />
       <Route path="/dashboard/api-keys" component={ApiKeys} />
       <Route path="/dashboard/webhooks" component={Webhooks} />
+      <Route path="/dashboard/precios" component={PricingAdmin} />
       <Route path="/dashboard/api-docs" component={ApiKeys} />
       <Route path="/login" component={LoginEmail} />
       <Route path="/register" component={RegisterEmail} />

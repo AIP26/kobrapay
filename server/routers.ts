@@ -99,6 +99,7 @@ import { systemRouter } from "./_core/systemRouter";
 import { isSuperAdmin, protectedProcedure, publicProcedure, router } from "./_core/trpc";
 import { securityRouter } from "./routers/security";
 import { apiKeysRouter } from "./routers/apiKeys";
+import { pricingRouter } from "./routers/pricing";
 import { notifyOwner } from "./_core/notification";
 import { sendOtpEmail, sendPaymentReceipt, sendWelcomeEmail, sendInvoiceEmail, sendRefundNotification, sendSubscriptionInviteEmail, sendNewRegistrationEmail } from "./_core/email";
 import { ENV } from "./_core/env";
@@ -149,6 +150,7 @@ export const appRouter = router({
   system: systemRouter,
   security: securityRouter,
   apiKeys: apiKeysRouter,
+  pricing: pricingRouter,
 
   auth: router({
     me: publicProcedure.query(async (opts) => {

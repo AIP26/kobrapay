@@ -248,6 +248,7 @@ const NAV_GROUPS = [
       // Todo el bloque de administración es solo para superadmin
       { href: "/dashboard/metrics", icon: Activity, label: "Panel de Métricas", superAdminOnly: true },
       { href: "/dashboard/platform-config", icon: Settings, label: "Config. Plataforma", superAdminOnly: true },
+      { href: "/dashboard/precios", icon: DollarSign, label: "Gestionar Precios", superAdminOnly: true },
       { href: "/dashboard/clients", icon: Users, label: "Mis Clientes", superAdminOnly: true },
       { href: "/dashboard/registrations", icon: UserCog, label: "Registros", superAdminOnly: true },
       { href: "/dashboard/ai-scoring", icon: Brain, label: "Scoring IA", superAdminOnly: true },
