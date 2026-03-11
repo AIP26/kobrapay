@@ -460,12 +460,13 @@ function ClientQuoteSimulator() {
   });
 
   // Tasas editables — se inicializan desde la configuración del usuario
-  const defaultKp = parseFloat(String(settings?.commissionRate ?? "7"));
+  const defaultKp = parseFloat(String(settings?.commissionRate ?? "4.6"));
   const defaultIva = settings?.ivaEnabled ? parseFloat(String(settings?.ivaRate ?? "16")) : 16;
-  const defaultStripeOnline = 2.9;
-  const defaultStripeTerminal = 2.7;
-  const defaultStripeFixedOnline = 0.30;
-  const defaultStripeFixedTerminal = 0.05;
+  // Stripe México: 3.6% + $3 MXN (tarifa real verificada en dashboard Stripe)
+  const defaultStripeOnline = 3.6;
+  const defaultStripeTerminal = 3.6;
+  const defaultStripeFixedOnline = 3.0;
+  const defaultStripeFixedTerminal = 3.0;
 
   const [kpRateStr, setKpRateStr] = useState<string>("");
   const [ivaRateStr, setIvaRateStr] = useState<string>("");

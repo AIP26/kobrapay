@@ -636,7 +636,7 @@ export default function Contracts() {
   const defaultForm = {
     clientName: "", clientEmail: "", clientPhone: "", clientRfc: "", clientCurp: "",
     clientAddress: "", businessName: "", clientIneNumber: "",
-    commissionRate: 6, contractDurationMonths: 0, includeExclusivityClause: false,
+    commissionRate: 4.6, contractDurationMonths: 0, includeExclusivityClause: false,
     customTerms: "", internalNotes: "",
   };
   const [form, setForm] = useState(defaultForm);
@@ -764,7 +764,7 @@ export default function Contracts() {
               </div>
               <div>
                 <Label>Comisión (%)</Label>
-                <Input type="number" min={0} max={100} step={0.1} value={form.commissionRate} onChange={e => setForm(f => ({ ...f, commissionRate: parseFloat(e.target.value) || 6 }))} />
+                <Input type="number" min={0} max={100} step={0.1} value={form.commissionRate} onChange={e => setForm(f => ({ ...f, commissionRate: parseFloat(e.target.value) || 4.6 }))} />
               </div>
               <div>
                 <Label>Duración del contrato</Label>

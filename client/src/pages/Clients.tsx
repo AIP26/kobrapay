@@ -87,7 +87,7 @@ function CreateClientDialog({ onSuccess }: { onSuccess: () => void }) {
   const [createdClient, setCreatedClient] = useState<{ tempPassword: string; email: string } | null>(null);
 
   const { register, handleSubmit, reset, formState: { errors } } = useForm<CreateClientForm>({
-    defaultValues: { commissionRate: 7 },
+    defaultValues: { commissionRate: 4.6 },
   });
 
   const createClient = trpc.clients.create.useMutation({
@@ -293,7 +293,7 @@ function ClientDetailPanel({ clientId, onBack }: { clientId: number; onBack: () 
   const cfg = statusConfig[client.status] ?? statusConfig.pending;
   const StatusIcon = cfg.icon;
   const initials = client.name.split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2);
-  const currentCommission = parseFloat(String(client.commissionRate ?? 7));
+  const currentCommission = parseFloat(String(client.commissionRate ?? 4.6));
 
   // Sincronizar permisos cuando llegan los datos (si aún no están cargados)
   const parsedPerms = parsePerms(permissions);
@@ -1225,7 +1225,7 @@ export default function Clients() {
                           <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 bg-cyan-50 rounded-lg flex-shrink-0">
                             <Percent className="w-3.5 h-3.5 text-cyan-600" />
                             <span className="text-sm font-bold text-cyan-700">
-                              {parseFloat(String(client.commissionRate ?? 7)).toFixed(1)}%
+                              {parseFloat(String(client.commissionRate ?? 4.6)).toFixed(1)}%
                             </span>
                           </div>
 

@@ -231,7 +231,7 @@ export default function Settings() {
   } = useForm<SettingsForm>({
     defaultValues: {
       businessName: "", businessEmail: "", businessPhone: "",
-      commissionRate: 7, ivaRate: 16, ivaEnabled: true, usdExchangeRate: 0,
+      commissionRate: 4.6, ivaRate: 16, ivaEnabled: true, usdExchangeRate: 0,
       otpEnabled: false, selfieEnabled: false, chargebackText: "",
       businessCountry: "MX",
       businessSlug: "", publicBio: "", websiteUrl: "", publicProfileEnabled: false,
@@ -272,7 +272,7 @@ export default function Settings() {
         businessName: settings.businessName || "",
         businessEmail: settings.businessEmail || "",
         businessPhone: settings.businessPhone || "",
-        commissionRate: parseFloat(String(settings.commissionRate || 7)),
+        commissionRate: parseFloat(String(settings.commissionRate || 4.6)),
         ivaRate: parseFloat(String((settings as any).ivaRate ?? 16)),
         ivaEnabled: (settings as any).ivaEnabled ?? true,
         usdExchangeRate: parseFloat(String(settings.usdExchangeRate || 0)),

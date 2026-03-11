@@ -683,7 +683,8 @@ export async function sendQuoteEmail(data: QuoteEmailData): Promise<boolean> {
 
   const fmt = (n: number) => n.toLocaleString("es-MX", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   const modeLabel = data.mode === "online" ? "Cobro Online" : "Terminal Física";
-  const stripeLabel = data.mode === "online" ? "2.9% + $0.30" : "2.7% + $0.05";
+  // Stripe México: 3.6% + $3 MXN (tarifa real verificada)
+  const stripeLabel = "3.6% + $3 MXN";
 
   const competitorRows = data.competitors
     .map(c => {
@@ -752,7 +753,7 @@ export async function sendQuoteEmail(data: QuoteEmailData): Promise<boolean> {
           </tr>
           <tr>
             <td style="padding:10px 16px;color:#374151;font-size:14px;border-top:1px solid #f3f4f6;">Comisión Stripe (${stripeLabel})</td>
-            <td style="padding:10px 16px;text-align:right;color:#dc2626;font-size:14px;border-top:1px solid #f3f4f6;">-$${fmt(data.amount * (data.mode === "online" ? 0.029 : 0.027) + (data.mode === "online" ? 0.30 : 0.05))} MXN</td>
+            <td style="padding:10px 16px;text-align:right;color:#dc2626;font-size:14px;border-top:1px solid #f3f4f6;">-$${fmt(data.amount * 0.036 + 3)} MXN</td>
           </tr>
           <tr>
             <td style="padding:10px 16px;color:#374151;font-size:14px;border-top:1px solid #f3f4f6;">Comisión KobraPay (${data.kobrapayRate}%)</td>

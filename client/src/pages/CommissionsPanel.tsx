@@ -1003,7 +1003,7 @@ export default function CommissionsPanel() {
               <div className="p-2 bg-amber-100 rounded-lg"><TrendingUp className="w-5 h-5 text-amber-600" /></div>
               <div className="text-left">
                 <p className="font-bold text-foreground">Comisión Escalonada para Asociados</p>
-                <p className="text-xs text-muted-foreground">Tabla de porcentajes 0.3%–5% según cartera de clientes</p>
+                <p className="text-xs text-muted-foreground">Tabla de porcentajes escalonados según cartera de clientes</p>
               </div>
             </div>
             <ChevronRight className={`w-5 h-5 text-muted-foreground transition-transform ${showTiers ? 'rotate-90' : ''}`} />

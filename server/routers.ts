@@ -6746,12 +6746,9 @@ Responde SOLO con JSON válido:
 
 KobraPay es una plataforma de cobros y pagos digitales que opera en México y más de 24 países. Permite a los negocios aceptar pagos con tarjeta (Visa, Mastercard, Amex), OXXO y transferencias SPEI, crear enlaces de pago personalizados, gestionar transacciones y emitir facturas digitales (CFDI).
 
-PLANES Y COMISIONES (con IVA incluido):
-- Plan Express: 3.36% + IVA por transacción. Para negocios con volumen hasta $50,000 MXN/mes. Sin mensualidad, sin hardware, sin permanencia. Activación inmediata.
-- Plan Connect: 3.1% + IVA por transacción. Para negocios con volumen entre $50,001 y $150,000 MXN/mes. Incluye soporte prioritario y mejores condiciones.
-- Plan Custom: 2.7% + IVA por transacción. Para negocios con volumen entre $150,001 y $500,000 MXN/mes.
-- Plan Enterprise: 2.5% + IVA por transacción. Para negocios con más de $500,000 MXN/mes. Integración API, gestor dedicado.
-Nota: El procesador de pagos (*) siempre cobra su parte aparte; la comisión KobraPay es lo que queda para la plataforma.
+PLAN Y COMISIÓN (plan único de lanzamiento):
+- Plan Beta: 4.6% + $3.50 MXN + IVA por transacción. Sin mensualidad, sin hardware, sin permanencia. Activación en 24h.
+Desglose: Stripe cobra 3.6% + $3 MXN, KobraPay cobra 1% + $0.50 MXN. El IVA (16%) se aplica sobre la parte KobraPay.
 
 MÉTODOS DE PAGO (configurables por enlace):
 - Tarjeta de crédito/débito (Visa, Mastercard, Amex)
@@ -6827,11 +6824,9 @@ Responde SIEMPRE en español mexicano, de forma directa y profesional.`;
 
 KobraPay es una plataforma de cobros y pagos digitales disponible en México y más de 24 países. Los negocios pueden aceptar pagos con tarjeta (Visa, Mastercard, Amex), OXXO y SPEI, crear enlaces de pago, gestionar transacciones y emitir facturas digitales.
 
-PLANES DISPONIBLES (para que el admin entienda su plan):
-- Plan Express: 3.36% + IVA por transacción. Para negocios hasta $50,000 MXN/mes. Sin mensualidad.
-- Plan Connect: 3.1% + IVA por transacción. Para negocios medianos con volumen entre $50,001 y $150,000 MXN/mes.
-- Plan Custom: 2.7% + IVA por transacción. Para negocios con volumen entre $150,001 y $500,000 MXN/mes.
-- Plan Enterprise: 2.5% + IVA por transacción. Para negocios con más de $500,000 MXN/mes. Integración API, gestor dedicado.
+PLAN DISPONIBLE (plan único de lanzamiento):
+- Plan Beta: 4.6% + $3.50 MXN + IVA por transacción. Sin mensualidad, sin hardware, sin permanencia. Activación en 24h.
+Desglose: Stripe cobra 3.6% + $3 MXN, KobraPay cobra 1% + $0.50 MXN. El IVA (16%) se aplica sobre la parte KobraPay.
 
 MÓDULOS DISPONIBLES EN KOBRAPAY:
 - Cobros y Links de Pago (con selector de métodos: tarjeta, OXXO, SPEI por enlace)
@@ -6884,11 +6879,10 @@ Responde SIEMPRE en español mexicano, de forma práctica, directa y como si fue
 
 KobraPay es una plataforma de cobros y pagos digitales disponible en México y más de 24 países. Los negocios pueden aceptar pagos con tarjeta (Visa, Mastercard, Amex), OXXO y SPEI, crear enlaces de pago, gestionar transacciones y emitir facturas digitales — sin mensualidad, sin hardware, sin contratos de permanencia.
 
-PLANES DISPONIBLES (para ofrecer a prospectos):
-- Plan Express: 3.36% + IVA por transacción. Para negocios pequeños hasta $50,000 MXN/mes. Activación inmediata, ideal para empezar.
-- Plan Connect: 3.1% + IVA por transacción. Para negocios medianos con volumen entre $50,001 y $150,000 MXN/mes. Incluye soporte prioritario.
-- Plan Custom: 2.7% + IVA por transacción. Para negocios con volumen entre $150,001 y $500,000 MXN/mes. Módulos personalizados.
-- Plan Enterprise: 2.5% + IVA por transacción. Para negocios con más de $500,000 MXN/mes. Integración API, gestor dedicado, SLA garantizado.
+PLAN DISPONIBLE (para ofrecer a prospectos):
+- Plan Beta: 4.6% + $3.50 MXN + IVA por transacción. Sin mensualidad, sin hardware, sin permanencia. Activación en 24h.
+Desglose transparente: Stripe cobra 3.6% + $3 MXN, KobraPay cobra 1% + $0.50 MXN. El IVA (16%) se aplica sobre la parte KobraPay.
+Ventaja competitiva: Mercado Pago cobra 3.29%, PayPal 3.5%, Clip 3.6% — pero ninguno incluye contratos digitales, cobros recurrentes, firma electrónica, OTP ni agenda.
 
 MÉTODOS DE PAGO (ventaja diferencial):
 - Tarjeta de crédito/débito (Visa, Mastercard, Amex)
@@ -7403,31 +7397,15 @@ Responde SIEMPRE en español mexicano, de forma motivadora, práctica y orientad
 
 KobraPay es una plataforma de cobros y pagos digitales que opera en México y más de 24 países. Permite a los negocios aceptar pagos con tarjeta (Visa, Mastercard, Amex), OXXO y transferencias SPEI, crear enlaces de pago personalizados, gestionar transacciones y emitir facturas digitales (CFDI).
 
-PLANES Y ESTRUCTURA DE COMISIONES:
-- Plan Express: 3.36% + IVA por transacción. Para negocios hasta $50,000 MXN/mes. Sin mensualidad.
-- Plan Connect: 3.1% + IVA por transacción. Para negocios medianos ($50,001-$150,000 MXN/mes). Incluye soporte prioritario.
-- Plan Custom: 2.7% + IVA por transacción. Para negocios con volumen entre $150,001 y $500,000 MXN/mes.
-- Plan Enterprise: 2.5% + IVA por transacción. Para negocios con más de $500,000 MXN/mes. Integración API, gestor dedicado.
-Nota: KobraPay cobra el porcentaje del plan todo incluido (sin cargos fijos adicionales por transacción). El IVA se aplica sobre la comisión.
+PLAN Y ESTRUCTURA DE COMISIONES (plan único de lanzamiento):
+- Plan Beta: 4.6% + $3.50 MXN + IVA por transacción. Sin mensualidad, sin hardware, sin permanencia.
+Desglose: Stripe cobra 3.6% + $3 MXN, KobraPay gana 1% + $0.50 MXN. El IVA (16%) se aplica sobre la parte KobraPay.
 
-ESTRUCTURA DE COMISIÓN KOBRAPAY (ejemplo Plan Express):
-- Comisión total al cliente: 3.36% + IVA (Plan Express)
-- Margen KobraPay: ~2.8% neto (después de costos de procesamiento)
-- IVA (16%): se cobra al cliente sobre la comisión KobraPay
-
-ESTRATEGIA DE NEGOCIACIÓN (para clientes Enterprise):
-- Volumen $50,001-$150K MXN/mes: ofrecer Plan Connect al 3.1% + IVA
-- Volumen >$500K MXN/mes: Plan Enterprise al 2.5% + IVA
-- Volumen $150,001-$500K MXN/mes: Plan Custom al 2.7% + IVA
-- Volumen >$500K MXN/mes: Plan Enterprise al 2.5% + IVA
-- Siempre destacar: sin mensualidad, sin hardware, módulos empresariales incluidos
-
-CÁLCULO DE GANANCIAS PARA KOBRAPAY (estimados):
-- Cliente procesa $10K MXN/mes: KobraPay gana ~$152 MXN/mes
-- Cliente procesa $50K MXN/mes: KobraPay gana ~$760 MXN/mes
-- Cliente procesa $100K MXN/mes: KobraPay gana ~$1,520 MXN/mes
-- Cliente procesa $500K MXN/mes: KobraPay gana ~$7,600 MXN/mes
-Nota: KobraPay cobra el porcentaje del plan todo incluido. El IVA se aplica sobre la comisión.
+CÁLCULO DE GANANCIAS PARA KOBRAPAY (estimados con 1% + $0.50 MXN):
+- Cliente procesa $10K MXN/mes: KobraPay gana ~$105 MXN/mes
+- Cliente procesa $50K MXN/mes: KobraPay gana ~$525 MXN/mes
+- Cliente procesa $100K MXN/mes: KobraPay gana ~$1,050 MXN/mes
+- Cliente procesa $500K MXN/mes: KobraPay gana ~$5,250 MXN/mes
 
 MÉTODOS DE PAGO DISPONIBLES (configurables por enlace):
 - Tarjeta de crédito/débito (Visa, Mastercard, Amex)
@@ -7576,11 +7554,9 @@ Responde SIEMPRE en español mexicano, de forma directa, práctica y como si fue
 
 Tu función es ayudar a los usuarios a resolver problemas técnicos con la plataforma KobraPay.
 
-PLANES DISPONIBLES:
-- Plan Express: 3.36% + IVA por transacción. Sin mensualidad. Para negocios hasta $50,000 MXN/mes.
-- Plan Connect: 3.1% + IVA por transacción. Con soporte prioritario. Para negocios $50,001-$150,000 MXN/mes.
-- Plan Custom: 2.7% + IVA por transacción. Para negocios $150,001-$500,000 MXN/mes.
-- Plan Enterprise: 2.5% + IVA por transacción. Para negocios con más de $500,000 MXN/mes.
+PLAN DISPONIBLE:
+- Plan Beta: 4.6% + $3.50 MXN + IVA por transacción. Sin mensualidad, sin hardware, sin permanencia. Activación en 24h.
+Desglose: Stripe cobra 3.6% + $3 MXN, KobraPay cobra 1% + $0.50 MXN. El IVA (16%) se aplica sobre la parte KobraPay.
 
 MÉTODOS DE PAGO SOPORTADOS:
 - Tarjeta de crédito/débito (Visa, Mastercard, Amex)
@@ -7877,8 +7853,9 @@ Responde SOLO con JSON válido:
         const { invokeLLM } = await import("./_core/llm");
         const { sendQuoteEmail } = await import("./_core/email");
 
-        const stripeFixed = input.mode === "online" ? 3.00 : 0.05;
-        const stripeRate = input.mode === "online" ? 0.029 : 0.027;
+        // Stripe México: 3.6% + $3 MXN (tarifa real verificada en dashboard Stripe)
+        const stripeFixed = 3.00;
+        const stripeRate = 0.036;
         const stripeFee = input.amount * stripeRate + stripeFixed;
         const kpFee = input.amount * (input.kobrapayRate / 100);
         const kpIva = kpFee * (input.ivaRate / 100);
@@ -7970,8 +7947,9 @@ Responde SOLO con JSON válido:
         const { invokeLLM } = await import("./_core/llm");
         const { sendQuoteEmail } = await import("./_core/email");
         const iva = 0.16;
-        const stripeRate = 0.029;
-        const stripeFixed = 0.30;
+        // Stripe México: 3.6% + $3 MXN (tarifa real verificada)
+        const stripeRate = 0.036;
+        const stripeFixed = 3.00;
         const stripeFee = input.singleAmount * stripeRate + stripeFixed;
         const kpFee = input.singleAmount * (input.kpRate / 100);
         const kpIva = kpFee * iva;
@@ -8001,7 +7979,7 @@ Responde SOLO con JSON válido:
           const content = llmRes?.choices?.[0]?.message?.content;
           if (typeof content === "string" && content.length > 10) aiExplanation = content;
         } catch (e) { /* usa default */ }
-        const monthlyStripe = input.monthlyVolume * stripeRate;
+        const monthlyStripe = input.monthlyVolume * stripeRate + stripeFixed;
         const monthlyKp = input.monthlyVolume * (input.kpRate / 100);
         const monthlyIva = monthlyKp * iva;
         const monthlyNet = input.monthlyVolume - monthlyStripe - monthlyKp - monthlyIva;
@@ -8147,7 +8125,7 @@ Responde SOLO con JSON válido:
           assistant: 'Eres el asistente del equipo interno de KobraPay. Ayudas a revisar solicitudes de onboarding, aprobar o rechazar prospectos, asignar planes (Express/Connect/Enterprise), gestionar el flujo de trabajo del equipo y responder dudas sobre la plataforma.',
           associate: 'Eres el asistente del asociado de KobraPay. Ayudas a entender cómo registrar clientes, cómo funciona el sistema de comisiones escalonadas (0.3% a 5% según cartera), cómo presentar los planes Express/Connect/Enterprise a prospectos y cómo maximizar sus ingresos.',
           employee: 'Eres el asistente del empleado de KobraPay. Ayudas a usar la plataforma: crear enlaces de pago (con tarjeta, OXXO o SPEI), ver transacciones, solicitar reembolsos (que requieren aprobación del admin), entender los reportes y resolver dudas del día a día.',
-          user: 'Eres el asistente del usuario de KobraPay. Ayudas a crear enlaces de pago, entender las comisiones (Express: 3.36% + IVA, Connect: 3.1% + IVA, Custom: 2.7% + IVA, Enterprise: 2.5% + IVA), ver el historial de ventas, gestionar reembolsos y usar todas las funciones de la plataforma de forma sencilla.',
+          user: 'Eres el asistente del usuario de KobraPay. Ayudas a crear enlaces de pago, entender las comisiones (Plan Beta: 4.6% + $3.50 MXN + IVA — Stripe cobra 3.6%+$3 MXN, KobraPay cobra 1%+$0.50 MXN), ver el historial de ventas, gestionar reembolsos y usar todas las funciones de la plataforma de forma sencilla.',
         };
 
         const systemPrompt = `Eres KobraBot, el asistente inteligente de KobraPay. ${roleContext[role] || roleContext['user']}
@@ -8164,11 +8142,9 @@ KobraPay es una plataforma de cobros y pagos digitales disponible en México y m
 - KobraScore: puntuación de riesgo por cliente
 - Perfil Público del Negocio: página pública /p/slug
 
-PLANES Y COMISIONES:
-- Plan Express: 3.36% + IVA por transacción. Sin mensualidad. Para negocios hasta $50,000 MXN/mes.
-- Plan Connect: 3.1% + IVA por transacción. Con soporte prioritario. Para negocios medianos $50,001-$150,000 MXN/mes.
-- Plan Custom: 2.7% + IVA por transacción. Para negocios $150,001-$500,000 MXN/mes.
-- Plan Enterprise: 2.5% + IVA por transacción. Para negocios con más de $500,000 MXN/mes.
+PLAN Y COMISIONES:
+- Plan Beta: 4.6% + $3.50 MXN + IVA por transacción. Sin mensualidad, sin hardware, sin permanencia. Activación en 24h.
+Desglose: Stripe cobra 3.6% + $3 MXN, KobraPay cobra 1% + $0.50 MXN. El IVA (16%) se aplica sobre la parte KobraPay.
 
 REEMBOLSOS:
 - Empleados: solo pueden SOLICITAR reembolso (requiere aprobación del admin)

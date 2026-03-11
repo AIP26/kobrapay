@@ -94,18 +94,18 @@ const COMMISSION_LAYERS = [
   {
     layer: "Capa 1",
     who: "Stripe",
-    rate: "2.7% + $0.05",
-    desc: "Tarifa base de procesamiento de la red de tarjetas (Visa/Mastercard). Aplica en terminal física.",
+    rate: "3.6% + $3 MXN",
+    desc: "Tarifa de procesamiento de Stripe en México (Visa/Mastercard). Aplica en todos los cobros online.",
     color: "bg-gray-100 text-foreground border-gray-200",
-    example: "$270 + $0.05 en $10,000",
+    example: "$363 en $10,000",
   },
   {
     layer: "Capa 2",
     who: "KobraPay",
-    rate: "~3.5%",
+    rate: "1% + $0.50 MXN",
     desc: "Comisión de la plataforma por el servicio completo: facturación, seguridad, soporte, IA y todas las herramientas incluidas.",
     color: "bg-emerald-50 text-emerald-800 border-emerald-200",
-    example: "$350 en $10,000",
+    example: "$100.50 en $10,000",
   },
   {
     layer: "Capa 3",
@@ -118,9 +118,9 @@ const COMMISSION_LAYERS = [
 ];
 
 // ─── Ejemplo de flujo de comisiones ──────────────────────────────────────────
-// Un negocio cobra $10,000 MXN con terminal física:
-// Stripe: $270.05 | KobraPay: $350 | Asociado: $20 (0.2%)
-// El negocio recibe: $10,000 - $270.05 - $350 - $20 = $9,359.95
+// Un negocio cobra $10,000 MXN online:
+// Stripe: $363 (3.6%+$3) | KobraPay: $100.50 (1%+$0.50) + IVA $16.08 = $116.58 | Total: $479.58
+// El negocio recibe: $10,000 - $479.58 = $9,520.42
 
 // ─── Beneficios del Asociado ──────────────────────────────────────────────────
 const ASSOCIATE_BENEFITS = [
@@ -245,7 +245,7 @@ function BrochureContent({ lastUpdated }: { lastUpdated: string }) {
         <div className="bg-white rounded-xl border border-emerald-200 p-5">
           <h4 className="font-bold text-foreground mb-3 flex items-center gap-2">
             <DollarSign className="w-4 h-4 text-emerald-600" />
-            Ejemplo real: Cobro de $10,000 MXN con terminal física
+            Ejemplo real: Cobro de $10,000 MXN online
           </h4>
           <div className="space-y-2 text-sm">
             <div className="flex justify-between">
@@ -253,22 +253,18 @@ function BrochureContent({ lastUpdated }: { lastUpdated: string }) {
               <span className="font-bold text-foreground">$10,000.00</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-muted-foreground">— Stripe (2.7% + $0.05)</span>
-              <span className="text-red-500">-$270.05</span>
+              <span className="text-muted-foreground">— Stripe (3.6% + $3 MXN)</span>
+              <span className="text-red-500">-$363.00</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-muted-foreground">— KobraPay (~3.5%)</span>
-              <span className="text-red-500">-$350.00</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">— Comisión del Asociado (0.2%)</span>
-              <span className="text-blue-500">-$20.00</span>
+              <span className="text-muted-foreground">— KobraPay (1% + $0.50 + IVA)</span>
+              <span className="text-red-500">-$116.58</span>
             </div>
             <div className="flex justify-between border-t border-gray-200 pt-2 mt-2">
               <span className="font-bold text-foreground">El negocio recibe</span>
-              <span className="font-black text-emerald-600 text-lg">$9,359.95</span>
+              <span className="font-black text-emerald-600 text-lg">$9,520.42</span>
             </div>
-            <p className="text-xs text-muted-foreground text-center pt-1">Costo efectivo total: 6.4% — El asociado gana $20 por esa sola transacción</p>
+            <p className="text-xs text-muted-foreground text-center pt-1">Costo efectivo total: 4.79% — Transparente y sin sorpresas</p>
           </div>
         </div>
       </div>

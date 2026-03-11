@@ -328,7 +328,7 @@ const PLANS = [
     features: [
       "Todo lo del plan Custom",
       "Integración API completa con sus sistemas",
-      "Comisión desde 2.5% + IVA (Enterprise para volúmenes +$500K MXN/mes)",
+      "Comisión 4.6% + $3.50 MXN + IVA (plan único de lanzamiento)",
       "Gestor de cuenta dedicado",
       "SLA garantizado (99.9% uptime)",
       "Soporte 24/7 por teléfono",
@@ -344,7 +344,7 @@ const PLANS = [
 function AssociateQuoteSimulator() {
   const [mode, setMode] = useState<"online" | "terminal">("online");
   const [amount, setAmount] = useState("10000");
-  const [kobrapayRate, setKobrapayRate] = useState("1.5");
+  const [kobrapayRate, setKobrapayRate] = useState("4.6");
   const [ivaRate, setIvaRate] = useState("16");
   const [monthlyVolume, setMonthlyVolume] = useState("");
   const [showEmailModal, setShowEmailModal] = useState(false);
@@ -363,8 +363,8 @@ function AssociateQuoteSimulator() {
       const m = parseFloat(amount) || 0;
       const kR = parseFloat(kobrapayRate) / 100 || 0;
       const iR = parseFloat(ivaRate) / 100 || 0;
-      const sR = mode === "online" ? 0.029 : 0.027;
-      const sF = mode === "online" ? 0.30 : 0.05;
+      const sR = 0.036;
+      const sF = 3.0;
       const sFee = m * sR + sF;
       const kFee = m * kR;
       const kIva = kFee * iR;
@@ -389,8 +389,9 @@ function AssociateQuoteSimulator() {
   const monto = parseFloat(amount) || 0;
   const kpRate = parseFloat(kobrapayRate) / 100 || 0;
   const iva = parseFloat(ivaRate) / 100 || 0;
-  const stripeRate = mode === "online" ? 0.029 : 0.027;
-  const stripeFixed = mode === "online" ? 0.30 : 0.05;
+  // Stripe México: 3.6% + $3 MXN (tarifa real verificada)
+  const stripeRate = 0.036;
+  const stripeFixed = 3.0;
   const stripeFee = monto * stripeRate + stripeFixed;
   const kpFee = monto * kpRate;
   const kpIva = kpFee * iva;
@@ -423,7 +424,7 @@ function AssociateQuoteSimulator() {
       prospectName,
       mode,
       amount: monto,
-      kobrapayRate: parseFloat(kobrapayRate) || 1.5,
+      kobrapayRate: parseFloat(kobrapayRate) || 4.6,
       ivaRate: parseFloat(ivaRate) || 16,
       monthlyVolume: monthly > 0 ? monthly : undefined,
     });
@@ -489,7 +490,7 @@ function AssociateQuoteSimulator() {
               <input type="number" value={kobrapayRate} onChange={e => setKobrapayRate(e.target.value)} className="w-full pl-3 pr-8 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300" placeholder="1.5" step="0.1" min="0" />
               <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">%</span>
             </div>
-            <p className="text-xs text-muted-foreground mt-1">Express 3.5% / Connect 3.1% / Custom 2.7% / Enterprise 2.5%</p>
+            <p className="text-xs text-muted-foreground mt-1">Plan único Beta: 4.6% + $3.50 MXN + IVA por transacción</p>
           </div>
           <div>
             <label className="text-xs font-semibold text-muted-foreground uppercase mb-1.5 block">% IVA sobre comisión</label>
@@ -505,7 +506,7 @@ function AssociateQuoteSimulator() {
             <div className="bg-gray-50 rounded-xl p-4 space-y-2">
               <p className="text-xs font-semibold text-muted-foreground uppercase mb-3">Desglose por cobro</p>
               <div className="flex justify-between text-sm"><span className="text-muted-foreground">Monto bruto</span><span className="font-semibold">${monto.toLocaleString("es-MX", {minimumFractionDigits:2})} MXN</span></div>
-              <div className="flex justify-between text-sm"><span className="text-muted-foreground">Comisión Stripe ({mode === "online" ? "2.9% + $0.30" : "2.7% + $0.05"})</span><span className="text-red-500">-${stripeFee.toFixed(2)}</span></div>
+              <div className="flex justify-between text-sm"><span className="text-muted-foreground">Comisión Stripe (3.6% + $3 MXN)</span><span className="text-red-500">-${stripeFee.toFixed(2)}</span></div>
               <div className="flex justify-between text-sm"><span className="text-muted-foreground">Comisión KobraPay ({kobrapayRate}%)</span><span className="text-red-500">-${kpFee.toFixed(2)}</span></div>
               {iva > 0 && <div className="flex justify-between text-sm"><span className="text-muted-foreground">IVA sobre comisión ({ivaRate}%)</span><span className="text-orange-500">-${kpIva.toFixed(2)}</span></div>}
               <div className="border-t border-gray-200 pt-2 mt-2 space-y-1">
@@ -663,7 +664,7 @@ const FAQ_ITEMS = [
   },
   {
     q: "¿Cuánto cobra KobraPay? ¿Es más caro que la competencia?",
-    a: "KobraPay cobra desde 2.5% + IVA (Plan Enterprise para volúmenes mayores a $500K MXN/mes). Los planes son: Express 3.5%, Connect 3.1%, Custom 2.7% y Enterprise 2.5%. Comparado con Mercado Pago (3.29% + IVA), PayPal (3.5% + IVA), Clip (3.6% + IVA) y Conekta (2.9% + IVA), KobraPay es más económico. Sin mensualidad fija, sin contrato de permanencia y sin hardware para cobros online. Usa el simulador de arriba para ver el desglose exacto con los números de tu negocio.",
+    a: "KobraPay cobra 4.6% + $3.50 MXN + IVA por transacción (plan único de lanzamiento). Comparado con Mercado Pago (3.29% + IVA), PayPal (3.5% + IVA), Clip (3.6% + IVA) y Conekta (2.9% + IVA), KobraPay ofrece más funcionalidades: contratos digitales, cobros recurrentes, firma digital, OTP y mucho más. Sin mensualidad fija, sin contrato de permanencia y sin hardware para cobros online. Usa el simulador de arriba para ver el desglose exacto.",
     icon: DollarSign,
   },
   {
@@ -1512,7 +1513,7 @@ export default function AssociateDashboard() {
                         <th className="text-left px-6 py-3 text-xs font-semibold text-muted-foreground uppercase">Fecha</th>
                         <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase">Cliente</th>
                         <th className="text-right px-4 py-3 text-xs font-semibold text-muted-foreground uppercase">Pago del cliente</th>
-                        <th className="text-right px-4 py-3 text-xs font-semibold text-muted-foreground uppercase">Tu comisión (0.3%)</th>
+                        <th className="text-right px-4 py-3 text-xs font-semibold text-muted-foreground uppercase">Tu comisión</th>
                         <th className="text-center px-4 py-3 text-xs font-semibold text-muted-foreground uppercase">Estado</th>
                       </tr>
                     </thead>
