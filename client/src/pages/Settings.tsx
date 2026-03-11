@@ -1104,6 +1104,8 @@ export default function Settings() {
         {/* ─── Cuentas Bancarias ─── */}
         <BankAccountsSection />
 
+        {/* ─── Facturación SAT / CFDI ─── */}
+        <FacturApiSection />
         {/* ─── Zona de Peligro ─── */}
         <DangerZoneSection />
 
@@ -1123,9 +1125,151 @@ export default function Settings() {
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────────
+// FACTURAPI SECTION
+// ─────────────────────────────────────────────────────────────────────────────────
+function FacturApiSection() {
+  const utils = trpc.useUtils();
+  const { data: status, isLoading } = trpc.vendor.getFacturApiStatus.useQuery();
+  const [apiKey, setApiKey] = useState('');
+  const [showKey, setShowKey] = useState(false);
+
+  const saveKey = trpc.vendor.saveFacturApiKey.useMutation({
+    onSuccess: (data) => {
+      toast.success(`¡FacturAPI activado! RFC: ${data.rfc} — ${data.razonSocial}`);
+      setApiKey('');
+      utils.vendor.getFacturApiStatus.invalidate();
+    },
+    onError: (err) => toast.error(err.message || 'Error al activar FacturAPI'),
+  });
+
+  const disable = trpc.vendor.disableFacturApi.useMutation({
+    onSuccess: () => {
+      toast.success('Facturación SAT desactivada');
+      utils.vendor.getFacturApiStatus.invalidate();
+    },
+    onError: (err) => toast.error(err.message || 'Error al desactivar'),
+  });
+
+  return (
+    <Card className="border-gray-200 shadow-sm">
+      <CardHeader className="pb-3 border-b border-gray-100">
+        <CardTitle className="text-base font-semibold text-foreground flex items-center gap-2">
+          <Receipt className="w-4 h-4 text-violet-600" />
+          Facturación SAT (CFDI)
+          {status?.enabled && <Badge className="bg-violet-100 text-violet-700 border-0 text-xs">Activo</Badge>}
+        </CardTitle>
+        <p className="text-sm text-muted-foreground">
+          Emite facturas válidas ante el SAT (CFDI 4.0) usando tu propia cuenta de{' '}
+          <a href="https://facturapi.io" target="_blank" rel="noopener noreferrer" className="text-violet-600 hover:underline">FacturAPI</a>.
+          Cada cliente paga su propio plan (~$299 MXN/mes). KobraPay no cobra extra por esto.
+        </p>
+      </CardHeader>
+      <CardContent className="p-5 space-y-4">
+        {isLoading ? (
+          <div className="text-sm text-muted-foreground">Cargando...</div>
+        ) : status?.enabled ? (
+          <div className="space-y-4">
+            <div className="bg-violet-50 border border-violet-200 rounded-lg p-4 space-y-2">
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 text-violet-600" />
+                <span className="text-sm font-semibold text-violet-800">FacturAPI conectado</span>
+              </div>
+              <div className="grid grid-cols-2 gap-3 text-sm">
+                <div>
+                  <span className="text-muted-foreground">Razón Social:</span>
+                  <p className="font-medium text-foreground">{status.razonSocial || '—'}</p>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">RFC:</span>
+                  <p className="font-medium text-foreground">{status.rfc || '—'}</p>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">Régimen Fiscal:</span>
+                  <p className="font-medium text-foreground">{status.regimenFiscal || '—'}</p>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">API Key:</span>
+                  <p className="font-mono text-xs text-foreground">{status.apiKeyHint}</p>
+                </div>
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="text-red-600 border-red-200 hover:bg-red-50"
+                onClick={() => disable.mutate()}
+                disabled={disable.isPending}
+              >
+                <X className="w-3.5 h-3.5 mr-1.5" />
+                {disable.isPending ? 'Desactivando...' : 'Desconectar FacturAPI'}
+              </Button>
+              <a
+                href="https://facturapi.io/dashboard"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs text-violet-600 hover:underline flex items-center gap-1"
+              >
+                <ExternalLink className="w-3 h-3" />
+                Ir a FacturAPI Dashboard
+              </a>
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
+              <p className="text-xs text-amber-800">
+                <strong>Cómo activarlo:</strong> Crea tu cuenta en{' '}
+                <a href="https://facturapi.io" target="_blank" rel="noopener noreferrer" className="underline">facturapi.io</a>,
+                crea una organización con tu RFC, ve a{' '}
+                <strong>API Keys</strong> y copia tu <strong>Secret Key de producción</strong>.
+                Pégala aquí y KobraPay la verificará automáticamente.
+              </p>
+            </div>
+            <div className="space-y-2">
+              <Label className="text-sm text-foreground">Secret Key de FacturAPI</Label>
+              <div className="flex gap-2">
+                <div className="relative flex-1">
+                  <Input
+                    type={showKey ? 'text' : 'password'}
+                    value={apiKey}
+                    onChange={(e) => setApiKey(e.target.value)}
+                    placeholder="sk_live_..."
+                    className="pr-10 font-mono text-sm"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowKey(v => !v)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+                  >
+                    {showKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+                <Button
+                  type="button"
+                  onClick={() => saveKey.mutate({ apiKey })}
+                  disabled={saveKey.isPending || !apiKey.trim()}
+                  className="bg-violet-600 hover:bg-violet-500 text-white"
+                >
+                  {saveKey.isPending ? 'Verificando...' : 'Activar'}
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Tu API Key se almacena cifrada y nunca se muestra completa. Puedes desconectarla en cualquier momento.
+              </p>
+            </div>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────────
 // WEBHOOKS SECTION
-// ─────────────────────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────────
 const WEBHOOK_EVENTS = [
   { id: 'payment.success', label: 'Pago exitoso', desc: 'Se dispara cuando un cliente completa un pago', color: 'text-green-600' },
   { id: 'payment.failed', label: 'Pago fallido', desc: 'Se dispara cuando un intento de pago falla', color: 'text-red-600' },

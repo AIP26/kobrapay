@@ -101,7 +101,7 @@ import { securityRouter } from "./routers/security";
 import { apiKeysRouter } from "./routers/apiKeys";
 import { pricingRouter } from "./routers/pricing";
 import { notifyOwner } from "./_core/notification";
-import { sendOtpEmail, sendPaymentReceipt, sendWelcomeEmail, sendInvoiceEmail, sendRefundNotification, sendSubscriptionInviteEmail, sendNewRegistrationEmail } from "./_core/email";
+import { sendOtpEmail, sendPaymentReceipt, sendWelcomeEmail, sendInvoiceEmail, sendRefundNotification, sendSubscriptionInviteEmail, sendNewRegistrationEmail, sendRegistrationConfirmationEmail } from "./_core/email";
 import { ENV } from "./_core/env";
 import { storagePut } from "./storage";
 
@@ -238,6 +238,13 @@ export const appRouter = router({
               registeredAt: new Date(),
             });
           }
+        } catch { /* no bloquear el registro si el email falla */ }
+        // Enviar email de confirmación al usuario que se registró
+        try {
+          await sendRegistrationConfirmationEmail({
+            userEmail: input.email,
+            userName: input.name,
+          });
         } catch { /* no bloquear el registro si el email falla */ }
         return { success: true, message: 'Solicitud enviada. El equipo de KobraPay revisará tu cuenta y te notificará por email.' };
       }),
@@ -777,6 +784,180 @@ export const appRouter = router({
         return { payouts: [] };
       }
     }),
+
+    // ─── FacturAPI (Facturación SAT / CFDI) ──────────────────────────────────
+    // Guardar y verificar la API Key de FacturAPI del cliente
+    saveFacturApiKey: protectedProcedure
+      .input(z.object({
+        apiKey: z.string().min(10).max(512),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        // Verificar que la API Key es válida llamando a FacturAPI
+        let orgData: { id: string; name: string; rfc: string; tax_system: string } | null = null;
+        try {
+          const resp = await fetch('https://www.facturapi.io/v2/organizations', {
+            headers: { 'Authorization': `Bearer ${input.apiKey}` },
+          });
+          if (!resp.ok) {
+            throw new TRPCError({ code: 'BAD_REQUEST', message: 'API Key de FacturAPI inválida. Verifica que sea correcta y tenga permisos.' });
+          }
+          const data = await resp.json() as { data: Array<{ id: string; name: string; legal: { name: string; tax_id: string; tax_system: string } }> };
+          if (!data.data || data.data.length === 0) {
+            throw new TRPCError({ code: 'BAD_REQUEST', message: 'No se encontró ninguna organización en tu cuenta de FacturAPI. Crea una organización primero en facturapi.io.' });
+          }
+          const org = data.data[0];
+          orgData = {
+            id: org.id,
+            name: org.legal?.name || org.name,
+            rfc: org.legal?.tax_id || '',
+            tax_system: org.legal?.tax_system || '',
+          };
+        } catch (err: any) {
+          if (err instanceof TRPCError) throw err;
+          throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Error al conectar con FacturAPI. Intenta de nuevo.' });
+        }
+        // Guardar en BD
+        const { getDb } = await import('./db');
+        const db = await getDb();
+        if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
+        const { vendorSettings } = await import('../drizzle/schema');
+        const { eq } = await import('drizzle-orm');
+        const existing = await getVendorSettings(ctx.user.id);
+        if (existing) {
+          await db.update(vendorSettings).set({
+            facturApiKey: input.apiKey,
+            facturApiEnabled: true,
+            facturApiOrganizationId: orgData.id,
+            facturApiRfc: orgData.rfc,
+            facturApiRazonSocial: orgData.name,
+            facturApiRegimenFiscal: orgData.tax_system,
+            facturApiVerifiedAt: new Date(),
+          }).where(eq(vendorSettings.userId, ctx.user.id));
+        } else {
+          await db.insert(vendorSettings).values({
+            userId: ctx.user.id,
+            businessName: ctx.user.name || 'Mi Negocio',
+            facturApiKey: input.apiKey,
+            facturApiEnabled: true,
+            facturApiOrganizationId: orgData.id,
+            facturApiRfc: orgData.rfc,
+            facturApiRazonSocial: orgData.name,
+            facturApiRegimenFiscal: orgData.tax_system,
+            facturApiVerifiedAt: new Date(),
+          });
+        }
+        return { success: true, organizationId: orgData.id, rfc: orgData.rfc, razonSocial: orgData.name, regimenFiscal: orgData.tax_system };
+      }),
+
+    // Desactivar FacturAPI
+    disableFacturApi: protectedProcedure.mutation(async ({ ctx }) => {
+      const { getDb } = await import('./db');
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
+      const { vendorSettings } = await import('../drizzle/schema');
+      const { eq } = await import('drizzle-orm');
+      await db.update(vendorSettings).set({
+        facturApiEnabled: false,
+        facturApiKey: null,
+        facturApiOrganizationId: null,
+        facturApiRfc: null,
+        facturApiRazonSocial: null,
+        facturApiRegimenFiscal: null,
+        facturApiVerifiedAt: null,
+      }).where(eq(vendorSettings.userId, ctx.user.id));
+      return { success: true };
+    }),
+
+    // Obtener estado de FacturAPI (sin exponer la API Key completa)
+    getFacturApiStatus: protectedProcedure.query(async ({ ctx }) => {
+      const settings = await getVendorSettings(ctx.user.id);
+      if (!settings?.facturApiEnabled || !settings.facturApiKey) {
+        return { enabled: false, rfc: null as string | null, razonSocial: null as string | null, regimenFiscal: null as string | null, verifiedAt: null as Date | null, apiKeyHint: null as string | null };
+      }
+      return {
+        enabled: true,
+        rfc: settings.facturApiRfc,
+        razonSocial: settings.facturApiRazonSocial,
+        regimenFiscal: settings.facturApiRegimenFiscal,
+        verifiedAt: settings.facturApiVerifiedAt,
+        apiKeyHint: `...${settings.facturApiKey.slice(-8)}`,
+      };
+    }),
+
+    // Emitir CFDI real usando FacturAPI
+    issueCfdi: protectedProcedure
+      .input(z.object({
+        invoiceId: z.number(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const settings = await getVendorSettings(ctx.user.id);
+        if (!settings?.facturApiEnabled || !settings.facturApiKey || !settings.facturApiOrganizationId) {
+          throw new TRPCError({ code: 'PRECONDITION_FAILED', message: 'Activa FacturAPI primero en Configuración → Facturación SAT.' });
+        }
+        const inv = await getInvoiceById(input.invoiceId);
+        if (!inv || inv.userId !== ctx.user.id) throw new TRPCError({ code: 'NOT_FOUND' });
+        if (inv.status === 'issued' && inv.uuid) {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: 'Esta factura ya fue timbrada ante el SAT.' });
+        }
+        const conceptos = typeof inv.conceptos === 'string' ? JSON.parse(inv.conceptos) : inv.conceptos as Array<{ descripcion: string; cantidad: number; valorUnitario: number; importe: number }>;
+        const payload = {
+          type: 'I',
+          customer: {
+            legal_name: inv.receptorNombre,
+            tax_id: inv.receptorRfc,
+            tax_system: '616',
+            email: inv.receptorEmail || undefined,
+            address: { zip: '06600' },
+          },
+          items: conceptos.map((c: { descripcion: string; cantidad: number; valorUnitario: number }) => ({
+            quantity: c.cantidad,
+            product: {
+              description: c.descripcion,
+              product_key: '84111506',
+              unit_key: 'E48',
+              price: c.valorUnitario / 100,
+              tax_included: false,
+              taxes: [{ type: 'IVA', rate: 0.16 }],
+            },
+          })),
+          currency: inv.currency || 'MXN',
+          use: 'G03',
+          payment_form: '99',
+          payment_method: 'PUE',
+        };
+        let cfdiData: { id: string; uuid: string; pdf_url?: string; xml_url?: string } | null = null;
+        try {
+          const resp = await fetch('https://www.facturapi.io/v2/invoices', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${settings.facturApiKey}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(payload),
+          });
+          if (!resp.ok) {
+            const errBody = await resp.json() as { message?: string };
+            throw new TRPCError({ code: 'BAD_REQUEST', message: `FacturAPI: ${(errBody as any).message || 'Error al timbrar'}` });
+          }
+          cfdiData = await resp.json() as { id: string; uuid: string; pdf_url?: string; xml_url?: string };
+        } catch (err: any) {
+          if (err instanceof TRPCError) throw err;
+          throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Error al conectar con FacturAPI para timbrar.' });
+        }
+        const { getDb } = await import('./db');
+        const db = await getDb();
+        if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
+        const { invoices } = await import('../drizzle/schema');
+        const { eq } = await import('drizzle-orm');
+        await db.update(invoices).set({
+          uuid: cfdiData!.uuid,
+          status: 'issued',
+          xmlUrl: cfdiData!.xml_url || null,
+          pdfUrl: cfdiData!.pdf_url || null,
+          issuedAt: new Date(),
+        }).where(eq(invoices.id, input.invoiceId));
+        return { success: true, uuid: cfdiData!.uuid, pdfUrl: cfdiData!.pdf_url, xmlUrl: cfdiData!.xml_url };
+      }),
   }),
   // ─── Gestión de clientes de la plataforma (multi-tenant) ───────────────────
   clients: router({

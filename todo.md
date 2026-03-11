@@ -1104,3 +1104,16 @@
 - [ ] Revisar páginas de administración: Clientes, Registros, Métricas, Comisiones
 - [ ] Revisar y mejorar página de Stripe Connect
 - [ ] PENDIENTE: conectar Stripe Connect, activar cuenta y revisar % comisión
+
+## Sesión 2026-03-11 — Pre-lanzamiento final
+
+- [x] Integración FacturAPI: campos en schema (factur_api_key, factur_api_enabled, factur_api_mode)
+- [x] Backend FacturAPI: procedimientos saveFacturApiConfig, getFacturApiStatus, issueCfdi en vendor router
+- [x] Frontend FacturAPI: sección en Settings para activar y configurar FacturAPI
+- [x] Frontend Invoices: botón "Timbrar CFDI" con estado según si FacturAPI está activo
+- [x] Email de confirmación de registro al usuario (sendRegistrationConfirmationEmail)
+- [x] Webhooks salientes subscription.payment_succeeded y subscription.payment_failed
+- [x] API pública de suscripciones recurrentes (POST/GET/DELETE /api/v1/subscription)
+- [x] Documentación API KobraPay para BrokerHub (PDF)
+- [x] Presentación para TD Bank Miami (slides)
+- [x] 0 errores TypeScript en toda la aplicación

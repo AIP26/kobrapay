@@ -90,6 +90,15 @@ export const vendorSettings = mysqlTable("vendor_settings", {
   // ID del registro en associateCommissions que refiere a este cliente
   // Cuando se activa, cada pago de este cliente genera comisión automática al asociado
   referredByAssociateCommissionId: int("referred_by_associate_commission_id"),
+  // ─── FacturAPI (Facturación SAT / CFDI) ──────────────────────────────────
+  // Cada cliente conecta su propia cuenta de FacturAPI para emitir CFDI reales ante el SAT
+  facturApiKey: varchar("facturApiKey", { length: 512 }),
+  facturApiEnabled: boolean("facturApiEnabled").default(false).notNull(),
+  facturApiOrganizationId: varchar("facturApiOrganizationId", { length: 128 }),
+  facturApiRfc: varchar("facturApiRfc", { length: 13 }),
+  facturApiRazonSocial: varchar("facturApiRazonSocial", { length: 255 }),
+  facturApiRegimenFiscal: varchar("facturApiRegimenFiscal", { length: 8 }),
+  facturApiVerifiedAt: timestamp("facturApiVerifiedAt"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });

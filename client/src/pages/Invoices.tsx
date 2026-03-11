@@ -20,7 +20,10 @@ import {
   Search,
   Building2,
   Eye,
+  Stamp,
+  ExternalLink,
 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -64,6 +67,14 @@ export default function Invoices() {
     onSuccess: () => toast.success("Factura enviada por email al receptor"),
     onError: (e) => toast.error(e.message),
   });
+  const issueCfdiMutation = trpc.vendor.issueCfdi.useMutation({
+    onSuccess: (data) => {
+      toast.success(`¡CFDI timbrado ante el SAT! UUID: ${data.uuid}`);
+      refetch();
+    },
+    onError: (e) => toast.error(e.message),
+  });
+  const { data: facturApiStatus } = trpc.vendor.getFacturApiStatus.useQuery();
 
   const [showForm, setShowForm] = useState(false);
   const [search, setSearch] = useState("");
@@ -296,12 +307,29 @@ export default function Invoices() {
                                   size="sm"
                                   variant="ghost"
                                   className="text-xs text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
-                                  title="Emitir factura"
+                                  title="Marcar como emitida"
                                   onClick={() => issueMutation.mutate({ id: inv.id })}
                                   disabled={issueMutation.isPending}
                                 >
                                   <FileText className="w-3.5 h-3.5" />
                                 </Button>
+                              )}
+                              {inv.status === "draft" && facturApiStatus?.enabled && (
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  className="text-xs text-violet-600 hover:text-violet-700 hover:bg-violet-50"
+                                  title="Timbrar CFDI ante el SAT (FacturAPI)"
+                                  onClick={() => issueCfdiMutation.mutate({ invoiceId: inv.id })}
+                                  disabled={issueCfdiMutation.isPending}
+                                >
+                                  <Stamp className="w-3.5 h-3.5" />
+                                </Button>
+                              )}
+                              {inv.uuid && (
+                                <span className="inline-flex items-center gap-1 text-xs text-violet-600 font-mono" title={`UUID SAT: ${inv.uuid}`}>
+                                  <Badge variant="outline" className="text-xs border-violet-300 text-violet-600 px-1.5 py-0">CFDI</Badge>
+                                </span>
                               )}
                               <Button
                                 size="sm"
@@ -361,10 +389,19 @@ export default function Invoices() {
             <DialogTitle>Nueva Factura</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-2">
-            <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-3 flex gap-2">
-              <Building2 className="w-4 h-4 text-emerald-600 flex-shrink-0 mt-0.5" />
-              <p className="text-xs text-emerald-700">Para emitir CFDI válidos ante el SAT, configura tu RFC y certificados en <strong>Configuración → Datos Fiscales</strong>.</p>
-            </div>
+            {facturApiStatus?.enabled ? (
+              <div className="bg-violet-50 border border-violet-200 rounded-lg p-3 flex gap-2">
+                <Stamp className="w-4 h-4 text-violet-600 flex-shrink-0 mt-0.5" />
+                <p className="text-xs text-violet-700">
+                  <strong>FacturAPI activo</strong> — Después de crear la factura, usa el botón <span className="font-mono bg-violet-100 px-1 rounded">✓</span> morado para timbrarla ante el SAT como CFDI 4.0 válido.
+                </p>
+              </div>
+            ) : (
+              <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 flex gap-2">
+                <Building2 className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
+                <p className="text-xs text-amber-700">Esta factura será un <strong>PDF interno</strong> (no es CFDI fiscal). Para emitir CFDI válidos ante el SAT, activa <strong>Configuración → Facturación SAT</strong>.</p>
+              </div>
+            )}
             <div className="space-y-1">
               <Label className="text-xs font-semibold text-muted-foreground uppercase">Datos del Emisor (Tú)</Label>
               <div className="grid grid-cols-2 gap-3">
