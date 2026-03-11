@@ -216,9 +216,9 @@ export default function CreateLink() {
   }
 
   const previewAmount = parseFloat(form.amount) || 0;
-  // Modelo de precios: Stripe 3.6%+$3 MXN (tarifa real México), KobraPay 0.6%+$0.50 MXN + IVA 16%
+  // Modelo de precios: Stripe 3.6%+$3 MXN (tarifa real México), KobraPay 1.0%+$0.50 MXN + IVA 16%
   const previewStripeFee = previewAmount > 0 ? parseFloat(((previewAmount * 3.6) / 100 + 3).toFixed(2)) : 0;
-  const previewKobrapayBase = previewAmount > 0 ? parseFloat(((previewAmount * 0.6) / 100 + 0.50).toFixed(2)) : 0;
+  const previewKobrapayBase = previewAmount > 0 ? parseFloat(((previewAmount * 1.0) / 100 + 0.50).toFixed(2)) : 0;
   const previewKobrapayIva = parseFloat(((previewKobrapayBase * 16) / 100).toFixed(2));
   const previewKobrapayFee = parseFloat((previewKobrapayBase + previewKobrapayIva).toFixed(2));
   const previewNet = parseFloat((previewAmount - previewStripeFee - previewKobrapayFee).toFixed(2));
@@ -470,7 +470,7 @@ export default function CreateLink() {
                   <div className="text-xs text-cyan-800 space-y-0.5">
                     <div><span className="font-semibold">Desglose de comisiones:</span></div>
                     <div>Stripe: {formatCurrency(previewStripeFee)} (3.6% + $3 MXN)</div>
-                    <div>KobraPay: {formatCurrency(previewKobrapayFee)} (0.6% + $0.50 + IVA)</div>
+                    <div>KobraPay: {formatCurrency(previewKobrapayFee)} (1% + $0.50 + IVA)</div>
                     <div className="font-semibold pt-0.5 border-t border-cyan-300 mt-1">
                       Neto a recibir: <strong>{formatCurrency(previewNet)}</strong>
                       {previewUsd && <span className="ml-1 text-cyan-600 font-normal">(≈ USD ${previewUsd})</span>}

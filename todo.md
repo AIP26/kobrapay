@@ -1117,3 +1117,7 @@
 - [x] Documentación API KobraPay para BrokerHub (PDF)
 - [x] Presentación para TD Bank Miami (slides)
 - [x] 0 errores TypeScript en toda la aplicación
+
+## Correcciones Mar 11 2026
+
+- [ ] Corregir logo en ticket/recibo de pago (reemplazar emoji 🐍 por logo real de KobraPay)

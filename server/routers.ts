@@ -119,15 +119,15 @@ function generateOtpCode(): string {
 // Helper: calcular comisión
 // Modelo de precios KobraPay (TARIFAS REALES VERIFICADAS):
 //   - Stripe cobra: 3.6% del monto + $3 MXN fijos (tarifa real México, verificada en dashboard Stripe)
-//   - KobraPay cobra: 0.6% del monto + $0.50 MXN fijos + IVA 16% sobre esa parte
+//   - KobraPay cobra: 1.0% del monto + $0.50 MXN fijos + IVA 16% sobre esa parte
 //   - El vendedor recibe: monto - stripe_fee - kobrapay_fee_con_iva
-// Suma efectiva: ~4.2% + $3.50 MXN + IVA sobre la parte KobraPay
+// Suma efectiva: 4.6% + $3.50 MXN + IVA sobre la parte KobraPay
 function calculateCommission(
   amount: number,
   _commissionRate: number,
   stripeFeeRate = 3.6,
   stripeFeeFixed = 3,
-  kobrapayRate = 0.6,
+  kobrapayRate = 1.0,
   kobrapayFixed = 0.50,
   ivaRate = 16
 ) {
@@ -1899,11 +1899,11 @@ export const appRouter = router({
         const connectedAccountId = vendorSettings?.stripeConnectAccountId;
         const connectEnabled = vendorSettings?.stripeConnectChargesEnabled;
 
-        // Comisión de plataforma KobraPay: según plan del comercio (Express 3.36%, Connect 3.1%, Custom 2.7%, Enterprise 2.5%)
-        // Usar la tasa configurada en vendorSettings.commissionRate (asignada por el superadmin según el plan)
-        const vendorCommissionRate = parseFloat(String(vendorSettings?.commissionRate ?? 3.5));
-        const kobraPayFeeRate = vendorCommissionRate / 100;
-        const kobraPayFeeCents = Math.round(amountCents * kobraPayFeeRate);
+        // Comisión de plataforma KobraPay: 1% del monto + $0.50 MXN fijos
+        // Esto es la ganancia neta de KobraPay (Stripe cobra aparte 3.6% + $3 MXN)
+        const kobraPayFeePercent = 1.0; // 1% ganancia KobraPay
+        const kobraPayFeeFixed = 50; // $0.50 MXN en centavos
+        const kobraPayFeeCents = Math.round(amountCents * kobraPayFeePercent / 100) + kobraPayFeeFixed;
 
         // Determinar métodos de pago permitidos según configuración del enlace
         // Por defecto solo tarjeta. OXXO, SPEI y meses sin intereses se activan por enlace.

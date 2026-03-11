@@ -175,18 +175,18 @@ const KOBRAPAY_LOGO = "https://d2xsxph8kpxj0f.cloudfront.net/310519663381362445/
 const KOBRAPAY_ICON = "https://d2xsxph8kpxj0f.cloudfront.net/310519663381362445/Tm7GPbTEGgvmgj5v2qy4Z4/kobrapay_logo_v2_52d63331.png";
 
 // Planes KobraPay — DESGLOSE TRANSPARENTE
-// Stripe: 3.6% + $3 MXN | KobraPay: 0.2-0.6%
+// Stripe: 3.6% + $3 MXN | KobraPay: 1.0% + $0.50 MXN
 // Plan único Beta de lanzamiento
 const VOLUME_TIERS = [
   { 
     label: "Beta", 
     min: 0, 
     max: 9999999, 
-    totalRate: 3.9,
+    totalRate: 4.6,
     fixedFee: 3.50,
     stripeRate: 3.6,
     stripeFixed: 3.0,
-    kobrapayRate: 0.3,
+    kobrapayRate: 1.0,
     kobrapayFixed: 0.50,
     color: "emerald" 
   },
@@ -207,7 +207,7 @@ const FAQ_ITEMS = [
   },
   {
     q: "\u00bfCu\u00e1nto cuesta? \u00bfHay mensualidad o costo fijo?",
-    a: "No hay mensualidad ni costo fijo. Solo pagas 3.9% + $3.50 MXN + IVA por cada transacci\u00f3n exitosa. Este es nuestro precio de lanzamiento para los primeros 50 clientes. Puedes simular exactamente cu\u00e1nto pagar\u00e1s con nuestro calculador de comisiones en esta misma p\u00e1gina."
+    a: "No hay mensualidad ni costo fijo. Solo pagas 4.6% + $3.50 MXN + IVA por cada transacci\u00f3n exitosa. Este es nuestro precio de lanzamiento para los primeros 50 clientes. Puedes simular exactamente cu\u00e1nto pagar\u00e1s con nuestro calculador de comisiones en esta misma p\u00e1gina."
   },
   {
     q: "¿Puedo ofrecer meses sin intereses a mis clientes?",
@@ -215,7 +215,7 @@ const FAQ_ITEMS = [
   },
   {
     q: "\u00bfEl precio incluye IVA?",
-    a: "No, el IVA (16%) se cobra adicional seg\u00fan la ley mexicana. El costo total efectivo es aproximadamente 4.93%. Por ejemplo, por cada $1,000 cobrados: Stripe se lleva $39 + IVA ($6.24) = $45.24, y KobraPay cobra $3.50 + IVA ($0.56) = $4.06. Total descuentos: $49.30. T\u00fa recibes: $950.70."
+    a: "No, el IVA (16%) se cobra adicional seg\u00fan la ley mexicana. El costo total efectivo es aproximadamente 5.34%. Por ejemplo, por cada $1,000 cobrados: Stripe se lleva $39 MXN (3.6%+$3) y KobraPay cobra $10.50 MXN (1%+$0.50) + IVA $1.68 = $12.18. Total descuentos: $51.18. T\u00fa recibes: $948.82."
   },
   {
     q: "\u00bfPuedo cancelar cuando quiera?",
