@@ -475,6 +475,28 @@ export function registerStripeWebhook(app: express.Application) {
                     content: `Plan "${dbSub.name}" cobrado a ${dbSub.customerEmail}.`,
                   });
                 } catch (_) {}
+                // Disparar webhook saliente al cliente (ej: BrokerHub)
+                try {
+                  await dispatchWebhookEvent(dbSub.ownerId, "subscription.payment_succeeded", {
+                    subscription_id: dbSub.id,
+                    stripe_subscription_id: stripeSubId,
+                    plan_name: dbSub.name,
+                    customer_email: dbSub.customerEmail,
+                    customer_name: dbSub.customerName || "",
+                    amount: invoice.amount_paid,
+                    amount_formatted: `$${(invoice.amount_paid / 100).toFixed(2)} ${invoice.currency.toUpperCase()}`,
+                    currency: invoice.currency.toUpperCase(),
+                    interval: dbSub.interval,
+                    invoice_id: invoice.id,
+                    paid_at: new Date(invoice.created * 1000).toISOString(),
+                    next_payment_attempt: invoice.next_payment_attempt
+                      ? new Date(invoice.next_payment_attempt * 1000).toISOString()
+                      : null,
+                  });
+                  console.log(`[Webhook] subscription.payment_succeeded disparado para owner ${dbSub.ownerId}`);
+                } catch (whErr) {
+                  console.error("[Webhook] Error disparando webhook de suscripción:", whErr);
+                }
               }
             }
             break;
@@ -497,6 +519,28 @@ export function registerStripeWebhook(app: express.Application) {
                     actionUrl: "/dashboard/recurring",
                   });
                 } catch (_) {}
+                // Disparar webhook saliente de fallo (para que BrokerHub suspenda acceso)
+                try {
+                  await dispatchWebhookEvent(dbSub.ownerId, "subscription.payment_failed", {
+                    subscription_id: dbSub.id,
+                    stripe_subscription_id: stripeSubId,
+                    plan_name: dbSub.name,
+                    customer_email: dbSub.customerEmail,
+                    customer_name: dbSub.customerName || "",
+                    amount: invoice.amount_due,
+                    amount_formatted: `$${(invoice.amount_due / 100).toFixed(2)} ${invoice.currency.toUpperCase()}`,
+                    currency: invoice.currency.toUpperCase(),
+                    interval: dbSub.interval,
+                    invoice_id: invoice.id,
+                    failed_at: new Date(invoice.created * 1000).toISOString(),
+                    next_payment_attempt: invoice.next_payment_attempt
+                      ? new Date(invoice.next_payment_attempt * 1000).toISOString()
+                      : null,
+                    status: "past_due",
+                  });
+                } catch (whErr) {
+                  console.error("[Webhook] Error disparando webhook de fallo de suscripción:", whErr);
+                }
               }
             }
             break;

@@ -10,7 +10,11 @@ export type WebhookEventType =
   | "payment.success"
   | "payment.failed"
   | "payment.refunded"
-  | "chargeback.created";
+  | "chargeback.created"
+  | "subscription.payment_succeeded"
+  | "subscription.payment_failed"
+  | "subscription.canceled"
+  | "subscription.activated";
 
 export interface WebhookPayload {
   event: WebhookEventType;

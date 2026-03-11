@@ -1,12 +1,19 @@
 /**
  * KobraPay Public API v1
- * Endpoint: POST /api/v1/checkout
- * Autenticación: Bearer token (API Key)
+ * Endpoints:
+ *   POST   /api/v1/checkout              — Pago único
+ *   GET    /api/v1/checkout/:session_id  — Estado de sesión
+ *   POST   /api/v1/subscription          — Crear suscripción recurrente
+ *   GET    /api/v1/subscription          — Listar suscripciones (filtro: ?customer_email=)
+ *   DELETE /api/v1/subscription/:id      — Cancelar suscripción
+ *   GET    /api/v1/merchant              — Info del merchant
+ *
+ * Autenticación: Bearer token (API Key) o header X-API-Key
  */
 import { Router } from "express";
 import Stripe from "stripe";
 import { getDb } from "./db";
-import { apiKeys, apiCheckoutSessions } from "../drizzle/schema";
+import { apiKeys, apiCheckoutSessions, subscriptions } from "../drizzle/schema";
 import { eq, and } from "drizzle-orm";
 import crypto from "crypto";
 
@@ -15,13 +22,17 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "", {
 });
 
 export function registerApiV1Routes(app: Router) {
-  // Middleware de autenticación por API Key
+  // ─── Middleware de autenticación por API Key ──────────────────────────────
   async function authenticateApiKey(req: any, res: any, next: any) {
     const authHeader = req.headers.authorization || "";
-    const apiKey = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : req.headers["x-api-key"] as string;
+    const apiKey = authHeader.startsWith("Bearer ")
+      ? authHeader.slice(7)
+      : (req.headers["x-api-key"] as string);
 
     if (!apiKey) {
-      return res.status(401).json({ error: "API key requerida. Usa el header: Authorization: Bearer kp_live_..." });
+      return res.status(401).json({
+        error: "API key requerida. Usa el header: Authorization: Bearer kp_live_...",
+      });
     }
 
     try {
@@ -39,8 +50,8 @@ export function registerApiV1Routes(app: Router) {
         return res.status(401).json({ error: "API key inválida o revocada" });
       }
 
-      // Actualizar lastUsedAt y requestCount
-      await db.update(apiKeys)
+      await db
+        .update(apiKeys)
         .set({ lastUsedAt: new Date(), requestCount: found[0].requestCount + 1 })
         .where(eq(apiKeys.id, found[0].id));
 
@@ -52,21 +63,20 @@ export function registerApiV1Routes(app: Router) {
     }
   }
 
-  // POST /api/v1/checkout — Crear sesión de pago
+  // ─── POST /api/v1/checkout — Crear sesión de pago único ──────────────────
   app.post("/api/v1/checkout", authenticateApiKey, async (req: any, res: any) => {
     try {
       const {
-        amount,           // Monto en centavos MXN (ej: 10000 = $100.00 MXN)
-        description,      // Descripción del producto/servicio
-        customer_email,   // Email del cliente (opcional)
-        customer_name,    // Nombre del cliente (opcional)
-        success_url,      // URL de redirección al pagar exitosamente
-        cancel_url,       // URL de redirección al cancelar
-        metadata,         // Metadata adicional (objeto JSON)
-        currency = "MXN", // Moneda (default: MXN)
+        amount,
+        description,
+        customer_email,
+        customer_name,
+        success_url,
+        cancel_url,
+        metadata,
+        currency = "MXN",
       } = req.body;
 
-      // Validaciones
       if (!amount || typeof amount !== "number" || amount < 50) {
         return res.status(400).json({ error: "El monto mínimo es 50 centavos (MXN 0.50)" });
       }
@@ -78,22 +88,21 @@ export function registerApiV1Routes(app: Router) {
       }
 
       const sessionId = `kp_sess_${crypto.randomBytes(16).toString("hex")}`;
-      const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 horas
+      const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
-      // Crear Stripe Checkout Session
       const stripeSession = await stripe.checkout.sessions.create({
         payment_method_types: ["card"],
         mode: "payment",
-        line_items: [{
-          price_data: {
-            currency: currency.toLowerCase(),
-            product_data: {
-              name: description,
+        line_items: [
+          {
+            price_data: {
+              currency: currency.toLowerCase(),
+              product_data: { name: description },
+              unit_amount: amount,
             },
-            unit_amount: amount,
+            quantity: 1,
           },
-          quantity: 1,
-        }],
+        ],
         customer_email: customer_email || undefined,
         success_url: `${success_url}?session_id=${sessionId}&status=success`,
         cancel_url: `${cancel_url}?session_id=${sessionId}&status=cancelled`,
@@ -106,7 +115,6 @@ export function registerApiV1Routes(app: Router) {
         allow_promotion_codes: true,
       });
 
-      // Guardar sesión en la base de datos
       const db = await getDb();
       if (db) {
         await db.insert(apiCheckoutSessions).values({
@@ -141,7 +149,7 @@ export function registerApiV1Routes(app: Router) {
     }
   });
 
-  // GET /api/v1/checkout/:session_id — Consultar estado de una sesión
+  // ─── GET /api/v1/checkout/:session_id — Estado de sesión ─────────────────
   app.get("/api/v1/checkout/:session_id", authenticateApiKey, async (req: any, res: any) => {
     try {
       const db = await getDb();
@@ -178,15 +186,292 @@ export function registerApiV1Routes(app: Router) {
     }
   });
 
-  // GET /api/v1/merchant — Info del merchant (verificar credenciales)
+  // ─── POST /api/v1/subscription — Crear suscripción recurrente ────────────
+  /**
+   * Body:
+   *   plan_name       string   REQUERIDO — Nombre del plan (ej: "Plan Pro BrokerHub")
+   *   amount          number   REQUERIDO — Monto en centavos MXN (ej: 49900 = $499/mes)
+   *   customer_email  string   REQUERIDO — Email del suscriptor
+   *   customer_name   string   Opcional  — Nombre del suscriptor
+   *   description     string   Opcional  — Descripción del plan
+   *   interval        string   Opcional  — "day"|"week"|"month"|"year" (default: "month")
+   *   interval_count  number   Opcional  — Cada cuántos intervalos (default: 1)
+   *   success_url     string   REQUERIDO — URL al completar el checkout
+   *   cancel_url      string   REQUERIDO — URL al cancelar
+   *   currency        string   Opcional  — "MXN" (default)
+   *   metadata        object   Opcional  — Datos adicionales (ej: { user_id: "123" })
+   *
+   * Respuesta:
+   *   subscription_id  string — ID interno KobraPay
+   *   checkout_url     string — URL para que el cliente active la suscripción
+   *   customer_id      string — ID del cliente en Stripe
+   *   plan             object — Detalles del plan
+   *   status           string — "pending_payment" hasta que el cliente pague
+   */
+  app.post("/api/v1/subscription", authenticateApiKey, async (req: any, res: any) => {
+    try {
+      const {
+        plan_name,
+        amount,
+        customer_email,
+        customer_name,
+        description,
+        interval = "month",
+        interval_count = 1,
+        success_url,
+        cancel_url,
+        metadata,
+        currency = "MXN",
+      } = req.body;
+
+      // Validaciones
+      if (!plan_name || typeof plan_name !== "string") {
+        return res.status(400).json({ error: "plan_name es requerido" });
+      }
+      if (!amount || typeof amount !== "number" || amount < 50) {
+        return res.status(400).json({ error: "El monto mínimo es 50 centavos (MXN 0.50)" });
+      }
+      if (!customer_email || typeof customer_email !== "string") {
+        return res.status(400).json({ error: "customer_email es requerido" });
+      }
+      if (!success_url || !cancel_url) {
+        return res.status(400).json({ error: "success_url y cancel_url son requeridos" });
+      }
+      const validIntervals = ["day", "week", "month", "year"];
+      if (!validIntervals.includes(interval)) {
+        return res.status(400).json({
+          error: `interval debe ser uno de: ${validIntervals.join(", ")}`,
+        });
+      }
+
+      const db = await getDb();
+      if (!db) return res.status(500).json({ error: "Error interno del servidor" });
+
+      // 1. Crear o recuperar Customer en Stripe
+      const existingCustomers = await stripe.customers.list({
+        email: customer_email,
+        limit: 1,
+      });
+      let stripeCustomer: Stripe.Customer;
+      if (existingCustomers.data.length > 0) {
+        stripeCustomer = existingCustomers.data[0];
+        // Actualizar nombre si se proporcionó
+        if (customer_name && !stripeCustomer.name) {
+          stripeCustomer = await stripe.customers.update(stripeCustomer.id, {
+            name: customer_name,
+          });
+        }
+      } else {
+        stripeCustomer = await stripe.customers.create({
+          email: customer_email,
+          name: customer_name || undefined,
+          metadata: { merchant_user_id: req.apiKey.userId.toString() },
+        });
+      }
+
+      // 2. Crear Producto en Stripe
+      const stripeProduct = await stripe.products.create({
+        name: plan_name,
+        description: description || undefined,
+        metadata: {
+          merchant_user_id: req.apiKey.userId.toString(),
+          ...(metadata || {}),
+        },
+      });
+
+      // 3. Crear Precio recurrente en Stripe
+      const stripePrice = await stripe.prices.create({
+        product: stripeProduct.id,
+        unit_amount: amount,
+        currency: currency.toLowerCase(),
+        recurring: {
+          interval: interval as "day" | "week" | "month" | "year",
+          interval_count: Number(interval_count),
+        },
+      });
+
+      // 4. Crear Checkout Session en modo subscription
+      const subSessionId = `kp_sub_${crypto.randomBytes(16).toString("hex")}`;
+      const stripeSession = await stripe.checkout.sessions.create({
+        customer: stripeCustomer.id,
+        mode: "subscription",
+        line_items: [{ price: stripePrice.id, quantity: 1 }],
+        success_url: `${success_url}?session_id=${subSessionId}&status=success`,
+        cancel_url: `${cancel_url}?session_id=${subSessionId}&status=cancelled`,
+        allow_promotion_codes: true,
+        client_reference_id: subSessionId,
+        metadata: {
+          kobrapay_session_id: subSessionId,
+          merchant_user_id: req.apiKey.userId.toString(),
+          customer_email,
+          customer_name: customer_name || "",
+          ...(metadata || {}),
+        },
+      });
+
+      // 5. Guardar en la base de datos (estado: incomplete hasta que pague)
+      await db.insert(subscriptions).values({
+        ownerId: req.apiKey.userId,
+        stripeProductId: stripeProduct.id,
+        stripePriceId: stripePrice.id,
+        stripeCustomerId: stripeCustomer.id,
+        name: plan_name,
+        description: description || null,
+        amount,
+        currency: currency.toLowerCase(),
+        interval,
+        intervalCount: Number(interval_count),
+        customerEmail: customer_email,
+        customerName: customer_name || null,
+        status: "incomplete",
+      });
+
+      const intervalLabels: Record<string, string> = {
+        day: "día",
+        week: "semana",
+        month: "mes",
+        year: "año",
+      };
+
+      return res.json({
+        subscription_id: subSessionId,
+        checkout_url: stripeSession.url,
+        customer_id: stripeCustomer.id,
+        plan: {
+          name: plan_name,
+          amount,
+          currency: currency.toUpperCase(),
+          interval: `cada ${Number(interval_count) > 1 ? interval_count + " " : ""}${intervalLabels[interval] || interval}`,
+          amount_formatted: `$${(amount / 100).toFixed(2)} ${currency.toUpperCase()}`,
+        },
+        status: "pending_payment",
+        message:
+          "Comparte el checkout_url con tu cliente para que active la suscripción. El cobro se realizará automáticamente cada período.",
+      });
+    } catch (err: any) {
+      console.error("[API v1] Subscription error:", err);
+      return res
+        .status(500)
+        .json({ error: err.message || "Error al crear la suscripción" });
+    }
+  });
+
+  // ─── GET /api/v1/subscription — Listar suscripciones del merchant ─────────
+  // Query params opcionales: ?customer_email=cliente@email.com&status=active
+  app.get("/api/v1/subscription", authenticateApiKey, async (req: any, res: any) => {
+    try {
+      const db = await getDb();
+      if (!db) return res.status(500).json({ error: "Error interno del servidor" });
+
+      const customerEmail = req.query.customer_email as string | undefined;
+      const statusFilter = req.query.status as string | undefined;
+
+      const results = await db
+        .select()
+        .from(subscriptions)
+        .where(eq(subscriptions.ownerId, req.apiKey.userId));
+
+      let filtered = results;
+      if (customerEmail) {
+        filtered = filtered.filter((s) => s.customerEmail === customerEmail);
+      }
+      if (statusFilter) {
+        filtered = filtered.filter((s) => s.status === statusFilter);
+      }
+
+      return res.json({
+        subscriptions: filtered.map((s) => ({
+          id: s.id,
+          plan_name: s.name,
+          description: s.description,
+          customer_email: s.customerEmail,
+          customer_name: s.customerName,
+          amount: s.amount,
+          amount_formatted: `$${((s.amount || 0) / 100).toFixed(2)} ${(s.currency || "MXN").toUpperCase()}`,
+          currency: (s.currency || "MXN").toUpperCase(),
+          interval: s.interval,
+          interval_count: s.intervalCount,
+          status: s.status,
+          current_period_end: s.currentPeriodEnd,
+          cancel_at_period_end: s.cancelAtPeriodEnd,
+          stripe_subscription_id: s.stripeSubscriptionId,
+          created_at: s.createdAt,
+        })),
+        total: filtered.length,
+        active: filtered.filter((s) => s.status === "active").length,
+        pending: filtered.filter((s) => s.status === "incomplete").length,
+        canceled: filtered.filter((s) => s.status === "canceled").length,
+      });
+    } catch (err: any) {
+      return res.status(500).json({ error: err.message || "Error interno" });
+    }
+  });
+
+  // ─── DELETE /api/v1/subscription/:id — Cancelar suscripción ──────────────
+  app.delete("/api/v1/subscription/:id", authenticateApiKey, async (req: any, res: any) => {
+    try {
+      const db = await getDb();
+      if (!db) return res.status(500).json({ error: "Error interno del servidor" });
+
+      const subId = parseInt(req.params.id);
+      if (isNaN(subId)) {
+        return res.status(400).json({ error: "ID de suscripción inválido" });
+      }
+
+      const found = await db
+        .select()
+        .from(subscriptions)
+        .where(
+          and(
+            eq(subscriptions.id, subId),
+            eq(subscriptions.ownerId, req.apiKey.userId)
+          )
+        )
+        .limit(1);
+
+      if (!found.length) {
+        return res.status(404).json({ error: "Suscripción no encontrada" });
+      }
+
+      const sub = found[0];
+
+      // Cancelar en Stripe al final del período (no de inmediato)
+      if (sub.stripeSubscriptionId) {
+        await stripe.subscriptions.update(sub.stripeSubscriptionId, {
+          cancel_at_period_end: true,
+        });
+      }
+
+      await db
+        .update(subscriptions)
+        .set({ cancelAtPeriodEnd: true, status: "canceled" })
+        .where(eq(subscriptions.id, subId));
+
+      return res.json({
+        success: true,
+        message:
+          "Suscripción cancelada. El acceso del cliente continúa hasta el fin del período actual.",
+        subscription_id: subId,
+        customer_email: sub.customerEmail,
+      });
+    } catch (err: any) {
+      return res
+        .status(500)
+        .json({ error: err.message || "Error al cancelar la suscripción" });
+    }
+  });
+
+  // ─── GET /api/v1/merchant — Info del merchant ─────────────────────────────
   app.get("/api/v1/merchant", authenticateApiKey, async (req: any, res: any) => {
     try {
       const db = await getDb();
       if (!db) return res.status(500).json({ error: "Error interno del servidor" });
       const { users } = await import("../drizzle/schema");
-      const { eq } = await import("drizzle-orm");
-      const user = await db.select({ id: users.id, name: users.name, email: users.email })
-        .from(users).where(eq(users.id, req.apiKey.userId)).limit(1);
+      const user = await db
+        .select({ id: users.id, name: users.name, email: users.email })
+        .from(users)
+        .where(eq(users.id, req.apiKey.userId))
+        .limit(1);
 
       return res.json({
         merchant_id: `merchant_${req.apiKey.userId}`,
