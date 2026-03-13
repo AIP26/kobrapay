@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { Eye, EyeOff, CheckCircle, ArrowRight, ArrowLeft, User, MapPin, Landmark } from "lucide-react";
 
-const LOGO_URL = "https://d2xsxph8kpxj0f.cloudfront.net/310519663381362445/Tm7GPbTEGgvmgj5v2qy4Z4/kobrapay_logo_pro_white_6b7b7c3e.png";
+const LOGO_URL = "https://d2xsxph8kpxj0f.cloudfront.net/310519663381362445/Tm7GPbTEGgvmgj5v2qy4Z4/kobrapay_logo_correct_48f396eb.png";
 
 const STEPS = [
   { id: 1, label: "Datos personales", icon: User },

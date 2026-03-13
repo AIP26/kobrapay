@@ -1131,3 +1131,16 @@
 - [ ] RegisterEmail: logo correcto más grande, fondo claro
 - [ ] ForgotPassword / ResetPassword: logo correcto
 - [ ] Corregir redirección: landing page accesible sin login
+
+## Correcciones urgentes pre-lanzamiento
+- [ ] Corregir logo roto en LoginEmail (imagen no carga — URL del CDN no accesible)
+- [ ] Investigar y corregir portal OAuth que abre y cierra rápido
+
+## Marketing Redes Sociales — Corrección
+- [ ] Rehacer post de lanzamiento con logo correcto, sin cobras
+- [ ] Rehacer story vertical con logo correcto, sin cobras
+- [ ] Rehacer post "cómo funciona" con logo correcto, sin cobras
+- [ ] Rehacer post comparativa con logo correcto, sin cobras
+- [ ] Rehacer post beneficios con logo correcto, sin cobras
+- [ ] Rehacer post e-commerce con logo correcto, sin cobras
+- [ ] Rehacer TikTok thumbnail con logo correcto, sin cobras
