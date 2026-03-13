@@ -323,7 +323,7 @@ export const appRouter = router({
             subject: 'Recupera tu contraseña - KobraPay',
             html: `
               <div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:32px">
-                <img src="https://cdn.manus.space/kobrapay-logo.png" alt="KobraPay" style="height:40px;margin-bottom:24px" />
+                <img src="https://d2xsxph8kpxj0f.cloudfront.net/310519663381362445/Tm7GPbTEGgvmgj5v2qy4Z4/kobrapay_logo_correct_f5aef830.png" alt="KobraPay" style="height:40px;margin-bottom:24px" />
                 <h2 style="color:#111;margin-bottom:8px">Recupera tu contraseña</h2>
                 <p style="color:#555">Hola ${found[0].name || 'usuario'}, recibimos una solicitud para restablecer tu contraseña.</p>
                 <a href="${resetUrl}" style="display:inline-block;margin:24px 0;padding:14px 28px;background:#06b6d4;color:#fff;border-radius:8px;text-decoration:none;font-weight:600">Restablecer contraseña</a>

@@ -63,7 +63,7 @@ import { Avatar, AvatarFallback } from "./ui/avatar";
 import PendingApproval from "@/pages/PendingApproval";
 import ImpersonationBar from "./ImpersonationBar";
 
-const KOBRAPAY_ICON = "https://d2xsxph8kpxj0f.cloudfront.net/310519663381362445/Tm7GPbTEGgvmgj5v2qy4Z4/kobrapay_logo_v2_52d63331.png";
+const KOBRAPAY_ICON = "https://d2xsxph8kpxj0f.cloudfront.net/310519663381362445/Tm7GPbTEGgvmgj5v2qy4Z4/kobrapay_logo_correct_f5aef830.png";
 
 // ─── Mapa de permisos por ítem del sidebar ────────────────────────────────────
 const ITEM_PERMISSION_MAP: Record<string, string> = {
@@ -367,11 +367,9 @@ function LogoWithProfileSwitcher({
           <img
             src={KOBRAPAY_ICON}
             alt="KobraPay"
-            className="h-8 w-auto max-w-[140px] object-contain flex-shrink-0"
+            className="h-10 w-auto max-w-[170px] object-contain flex-shrink-0"
           />
-          <div className="flex-1 min-w-0">
-            <p className="text-xs text-muted-foreground leading-tight">Cobra fácil, cobra global</p>
-          </div>
+          <div className="flex-1 min-w-0" />
           {isSuperAdmin && (
             <ChevronDown className={cn('w-4 h-4 text-muted-foreground transition-transform flex-shrink-0', open && 'rotate-180')} />
           )}

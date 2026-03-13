@@ -9,8 +9,8 @@ import { toast } from "sonner";
 import { CheckCircle2, User, Building2, Phone, Calendar, FileText, Shield, Bot } from "lucide-react";
 import { Turnstile } from "@marsidev/react-turnstile";
 
-const KOBRAPAY_ICON = "https://d2xsxph8kpxj0f.cloudfront.net/310519663381362445/Tm7GPbTEGgvmgj5v2qy4Z4/kobrapay_logo_pro_white_fd2cc62e.png";
-const KOBRAPAY_LOGO = "https://d2xsxph8kpxj0f.cloudfront.net/310519663381362445/Tm7GPbTEGgvmgj5v2qy4Z4/kobrapay_logo_pro_white_fd2cc62e.png";
+const KOBRAPAY_ICON = "https://d2xsxph8kpxj0f.cloudfront.net/310519663381362445/Tm7GPbTEGgvmgj5v2qy4Z4/kobrapay_logo_correct_f5aef830.png";
+const KOBRAPAY_LOGO = "https://d2xsxph8kpxj0f.cloudfront.net/310519663381362445/Tm7GPbTEGgvmgj5v2qy4Z4/kobrapay_logo_correct_f5aef830.png";
 
 // Cloudflare Turnstile site key
 // Use env var in production; fallback to Cloudflare's always-pass test key for dev

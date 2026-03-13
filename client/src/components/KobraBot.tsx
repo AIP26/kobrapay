@@ -7,7 +7,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Streamdown } from "streamdown";
 import { MessageCircle, X, Send, Loader2, Sparkles, ChevronDown } from "lucide-react";
 
-const LOGO_NAVY = "https://d2xsxph8kpxj0f.cloudfront.net/310519663381362445/Tm7GPbTEGgvmgj5v2qy4Z4/kobrapay_logo_pro_white_fd2cc62e.png";
+const LOGO_NAVY = "https://d2xsxph8kpxj0f.cloudfront.net/310519663381362445/Tm7GPbTEGgvmgj5v2qy4Z4/kobrapay_logo_correct_f5aef830.png";
 
 type Message = { role: "user" | "assistant"; content: string };
 

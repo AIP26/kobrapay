@@ -171,8 +171,8 @@ function FeatureModal({ feature, onClose }: { feature: typeof FEATURES[0]; onClo
   );
 }
 
-const KOBRAPAY_LOGO = "https://d2xsxph8kpxj0f.cloudfront.net/310519663381362445/Tm7GPbTEGgvmgj5v2qy4Z4/kobrapay_logo_v2_52d63331.png";
-const KOBRAPAY_ICON = "https://d2xsxph8kpxj0f.cloudfront.net/310519663381362445/Tm7GPbTEGgvmgj5v2qy4Z4/kobrapay_logo_v2_52d63331.png";
+const KOBRAPAY_LOGO = "https://d2xsxph8kpxj0f.cloudfront.net/310519663381362445/Tm7GPbTEGgvmgj5v2qy4Z4/kobrapay_logo_correct_f5aef830.png";
+const KOBRAPAY_ICON = "https://d2xsxph8kpxj0f.cloudfront.net/310519663381362445/Tm7GPbTEGgvmgj5v2qy4Z4/kobrapay_logo_correct_f5aef830.png";
 
 // Planes KobraPay — DESGLOSE TRANSPARENTE
 // Stripe: 3.6% + $3 MXN | KobraPay: 1.0% + $0.50 MXN
@@ -599,12 +599,8 @@ export default function Home() {
       {/* Header */}
       <header className="border-b border-border bg-background/95 backdrop-blur-sm sticky top-0 z-40">
         <div className="container flex items-center justify-between h-16">
-          <div className="flex items-center gap-3">
-            <img src={KOBRAPAY_ICON} alt="KobraPay" className="w-9 h-9 object-contain" />
-            <div>
-              <span className="font-bold text-foreground text-lg leading-none block">KobraPay</span>
-              <span className="text-xs text-muted-foreground leading-none">Cobra fácil, cobra global</span>
-            </div>
+          <div className="flex items-center">
+            <img src={KOBRAPAY_LOGO} alt="KobraPay" className="h-11 w-auto object-contain" />
           </div>
           <div className="flex items-center gap-3">
             {!loading && (

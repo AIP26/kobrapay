@@ -152,7 +152,7 @@ const SECTORS = [
 
 // ─── Componente de brochure visual ────────────────────────────────────────────
 function BrochureContent({ lastUpdated }: { lastUpdated: string }) {
-  const KOBRAPAY_LOGO = "https://d2xsxph8kpxj0f.cloudfront.net/310519663381362445/Tm7GPbTEGgvmgj5v2qy4Z4/kobrapay_logo_v2_52d63331.png";
+  const KOBRAPAY_LOGO = "https://d2xsxph8kpxj0f.cloudfront.net/310519663381362445/Tm7GPbTEGgvmgj5v2qy4Z4/kobrapay_logo_correct_f5aef830.png";
 
   const colorMap: Record<string, string> = {
     emerald: "bg-emerald-100 text-emerald-700",

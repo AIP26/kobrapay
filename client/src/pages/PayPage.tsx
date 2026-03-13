@@ -1328,7 +1328,7 @@ function PageHeader({ businessName, lang, onToggleLang }: { businessName: string
     <div className="bg-white border-b border-gray-100 py-3 px-6 flex items-center justify-between shadow-sm">
       <div className="flex items-center gap-2.5">
         <img
-          src="https://d2xsxph8kpxj0f.cloudfront.net/310519663381362445/Tm7GPbTEGgvmgj5v2qy4Z4/kobrapay_logo_v2_52d63331.png"
+          src="https://d2xsxph8kpxj0f.cloudfront.net/310519663381362445/Tm7GPbTEGgvmgj5v2qy4Z4/kobrapay_logo_correct_f5aef830.png"
           alt="KobraPay"
           className="w-8 h-8 object-contain"
         />

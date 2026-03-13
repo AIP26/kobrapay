@@ -73,7 +73,7 @@ export default function RegisterEmail() {
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center mb-2">
             <img
-              src="https://d2xsxph8kpxj0f.cloudfront.net/310519663381362445/Tm7GPbTEGgvmgj5v2qy4Z4/kobrapay_logo_pro_white_fd2cc62e.png"
+              src="https://d2xsxph8kpxj0f.cloudfront.net/310519663381362445/Tm7GPbTEGgvmgj5v2qy4Z4/kobrapay_logo_correct_f5aef830.png"
               alt="KobraPay"
               className="h-12 w-auto object-contain"
             />

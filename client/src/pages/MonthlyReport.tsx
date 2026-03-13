@@ -59,7 +59,7 @@ export default function MonthlyReport() {
     const pageW = doc.internal.pageSize.getWidth();
 
     // Cargar logo como base64
-    const logoUrl = "https://d2xsxph8kpxj0f.cloudfront.net/310519663381362445/Tm7GPbTEGgvmgj5v2qy4Z4/kobrapay_logo_pro_white_fd2cc62e.png";
+    const logoUrl = "https://d2xsxph8kpxj0f.cloudfront.net/310519663381362445/Tm7GPbTEGgvmgj5v2qy4Z4/kobrapay_logo_correct_f5aef830.png";
     let logoBase64: string | null = null;
     try {
       const resp = await fetch(logoUrl);
