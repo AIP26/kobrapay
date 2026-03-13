@@ -8,6 +8,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { toast } from "sonner";
 import { Eye, EyeOff, Lock, CheckCircle, AlertCircle } from "lucide-react";
 
+const KOBRAPAY_LOGO = "https://d2xsxph8kpxj0f.cloudfront.net/310519663381362445/Tm7GPbTEGgvmgj5v2qy4Z4/kobrapay_logo_pro_white_6b7b7c3e.png";
+
 export default function ResetPassword() {
   const [location, navigate] = useLocation();
   const [token, setToken] = useState("");
@@ -17,7 +19,6 @@ export default function ResetPassword() {
   const [success, setSuccess] = useState(false);
 
   useEffect(() => {
-    // Extraer el token de la URL: /reset-password?token=xxx
     const params = new URLSearchParams(window.location.search);
     const t = params.get("token");
     if (t) setToken(t);
@@ -56,88 +57,90 @@ export default function ResetPassword() {
 
   if (!token) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 flex items-center justify-center p-4">
-        <Card className="bg-muted border-border shadow-2xl w-full max-w-md text-center">
-          <CardContent className="pt-10 pb-8">
-            <AlertCircle className="w-16 h-16 text-red-400 mx-auto mb-4" />
-            <h2 className="text-foreground text-xl font-bold mb-2">Enlace inválido</h2>
-            <p className="text-muted-foreground text-sm mb-6">
-              Este enlace de recuperación es inválido o ha expirado. Solicita uno nuevo.
-            </p>
-            <Link href="/forgot-password">
-              <Button className="bg-cyan-400 hover:bg-cyan-500 text-foreground font-semibold w-full">
-                Solicitar nuevo enlace
-              </Button>
-            </Link>
-          </CardContent>
-        </Card>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+        <div className="text-center max-w-md">
+          <img src={KOBRAPAY_LOGO} alt="KobraPay" className="h-16 w-auto object-contain mx-auto mb-8" />
+          <div className="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6 bg-red-100">
+            <AlertCircle className="w-10 h-10 text-red-500" />
+          </div>
+          <h2 className="text-gray-900 text-2xl font-bold mb-2">Enlace inválido</h2>
+          <p className="text-gray-600 text-sm mb-6">
+            Este enlace de recuperación es inválido o ha expirado. Solicita uno nuevo.
+          </p>
+          <Link href="/forgot-password">
+            <Button className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold w-full h-12">
+              Solicitar nuevo enlace
+            </Button>
+          </Link>
+        </div>
       </div>
     );
   }
 
   if (success) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 flex items-center justify-center p-4">
-        <Card className="bg-muted border-border shadow-2xl w-full max-w-md text-center">
-          <CardContent className="pt-10 pb-8">
-            <CheckCircle className="w-16 h-16 text-green-400 mx-auto mb-4" />
-            <h2 className="text-foreground text-xl font-bold mb-2">¡Contraseña actualizada!</h2>
-            <p className="text-muted-foreground text-sm mb-6">
-              Tu contraseña ha sido restablecida correctamente. Ya puedes iniciar sesión.
-            </p>
-            <Link href="/login">
-              <Button className="bg-cyan-400 hover:bg-cyan-500 text-foreground font-semibold w-full">
-                Iniciar sesión
-              </Button>
-            </Link>
-          </CardContent>
-        </Card>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+        <div className="text-center max-w-md">
+          <img src={KOBRAPAY_LOGO} alt="KobraPay" className="h-16 w-auto object-contain mx-auto mb-8" />
+          <div className="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6 bg-emerald-100">
+            <CheckCircle className="w-10 h-10 text-emerald-600" />
+          </div>
+          <h2 className="text-gray-900 text-2xl font-bold mb-2">¡Contraseña actualizada!</h2>
+          <p className="text-gray-600 text-sm mb-6">
+            Tu contraseña ha sido restablecida correctamente. Ya puedes iniciar sesión.
+          </p>
+          <Link href="/login">
+            <Button className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold w-full h-12">
+              Iniciar sesión
+            </Button>
+          </Link>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center mb-2">
             <img
-              src="https://d2xsxph8kpxj0f.cloudfront.net/310519663381362445/Tm7GPbTEGgvmgj5v2qy4Z4/kobrapay_logo_correct_f5aef830.png"
+              src={KOBRAPAY_LOGO}
               alt="KobraPay"
-              className="h-12 w-auto object-contain"
+              className="h-16 w-auto object-contain"
             />
           </div>
-          <p className="text-muted-foreground text-sm">Cobra fácil, cobra global</p>
+          <p className="text-gray-500 text-sm">Cobra fácil, cobra global</p>
         </div>
 
-        <Card className="bg-muted border-border shadow-2xl">
+        <Card className="bg-white border border-gray-200 shadow-lg">
           <CardHeader className="pb-4">
-            <CardTitle className="text-foreground text-xl">Nueva contraseña</CardTitle>
-            <CardDescription className="text-muted-foreground">
+            <CardTitle className="text-gray-900 text-xl">Nueva contraseña</CardTitle>
+            <CardDescription className="text-gray-500">
               Elige una contraseña segura de al menos 8 caracteres
             </CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-1.5">
-                <Label htmlFor="newPassword" className="text-muted-foreground text-sm">Nueva contraseña</Label>
+                <Label htmlFor="newPassword" className="text-gray-700 font-medium text-sm">Nueva contraseña</Label>
                 <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                   <Input
                     id="newPassword"
                     type={showPassword ? "text" : "password"}
                     placeholder="Mínimo 8 caracteres"
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
-                    className="pl-9 pr-10 bg-background border-border text-foreground placeholder:text-muted-foreground focus:border-cyan-400 focus:ring-cyan-400"
+                    className="pl-9 pr-10 bg-white border-gray-300 text-gray-900 placeholder:text-gray-400 focus:border-emerald-500"
                     autoComplete="new-password"
                     required
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-muted-foreground transition-colors"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
                   >
                     {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
@@ -145,16 +148,16 @@ export default function ResetPassword() {
               </div>
 
               <div className="space-y-1.5">
-                <Label htmlFor="confirmPassword" className="text-muted-foreground text-sm">Confirmar contraseña</Label>
+                <Label htmlFor="confirmPassword" className="text-gray-700 font-medium text-sm">Confirmar contraseña</Label>
                 <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                   <Input
                     id="confirmPassword"
                     type={showPassword ? "text" : "password"}
                     placeholder="Repite tu nueva contraseña"
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
-                    className="pl-9 bg-background border-border text-foreground placeholder:text-muted-foreground focus:border-cyan-400 focus:ring-cyan-400"
+                    className="pl-9 bg-white border-gray-300 text-gray-900 placeholder:text-gray-400 focus:border-emerald-500"
                     autoComplete="new-password"
                     required
                   />
@@ -168,15 +171,15 @@ export default function ResetPassword() {
                     {[1, 2, 3, 4].map((i) => (
                       <div
                         key={i}
-                        className={`h-1 flex-1 rounded-full transition-colors ${
+                        className={`h-1.5 flex-1 rounded-full transition-colors ${
                           newPassword.length >= i * 3
-                            ? i <= 1 ? "bg-red-400" : i <= 2 ? "bg-yellow-400" : i <= 3 ? "bg-blue-400" : "bg-green-400"
-                            : "bg-gray-600"
+                            ? i <= 1 ? "bg-red-400" : i <= 2 ? "bg-yellow-400" : i <= 3 ? "bg-blue-400" : "bg-emerald-500"
+                            : "bg-gray-200"
                         }`}
                       />
                     ))}
                   </div>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-xs text-gray-500">
                     {newPassword.length < 8 ? "Contraseña muy corta" :
                      newPassword.length < 12 ? "Contraseña aceptable" :
                      newPassword.length < 16 ? "Contraseña buena" : "Contraseña muy segura"}
@@ -187,14 +190,14 @@ export default function ResetPassword() {
               <Button
                 type="submit"
                 disabled={resetMutation.isPending}
-                className="w-full bg-cyan-400 hover:bg-cyan-500 text-foreground font-semibold py-2.5 mt-2"
+                className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-2.5 mt-2 h-12"
               >
                 {resetMutation.isPending ? "Actualizando..." : "Actualizar contraseña"}
               </Button>
             </form>
 
             <div className="mt-6 text-center">
-              <Link href="/login" className="text-xs text-muted-foreground hover:text-muted-foreground transition-colors">
+              <Link href="/login" className="text-xs text-gray-400 hover:text-gray-600 transition-colors">
                 Volver a iniciar sesión
               </Link>
             </div>

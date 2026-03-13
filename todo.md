@@ -1117,3 +1117,17 @@
 - [x] Documentación API KobraPay para BrokerHub (PDF)
 - [x] Presentación para TD Bank Miami (slides)
 - [x] 0 errores TypeScript en toda la aplicación
+
+## Sesión 2026-03-13 — Lanzamiento
+
+- [ ] Actualizar favicon con el logo correcto de KobraPay (K con tarjeta)
+- [ ] Crear guía de onboarding "Cómo conectar tu Stripe" en el panel del cliente
+- [ ] Actualizar presentación v2: agregar e-commerce, suscripciones, mejorar comparativa
+- [ ] Crear contenido de marketing para redes sociales (Instagram, Facebook, TikTok)
+
+## Correcciones de Auth y Branding (Mar 13, 2026)
+- [ ] RegisterAssociate: fondo claro, logo correcto visible, letras legibles
+- [ ] LoginEmail: logo correcto más grande, fondo claro
+- [ ] RegisterEmail: logo correcto más grande, fondo claro
+- [ ] ForgotPassword / ResetPassword: logo correcto
+- [ ] Corregir redirección: landing page accesible sin login

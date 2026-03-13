@@ -4,18 +4,18 @@
   "description": "La plataforma de cobros para negocios mexicanos. Crea enlaces de pago, cobra con tarjeta y gestiona tus ventas en segundos.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#000000",
-  "theme_color": "#00e676",
+  "background_color": "#ffffff",
+  "theme_color": "#00c853",
   "orientation": "portrait",
   "icons": [
     {
-      "src": "https://d2xsxph8kpxj0f.cloudfront.net/310519663381362445/Tm7GPbTEGgvmgj5v2qy4Z4/kobrapay_wallpaper_green_black_f8eca979.png",
+      "src": "/logo512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "https://files.manuscdn.com/user_upload_by_module/session_file/310519663381362445/YcxezyFhFLORClro.png",
+      "src": "/logo192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
@@ -29,7 +29,7 @@
       "name": "Nuevo Cobro",
       "short_name": "Cobrar",
       "description": "Crear un nuevo enlace de pago",
-      "url": "/dashboard/create-link"
+      "url": "/dashboard/create"
     },
     {
       "name": "Punto de Venta",

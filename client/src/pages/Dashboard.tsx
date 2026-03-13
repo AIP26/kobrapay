@@ -28,6 +28,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { useMemo, useState } from "react";
+import { Landmark, Zap, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 
 function formatCurrency(amount: number | string, currency = "MXN") {
@@ -91,11 +92,47 @@ export default function Dashboard() {
   }, [txs]);
 
   const isAdmin = user?.role === "admin";
+  const { data: connectStatus } = trpc.vendor.connectStatus.useQuery(undefined, {
+    enabled: !!user && user.role !== "superadmin",
+    staleTime: 60000,
+  });
+  const showOnboardingBanner = user?.role !== "superadmin" && connectStatus && !connectStatus.chargesEnabled;
 
   return (
     <DashboardLayout title="Panel de Control">
       <div className="space-y-5">
-        {/* Stats Grid */}
+        {/* Banner de Onboarding: Conectar Stripe */}
+        {showOnboardingBanner && (
+          <div className="rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 p-5 text-white flex flex-col md:flex-row items-start md:items-center gap-4">
+            <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center flex-shrink-0">
+              <Landmark className="w-6 h-6 text-white" />
+            </div>
+            <div className="flex-1">
+              <div className="flex items-center gap-2 mb-1">
+                <AlertCircle className="w-4 h-4 text-yellow-300" />
+                <span className="text-sm font-semibold text-yellow-200">Acción requerida para empezar a cobrar</span>
+              </div>
+              <h3 className="text-lg font-bold">Conecta tu cuenta bancaria</h3>
+              <p className="text-emerald-100 text-sm mt-0.5">
+                Para recibir los pagos de tus clientes directamente en tu banco, necesitas conectar tu CLABE con Stripe. Toma ~5 minutos.
+              </p>
+              <div className="flex flex-wrap gap-4 mt-2 text-xs text-emerald-100">
+                <span>✓ CLABE interbancaria (18 dígitos)</span>
+                <span>✓ RFC o CURP</span>
+                <span>✓ Nombre completo del titular</span>
+                <span>✓ Fecha de nacimiento</span>
+              </div>
+            </div>
+            <RouterLink href="/dashboard/connect">
+              <Button size="sm" className="bg-white text-emerald-700 hover:bg-emerald-50 font-bold gap-2 flex-shrink-0">
+                <Zap className="w-4 h-4" />
+                Conectar ahora
+                <ArrowRight className="w-4 h-4" />
+              </Button>
+            </RouterLink>
+          </div>
+        )}
+         {/* Stats Grid */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {[
             {

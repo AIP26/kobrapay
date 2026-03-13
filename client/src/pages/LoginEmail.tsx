@@ -8,7 +8,7 @@ import { toast } from "sonner";
 import { Eye, EyeOff, Lock, Mail, ArrowLeft } from "lucide-react";
 import { Link } from "wouter";
 
-const KOBRAPAY_LOGO = "https://d2xsxph8kpxj0f.cloudfront.net/310519663381362445/Tm7GPbTEGgvmgj5v2qy4Z4/kobrapay_logo_correct_f5aef830.png";
+const KOBRAPAY_LOGO = "https://d2xsxph8kpxj0f.cloudfront.net/310519663381362445/Tm7GPbTEGgvmgj5v2qy4Z4/kobrapay_logo_pro_white_6b7b7c3e.png";
 
 export default function LoginEmail() {
   const [email, setEmail] = useState("");
@@ -45,7 +45,7 @@ export default function LoginEmail() {
   };
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="text-center mb-8">
@@ -53,16 +53,16 @@ export default function LoginEmail() {
             <img
               src={KOBRAPAY_LOGO}
               alt="KobraPay"
-              className="h-12 w-auto object-contain"
+              className="h-16 w-auto object-contain"
             />
           </div>
           <p className="text-muted-foreground text-sm">Cobra fácil, cobra global</p>
         </div>
 
-        <Card className="shadow-lg border border-border">
+        <Card className="shadow-lg border border-gray-200 bg-white">
           <CardHeader className="pb-4">
-            <CardTitle className="text-foreground text-xl">Iniciar sesión</CardTitle>
-            <CardDescription className="text-muted-foreground">
+            <CardTitle className="text-gray-900 text-xl">Iniciar sesión</CardTitle>
+            <CardDescription className="text-gray-500">
               Accede a tu cuenta con tu correo y contraseña
             </CardDescription>
           </CardHeader>
@@ -70,7 +70,7 @@ export default function LoginEmail() {
 
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-1.5">
-                <Label htmlFor="email" className="text-foreground text-sm">Correo electrónico</Label>
+                <Label htmlFor="email" className="text-gray-700 font-medium text-sm">Correo electrónico</Label>
                 <div className="relative">
                   <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                   <Input
@@ -88,7 +88,7 @@ export default function LoginEmail() {
 
               <div className="space-y-1.5">
                 <div className="flex items-center justify-between">
-                  <Label htmlFor="password" className="text-foreground text-sm">Contraseña</Label>
+                  <Label htmlFor="password" className="text-gray-700 font-medium text-sm">Contraseña</Label>
                   <Link href="/forgot-password" className="text-xs text-emerald-600 hover:text-emerald-700 transition-colors">
                     ¿Olvidaste tu contraseña?
                   </Link>
@@ -120,29 +120,23 @@ export default function LoginEmail() {
               <Button
                 type="submit"
                 disabled={loginMutation.isPending}
-                className="w-full bg-emerald-500 hover:bg-emerald-600 text-foreground font-semibold py-2.5 mt-2"
+                className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-2.5 mt-2"
               >
                 {loginMutation.isPending ? "Iniciando sesión..." : "Iniciar sesión"}
               </Button>
             </form>
 
-            <div className="mt-6 pt-5 border-t border-border space-y-3">
-              <p className="text-center text-muted-foreground text-sm">
+            <div className="mt-6 pt-5 border-t border-gray-200 space-y-3">
+              <p className="text-center text-gray-600 text-sm">
                 ¿No tienes cuenta?{" "}
                 <Link href="/register" className="text-emerald-600 hover:text-emerald-700 font-medium transition-colors">
                   Regístrate gratis
                 </Link>
               </p>
-              <p className="text-center text-muted-foreground text-xs">
-                ¿Quieres ser asociado?{" "}
-                <Link href="/register-associate" className="text-cyan-600 hover:text-cyan-700 font-medium transition-colors">
-                  Únete como asociado →
-                </Link>
-              </p>
             </div>
 
             <div className="mt-4 text-center">
-              <Link href="/" className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors">
+              <Link href="/" className="inline-flex items-center gap-1 text-xs text-gray-400 hover:text-gray-600 transition-colors">
                 <ArrowLeft className="w-3 h-3" />
                 Volver al inicio
               </Link>
