@@ -333,6 +333,7 @@ function PublicQuoteCalculator({ tiers: propTiers }: { tiers?: TierType[] }) {
   const competitors = [
     { name: "Mercado Pago",   baseRate: 3.29, fixedBase: 0,   note: "3.29% + IVA" },
     { name: "Clip",           baseRate: 3.60, fixedBase: 0,   note: "3.6% + IVA" },
+    { name: "SumUp",          baseRate: 3.60, fixedBase: 0,   note: "3.6% + IVA" },
     { name: "PayPal MX",      baseRate: 3.50, fixedBase: 4,   note: "3.5% + $4 + IVA" },
     { name: "Conekta",        baseRate: 2.90, fixedBase: 3,   note: "2.9% + $3 + IVA" },
     { name: "Stripe directo", baseRate: 3.60, fixedBase: 3,   note: "3.6% + $3 + IVA" },
@@ -654,7 +655,7 @@ export default function Home() {
             <div className="flex items-center gap-4 mb-6">
               <div className="text-center">
                 <p className="text-xl font-black text-foreground">{expressRate}% + IVA*</p>
-                <p className="text-xs text-muted-foreground">Comisión plan Express</p>
+                <p className="text-xs text-muted-foreground">Plan Beta — sin mensualidad</p>
               </div>
               <div className="w-px h-8 bg-border" />
               <div className="text-center">
@@ -902,9 +903,11 @@ export default function Home() {
             <Button size="lg" variant="outline" asChild className="h-12 px-8">
               <a href="mailto:soporte@kobrapay.mx">Hablar con ventas</a>
             </Button>
+{/* Programa de Asociados — en standby hasta definir precio
             <Button size="lg" variant="outline" asChild className="h-12 px-8 border-cyan-500/40 text-cyan-600 hover:bg-cyan-50">
               <a href="/register-associate">Ser Asociado</a>
             </Button>
+            */}
           </div>
           <div className="mt-8 flex items-center justify-center gap-6 text-xs text-muted-foreground">
             <span className="flex items-center gap-1.5"><CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" /> Sin mensualidad</span>
@@ -932,7 +935,7 @@ export default function Home() {
             <span>·</span>
             <Link href="/privacidad" className="hover:text-foreground transition-colors">Privacidad</Link>
             <span>·</span>
-            <Link href="/register-associate" className="hover:text-cyan-600 transition-colors">Programa de Asociados</Link>
+{/* <Link href="/register-associate" className="hover:text-cyan-600 transition-colors">Programa de Asociados</Link> */}
           </div>
         </div>
       </footer>
