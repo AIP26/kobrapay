@@ -292,9 +292,10 @@ function PublicQuoteCalculator({ tiers: propTiers }: { tiers?: TierType[] }) {
   const [monthlyVolume, setMonthlyVolume] = useState(50000);
   const [singleAmount, setSingleAmount] = useState(5000);
   const [simCountry, setSimCountry] = useState("MX");
+  const { isAuthenticated: _isAuthForVendor } = useAuth();
   const { data: vendorSettings } = trpc.vendor.getSettings.useQuery(undefined, {
     retry: false,
-    // Solo cargar si el usuario está autenticado (no bloquea si no lo está)
+    enabled: _isAuthForVendor,
     onSuccess: (s: any) => {
       if (s?.businessCountry && s.businessCountry !== "MX") {
         setSimCountry(s.businessCountry);

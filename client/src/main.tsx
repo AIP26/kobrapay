@@ -18,6 +18,11 @@ const redirectToLoginIfUnauthorized = (error: unknown) => {
 
   if (!isUnauthorized) return;
 
+  // Solo redirigir al login si estamos en una ruta protegida (dashboard, onboarding)
+  const path = window.location.pathname;
+  const isProtectedRoute = path.startsWith("/dashboard") || path.startsWith("/onboarding") || path.startsWith("/complete-profile");
+  if (!isProtectedRoute) return;
+
   // Redirigir al login propio en lugar del OAuth de Manus
   window.location.href = "/login";
 };
