@@ -390,6 +390,35 @@ export const appRouter = router({
         return { success: true };
       }),
 
+    resendVerificationEmail: publicProcedure
+      .input(z.object({ email: z.string().email() }))
+      .mutation(async ({ ctx, input }) => {
+        const { getDb } = await import('./db');
+        const db = await getDb();
+        if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
+        const { users } = await import('../drizzle/schema');
+        const { eq } = await import('drizzle-orm');
+        const crypto = await import('crypto');
+        const found = await db.select({ id: users.id, name: users.name, email: users.email, emailVerified: users.emailVerified })
+          .from(users).where(eq(users.email, input.email.toLowerCase().trim())).limit(1);
+        // Por seguridad, siempre devolver éxito aunque no exista o ya esté verificado
+        if (!found.length || found[0].emailVerified) {
+          return { success: true };
+        }
+        const newToken = (crypto as typeof import('crypto')).randomBytes(32).toString('hex');
+        await db.update(users).set({ emailVerifyToken: newToken }).where(eq(users.id, found[0].id));
+        try {
+          const origin = (ctx.req.headers.origin as string) || 'https://kobrapay.mx';
+          await sendRegistrationConfirmationEmail({
+            userEmail: found[0].email!,
+            userName: found[0].name || 'Usuario',
+            verifyToken: newToken,
+            origin,
+          });
+        } catch { /* no bloquear si falla el email */ }
+        return { success: true };
+      }),
+
     changePassword: protectedProcedure
       .input(z.object({
         currentPassword: z.string().optional(),

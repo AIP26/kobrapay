@@ -449,42 +449,8 @@ function PublicQuoteCalculator({ tiers: propTiers }: { tiers?: TierType[] }) {
             <p className="text-xs text-muted-foreground text-center mt-1">*Incluye comisión de procesamiento de pagos + IVA</p>
           </div>
 
-          {/* Comparativa: solo para México */}
-          {simCountry === "MX" ? (
-            <div className="bg-black/30 rounded-2xl p-5">
-              <h4 className="text-sm font-bold text-foreground mb-3">vs. Competencia (mismo cobro)</h4>
-              <div className="space-y-2">
-                <p className="text-xs text-muted-foreground mb-3">Tasas reales todo incluido (comisión + procesador + IVA)</p>
-                {competitors.map(c => {
-                  const baseFee = (singleAmount * c.baseRate / 100) + c.fixedBase;
-                  const cFee = baseFee * 1.16;
-                  const cNet = singleAmount - cFee;
-                  const isWinner = netReceived >= cNet;
-                  return (
-                    <div key={c.name} className={`flex items-center justify-between rounded-lg px-3 py-2 ${
-                      isWinner ? "bg-white/5" : "bg-red-500/5 border border-red-500/10"
-                    }`}>
-                      <div>
-                        <span className="text-xs text-muted-foreground">{c.name}</span>
-                        <span className="text-xs text-muted-foreground ml-1">({c.note})</span>
-                      </div>
-                      <span className="text-xs text-muted-foreground">{fmtAmt(cNet)}</span>
-                    </div>
-                  );
-                })}
-                <div className="flex items-center justify-between rounded-lg px-3 py-2 bg-emerald-500/20 border border-emerald-500/40">
-                  <div>
-                    <span className="text-xs font-bold text-emerald-300">KobraPay (Plan {tier.label})</span>
-                    <span className="text-xs text-emerald-500/70 ml-1">(*{kpNote})</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-black text-emerald-400">{fmtAmt(netReceived)}</span>
-                    <span className="text-xs text-emerald-400 font-bold">✔ mejor</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          ) : (
+          {/* Cobro Internacional - solo si no es México */}
+          {simCountry !== "MX" && (
             <div className="bg-black/30 rounded-2xl p-5">
               <h4 className="text-sm font-bold text-foreground mb-3">🌍 Cobro Internacional</h4>
               <div className="space-y-3">

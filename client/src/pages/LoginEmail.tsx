@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Eye, EyeOff, Lock, Mail, ArrowLeft } from "lucide-react";
+import { Eye, EyeOff, Lock, Mail, ArrowLeft, MailCheck } from "lucide-react";
 import { Link } from "wouter";
 
 const KOBRAPAY_LOGO = "https://d2xsxph8kpxj0f.cloudfront.net/310519663381362445/Tm7GPbTEGgvmgj5v2qy4Z4/kobrapay_logo_correct_48f396eb.png";
@@ -14,6 +14,18 @@ export default function LoginEmail() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [showResendVerification, setShowResendVerification] = useState(false);
+  const [resendSent, setResendSent] = useState(false);
+
+  const resendMutation = trpc.auth.resendVerificationEmail.useMutation({
+    onSuccess: () => {
+      setResendSent(true);
+      toast.success("Email de verificación reenviado. Revisa tu bandeja.", { duration: 6000 });
+    },
+    onError: () => {
+      toast.error("No se pudo reenviar el email. Intenta de nuevo.");
+    },
+  });
 
   const loginMutation = trpc.auth.loginEmail.useMutation({
     onSuccess: () => {
@@ -22,8 +34,10 @@ export default function LoginEmail() {
     },
     onError: (err) => {
       const msg = err.message || "";
-      if (msg.includes("contraseña incorrectos")) {
-        // Puede ser cuenta OAuth — mostrar sugerencia
+      if (msg.includes("verificar") || msg.includes("pendiente") || msg.includes("pending") || msg.includes("verif")) {
+        setShowResendVerification(true);
+        toast.error("Tu cuenta aún no está verificada. Revisa tu correo.", { duration: 6000 });
+      } else if (msg.includes("contraseña incorrectos")) {
         toast.error("Correo o contraseña incorrectos", { duration: 4000 });
       } else if (msg.includes("inactiva")) {
         toast.error("Tu cuenta está inactiva. Contacta a soporte@kobrapay.mx", { duration: 6000 });
@@ -115,8 +129,6 @@ export default function LoginEmail() {
                 </div>
               </div>
 
-              {/* Sugerencia OAuth si el login falla */}
-
               <Button
                 type="submit"
                 disabled={loginMutation.isPending}
@@ -125,6 +137,34 @@ export default function LoginEmail() {
                 {loginMutation.isPending ? "Iniciando sesión..." : "Iniciar sesión"}
               </Button>
             </form>
+
+            {/* Reenvío de email de verificación */}
+            {showResendVerification && (
+              <div className="mt-4 p-4 bg-amber-50 border border-amber-200 rounded-xl">
+                <div className="flex items-start gap-3">
+                  <MailCheck className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                  <div className="flex-1">
+                    <p className="text-amber-800 text-sm font-semibold mb-1">Verifica tu correo</p>
+                    <p className="text-amber-700 text-xs mb-3">
+                      Tu cuenta aún no está activada. Revisa tu bandeja de entrada (y spam) o reenvía el email de verificación.
+                    </p>
+                    {resendSent ? (
+                      <p className="text-emerald-700 text-xs font-semibold">✓ Email reenviado. Revisa tu bandeja.</p>
+                    ) : (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        disabled={resendMutation.isPending}
+                        onClick={() => email && resendMutation.mutate({ email })}
+                        className="text-amber-700 border-amber-300 hover:bg-amber-100 text-xs h-8"
+                      >
+                        {resendMutation.isPending ? "Enviando..." : "Reenviar email de verificación"}
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
 
             <div className="mt-6 pt-5 border-t border-gray-200 space-y-3">
               <p className="text-center text-gray-600 text-sm">
