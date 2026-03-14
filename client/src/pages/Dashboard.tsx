@@ -720,7 +720,7 @@ function ClientQuoteSimulator() {
             onClick={() => setShowEmailForm(true)}
             className="w-full flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-foreground font-semibold py-2.5 rounded-xl text-sm"
           >
-            ✉️ Enviar cotización por email
+            Enviar cotización por email
           </button>
         ) : (
           <div className="space-y-2">

@@ -140,7 +140,8 @@ export default function Registrations() {
     onError: (e) => toast.error(e.message),
   });
 
-  const isSuperAdmin = (user as Record<string, unknown>)?.isSuperAdmin === true || user?.role === 'superadmin';
+  // v3: superadmin check - isSuperAdmin del servidor O role en BD
+  const isSuperAdmin = Boolean((user as Record<string, unknown>)?.isSuperAdmin) || user?.role === 'superadmin';
 
   const filtered = useMemo(() => {
     return (registrations as Registration[]).filter((r) => {
