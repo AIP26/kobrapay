@@ -848,7 +848,7 @@ export function TrainingPanel() {
   const [activeCategory, setActiveCategory] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
   const { data: courses = [], isLoading, refetch, isFetching } = trpc.training.list.useQuery();
-  const isSuperAdmin = (user as any)?.isSuperAdmin;
+  const isSuperAdmin = user?.isSuperAdmin === true || user?.role === "superadmin";
   const isAdmin = user?.role === "admin" || isSuperAdmin || (user as any)?.staffRole === "asistente";
 
   const filtered = courses.filter((c: CourseWithProgress) => {

@@ -220,14 +220,87 @@ export const appRouter = router({
           passwordHash,
           lastSignedIn: new Date(),
         });
-        // Notificar al superadmin de nuevo registro pendiente (push + email)
+        // ─── Auto-aprobación por IA ───────────────────────────────────────────────
+        // La IA evalúa el registro y aprueba automáticamente si el perfil es válido
         try {
-          await notifyOwner({
-            title: `👤 Nuevo registro pendiente: ${input.name}`,
-            content: `${input.name} (${input.email}) se registró en KobraPay y está esperando aprobación. Ve a Registros para aprobar o rechazar la cuenta.`,
+          const { invokeLLM } = await import('./_core/llm');
+          const aiResponse = await invokeLLM({
+            messages: [
+              {
+                role: 'system',
+                content: `Eres el sistema de aprobación automática de KobraPay, una plataforma de pagos mexicana.
+                Tu tarea es evaluar solicitudes de registro y decidir si aprobar o rechazar.
+                POLÍTICA DE APROBACIÓN: Aprueba SIEMPRE a menos que detectes señales claras de fraude (nombre ofensivo, email claramente falso como test@test.com, o datos incoherentes).
+                Responde SOLO con JSON: { "decision": "approve" | "reject", "reason": "string" }`,
+              },
+              {
+                role: 'user',
+                content: `Evalúa este registro:\nNombre: ${input.name}\nEmail: ${input.email}\nFecha: ${new Date().toISOString()}`,
+              },
+            ],
+            response_format: {
+              type: 'json_schema',
+              json_schema: {
+                name: 'approval_decision',
+                strict: true,
+                schema: {
+                  type: 'object',
+                  properties: {
+                    decision: { type: 'string', enum: ['approve', 'reject'] },
+                    reason: { type: 'string' },
+                  },
+                  required: ['decision', 'reason'],
+                  additionalProperties: false,
+                },
+              },
+            },
           });
-        } catch { /* no bloquear el registro si la notificación falla */ }
-        // Enviar email al owner
+          const content = aiResponse?.choices?.[0]?.message?.content;
+          if (content && typeof content === 'string') {
+            const parsed = JSON.parse(content);
+            if (parsed.decision === 'approve') {
+              // Aprobar la cuenta automáticamente
+              const { getDb } = await import('./db');
+              const db = await getDb();
+              if (db) {
+                const { users: usersTable } = await import('../drizzle/schema');
+                const { eq: eqOp } = await import('drizzle-orm');
+                const newUser = await db.select().from(usersTable).where(eqOp(usersTable.email, input.email)).limit(1);
+                if (newUser[0]) {
+                  await updateUserAccountStatus(newUser[0].id, 'active');
+                  // Crear como cliente de la plataforma
+                  const existingClient = await getPlatformClientByEmail(input.email);
+                  if (!existingClient) {
+                    const owner = await getUserByOpenId(ENV.ownerOpenId);
+                    if (owner) {
+                      await createPlatformClient({
+                        adminUserId: owner.id,
+                        name: input.name,
+                        email: input.email,
+                        businessName: null,
+                        phone: null,
+                        commissionRate: '5',
+                        status: 'active',
+                        tempPassword: null,
+                      });
+                    }
+                  }
+                  // Enviar email de bienvenida
+                  await sendWelcomeEmail({
+                    to: input.email,
+                    name: input.name,
+                    businessName: input.name,
+                  });
+                  console.log(`[AutoApproval] Cuenta aprobada automáticamente por IA: ${input.email}`);
+                }
+              }
+            }
+          }
+        } catch (aiErr) {
+          console.error('[AutoApproval] Error en aprobación automática por IA:', aiErr);
+          // Si la IA falla, el registro queda pendiente para revisión manual
+        }
+        // Enviar email al owner (notificación propia de KobraPay, sin Manus)
         try {
           const owner = await getUserByOpenId(ENV.ownerOpenId);
           if (owner?.email) {

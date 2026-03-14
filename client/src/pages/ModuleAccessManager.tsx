@@ -215,7 +215,7 @@ export default function ModuleAccessManager() {
 
   // Solo admin y superadmin
   const role = (user as any)?.role;
-  const isSuperAdmin = (user as any)?.isSuperAdmin;
+  const isSuperAdmin = user?.isSuperAdmin === true || user?.role === "superadmin";
   if (role !== "admin" && !isSuperAdmin) {
     return (
       <DashboardLayout>

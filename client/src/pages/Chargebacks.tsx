@@ -67,7 +67,7 @@ type Chargeback = {
 
 export default function Chargebacks() {
   const { user } = useAuth();
-  const isAdmin = user?.role === "admin" || (user?.isSuperAdmin || user?.role === "superadmin");
+  const isAdmin = user?.role === "admin" || user?.isSuperAdmin === true || user?.role === "superadmin";
 
   const { data: chargebacks = [], isLoading, refetch } = trpc.chargebacks.list.useQuery();
   const createMutation = trpc.chargebacks.create.useMutation({

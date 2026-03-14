@@ -173,7 +173,7 @@ function PayerDetail({ payer, onClose }: { payer: Payer; onClose: () => void }) 
 
 export default function Payers() {
   const { user } = useAuth();
-  const isSuperAdmin = (user as Record<string, unknown>)?.isSuperAdmin === true;
+  const isSuperAdmin = user?.isSuperAdmin === true || user?.role === "superadmin";
 
   const [search, setSearch] = useState("");
   const [selectedPayer, setSelectedPayer] = useState<Payer | null>(null);

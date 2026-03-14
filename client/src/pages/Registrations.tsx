@@ -140,8 +140,9 @@ export default function Registrations() {
     onError: (e) => toast.error(e.message),
   });
 
-  // v3: superadmin check - isSuperAdmin del servidor O role en BD
-  const isSuperAdmin = Boolean((user as Record<string, unknown>)?.isSuperAdmin) || (user?.isSuperAdmin || user?.role === "superadmin");
+  // Verificación definitiva: usar isSuperAdmin del servidor O role en BD
+  const { data: meData, isLoading: meLoading } = trpc.auth.me.useQuery();
+  const isSuperAdmin = Boolean(meData?.isSuperAdmin) || meData?.role === "superadmin" || user?.role === "superadmin";
 
   const filtered = useMemo(() => {
     return (registrations as Registration[]).filter((r) => {
@@ -200,8 +201,8 @@ export default function Registrations() {
     });
   };
 
-  // Mostrar cargando mientras se verifica la sesión
-  if (authLoading) {
+  // Mostrar cargando mientras se verifica la sesión O mientras carga meData del servidor
+  if (authLoading || meLoading) {
     return (
       <DashboardLayout title="Solicitudes de Registro">
         <div className="flex items-center justify-center py-32">
@@ -213,8 +214,8 @@ export default function Registrations() {
       </DashboardLayout>
     );
   }
-  // Solo bloquear si el usuario ya cargó y definitivamente NO es super-admin
-  if (!authLoading && !isSuperAdmin) {
+  // Solo bloquear si AMBOS ya cargaron y definitivamente NO es super-admin
+  if (!authLoading && !meLoading && !isSuperAdmin) {
     return (
       <DashboardLayout title="Solicitudes de Registro">
         <div className="flex items-center justify-center py-32">

@@ -426,7 +426,7 @@ export default function Recurring() {
   const [confirmDelete, setConfirmDelete] = useState<number | null>(null);
   const [searchParams] = useState(() => new URLSearchParams(window.location.search));
   const { user } = useAuth();
-  const isSuperAdmin = (user as any)?.isSuperAdmin === true;
+  const isSuperAdmin = user?.isSuperAdmin === true || user?.role === "superadmin";
 
   const subsQuery = trpc.subscriptions.list.useQuery();
   const utils = trpc.useUtils();

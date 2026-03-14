@@ -19,7 +19,7 @@ function fmtDate(ts: number) {
 
 export default function QuoteLogs() {
   const { user } = useAuth();
-  const isSuperAdmin = (user as any)?.isSuperAdmin;
+  const isSuperAdmin = user?.isSuperAdmin === true || user?.role === "superadmin";
   const [page, setPage] = useState(1);
   const [showAll, setShowAll] = useState(false);
   const [search, setSearch] = useState("");

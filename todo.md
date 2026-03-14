@@ -1144,3 +1144,9 @@
 - [ ] Rehacer post beneficios con logo correcto, sin cobras
 - [ ] Rehacer post e-commerce con logo correcto, sin cobras
 - [ ] Rehacer TikTok thumbnail con logo correcto, sin cobras
+
+## Fase Urgente - Aprobación Automática por IA
+- [ ] Fix definitivo isSuperAdmin en Registrations.tsx
+- [ ] Aprobación automática por IA para nuevos registros (sin intervención manual)
+- [ ] Correo de bienvenida automático al cliente aprobado
+- [ ] Fix logo sidebar

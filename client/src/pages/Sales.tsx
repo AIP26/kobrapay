@@ -862,7 +862,7 @@ function groupByDate(txs: Transaction[]) {
 
 export default function Sales() {
   const { user } = useAuth();
-  const isSuperAdmin = (user as Record<string, unknown>)?.isSuperAdmin === true;
+  const isSuperAdmin = user?.isSuperAdmin === true || user?.role === "superadmin";
 
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");

@@ -412,7 +412,7 @@ function SectionCard({ section }: { section: Section }) {
 
 export default function Help() {
   const { user } = useAuth();
-  const isSuperAdmin = (user as Record<string, unknown>)?.isSuperAdmin === true;
+  const isSuperAdmin = user?.isSuperAdmin === true || user?.role === "superadmin";
   const isAdmin = user?.role === "admin";
   const staffRole = (user as Record<string, unknown>)?.staffRole as string | undefined;
   const isAsistente = staffRole === "asistente";

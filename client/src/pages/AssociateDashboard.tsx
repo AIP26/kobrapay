@@ -25,7 +25,7 @@ function CommissionTiersTable({ activeClients }: { activeClients: number }) {
   const createTier = trpc.associate.createCommissionTier.useMutation({ onSuccess: () => refetch() });
   const deleteTier = trpc.associate.deleteCommissionTier.useMutation({ onSuccess: () => refetch() });
   const { user } = useAuth();
-  const isSuperAdmin = Boolean((user as { isSuperAdmin?: boolean })?.isSuperAdmin) || (user?.isSuperAdmin || user?.role === "superadmin");
+  const isSuperAdmin = user?.isSuperAdmin === true || user?.role === "superadmin";
 
   const [editingId, setEditingId] = useStateLocal<number | null>(null);
   const [editForm, setEditForm] = useStateLocal<{ minClients: string; maxClients: string; commissionPct: string; label: string; description: string }>({ minClients: "", maxClients: "", commissionPct: "", label: "", description: "" });

@@ -129,8 +129,9 @@ export async function upsertUser(user: InsertUser): Promise<void> {
     values.role = user.role;
     updateSet.role = user.role;
   } else if (user.openId === ENV.ownerOpenId) {
-    values.role = "admin";
-    updateSet.role = "admin";
+    // El owner siempre debe tener role superadmin para que isSuperAdmin() funcione correctamente
+    values.role = "superadmin";
+    updateSet.role = "superadmin";
   }
   // El superadmin (owner) siempre queda activo; nuevos registros quedan en "pending"
   if (user.openId === ENV.ownerOpenId) {

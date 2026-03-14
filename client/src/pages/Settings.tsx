@@ -188,7 +188,7 @@ function PasswordSection() {
 export default function Settings() {
   const utils = trpc.useUtils();
   const { user } = useAuth();
-  const isSuperAdmin = (user as Record<string, unknown>)?.isSuperAdmin === true;
+  const isSuperAdmin = user?.isSuperAdmin === true || user?.role === "superadmin";
   const { data: settings, isLoading } = trpc.vendor.getSettings.useQuery();
   const { data: pinStatus, refetch: refetchPinStatus } = trpc.vendor.hasDeletePin.useQuery(undefined, { enabled: isSuperAdmin });
 
