@@ -120,13 +120,13 @@ export default function PlatformConfig() {
   const { user } = useAuth();
   const [, navigate] = useLocation();
   useEffect(() => {
-    if (user && user.role !== "superadmin") {
+    if (user && !user.isSuperAdmin && user.role !== "superadmin") {
       navigate("/dashboard");
     }
   }, [user, navigate]);
 
   const { data: configs, isLoading, refetch } = trpc.platformConfig.getAll.useQuery(undefined, {
-    enabled: !!user && user.role === "superadmin",
+    enabled: !!user && (user.isSuperAdmin || user.role === "superadmin"),
   });
 
   const updateMany = trpc.platformConfig.updateMany.useMutation({

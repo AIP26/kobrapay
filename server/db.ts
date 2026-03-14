@@ -75,17 +75,31 @@ import {
 import { ENV } from "./_core/env";
 
 let _db: ReturnType<typeof drizzle> | null = null;
+let _dbLastError: number = 0;
 
 export async function getDb() {
+  // Allow reconnection after 30s cooldown (handles ECONNRESET from idle connections)
+  const now = Date.now();
+  if (_db && _dbLastError > 0 && now - _dbLastError > 30_000) {
+    _db = null;
+    _dbLastError = 0;
+  }
   if (!_db && process.env.DATABASE_URL) {
     try {
       _db = drizzle(process.env.DATABASE_URL);
+      _dbLastError = 0;
     } catch (error) {
       console.warn("[Database] Failed to connect:", error);
       _db = null;
+      _dbLastError = now;
     }
   }
   return _db;
+}
+
+export function resetDbConnection() {
+  _db = null;
+  _dbLastError = 0;
 }
 
 // ─── Users ───────────────────────────────────────────────────────────────────

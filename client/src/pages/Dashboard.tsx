@@ -93,10 +93,10 @@ export default function Dashboard() {
 
   const isAdmin = user?.role === "admin";
   const { data: connectStatus } = trpc.vendor.connectStatus.useQuery(undefined, {
-    enabled: !!user && user.role !== "superadmin",
+    enabled: !!user && !user.isSuperAdmin && user.role !== "superadmin",
     staleTime: 60000,
   });
-  const showOnboardingBanner = user?.role !== "superadmin" && connectStatus && !connectStatus.chargesEnabled;
+  const showOnboardingBanner = (!user?.isSuperAdmin && user?.role !== "superadmin") && connectStatus && !connectStatus.chargesEnabled;
 
   return (
     <DashboardLayout title="Panel de Control">

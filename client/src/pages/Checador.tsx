@@ -600,7 +600,7 @@ function EmployeeCheckCard({
 // ─── Página principal ─────────────────────────────────────────────────────────
 export default function Checador() {
   const { user } = useAuth();
-  const isAdmin = user?.role === "admin" || user?.role === "superadmin";
+  const isAdmin = user?.role === "admin" || (user?.isSuperAdmin || user?.role === "superadmin");
 
   const [search, setSearch] = useState("");
   const [dateFilter, setDateFilter] = useState(new Date().toISOString().split("T")[0]);

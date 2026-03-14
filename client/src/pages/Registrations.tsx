@@ -141,7 +141,7 @@ export default function Registrations() {
   });
 
   // v3: superadmin check - isSuperAdmin del servidor O role en BD
-  const isSuperAdmin = Boolean((user as Record<string, unknown>)?.isSuperAdmin) || user?.role === 'superadmin';
+  const isSuperAdmin = Boolean((user as Record<string, unknown>)?.isSuperAdmin) || (user?.isSuperAdmin || user?.role === "superadmin");
 
   const filtered = useMemo(() => {
     return (registrations as Registration[]).filter((r) => {

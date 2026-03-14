@@ -53,7 +53,7 @@ export default function SuperAdminMetrics() {
   const [, navigate] = useLocation();
 
   useEffect(() => {
-    if (user && user.role !== "superadmin" && user.role !== "admin") {
+    if (user && !user.isSuperAdmin && user.role !== "superadmin" && user.role !== "admin") {
       navigate("/dashboard");
     }
   }, [user, navigate]);

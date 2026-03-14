@@ -10,7 +10,7 @@ import { serveStatic, setupVite } from "./vite";
 import { registerStripeWebhook } from "../stripeWebhook";
 import { registerApiV1Routes } from "../apiV1";
 import { registerSecurityMiddleware } from "../security";
-import { getPendingRegistrationsOlderThan, createNotification, getUserByOpenId, hasRecentNotification, deduplicateNotifications } from "../db";
+import { getPendingRegistrationsOlderThan, createNotification, getUserByOpenId, hasRecentNotification, deduplicateNotifications, resetDbConnection } from "../db";
 import { ENV } from "./env";
 import { notifyOwner } from "./notification";
 
@@ -133,8 +133,14 @@ async function startServer() {
         // Limpiar duplicados por si acaso
         await deduplicateNotifications(ownerUser.id, "pending_reminder");
       }
-    } catch (err) {
+    } catch (err: unknown) {
       console.warn("[PendingReminder] Error en job de recordatorio:", err);
+      // Reset DB connection on ECONNRESET so the next run reconnects cleanly
+      const msg = err instanceof Error ? err.message : String(err);
+      if (msg.includes('ECONNRESET') || msg.includes('ECONNREFUSED') || msg.includes('Failed query')) {
+        resetDbConnection();
+        console.log('[PendingReminder] DB connection reset due to connection error — will reconnect on next run');
+      }
     }
   }, 60 * 60 * 1000); // cada hora
 }

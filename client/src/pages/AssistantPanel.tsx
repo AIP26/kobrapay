@@ -44,7 +44,7 @@ function AssistantPanelInner() {
   const [showNotesFor, setShowNotesFor] = useState<{ id: number; action: "approve" | "reject" } | null>(null);
 
   const isAssistant = user?.role === "assistant";
-  const isSuperAdmin = Boolean((user as any)?.isSuperAdmin) || user?.role === 'superadmin';
+  const isSuperAdmin = Boolean((user as any)?.isSuperAdmin) || (user?.isSuperAdmin || user?.role === "superadmin");
 
   if (!isAssistant && !isSuperAdmin) {
     return (
