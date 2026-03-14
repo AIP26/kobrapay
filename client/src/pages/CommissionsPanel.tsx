@@ -74,7 +74,7 @@ type TxDetail = {
 
 export default function CommissionsPanel() {
   const { user, loading: authLoading } = useAuth();
-  const isSuperAdmin = (user as Record<string, unknown>)?.isSuperAdmin === true;
+  const isSuperAdmin = (user as Record<string, unknown>)?.isSuperAdmin === true || user?.role === 'superadmin';
   const isAdmin = user?.role === "admin";
   const canAccess = isSuperAdmin || isAdmin;
   const [drillDown, setDrillDown] = useState<DrillDownType>(null);

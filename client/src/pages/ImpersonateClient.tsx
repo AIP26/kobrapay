@@ -78,7 +78,7 @@ export default function ImpersonateClient() {
   );
 
   // Solo superadmin puede acceder
-  if (me && !(me as any).isSuperAdmin) {
+  if (me && !(me as any).isSuperAdmin && me?.role !== 'superadmin') {
     return (
       <DashboardLayout title="Acceso Denegado">
         <div className="flex flex-col items-center justify-center py-24 text-center">

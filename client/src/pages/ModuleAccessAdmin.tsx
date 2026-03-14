@@ -525,7 +525,7 @@ export default function ModuleAccessAdmin() {
   }
 
   // Solo superadmin o asistente pueden ver esta página
-  const isSuperAdmin = (me as any)?.isSuperAdmin || me?.role === 'admin';
+  const isSuperAdmin = (me as any)?.isSuperAdmin || me?.role === 'superadmin' || me?.role === 'admin';
   const isAssistant = me?.role === 'assistant';
   if (!isSuperAdmin && !isAssistant) {
     return (

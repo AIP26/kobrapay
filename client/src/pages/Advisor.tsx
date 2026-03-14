@@ -44,7 +44,7 @@ const QUICK_ACTIONS = [
 
 export default function Advisor() {
   const { user, loading: authLoading } = useAuth();
-  const isSuperAdmin = (user as Record<string, unknown>)?.isSuperAdmin === true;
+  const isSuperAdmin = (user as Record<string, unknown>)?.isSuperAdmin === true || user?.role === 'superadmin';
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 

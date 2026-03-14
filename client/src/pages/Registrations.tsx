@@ -140,7 +140,7 @@ export default function Registrations() {
     onError: (e) => toast.error(e.message),
   });
 
-  const isSuperAdmin = (user as Record<string, unknown>)?.isSuperAdmin as boolean | undefined;
+  const isSuperAdmin = (user as Record<string, unknown>)?.isSuperAdmin === true || user?.role === 'superadmin';
 
   const filtered = useMemo(() => {
     return (registrations as Registration[]).filter((r) => {
@@ -213,7 +213,7 @@ export default function Registrations() {
     );
   }
   // Solo bloquear si el usuario ya cargó y definitivamente NO es super-admin
-  if (!authLoading && isSuperAdmin === false) {
+  if (!authLoading && !isSuperAdmin) {
     return (
       <DashboardLayout title="Solicitudes de Registro">
         <div className="flex items-center justify-center py-32">

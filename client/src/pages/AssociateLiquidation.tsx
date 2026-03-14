@@ -17,7 +17,7 @@ function formatMXN(amount: number) {
 
 export default function AssociateLiquidation() {
   const { user } = useAuth();
-  const isSuperAdmin = (user as { isSuperAdmin?: boolean })?.isSuperAdmin;
+  const isSuperAdmin = (user as { isSuperAdmin?: boolean })?.isSuperAdmin || user?.role === 'superadmin';
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const [payingId, setPayingId] = useState<number | null>(null);
   const [reference, setReference] = useState<Record<number, string>>({});

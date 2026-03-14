@@ -48,7 +48,7 @@ export default function PricingAdmin() {
   const { data: plans = [], refetch, isLoading } = trpc.pricing.getAll.useQuery();
   const updateMutation = trpc.pricing.update.useMutation();
 
-  if (!user?.isSuperAdmin) {
+  if (!user?.isSuperAdmin && (user as any)?.role !== 'superadmin') {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <p className="text-muted-foreground">Acceso restringido a superadmin.</p>
