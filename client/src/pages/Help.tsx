@@ -9,6 +9,12 @@ import {
 } from "lucide-react";
 
 const MANUALS = {
+  usuario: {
+    label: "Guía de Usuario KobraPay",
+    url: "https://d2xsxph8kpxj0f.cloudfront.net/310519663381362445/Tm7GPbTEGgvmgj5v2qy4Z4/KobraPay_Guia_Usuario_2026_7cea4cca.pdf",
+    desc: "Todo lo que necesitas saber para cobrar con KobraPay — registro, enlaces, transacciones y más.",
+    color: "blue",
+  },
   superadmin: {
     label: "Manual Superadmin",
     url: "https://d2xsxph8kpxj0f.cloudfront.net/310519663381362445/Tm7GPbTEGgvmgj5v2qy4Z4/manual_superadmin_ebf8a3b1.pdf",
@@ -556,6 +562,20 @@ export default function Help() {
                 <Download className="w-4 h-4 text-cyan-400 group-hover:scale-110 transition-transform flex-shrink-0 ml-3" />
               </a>
             )}
+            {/* Guía de Usuario — visible para TODOS los roles */}
+            <a
+              href={MANUALS.usuario.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              download
+              className="flex items-center justify-between px-4 py-3 bg-blue-500/10 border border-blue-500/20 rounded-xl hover:bg-blue-500/20 transition-colors group"
+            >
+              <div>
+                <p className="text-sm font-medium text-blue-300">{MANUALS.usuario.label}</p>
+                <p className="text-xs text-muted-foreground mt-0.5">{MANUALS.usuario.desc}</p>
+              </div>
+              <Download className="w-4 h-4 text-blue-400 group-hover:scale-110 transition-transform flex-shrink-0 ml-3" />
+            </a>
           </div>
         </div>
 
