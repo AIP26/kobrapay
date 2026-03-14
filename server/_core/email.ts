@@ -1184,35 +1184,38 @@ export async function sendNewRegistrationEmail(data: {
 export async function sendRegistrationConfirmationEmail(data: {
   userEmail: string;
   userName: string;
+  verifyToken?: string;
+  origin?: string;
 }): Promise<boolean> {
   const resend = getResend();
   if (!resend) {
     console.warn("[Email] RESEND_API_KEY no configurada. No se envio confirmacion de registro.");
     return false;
   }
+  const verifyUrl = data.verifyToken && data.origin
+    ? `${data.origin}/verify-email?token=${data.verifyToken}`
+    : null;
   const html = [
-    "<!DOCTYPE html><html lang='es'><head><meta charset='UTF-8'><title>Solicitud recibida</title></head>",
+    "<!DOCTYPE html><html lang='es'><head><meta charset='UTF-8'><title>Verifica tu cuenta</title></head>",
     "<body style='margin:0;padding:0;background:#f4f4f5;font-family:Helvetica Neue,Arial,sans-serif;'>",
     "<table width='100%' cellpadding='0' cellspacing='0' style='background:#f4f4f5;padding:40px 0;'><tr><td align='center'>",
     "<table width='600' cellpadding='0' cellspacing='0' style='background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.08);'>",
-    "<tr><td style='background:linear-gradient(135deg,#1a1a2e,#0f3460);padding:28px 40px;text-align:center;'>",
-    "<p style='margin:0;color:#00c853;font-size:13px;font-weight:700;letter-spacing:1px;'>KOBRAPAY</p>",
-    "<h1 style='margin:10px 0 0;color:#fff;font-size:26px;font-weight:800;'>Solicitud recibida</h1>",
+    "<tr><td style='background:linear-gradient(135deg,#00c853,#00bcd4);padding:28px 40px;text-align:center;'>",
+    "<img src='https://d2xsxph8kpxj0f.cloudfront.net/310519663381362445/Tm7GPbTEGgvmgj5v2qy4Z4/kobrapay_logo_correct_f5aef830.png' alt='KobraPay' style='height:40px;margin-bottom:12px;display:block;margin-left:auto;margin-right:auto;' />",
+    "<h1 style='margin:0;color:#fff;font-size:24px;font-weight:800;'>Verifica tu cuenta</h1>",
     "</td></tr>",
     "<tr><td style='padding:36px 40px;'>",
     `<p style='color:#374151;font-size:16px;margin:0 0 16px;'>Hola <strong>${data.userName}</strong>,</p>`,
-    "<p style='color:#374151;font-size:15px;margin:0 0 20px;'>Recibimos tu solicitud de registro en <strong>KobraPay</strong>. Nuestro equipo la revisara en las proximas horas y te notificaremos por este correo cuando tu cuenta sea aprobada.</p>",
-    "<div style='background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:20px 24px;margin:24px 0;'>",
-    "<p style='margin:0 0 8px;color:#166534;font-size:14px;font-weight:700;'>Que sigue?</p>",
-    "<ul style='margin:0;padding-left:20px;color:#374151;font-size:14px;line-height:1.8;'>",
-    "<li>Revisamos tu solicitud (generalmente en menos de 24 horas)</li>",
-    "<li>Te enviamos un email de bienvenida con acceso a tu panel</li>",
-    "<li>Empiezas a cobrar con tarjeta, OXXO y SPEI desde el primer dia</li>",
-    "</ul></div>",
-    "<p style='color:#6b7280;font-size:14px;margin:20px 0 0;'>Tienes alguna pregunta? Escribenos a <a href='mailto:hola@kobrapay.mx' style='color:#00c853;text-decoration:none;'>hola@kobrapay.mx</a></p>",
+    "<p style='color:#374151;font-size:15px;margin:0 0 24px;'>Gracias por registrarte en <strong>KobraPay</strong>. Para activar tu cuenta y empezar a cobrar, haz clic en el boton de abajo:</p>",
+    verifyUrl
+      ? `<div style='text-align:center;margin:32px 0;'><a href='${verifyUrl}' style='display:inline-block;padding:16px 40px;background:#00c853;color:#fff;border-radius:10px;text-decoration:none;font-size:17px;font-weight:700;letter-spacing:0.3px;'>Verificar mi email y activar cuenta</a></div>`
+      : "<p style='color:#374151;font-size:15px;'>Tu cuenta esta siendo revisada por nuestro equipo.</p>",
+    "<p style='color:#9ca3af;font-size:13px;margin:24px 0 0;'>Si el boton no funciona, copia y pega este enlace en tu navegador:</p>",
+    verifyUrl ? `<p style='color:#00c853;font-size:12px;word-break:break-all;'>${verifyUrl}</p>` : "",
+    "<p style='color:#9ca3af;font-size:12px;margin:20px 0 0;'>Si no creaste esta cuenta, ignora este correo.</p>",
     "</td></tr>",
     "<tr><td style='background:#1a1a2e;padding:20px 40px;text-align:center;'>",
-    "<p style='margin:0;color:#9ca3af;font-size:12px;'><strong style='color:#00c853;'>KobraPay</strong> kobrapay.mx</p>",
+    "<p style='margin:0;color:#9ca3af;font-size:12px;'><strong style='color:#00c853;'>KobraPay</strong> &bull; kobrapay.mx &bull; <a href='mailto:hola@kobrapay.mx' style='color:#9ca3af;'>hola@kobrapay.mx</a></p>",
     "</td></tr>",
     "</table></td></tr></table></body></html>",
   ].join("\n");
@@ -1220,13 +1223,13 @@ export async function sendRegistrationConfirmationEmail(data: {
     const { error } = await resend.emails.send({
       from: `KobraPay <${ENV.fromEmail}>`,
       to: data.userEmail,
-      subject: "Solicitud recibida - KobraPay",
+      subject: "Verifica tu cuenta en KobraPay",
       html,
     });
-    if (error) { console.error("[Email] Error al enviar confirmacion de registro:", error); return false; }
+    if (error) { console.error("[Email] Error al enviar verificacion de registro:", error); return false; }
     return true;
   } catch (err) {
-    console.error("[Email] Excepcion al enviar confirmacion de registro:", err);
+    console.error("[Email] Excepcion al enviar verificacion de registro:", err);
     return false;
   }
 }

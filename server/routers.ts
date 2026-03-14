@@ -239,14 +239,17 @@ export const appRouter = router({
             });
           }
         } catch { /* no bloquear el registro si el email falla */ }
-        // Enviar email de confirmación al usuario que se registró
+        // Enviar email de verificación al usuario que se registró
         try {
+          const origin = (ctx.req.headers.origin as string) || 'https://kobrapay.mx';
           await sendRegistrationConfirmationEmail({
             userEmail: input.email,
             userName: input.name,
+            verifyToken,
+            origin,
           });
         } catch { /* no bloquear el registro si el email falla */ }
-        return { success: true, message: 'Solicitud enviada. El equipo de KobraPay revisará tu cuenta y te notificará por email.' };
+        return { success: true, message: 'Cuenta creada. Revisa tu correo y haz clic en el enlace de verificación para activar tu cuenta.' };
       }),
 
     loginEmail: publicProcedure
@@ -377,7 +380,13 @@ export const appRouter = router({
         const found = await db.select({ id: users.id })
           .from(users).where(eq(users.emailVerifyToken, input.token)).limit(1);
         if (!found.length) throw new TRPCError({ code: 'BAD_REQUEST', message: 'Token de verificación inválido' });
-        await db.update(users).set({ emailVerified: true, emailVerifyToken: null }).where(eq(users.id, found[0].id));
+        // Activar cuenta automáticamente al verificar email
+        await db.update(users).set({ 
+          emailVerified: true, 
+          emailVerifyToken: null,
+          accountStatus: 'active',
+          isActive: true,
+        }).where(eq(users.id, found[0].id));
         return { success: true };
       }),
 

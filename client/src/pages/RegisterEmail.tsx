@@ -54,13 +54,21 @@ export default function RegisterEmail() {
           <div className="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6 bg-emerald-100">
             <CheckCircle className="w-10 h-10 text-emerald-600" />
           </div>
-          <h2 className="text-gray-900 text-2xl font-bold mb-2">¡Cuenta creada!</h2>
-          <p className="text-gray-600 text-sm mb-6">
-            Tu cuenta ha sido creada exitosamente. Ya puedes iniciar sesión con tu correo y contraseña.
+          <h2 className="text-gray-900 text-2xl font-bold mb-2">¡Revisa tu correo!</h2>
+          <p className="text-gray-600 text-sm mb-4">
+            Te enviamos un correo a <strong>{email}</strong> con un enlace de verificación.
           </p>
+          <p className="text-gray-500 text-sm mb-6">
+            Haz clic en el botón del correo para activar tu cuenta automáticamente y empezar a cobrar.
+          </p>
+          <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6 text-left">
+            <p className="text-amber-800 text-xs font-medium">¿No ves el correo?</p>
+            <p className="text-amber-700 text-xs mt-1">Revisa tu carpeta de spam o correo no deseado. El correo llega en menos de 2 minutos.</p>
+          </div>
           <Button
+            variant="outline"
             onClick={() => navigate("/login")}
-            className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold w-full h-12"
+            className="w-full h-12"
           >
             Ir a iniciar sesión
           </Button>
