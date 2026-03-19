@@ -17,7 +17,7 @@
  */
 import { Router } from "express";
 import Stripe from "stripe";
-import { getDb } from "./db";
+import { getDb, getVendorSettings } from "./db";
 import { apiKeys, apiCheckoutSessions, subscriptions } from "../drizzle/schema";
 import { eq, and } from "drizzle-orm";
 import crypto from "crypto";
@@ -513,7 +513,19 @@ export function registerApiV1Routes(app: Router) {
         }
       }
 
-      const stripeSession = await stripe.checkout.sessions.create({
+      // Obtener cuenta de Stripe Connect del merchant para transferir el dinero directo a su banco
+      const vendorSettings = await getVendorSettings(req.apiKey.userId);
+      const connectedAccountId = vendorSettings?.stripeConnectAccountId;
+      const chargesEnabled = vendorSettings?.stripeConnectChargesEnabled;
+
+      // Comisión de KobraPay: 2.9% + $3 MXN fijo (en centavos)
+      const kobraFeePercent = 0.029;
+      const kobraFeeFixed = 300; // $3 MXN en centavos
+      const kobraFeeCents = chargesEnabled && connectedAccountId
+        ? Math.round(amount * kobraFeePercent) + kobraFeeFixed
+        : 0;
+
+      const sessionParams: Stripe.Checkout.SessionCreateParams = {
         payment_method_types: ["card"],
         mode: "payment",
         line_items: [{
@@ -530,7 +542,17 @@ export function registerApiV1Routes(app: Router) {
         client_reference_id: sessionId,
         metadata: fullMetadata,
         allow_promotion_codes: true,
-      });
+      };
+
+      // Si el merchant tiene Stripe Connect activo, transferir directo a su cuenta bancaria
+      if (connectedAccountId && chargesEnabled && kobraFeeCents > 0) {
+        sessionParams.payment_intent_data = {
+          application_fee_amount: kobraFeeCents,
+          transfer_data: { destination: connectedAccountId },
+        };
+      }
+
+      const stripeSession = await stripe.checkout.sessions.create(sessionParams);
 
       const db = await getDb();
       if (db) {
