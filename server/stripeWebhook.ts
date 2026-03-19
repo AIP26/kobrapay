@@ -476,6 +476,32 @@ export function registerStripeWebhook(app: express.Application) {
                     // Disparar webhook payment.success hacia ContentAI/BrokerHub
                     await dispatchWebhookEvent(dbSession.userId, "payment.success", webhookData);
                     console.log(`[Stripe Webhook] API checkout completado: ${kobrapaySessionId} | merchant ${dbSession.userId} | webhook disparado`);
+
+                    // Notificar al dueño en el panel (campana) — pago de plataforma externa
+                    const platformName = session.metadata?.plan_name
+                      ? `${session.metadata.plan_name}`
+                      : dbSession.description || "pago externo";
+                    const amountFormatted = new Intl.NumberFormat("es-MX", {
+                      style: "currency",
+                      currency: (session.currency || dbSession.currency || "mxn").toUpperCase(),
+                    }).format((session.amount_total ?? dbSession.amount) / 100);
+                    try {
+                      await createNotification({
+                        userId: dbSession.userId,
+                        type: "payment_received",
+                        title: `💳 Pago API recibido: ${amountFormatted}`,
+                        message: `${webhookData.customer_name || webhookData.customer_email || "Cliente"} pagó ${amountFormatted} por "${platformName}".`,
+                        actionUrl: "/dashboard/sales",
+                      });
+                    } catch (_) {}
+
+                    // Notificar al dueño por email (Manus push)
+                    try {
+                      await notifyOwner({
+                        title: `✅ Nuevo pago API: ${amountFormatted}`,
+                        content: `${webhookData.customer_name || webhookData.customer_email || "Cliente"} pagó ${amountFormatted} por "${platformName}" (sesión: ${kobrapaySessionId}).`,
+                      });
+                    } catch (_) {}
                   }
                 }
               } catch (apiCheckoutErr) {
