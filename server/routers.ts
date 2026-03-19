@@ -845,12 +845,18 @@ export const appRouter = router({
       if (!settings?.stripeConnectAccountId || !settings.stripeConnectChargesEnabled) {
         return { available: [] as {amount: number, currency: string}[], pending: [] as {amount: number, currency: string}[] };
       }
-      const stripeClient = new Stripe(process.env.STRIPE_SECRET_KEY || "", { apiVersion: "2026-02-25.clover" as any });
-      const balance = await stripeClient.balance.retrieve({ stripeAccount: settings.stripeConnectAccountId });
-      return {
-        available: balance.available.map(b => ({ amount: b.amount / 100, currency: b.currency.toUpperCase() })),
-        pending: balance.pending.map(b => ({ amount: b.amount / 100, currency: b.currency.toUpperCase() })),
-      };
+      try {
+        const stripeClient = new Stripe(process.env.STRIPE_SECRET_KEY || "", { apiVersion: "2026-02-25.clover" as any });
+        const balance = await stripeClient.balance.retrieve({ stripeAccount: settings.stripeConnectAccountId });
+        return {
+          available: balance.available.map(b => ({ amount: b.amount / 100, currency: b.currency.toUpperCase() })),
+          pending: balance.pending.map(b => ({ amount: b.amount / 100, currency: b.currency.toUpperCase() })),
+        };
+      } catch {
+        // Si la clave actual no tiene acceso a la cuenta Connect (ej. test key vs live account),
+        // retornar balance vacío en lugar de error 500
+        return { available: [] as {amount: number, currency: string}[], pending: [] as {amount: number, currency: string}[] };
+      }
     }),
 
     // Solicitar retiro (payout) a cuenta bancaria
@@ -6605,7 +6611,6 @@ export const appRouter = router({
           recommendedCommission: String(recommendedCommission),
           planReasoning,
           status: 'pending_review',
-          updatedAt: now,
         };
 
         if (existing.length > 0) {
@@ -6613,7 +6618,7 @@ export const appRouter = router({
             .set(surveyData)
             .where(eq(onboardingSurveys.userId, ctx.user.id));
         } else {
-          await db.insert(onboardingSurveys).values({ ...surveyData, createdAt: now });
+          await db.insert(onboardingSurveys).values({ ...surveyData });
         }
 
         // Notificar al superadmin/asistente
@@ -6766,7 +6771,6 @@ Responde SOLO con JSON válido:
             status: newStatus,
             assistantNotes: input.assistantNotes || null,
             reviewedByAssistantAt: Date.now(),
-            updatedAt: Date.now(),
           })
           .where(eq(onboardingSurveys.id, input.surveyId));
         // Notificar al superadmin si el asistente aprobó
@@ -6809,7 +6813,6 @@ Responde SOLO con JSON válido:
             recommendedCommission: String(input.finalCommission),
             planReasoning: input.adminNotes || survey.planReasoning,
             reviewedByAdminAt: Date.now(),
-            updatedAt: Date.now(),
           })
           .where(eq(onboardingSurveys.id, input.surveyId));
 

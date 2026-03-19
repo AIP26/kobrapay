@@ -1150,3 +1150,14 @@
 - [ ] Aprobación automática por IA para nuevos registros (sin intervención manual)
 - [ ] Correo de bienvenida automático al cliente aprobado
 - [ ] Fix logo sidebar
+
+## Auditoría API/Webhooks ContentAI + BrokerHub (2026-03-19)
+- [ ] Corregir webhooks de ContentAI y BrokerHub para incluir eventos de suscripción (subscription.payment_succeeded, subscription.payment_failed, subscription.canceled, subscription.activated)
+- [ ] Agregar manejo de checkout.session.completed para suscripciones creadas vía API externa (usando kobrapay_session_id en metadata)
+- [ ] Verificar que el webhook de Stripe de producción apunta a kobrapay.mx (no al dominio de dev)
+
+## Integración ContentAI ↔ KobraPay (2026-03-19)
+- [x] Agregar endpoint POST /api/v1/checkout/sessions (alias compatible con ContentAI)
+- [x] Corregir URL del webhook de ContentAI a https://contentai-mdjbhzth.manus.space/api/kobra/webhook
+- [x] Asegurar que webhook payment.success envía metadata completo (plan_id, user_id, etc.)
+- [x] Agregar manejo de checkout.session.completed para pagos de API externa en stripeWebhook.ts

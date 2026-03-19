@@ -77,15 +77,30 @@ export default function CommissionsPanel() {
   const isSuperAdmin = user?.isSuperAdmin === true || user?.role === "superadmin";
   const isAdmin = user?.role === "admin";
   const canAccess = isSuperAdmin || isAdmin;
+
+  // ─── Todos los hooks SIEMPRE al inicio (regla de hooks de React) ──────────────
   const [drillDown, setDrillDown] = useState<DrillDownType>(null);
   const [selectedTx, setSelectedTx] = useState<TxDetail | null>(null);
   // Filtros para drill-down de transacciones
   const [txSearch, setTxSearch] = useState("");
   const [txDateFrom, setTxDateFrom] = useState("");
   const [txDateTo, setTxDateTo] = useState("");
+  const [generatingPdf, setGeneratingPdf] = useState(false);
+  // ─── Tiers de comisión escalonada ────────────────────────────────────────────
+  const [showTiers, setShowTiers] = useState(false);
+  const [editingTier, setEditingTier] = useState<number | null>(null);
+  const [tierForm, setTierForm] = useState({ minClients: 1, maxClients: '' as string | number, commissionPct: 1.0, label: '', description: '' });
+  // ─── Pestañas de comisiones ───────────────────────────────────────────────────
+  const [activeCommTab, setActiveCommTab] = useState<string>("mine");
 
   const { data, isLoading } = trpc.commissions.summary.useQuery(undefined, {
     enabled: canAccess,
+  });
+  const { data: tiersData, refetch: refetchTiers } = trpc.associate.listCommissionTiers.useQuery(undefined, { enabled: isSuperAdmin });
+  const updateTierMutation = trpc.associate.updateCommissionTier.useMutation({ onSuccess: () => { refetchTiers(); setEditingTier(null); } });
+  const createTierMutation = trpc.associate.createCommissionTier.useMutation({ onSuccess: () => { refetchTiers(); setTierForm({ minClients: 1, maxClients: '', commissionPct: 1.0, label: '', description: '' }); } });
+  const { data: associatesData } = trpc.associate.listAllAssociates.useQuery(undefined, {
+    enabled: isSuperAdmin,
   });
 
   const chartData = useMemo(() => {
@@ -132,19 +147,6 @@ export default function CommissionsPanel() {
     : 0;
 
   const top5 = [...clients].sort((a, b) => b.totalCommission - a.totalCommission).slice(0, 5);
-  const [generatingPdf, setGeneratingPdf] = useState(false);
-  // ─── Tiers de comisión escalonada ────────────────────────────────────────────
-  const [showTiers, setShowTiers] = useState(false);
-  const [editingTier, setEditingTier] = useState<number | null>(null);
-  const [tierForm, setTierForm] = useState({ minClients: 1, maxClients: '' as string | number, commissionPct: 1.0, label: '', description: '' });
-  const { data: tiersData, refetch: refetchTiers } = trpc.associate.listCommissionTiers.useQuery(undefined, { enabled: isSuperAdmin });
-  const updateTierMutation = trpc.associate.updateCommissionTier.useMutation({ onSuccess: () => { refetchTiers(); setEditingTier(null); } });
-  const createTierMutation = trpc.associate.createCommissionTier.useMutation({ onSuccess: () => { refetchTiers(); setTierForm({ minClients: 1, maxClients: '', commissionPct: 1.0, label: '', description: '' }); } });
-  // ─── Pestañas de comisiones ───────────────────────────────────────────────────
-  const [activeCommTab, setActiveCommTab] = useState<string>("mine");
-  const { data: associatesData } = trpc.associate.listAllAssociates.useQuery(undefined, {
-    enabled: isSuperAdmin,
-  });
   const associates = associatesData ?? [];
   const selectedAssociate = associates.find(a => String(a.associate.id) === activeCommTab) ?? null;
 

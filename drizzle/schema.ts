@@ -989,34 +989,34 @@ export type ModuleRequest = typeof moduleRequests.$inferSelect;
 // ─── Encuesta de Onboarding Inteligente ───────────────────────────────────────
 export const onboardingSurveys = mysqlTable("onboarding_surveys", {
   id: int("id").primaryKey().autoincrement(),
-  userId: int("userId").notNull().references(() => users.id),
+  userId: int("user_id").notNull().references(() => users.id),
   // Tipo y tamaño del negocio
-  businessType: varchar("businessType", { length: 100 }).notNull(),
-  businessSize: varchar("businessSize", { length: 50 }).notNull(),
+  businessType: varchar("business_type", { length: 100 }).notNull(),
+  businessSize: varchar("business_size", { length: 50 }).notNull(),
   // Volumen financiero estimado
-  monthlyRevenueEstimate: varchar("monthlyRevenueEstimate", { length: 50 }).notNull(),
+  monthlyRevenueEstimate: varchar("monthly_revenue_estimate", { length: 50 }).notNull(),
   // Necesidades de pago
-  needsCardPayments: boolean("needsCardPayments").default(true),
-  needsInternationalCards: boolean("needsInternationalCards").default(false),
-  needsRecurringBilling: boolean("needsRecurringBilling").default(false),
-  needsInvoicing: boolean("needsInvoicing").default(false),
-  needsMultipleBankAccounts: boolean("needsMultipleBankAccounts").default(false),
+  needsCardPayments: boolean("needs_card_payments").default(true),
+  needsInternationalCards: boolean("needs_international_cards").default(false),
+  needsRecurringBilling: boolean("needs_recurring_billing").default(false),
+  needsInvoicing: boolean("needs_invoicing").default(false),
+  needsMultipleBankAccounts: boolean("needs_multiple_bank_accounts").default(false),
   // Módulos de interés (JSON array como texto)
-  interestedModules: text("interestedModules"),
+  interestedModules: text("interested_modules"),
   // Contexto adicional
-  currentPaymentProcessor: varchar("currentPaymentProcessor", { length: 100 }),
-  mainChallenge: text("mainChallenge"),
+  currentPaymentProcessor: varchar("current_payment_processor", { length: 100 }),
+  mainChallenge: text("main_challenge"),
   // Plan recomendado (calculado automáticamente)
-  recommendedPlan: varchar("recommendedPlan", { length: 50 }),
-  recommendedCommission: decimal("recommendedCommission", { precision: 5, scale: 2 }),
-  planReasoning: text("planReasoning"),
+  recommendedPlan: varchar("recommended_plan", { length: 50 }),
+  recommendedCommission: decimal("recommended_commission", { precision: 5, scale: 2 }),
+  planReasoning: text("plan_reasoning"),
   // Estado del flujo de aprobación
   status: varchar("status", { length: 30 }).default("pending_review").notNull(),
-  assistantNotes: text("assistantNotes"),
-  reviewedByAssistantAt: int("reviewedByAssistantAt"),
-  reviewedByAdminAt: int("reviewedByAdminAt"),
-  createdAt: int("createdAt").notNull(),
-  updatedAt: int("updatedAt").notNull(),
+  assistantNotes: text("assistant_notes"),
+  reviewedByAssistantAt: bigint("reviewed_by_assistant_at", { mode: "number" }),
+  reviewedByAdminAt: bigint("reviewed_by_admin_at", { mode: "number" }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
 });
 export type OnboardingSurvey = typeof onboardingSurveys.$inferSelect;
 export type InsertOnboardingSurvey = typeof onboardingSurveys.$inferInsert;

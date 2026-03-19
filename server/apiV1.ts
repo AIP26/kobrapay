@@ -2,6 +2,7 @@
  * KobraPay Public API v1
  * Endpoints:
  *   POST   /api/v1/checkout              — Pago único
+ *   POST   /api/v1/checkout/sessions     — Alias para ContentAI (acepta plan_id, plan_name, user_id extra)
  *   GET    /api/v1/checkout/:session_id  — Estado de sesión
  *   POST   /api/v1/subscription          — Crear suscripción recurrente
  *   GET    /api/v1/subscription          — Listar suscripciones (filtro: ?customer_email=)
@@ -9,6 +10,10 @@
  *   GET    /api/v1/merchant              — Info del merchant
  *
  * Autenticación: Bearer token (API Key) o header X-API-Key
+ *
+ * Integraciones externas:
+ *   ContentAI  -> POST /api/v1/checkout/sessions + webhook a https://contentai-mdjbhzth.manus.space/api/kobra/webhook
+ *   BrokerHub  -> POST /api/v1/subscription + webhook a https://brokerhub.com.mx/api/webhooks/kobrapay
  */
 import { Router } from "express";
 import Stripe from "stripe";
@@ -458,6 +463,108 @@ export function registerApiV1Routes(app: Router) {
       return res
         .status(500)
         .json({ error: err.message || "Error al cancelar la suscripción" });
+    }
+  });
+
+  // ─── POST /api/v1/checkout/sessions — Alias compatible con ContentAI ────────────
+  // ContentAI apunta a esta URL. Acepta los mismos campos que /api/v1/checkout
+  // más campos extra: plan_id, plan_name, user_id (external)
+  app.post("/api/v1/checkout/sessions", authenticateApiKey, async (req: any, res: any) => {
+    try {
+      const {
+        amount,
+        description,
+        customer_email,
+        customer_name,
+        success_url,
+        cancel_url,
+        metadata,
+        currency = "MXN",
+        plan_id,
+        plan_name,
+        user_id: externalUserId,
+      } = req.body;
+
+      if (!amount || typeof amount !== "number" || amount < 50) {
+        return res.status(400).json({ error: "El monto mínimo es 50 centavos" });
+      }
+      const finalDescription = description || plan_name;
+      if (!finalDescription) {
+        return res.status(400).json({ error: "description o plan_name es requerido" });
+      }
+      if (!success_url || !cancel_url) {
+        return res.status(400).json({ error: "success_url y cancel_url son requeridos" });
+      }
+
+      const sessionId = `kp_sess_${crypto.randomBytes(16).toString("hex")}`;
+      const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
+
+      // Construir metadata completo para que el webhook lo reenvie a ContentAI intacto
+      const fullMetadata: Record<string, string> = {
+        kobrapay_session_id: sessionId,
+        merchant_user_id: req.apiKey.userId.toString(),
+        ...(plan_id !== undefined ? { plan_id: String(plan_id) } : {}),
+        ...(plan_name ? { plan_name: String(plan_name) } : {}),
+        ...(externalUserId !== undefined ? { external_user_id: String(externalUserId) } : {}),
+      };
+      if (metadata && typeof metadata === "object") {
+        for (const [k, v] of Object.entries(metadata)) {
+          fullMetadata[k] = String(v);
+        }
+      }
+
+      const stripeSession = await stripe.checkout.sessions.create({
+        payment_method_types: ["card"],
+        mode: "payment",
+        line_items: [{
+          price_data: {
+            currency: currency.toLowerCase(),
+            product_data: { name: finalDescription },
+            unit_amount: amount,
+          },
+          quantity: 1,
+        }],
+        customer_email: customer_email || undefined,
+        success_url: `${success_url}?session_id=${sessionId}&status=success`,
+        cancel_url: `${cancel_url}?session_id=${sessionId}&status=cancelled`,
+        client_reference_id: sessionId,
+        metadata: fullMetadata,
+        allow_promotion_codes: true,
+      });
+
+      const db = await getDb();
+      if (db) {
+        await db.insert(apiCheckoutSessions).values({
+          apiKeyId: req.apiKey.id,
+          userId: req.apiKey.userId,
+          sessionId,
+          amount,
+          currency,
+          description: finalDescription,
+          customerEmail: customer_email || null,
+          customerName: customer_name || null,
+          successUrl: success_url,
+          cancelUrl: cancel_url,
+          checkoutUrl: stripeSession.url || "",
+          metadata: JSON.stringify(fullMetadata),
+          status: "pending",
+          expiresAt,
+        });
+      }
+
+      return res.json({
+        session_id: sessionId,
+        checkout_url: stripeSession.url,
+        expires_at: expiresAt.toISOString(),
+        amount,
+        currency,
+        description: finalDescription,
+        plan_id: plan_id ?? null,
+        external_user_id: externalUserId ?? null,
+      });
+    } catch (err: any) {
+      console.error("[API v1] checkout/sessions error:", err);
+      return res.status(500).json({ error: err.message || "Error al crear la sesión" });
     }
   });
 

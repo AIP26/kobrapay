@@ -416,8 +416,9 @@ export function registerStripeWebhook(app: express.Application) {
 
           case "checkout.session.completed": {
             const session = event.data.object as Stripe.Checkout.Session;
+
+            // ── Caso 1: Suscripción recurrente interna ──────────────────────────
             if (session.mode === "subscription" && session.subscription && session.customer) {
-              // Vincular stripeSubscriptionId a la suscripción en BD
               const customerId = typeof session.customer === "string" ? session.customer : session.customer.id;
               const dbSub = await getSubscriptionByCustomerId(customerId);
               if (dbSub) {
@@ -429,6 +430,59 @@ export function registerStripeWebhook(app: express.Application) {
                 console.log(`[Stripe Webhook] Checkout completado, suscripción activada: ${stripeSubId}`);
               }
             }
+
+            // ── Caso 2: Pago único de API externa (ContentAI, BrokerHub) ────────
+            // Detectado por kobrapay_session_id en metadata de Stripe
+            const kobrapaySessionId = session.metadata?.kobrapay_session_id;
+            if (kobrapaySessionId && session.mode === "payment" && session.payment_status === "paid") {
+              try {
+                const db2 = await (await import("./db")).getDb();
+                if (db2) {
+                  const { apiCheckoutSessions } = await import("../drizzle/schema");
+                  const { eq: eq2 } = await import("drizzle-orm");
+
+                  const [dbSession] = await db2.select().from(apiCheckoutSessions)
+                    .where(eq2(apiCheckoutSessions.sessionId, kobrapaySessionId)).limit(1);
+
+                  if (dbSession && dbSession.status !== "completed") {
+                    // Marcar sesión como completada
+                    await db2.update(apiCheckoutSessions)
+                      .set({ status: "completed", updatedAt: new Date() })
+                      .where(eq2(apiCheckoutSessions.sessionId, kobrapaySessionId));
+
+                    // Construir payload completo con metadata intacto para ContentAI/BrokerHub
+                    const webhookData: Record<string, unknown> = {
+                      session_id: kobrapaySessionId,
+                      stripe_session_id: session.id,
+                      amount: session.amount_total ?? dbSession.amount,
+                      currency: (session.currency || dbSession.currency || "mxn").toUpperCase(),
+                      description: dbSession.description,
+                      customer_email: session.customer_details?.email || dbSession.customerEmail || "",
+                      customer_name: session.customer_details?.name || dbSession.customerName || "",
+                      paid_at: new Date().toISOString(),
+                      merchant_id: `merchant_${dbSession.userId}`,
+                      payment_status: "paid",
+                    };
+
+                    // Incluir todo el metadata original (plan_id, plan_name, external_user_id, etc.)
+                    if (session.metadata) {
+                      for (const [k, v] of Object.entries(session.metadata)) {
+                        if (k !== "kobrapay_session_id" && k !== "merchant_user_id") {
+                          webhookData[k] = v;
+                        }
+                      }
+                    }
+
+                    // Disparar webhook payment.success hacia ContentAI/BrokerHub
+                    await dispatchWebhookEvent(dbSession.userId, "payment.success", webhookData);
+                    console.log(`[Stripe Webhook] API checkout completado: ${kobrapaySessionId} | merchant ${dbSession.userId} | webhook disparado`);
+                  }
+                }
+              } catch (apiCheckoutErr) {
+                console.error("[Stripe Webhook] Error procesando API checkout session:", apiCheckoutErr);
+              }
+            }
+
             break;
           }
 
