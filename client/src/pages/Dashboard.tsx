@@ -312,30 +312,45 @@ export default function Dashboard() {
         {/* Panel de Suscripciones Externas (BrokerHub, ContentAI) */}
         {subStats && subStats.totalActive > 0 && (
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <Card className="border-amber-200 bg-amber-50/40 shadow-sm sm:col-span-1">
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between mb-2">
-                  <p className="text-xs text-amber-700 font-medium">Suscripciones activas</p>
-                  <div className="w-8 h-8 bg-amber-100 rounded-lg flex items-center justify-center">
-                    <Repeat className="w-4 h-4 text-amber-600" />
+            {/* Card 1: Suscripciones activas → ver todas */}
+            <RouterLink href="/dashboard/sales?platform=all">
+              <Card className="border-amber-200 bg-amber-50/40 shadow-sm sm:col-span-1 cursor-pointer hover:shadow-md hover:border-amber-300 transition-all">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-xs text-amber-700 font-medium">Suscripciones activas</p>
+                    <div className="w-8 h-8 bg-amber-100 rounded-lg flex items-center justify-center">
+                      <Repeat className="w-4 h-4 text-amber-600" />
+                    </div>
                   </div>
-                </div>
-                <p className="text-xl font-bold text-amber-900">{subStats.totalActive}</p>
-                <p className="text-xs text-amber-600 mt-0.5">BrokerHub + ContentAI</p>
-              </CardContent>
-            </Card>
-            <Card className="border-amber-200 bg-amber-50/40 shadow-sm sm:col-span-1">
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between mb-2">
-                  <p className="text-xs text-amber-700 font-medium">MRR externo</p>
-                  <div className="w-8 h-8 bg-amber-100 rounded-lg flex items-center justify-center">
-                    <TrendingUp className="w-4 h-4 text-amber-600" />
+                  <p className="text-xl font-bold text-amber-900">{subStats.totalActive}</p>
+                  <p className="text-xs text-amber-500 mt-0.5 flex items-center gap-1">
+                    BrokerHub + ContentAI
+                    <ArrowRight className="w-3 h-3" />
+                  </p>
+                </CardContent>
+              </Card>
+            </RouterLink>
+
+            {/* Card 2: MRR externo → ver detalle */}
+            <RouterLink href="/dashboard/sales?platform=all">
+              <Card className="border-amber-200 bg-amber-50/40 shadow-sm sm:col-span-1 cursor-pointer hover:shadow-md hover:border-amber-300 transition-all">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-xs text-amber-700 font-medium">MRR externo</p>
+                    <div className="w-8 h-8 bg-amber-100 rounded-lg flex items-center justify-center">
+                      <TrendingUp className="w-4 h-4 text-amber-600" />
+                    </div>
                   </div>
-                </div>
-                <p className="text-xl font-bold text-amber-900">{formatCurrency(subStats.totalMonthlyRevenue / 100)}</p>
-                <p className="text-xs text-amber-600 mt-0.5">Ingresos recurrentes/mes</p>
-              </CardContent>
-            </Card>
+                  <p className="text-xl font-bold text-amber-900">{formatCurrency(subStats.totalMonthlyRevenue / 100)}</p>
+                  <p className="text-xs text-amber-500 mt-0.5 flex items-center gap-1">
+                    Ingresos recurrentes/mes
+                    <ArrowRight className="w-3 h-3" />
+                  </p>
+                </CardContent>
+              </Card>
+            </RouterLink>
+
+            {/* Card 3: Plataformas → links individuales por plataforma */}
             <Card className="border-amber-200 bg-amber-50/40 shadow-sm sm:col-span-1">
               <CardContent className="p-4">
                 <div className="flex items-center justify-between mb-2">
@@ -347,9 +362,11 @@ export default function Dashboard() {
                 <p className="text-xl font-bold text-amber-900">{Object.keys(subStats.byPlatform).length}</p>
                 <div className="flex gap-1 mt-1 flex-wrap">
                   {Object.entries(subStats.byPlatform).map(([platform, data]) => (
-                    <span key={platform} className="text-xs bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded font-medium">
-                      {platform === "brokerhub" ? "BrokerHub" : platform === "contentai" ? "ContentAI" : platform} ({data.count})
-                    </span>
+                    <RouterLink key={platform} href={`/dashboard/sales?platform=${platform}`}>
+                      <span className="text-xs bg-amber-200 text-amber-900 px-2 py-0.5 rounded font-medium cursor-pointer hover:bg-amber-300 transition-colors">
+                        {platform === "brokerhub" ? "BrokerHub" : platform === "contentai" ? "ContentAI" : platform} ({data.count})
+                      </span>
+                    </RouterLink>
                   ))}
                 </div>
               </CardContent>

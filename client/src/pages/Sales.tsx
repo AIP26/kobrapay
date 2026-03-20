@@ -865,10 +865,18 @@ export default function Sales() {
   const { user } = useAuth();
   const isSuperAdmin = user?.isSuperAdmin === true || user?.role === "superadmin";
 
+  // Leer query param ?platform= para navegación desde el Dashboard
+  const initialPlatform = useMemo(() => {
+    const params = new URLSearchParams(window.location.search);
+    const p = params.get("platform");
+    if (p === "kobrapay" || p === "brokerhub" || p === "contentai" || p === "all") return p;
+    return "all";
+  }, []);
+
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [filter, setFilter] = useState<"all" | "succeeded" | "pending" | "failed">("all");
-  const [platformFilter, setPlatformFilter] = useState<"all" | "kobrapay" | "brokerhub" | "contentai">("all");
+  const [platformFilter, setPlatformFilter] = useState<"all" | "kobrapay" | "brokerhub" | "contentai">(initialPlatform);
   const [selectedTx, setSelectedTx] = useState<Transaction | null>(null);
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
