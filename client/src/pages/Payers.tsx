@@ -321,10 +321,13 @@ export default function Payers() {
   {((payers ?? []) as unknown as Payer[]).map((payer) => {
                   const initials = payer.name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
                   return (
-                    <button
+                    <div
                       key={payer.id}
+                      role="button"
+                      tabIndex={0}
                       onClick={() => setSelectedPayer(payer)}
-                      className="w-full flex items-center gap-4 px-5 py-4 hover:bg-gray-50/70 transition-colors text-left"
+                      onKeyDown={(e) => e.key === 'Enter' && setSelectedPayer(payer)}
+                      className="w-full flex items-center gap-4 px-5 py-4 hover:bg-gray-50/70 transition-colors text-left cursor-pointer"
                     >
                       {/* Avatar */}
                       <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center flex-shrink-0">
@@ -383,7 +386,7 @@ export default function Payers() {
                           <Trash2 className="w-4 h-4" />
                         </button>
                       )}
-                    </button>
+                    </div>
                   );
                 })}
               </div>

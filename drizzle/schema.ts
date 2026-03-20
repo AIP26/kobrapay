@@ -1250,7 +1250,7 @@ export const transferRecords = mysqlTable("transfer_records", {
   transferType: mysqlEnum("transfer_type", ["spei", "wire", "zelle", "crypto", "other"]).notNull().default("spei"),
   amount: decimal("amount", { precision: 12, scale: 2 }).notNull(),
   currency: varchar("currency", { length: 8 }).notNull().default("MXN"),
-  status: mysqlEnum("transfer_status", ["pending", "completed", "failed", "cancelled"]).notNull().default("pending"),
+  status: mysqlEnum("status", ["pending", "completed", "failed", "cancelled"]).notNull().default("pending"),
   trackingNumber: varchar("tracking_number", { length: 128 }),
   senderName: varchar("sender_name", { length: 255 }),
   senderBank: varchar("sender_bank", { length: 128 }),
