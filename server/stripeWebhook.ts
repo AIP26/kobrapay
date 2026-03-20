@@ -559,6 +559,12 @@ export function registerStripeWebhook(app: express.Application) {
               const stripeSubId = typeof invSubId === "string" ? invSubId : invSubId.id;
               const dbSub = await getSubscriptionByStripeId(stripeSubId);
               if (dbSub) {
+                // Determinar plataforma de origen para el badge
+                const srcPlatform = (dbSub as any).sourcePlatform || "kobrapay";
+                const platformLabel = srcPlatform === "brokerhub" ? "BrokerHub" : srcPlatform === "contentai" ? "ContentAI" : "KobraPay";
+                const platformEmoji = srcPlatform === "brokerhub" ? "🏠" : srcPlatform === "contentai" ? "✍️" : "💳";
+                const amountFormatted = new Intl.NumberFormat("es-MX", { style: "currency", currency: invoice.currency.toUpperCase() }).format(invoice.amount_paid / 100);
+
                 // Obtener datos del dueño para enviar email
                 const owner = await getUserById(dbSub.ownerId);
                 if (owner?.email) {
@@ -568,7 +574,7 @@ export function registerStripeWebhook(app: express.Application) {
                       ownerName: owner.name || "Usuario KobraPay",
                       customerEmail: dbSub.customerEmail,
                       customerName: dbSub.customerName,
-                      planName: dbSub.name,
+                      planName: `[${platformLabel}] ${dbSub.name}`,
                       amount: invoice.amount_paid,
                       currency: invoice.currency,
                       interval: dbSub.interval,
@@ -581,16 +587,16 @@ export function registerStripeWebhook(app: express.Application) {
                   await createNotification({
                     userId: dbSub.ownerId,
                     type: "payment_received",
-                    title: `🔄 Cobro recurrente: ${new Intl.NumberFormat("es-MX", { style: "currency", currency: invoice.currency.toUpperCase() }).format(invoice.amount_paid / 100)}`,
-                    message: `Se cobró exitosamente el plan "${dbSub.name}" a ${dbSub.customerEmail}.`,
-                    actionUrl: "/dashboard/recurring",
+                    title: `${platformEmoji} [${platformLabel}] Cobro recurrente: ${amountFormatted}`,
+                    message: `Se cobró exitosamente el plan "${dbSub.name}" a ${dbSub.customerEmail} vía ${platformLabel}.`,
+                    actionUrl: `/dashboard/subscriptions/${dbSub.id}`,
                   });
                 } catch (_) {}
-                // Notificar al owner via push
+                // Notificar al owner via push con badge de plataforma
                 try {
                   await notifyOwner({
-                    title: `🔄 Cobro recurrente exitoso: ${new Intl.NumberFormat("es-MX", { style: "currency", currency: invoice.currency.toUpperCase() }).format(invoice.amount_paid / 100)}`,
-                    content: `Plan "${dbSub.name}" cobrado a ${dbSub.customerEmail}.`,
+                    title: `${platformEmoji} [${platformLabel}] Cobro recurrente: ${amountFormatted}`,
+                    content: `Plan "${dbSub.name}" cobrado a ${dbSub.customerEmail} vía ${platformLabel}. Ver detalle en KobraPay.`,
                   });
                 } catch (_) {}
                 // Disparar webhook saliente al cliente (ej: BrokerHub)

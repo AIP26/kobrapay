@@ -4504,6 +4504,37 @@ export const appRouter = router({
       return subs.filter((s) => s.status === 'past_due' || s.status === 'incomplete');
     }),
 
+    // Exportar suscripciones externas como CSV con desglose por plataforma
+    exportCsv: protectedProcedure
+      .input(z.object({ platform: z.string().optional() }))
+      .query(async ({ ctx, input }) => {
+        const subs = await getSubscriptionsByOwner(ctx.user.id);
+        const platformLabels: Record<string, string> = { brokerhub: 'BrokerHub', contentai: 'ContentAI', kobrapay: 'KobraPay' };
+        const filtered = input.platform && input.platform !== 'all'
+          ? subs.filter((s) => (s as any).sourcePlatform === input.platform)
+          : subs;
+        const rows = [
+          ['Fecha Alta', 'Cliente', 'Email', 'Plan', 'Monto', 'Moneda', 'Intervalo', 'Estado', 'Plataforma', 'Stripe Sub ID'].join(','),
+          ...filtered.map((s) => {
+            const platform = (s as any).sourcePlatform || 'kobrapay';
+            const amountFormatted = ((s.amount || 0) / 100).toFixed(2);
+            return [
+              new Date(s.createdAt).toLocaleDateString('es-MX'),
+              `"${s.customerName || ''}"`,
+              s.customerEmail || '',
+              `"${s.name}"`,
+              amountFormatted,
+              (s.currency || 'mxn').toUpperCase(),
+              s.interval || 'month',
+              s.status,
+              platformLabels[platform] || platform,
+              s.stripeSubscriptionId || '',
+            ].join(',');
+          }),
+        ];
+        return { csv: rows.join('\n'), count: filtered.length };
+      }),
+
     // Solo superadmin puede eliminar suscripciones canceladas
     deleteCanceled: protectedProcedure
       .input(z.object({ id: z.number() }))

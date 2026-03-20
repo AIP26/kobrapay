@@ -913,6 +913,10 @@ export default function Sales() {
     { refetchInterval: 30000 }
   );
   const { data: externalSubs = [] } = trpc.subscriptions.listExternal.useQuery(undefined, { refetchInterval: 60000 });
+  const { data: subsCsvData, refetch: fetchSubsCsv } = trpc.subscriptions.exportCsv.useQuery(
+    { platform: platformFilter === 'all' ? undefined : platformFilter },
+    { enabled: false }
+  );
   const { data: stats } = trpc.transactions.stats.useQuery();
   const { data: exportData, refetch: fetchExport } = trpc.transactions.exportCsv.useQuery(
     undefined,
@@ -1548,6 +1552,26 @@ export default function Sales() {
                 Suscripciones externas
                 <span className="text-xs font-normal text-muted-foreground ml-1">({filteredSubs.length})</span>
               </CardTitle>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-7 text-xs gap-1"
+                onClick={async () => {
+                  const result = await fetchSubsCsv();
+                  if (result.data?.csv) {
+                    const blob = new Blob([result.data.csv], { type: 'text/csv;charset=utf-8;' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `suscripciones-${platformFilter === 'all' ? 'todas' : platformFilter}-${new Date().toISOString().slice(0, 10)}.csv`;
+                    a.click();
+                    URL.revokeObjectURL(url);
+                  }
+                }}
+              >
+                <Download className="w-3 h-3" />
+                Exportar CSV
+              </Button>
             </CardHeader>
             <CardContent className="p-0">
               <div className="divide-y divide-gray-100">
