@@ -1161,3 +1161,17 @@
 - [x] Corregir URL del webhook de ContentAI a https://contentai-mdjbhzth.manus.space/api/kobra/webhook
 - [x] Asegurar que webhook payment.success envía metadata completo (plan_id, user_id, etc.)
 - [x] Agregar manejo de checkout.session.completed para pagos de API externa en stripeWebhook.ts
+
+## Suscripciones externas en panel superadmin (2026-03-19)
+- [ ] Agregar endpoint servidor: getAllSalesUnified (transacciones + suscripciones externas)
+- [ ] Actualizar Mis Ventas para mostrar suscripciones externas con etiqueta de origen (BrokerHub/ContentAI)
+- [ ] Actualizar Dashboard Principal para incluir ingresos de suscripciones externas en el resumen
+
+## Trabajo autónomo completo (2026-03-19)
+- [ ] Corregir notificación del primer pago en checkout.session.completed (suscripciones externas)
+- [ ] Agregar endpoint getUnifiedSales en servidor (transacciones + suscripciones externas)
+- [ ] Mostrar suscripciones externas en Mis Ventas con badge de origen (BrokerHub/ContentAI)
+- [ ] Actualizar Dashboard Principal con ingresos de suscripciones externas
+- [ ] Corregir ruta de Expedientes (404 en /dashboard/files)
+- [ ] Verificar TypeScript sin errores
+- [ ] Guardar checkpoint y publicar

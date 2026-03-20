@@ -655,6 +655,7 @@ export const subscriptions = mysqlTable("subscriptions", {
   currentPeriodStart: timestamp("currentPeriodStart"),
   currentPeriodEnd: timestamp("currentPeriodEnd"),
   cancelAtPeriodEnd: boolean("cancelAtPeriodEnd").default(false).notNull(),
+  sourcePlatform: varchar("sourcePlatform", { length: 100 }),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });

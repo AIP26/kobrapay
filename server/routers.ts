@@ -4375,6 +4375,55 @@ export const appRouter = router({
         return { checkoutUrl: session.url, emailSent };
       }),
 
+    // Listar suscripciones externas (BrokerHub, ContentAI) para el panel Mis Ventas
+    listExternal: protectedProcedure.query(async ({ ctx }) => {
+      const subs = await getSubscriptionsByOwner(ctx.user.id);
+      // Retornar todas las suscripciones con su plataforma de origen para mostrar en Mis Ventas
+      return subs.map((s) => ({
+        id: s.id,
+        type: "subscription" as const,
+        sourcePlatform: (s as any).sourcePlatform || "kobrapay",
+        planName: s.name,
+        customerEmail: s.customerEmail,
+        customerName: s.customerName || null,
+        amount: s.amount,
+        currency: s.currency,
+        interval: s.interval,
+        status: s.status,
+        createdAt: s.createdAt,
+      }));
+    }),
+
+    // Estadísticas de suscripciones externas para el Dashboard
+    externalStats: protectedProcedure.query(async ({ ctx }) => {
+      const subs = await getSubscriptionsByOwner(ctx.user.id);
+      const activeSubs = subs.filter((s) => s.status === "active");
+      const totalMonthlyRevenue = activeSubs.reduce((sum, s) => {
+        // Convertir todo a mensual para comparar
+        const monthlyAmount = s.interval === "year" ? s.amount / 12 :
+          s.interval === "week" ? s.amount * 4.33 :
+          s.interval === "day" ? s.amount * 30 :
+          s.amount; // month
+        return sum + monthlyAmount;
+      }, 0);
+      const byPlatform: Record<string, { count: number; monthlyRevenue: number }> = {};
+      for (const s of activeSubs) {
+        const platform = (s as any).sourcePlatform || "kobrapay";
+        if (!byPlatform[platform]) byPlatform[platform] = { count: 0, monthlyRevenue: 0 };
+        byPlatform[platform].count++;
+        const monthlyAmount = s.interval === "year" ? s.amount / 12 :
+          s.interval === "week" ? s.amount * 4.33 :
+          s.interval === "day" ? s.amount * 30 :
+          s.amount;
+        byPlatform[platform].monthlyRevenue += monthlyAmount;
+      }
+      return {
+        totalActive: activeSubs.length,
+        totalMonthlyRevenue,
+        byPlatform,
+      };
+    }),
+
     // Solo superadmin puede eliminar suscripciones canceladas
     deleteCanceled: protectedProcedure
       .input(z.object({ id: z.number() }))

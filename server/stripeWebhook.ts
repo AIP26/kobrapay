@@ -428,6 +428,44 @@ export function registerStripeWebhook(app: express.Application) {
                   status: "active",
                 });
                 console.log(`[Stripe Webhook] Checkout completado, suscripción activada: ${stripeSubId}`);
+
+                // Notificar al dueño: primer pago de suscripción
+                const amountFmt = new Intl.NumberFormat("es-MX", {
+                  style: "currency",
+                  currency: (session.currency || dbSub.currency || "mxn").toUpperCase(),
+                }).format((session.amount_total ?? Number(dbSub.amount)) / 100);
+                const customerLabel = dbSub.customerName || dbSub.customerEmail || "Cliente";
+                try {
+                  await createNotification({
+                    userId: dbSub.ownerId,
+                    type: "payment_received",
+                    title: `🔔 Nueva suscripción activada: ${amountFmt}`,
+                    message: `${customerLabel} se suscribió al plan "${dbSub.name}" por ${amountFmt}/${dbSub.interval}.`,
+                    actionUrl: "/dashboard/recurring",
+                  });
+                } catch (_) {}
+                try {
+                  await notifyOwner({
+                    title: `✅ Nueva suscripción: ${amountFmt}/${dbSub.interval}`,
+                    content: `${customerLabel} activó el plan "${dbSub.name}" (${amountFmt}). Suscripción ID: ${stripeSubId}.`,
+                  });
+                } catch (_) {}
+
+                // Disparar webhook saliente (BrokerHub/ContentAI) para primer pago
+                try {
+                  await dispatchWebhookEvent(dbSub.ownerId, "subscription.activated", {
+                    subscription_id: dbSub.id,
+                    stripe_subscription_id: stripeSubId,
+                    plan_name: dbSub.name,
+                    customer_email: dbSub.customerEmail,
+                    customer_name: dbSub.customerName || "",
+                    amount: Number(dbSub.amount),
+                    amount_formatted: amountFmt,
+                    currency: (session.currency || dbSub.currency || "mxn").toUpperCase(),
+                    interval: dbSub.interval,
+                    activated_at: new Date().toISOString(),
+                  });
+                } catch (_) {}
               }
             }
 

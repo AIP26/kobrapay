@@ -315,6 +315,17 @@ export function registerApiV1Routes(app: Router) {
       });
 
       // 5. Guardar en la base de datos (estado: incomplete hasta que pague)
+      // Detectar plataforma de origen por el nombre de la API key
+      const apiKeyName = (req.apiKey.name || "").toLowerCase();
+      let sourcePlatform: string | null = null;
+      if (apiKeyName.includes("brokerhub") || (metadata && (metadata.source_platform === "brokerhub" || metadata.platform === "brokerhub"))) {
+        sourcePlatform = "brokerhub";
+      } else if (apiKeyName.includes("contentai") || (metadata && (metadata.source_platform === "contentai" || metadata.platform === "contentai"))) {
+        sourcePlatform = "contentai";
+      } else {
+        // Intentar detectar por metadata.source_platform si viene en el body
+        sourcePlatform = req.body.source_platform || req.body.platform || null;
+      }
       await db.insert(subscriptions).values({
         ownerId: req.apiKey.userId,
         stripeProductId: stripeProduct.id,
@@ -329,6 +340,7 @@ export function registerApiV1Routes(app: Router) {
         customerEmail: customer_email,
         customerName: customer_name || null,
         status: "incomplete",
+        sourcePlatform,
       });
 
       const intervalLabels: Record<string, string> = {

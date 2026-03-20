@@ -30,6 +30,7 @@ import {
   CheckSquare,
   Square,
   X,
+  Repeat,
 } from "lucide-react";
 import { useState, useMemo, useRef } from "react";
 import { generateEvidencePdf } from "@/lib/generateEvidencePdf";
@@ -867,6 +868,7 @@ export default function Sales() {
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [filter, setFilter] = useState<"all" | "succeeded" | "pending" | "failed">("all");
+  const [platformFilter, setPlatformFilter] = useState<"all" | "kobrapay" | "brokerhub" | "contentai">("all");
   const [selectedTx, setSelectedTx] = useState<Transaction | null>(null);
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
@@ -902,6 +904,7 @@ export default function Sales() {
     queryInput,
     { refetchInterval: 30000 }
   );
+  const { data: externalSubs = [] } = trpc.subscriptions.listExternal.useQuery(undefined, { refetchInterval: 60000 });
   const { data: stats } = trpc.transactions.stats.useQuery();
   const { data: exportData, refetch: fetchExport } = trpc.transactions.exportCsv.useQuery(
     undefined,
@@ -991,10 +994,34 @@ export default function Sales() {
     }
   };
 
+  // Combinar transacciones con suscripciones externas como items unificados
   const filtered = useMemo(() => {
     if (!transactions) return [];
-    return transactions;
-  }, [transactions]);
+    let result = [...transactions];
+    // Aplicar filtro de plataforma
+    if (platformFilter === "kobrapay") {
+      result = result.filter((tx) => !(tx as any).sourcePlatform || (tx as any).sourcePlatform === "kobrapay");
+    }
+    return result;
+  }, [transactions, platformFilter]);
+
+  // Suscripciones externas filtradas para mostrar en panel separado
+  const filteredSubs = useMemo(() => {
+    if (!externalSubs) return [];
+    let result = externalSubs.filter((s) => s.sourcePlatform !== "kobrapay");
+    if (platformFilter === "brokerhub") result = result.filter((s) => s.sourcePlatform === "brokerhub");
+    else if (platformFilter === "contentai") result = result.filter((s) => s.sourcePlatform === "contentai");
+    else if (platformFilter === "kobrapay") result = [];
+    if (search) {
+      const q = search.toLowerCase();
+      result = result.filter((s) => 
+        s.customerEmail?.toLowerCase().includes(q) ||
+        s.customerName?.toLowerCase().includes(q) ||
+        s.planName?.toLowerCase().includes(q)
+      );
+    }
+    return result;
+  }, [externalSubs, platformFilter, search]);
 
   const groupedByDate = useMemo(() => groupByDate(filtered), [filtered]);
 
@@ -1195,6 +1222,29 @@ export default function Sales() {
                   ))}
                 </div>
               </div>
+              {/* Platform filter */}
+              {externalSubs.some((s) => s.sourcePlatform !== "kobrapay") && (
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-muted-foreground flex-shrink-0">Plataforma:</span>
+                  <div className="flex gap-1 flex-wrap">
+                    {(["all", "kobrapay", "brokerhub", "contentai"] as const).map((p) => {
+                      const labels: Record<string, string> = { all: "Todas", kobrapay: "KobraPay", brokerhub: "BrokerHub", contentai: "ContentAI" };
+                      const colors: Record<string, string> = { kobrapay: "bg-emerald-500", brokerhub: "bg-amber-500", contentai: "bg-purple-500", all: "bg-cyan-500" };
+                      return (
+                        <button
+                          key={p}
+                          onClick={() => setPlatformFilter(p)}
+                          className={`px-3 py-1 rounded-lg text-xs font-medium transition-all ${
+                            platformFilter === p ? `${colors[p]} text-white` : "bg-gray-100 text-muted-foreground hover:bg-gray-200"
+                          }`}
+                        >
+                          {labels[p]}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
               {/* Date range filters */}
               <div className="flex flex-col sm:flex-row gap-2 items-center">
                 <div className="flex items-center gap-2 flex-1">
@@ -1480,6 +1530,105 @@ export default function Sales() {
             )}
           </CardContent>
         </Card>
+
+        {/* Panel de Suscripciones Externas (BrokerHub, ContentAI) */}
+        {filteredSubs.length > 0 && platformFilter !== "kobrapay" && (
+          <Card className="border-gray-200 shadow-sm">
+            <CardHeader className="pb-3 border-b border-gray-100">
+              <CardTitle className="text-base font-semibold text-foreground flex items-center gap-2">
+                <Repeat className="w-4 h-4 text-amber-500" />
+                Suscripciones externas
+                <span className="text-xs font-normal text-muted-foreground ml-1">({filteredSubs.length})</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-0">
+              <div className="divide-y divide-gray-100">
+                {filteredSubs.map((sub) => {
+                  const platformColors: Record<string, string> = {
+                    brokerhub: "bg-amber-100 text-amber-800 border-amber-200",
+                    contentai: "bg-purple-100 text-purple-800 border-purple-200",
+                    kobrapay: "bg-emerald-100 text-emerald-800 border-emerald-200",
+                  };
+                  const platformLabels: Record<string, string> = {
+                    brokerhub: "BrokerHub",
+                    contentai: "ContentAI",
+                    kobrapay: "KobraPay",
+                  };
+                  const statusColors: Record<string, string> = {
+                    active: "text-green-600",
+                    incomplete: "text-amber-600",
+                    canceled: "text-red-500",
+                    paused: "text-blue-500",
+                    past_due: "text-orange-600",
+                  };
+                  const statusLabels: Record<string, string> = {
+                    active: "Activa",
+                    incomplete: "Pendiente",
+                    canceled: "Cancelada",
+                    paused: "Pausada",
+                    past_due: "Vencida",
+                  };
+                  const platform = sub.sourcePlatform || "kobrapay";
+                  const intervalLabel: Record<string, string> = { month: "mes", year: "año", week: "semana", day: "día" };
+                  return (
+                    <div key={sub.id} className="flex items-center justify-between px-6 py-3 hover:bg-gray-50 transition-colors">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center flex-shrink-0">
+                          <Repeat className="w-4 h-4 text-amber-600" />
+                        </div>
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <p className="text-sm font-medium text-foreground truncate">{sub.planName}</p>
+                            <span className={`text-xs px-1.5 py-0.5 rounded border font-medium ${platformColors[platform] || platformColors.kobrapay}`}>
+                              {platformLabels[platform] || platform}
+                            </span>
+                          </div>
+                          <p className="text-xs text-muted-foreground truncate">
+                            {sub.customerName || sub.customerEmail}
+                            {sub.customerName && <span className="text-muted-foreground/70"> · {sub.customerEmail}</span>}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-4 flex-shrink-0">
+                        <div className="text-right">
+                          <p className="text-sm font-semibold text-foreground">
+                            {new Intl.NumberFormat("es-MX", { style: "currency", currency: sub.currency?.toUpperCase() || "MXN" }).format((sub.amount || 0) / 100)}
+                            <span className="text-xs text-muted-foreground font-normal">/{intervalLabel[sub.interval] || sub.interval}</span>
+                          </p>
+                          <p className={`text-xs font-medium ${statusColors[sub.status] || "text-muted-foreground"}`}>
+                            {statusLabels[sub.status] || sub.status}
+                          </p>
+                        </div>
+                        <p className="text-xs text-muted-foreground w-20 text-right">
+                          {new Date(sub.createdAt).toLocaleDateString("es-MX", { day: "2-digit", month: "short" })}
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              <div className="px-6 py-3 bg-gray-50 border-t border-gray-100">
+                <p className="text-xs text-muted-foreground">
+                  {filteredSubs.filter((s) => s.status === "active").length} activa{filteredSubs.filter((s) => s.status === "active").length !== 1 ? "s" : ""}
+                  {" · "}
+                  Ingresos recurrentes mensuales:{" "}
+                  <span className="font-semibold text-green-600">
+                    {new Intl.NumberFormat("es-MX", { style: "currency", currency: "MXN" }).format(
+                      filteredSubs.filter((s) => s.status === "active").reduce((sum, s) => {
+                        const monthly = s.interval === "year" ? (s.amount || 0) / 12 :
+                          s.interval === "week" ? (s.amount || 0) * 4.33 :
+                          s.interval === "day" ? (s.amount || 0) * 30 :
+                          (s.amount || 0);
+                        return sum + monthly;
+                      }, 0) / 100
+                    )}
+                    /mes
+                  </span>
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        )}
       </div>
 
       {/* Modal de detalle */}

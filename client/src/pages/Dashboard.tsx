@@ -28,7 +28,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { useMemo, useState } from "react";
-import { Landmark, Zap, AlertCircle } from "lucide-react";
+import { Landmark, Zap, AlertCircle, Repeat } from "lucide-react";
 import { toast } from "sonner";
 
 function formatCurrency(amount: number | string, currency = "MXN") {
@@ -53,6 +53,10 @@ export default function Dashboard() {
   const { data: txs } = trpc.transactions.list.useQuery();
   const { data: clientStats } = trpc.clients.getStats.useQuery(undefined, {
     enabled: user?.role === "admin",
+  });
+  const { data: subStats } = trpc.subscriptions.externalStats.useQuery(undefined, {
+    staleTime: 60000,
+    refetchOnWindowFocus: true,
   });
 
   const recentLinks = links?.slice(0, 5) ?? [];
@@ -302,6 +306,54 @@ export default function Dashboard() {
               </Card>
               </RouterLink>
             ))}
+          </div>
+        )}
+
+        {/* Panel de Suscripciones Externas (BrokerHub, ContentAI) */}
+        {subStats && subStats.totalActive > 0 && (
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <Card className="border-amber-200 bg-amber-50/40 shadow-sm sm:col-span-1">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-xs text-amber-700 font-medium">Suscripciones activas</p>
+                  <div className="w-8 h-8 bg-amber-100 rounded-lg flex items-center justify-center">
+                    <Repeat className="w-4 h-4 text-amber-600" />
+                  </div>
+                </div>
+                <p className="text-xl font-bold text-amber-900">{subStats.totalActive}</p>
+                <p className="text-xs text-amber-600 mt-0.5">BrokerHub + ContentAI</p>
+              </CardContent>
+            </Card>
+            <Card className="border-amber-200 bg-amber-50/40 shadow-sm sm:col-span-1">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-xs text-amber-700 font-medium">MRR externo</p>
+                  <div className="w-8 h-8 bg-amber-100 rounded-lg flex items-center justify-center">
+                    <TrendingUp className="w-4 h-4 text-amber-600" />
+                  </div>
+                </div>
+                <p className="text-xl font-bold text-amber-900">{formatCurrency(subStats.totalMonthlyRevenue / 100)}</p>
+                <p className="text-xs text-amber-600 mt-0.5">Ingresos recurrentes/mes</p>
+              </CardContent>
+            </Card>
+            <Card className="border-amber-200 bg-amber-50/40 shadow-sm sm:col-span-1">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-xs text-amber-700 font-medium">Plataformas conectadas</p>
+                  <div className="w-8 h-8 bg-amber-100 rounded-lg flex items-center justify-center">
+                    <Code2 className="w-4 h-4 text-amber-600" />
+                  </div>
+                </div>
+                <p className="text-xl font-bold text-amber-900">{Object.keys(subStats.byPlatform).length}</p>
+                <div className="flex gap-1 mt-1 flex-wrap">
+                  {Object.entries(subStats.byPlatform).map(([platform, data]) => (
+                    <span key={platform} className="text-xs bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded font-medium">
+                      {platform === "brokerhub" ? "BrokerHub" : platform === "contentai" ? "ContentAI" : platform} ({data.count})
+                    </span>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
           </div>
         )}
 
