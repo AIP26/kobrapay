@@ -13,6 +13,7 @@ import Settings from "./pages/Settings";
 import PayPage from "./pages/PayPage";
 import PaySuccess from "./pages/PaySuccess";
 import Sales from "./pages/Sales";
+import SubscriptionDetail from "./pages/SubscriptionDetail";
 import Clients from "./pages/Clients";
 import Widget from "./pages/Widget";
 import Recurring from "./pages/Recurring";
@@ -115,6 +116,7 @@ function Router() {
       <Route path="/dashboard/links" component={Links} />
       <Route path="/dashboard/transactions" component={Transactions} />
       <Route path="/dashboard/sales" component={Sales} />
+      <Route path="/dashboard/subscriptions/:id" component={SubscriptionDetail} />
       <Route path="/dashboard/clients" component={Clients} />
       <Route path="/dashboard/help" component={Help} />
       <Route path="/dashboard/report" component={MonthlyReport} />

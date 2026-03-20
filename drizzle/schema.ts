@@ -1011,6 +1011,8 @@ export const onboardingSurveys = mysqlTable("onboarding_surveys", {
   recommendedPlan: varchar("recommended_plan", { length: 50 }),
   recommendedCommission: decimal("recommended_commission", { precision: 5, scale: 2 }),
   planReasoning: text("plan_reasoning"),
+  // Omitir encuesta (skip)
+  skipped: boolean("skipped").default(false).notNull(),
   // Estado del flujo de aprobación
   status: varchar("status", { length: 30 }).default("pending_review").notNull(),
   assistantNotes: text("assistant_notes"),

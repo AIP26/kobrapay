@@ -1579,7 +1579,7 @@ export default function Sales() {
                   const platform = sub.sourcePlatform || "kobrapay";
                   const intervalLabel: Record<string, string> = { month: "mes", year: "año", week: "semana", day: "día" };
                   return (
-                    <div key={sub.id} className="flex items-center justify-between px-6 py-3 hover:bg-gray-50 transition-colors">
+                    <div key={sub.id} className="flex items-center justify-between px-6 py-3 hover:bg-gray-50 transition-colors cursor-pointer" onClick={() => window.location.href = `/dashboard/subscriptions/${sub.id}`}>
                       <div className="flex items-center gap-3 min-w-0">
                         <div className="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center flex-shrink-0">
                           <Repeat className="w-4 h-4 text-amber-600" />

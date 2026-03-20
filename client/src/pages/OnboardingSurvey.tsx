@@ -103,6 +103,9 @@ export default function OnboardingSurvey() {
     onError: (e: any) => toast.error(e.message || "Error al enviar la encuesta"),
   });
 
+  // Mutación para omitir la encuesta sin completarla
+  const skipMutation = trpc.onboarding.skipSurvey.useMutation();
+
   const toggleService = (val: string) => {
     setForm(f => ({
       ...f,
@@ -376,11 +379,22 @@ export default function OnboardingSurvey() {
             <div className="flex items-center justify-between mt-6 pt-4 border-t border-gray-100">
               <Button
                 variant="ghost"
-                onClick={() => step > 1 ? setStep(s => s - 1) : navigate("/dashboard")}
+                onClick={() => {
+                  if (step > 1) {
+                    setStep(s => s - 1);
+                  } else {
+                    // Marcar como omitida para no redirigir de vuelta
+                    skipMutation.mutate(undefined, {
+                      onSuccess: () => { navigate("/dashboard"); },
+                      onError: () => { navigate("/dashboard"); },
+                    });
+                  }
+                }}
+                disabled={skipMutation.isPending && step === 1}
                 className="gap-2 text-muted-foreground"
               >
                 <ArrowLeft className="w-4 h-4" />
-                {step === 1 ? "Omitir por ahora" : "Anterior"}
+                {step === 1 ? (skipMutation.isPending ? "Omitiendo..." : "Omitir por ahora") : "Anterior"}
               </Button>
 
               {step < STEPS.length ? (

@@ -4424,6 +4424,86 @@ export const appRouter = router({
       };
     }),
 
+    // Obtener detalle de una suscripción con historial de pagos de Stripe
+    getDetail: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .query(async ({ ctx, input }) => {
+        const { getDb } = await import('./db');
+        const db = await getDb();
+        if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
+        const { subscriptions } = await import('../drizzle/schema');
+        const { eq, and } = await import('drizzle-orm');
+        const found = await db.select().from(subscriptions)
+          .where(and(eq(subscriptions.id, input.id), eq(subscriptions.ownerId, ctx.user.id)))
+          .limit(1);
+        if (!found.length) throw new TRPCError({ code: 'NOT_FOUND' });
+        const sub = found[0];
+        // Obtener historial de pagos de Stripe si hay stripeSubscriptionId
+        let invoices: any[] = [];
+        if (sub.stripeSubscriptionId) {
+          try {
+            const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: '2024-06-20' as any });
+            const invoiceList = await stripe.invoices.list({
+              subscription: sub.stripeSubscriptionId,
+              limit: 24,
+            });
+            invoices = invoiceList.data.map((inv) => ({
+              id: inv.id,
+              amount: inv.amount_paid,
+              currency: inv.currency,
+              status: inv.status,
+              paidAt: inv.status_transitions?.paid_at ? inv.status_transitions.paid_at * 1000 : null,
+              invoiceUrl: inv.hosted_invoice_url,
+              periodStart: inv.period_start * 1000,
+              periodEnd: inv.period_end * 1000,
+            }));
+          } catch (e) {
+            // Si Stripe falla, retornar vacío
+            invoices = [];
+          }
+        }
+        return { ...sub, invoices };
+      }),
+
+    // Cancelar una suscripción con opción de inmediata o al final del período
+    cancelWithOptions: protectedProcedure
+      .input(z.object({ id: z.number(), immediately: z.boolean().default(false) }))
+      .mutation(async ({ ctx, input }) => {
+        const { getDb } = await import('./db');
+        const db = await getDb();
+        if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
+        const { subscriptions } = await import('../drizzle/schema');
+        const { eq, and } = await import('drizzle-orm');
+        const found = await db.select().from(subscriptions)
+          .where(and(eq(subscriptions.id, input.id), eq(subscriptions.ownerId, ctx.user.id)))
+          .limit(1);
+        if (!found.length) throw new TRPCError({ code: 'NOT_FOUND' });
+        const sub = found[0];
+        if (sub.stripeSubscriptionId) {
+          try {
+            const stripeClient = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: '2024-06-20' as any });
+            if (input.immediately) {
+              await stripeClient.subscriptions.cancel(sub.stripeSubscriptionId);
+            } else {
+              await stripeClient.subscriptions.update(sub.stripeSubscriptionId, { cancel_at_period_end: true });
+            }
+          } catch (e: any) {
+            throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: e.message });
+          }
+        }
+        // Actualizar en BD
+        await db.update(subscriptions)
+          .set(input.immediately ? { status: 'canceled' } : { cancelAtPeriodEnd: true })
+          .where(eq(subscriptions.id, input.id));
+        return { success: true };
+      }),
+
+    // Obtener suscripciones con estado past_due o incomplete para alertas
+    getOverdue: protectedProcedure.query(async ({ ctx }) => {
+      const subs = await getSubscriptionsByOwner(ctx.user.id);
+      return subs.filter((s) => s.status === 'past_due' || s.status === 'incomplete');
+    }),
+
     // Solo superadmin puede eliminar suscripciones canceladas
     deleteCanceled: protectedProcedure
       .input(z.object({ id: z.number() }))
@@ -6582,7 +6662,36 @@ export const appRouter = router({
         .where(eq(onboardingSurveys.userId, ctx.user.id))
         .limit(1);
       if (surveys.length === 0) return { completed: false, survey: null };
-      return { completed: true, survey: surveys[0] };
+      // Si fue omitida (skipped) o completada, se considera como completada para no redirigir
+      return { completed: true, skipped: surveys[0].skipped, survey: surveys[0] };
+    }),
+
+    // Omitir la encuesta de onboarding (insertar registro con skipped=true)
+    skipSurvey: protectedProcedure.mutation(async ({ ctx }) => {
+      const db = await import('./db').then(m => m.getDb ? m.getDb() : null);
+      if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
+      const { onboardingSurveys } = await import('../drizzle/schema');
+      const { eq } = await import('drizzle-orm');
+      // Verificar si ya existe
+      const existing = await db.select().from(onboardingSurveys)
+        .where(eq(onboardingSurveys.userId, ctx.user.id)).limit(1);
+      if (existing.length > 0) {
+        // Ya existe, marcar como skipped
+        await db.update(onboardingSurveys)
+          .set({ skipped: true })
+          .where(eq(onboardingSurveys.userId, ctx.user.id));
+      } else {
+        // Insertar registro mínimo con skipped=true
+        await db.insert(onboardingSurveys).values({
+          userId: ctx.user.id,
+          businessType: 'skipped',
+          businessSize: 'skipped',
+          monthlyRevenueEstimate: 'skipped',
+          skipped: true,
+          status: 'skipped',
+        });
+      }
+      return { success: true };
     }),
 
     // Guardar respuestas de la encuesta y calcular plan recomendado

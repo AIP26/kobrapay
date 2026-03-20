@@ -58,6 +58,10 @@ export default function Dashboard() {
     staleTime: 60000,
     refetchOnWindowFocus: true,
   });
+  const { data: overdueList = [] } = trpc.subscriptions.getOverdue.useQuery(undefined, {
+    staleTime: 120000,
+    refetchOnWindowFocus: true,
+  });
 
   const recentLinks = links?.slice(0, 5) ?? [];
 
@@ -371,6 +375,28 @@ export default function Dashboard() {
                 </div>
               </CardContent>
             </Card>
+          </div>
+        )}
+
+        {/* Alerta de suscripciones vencidas */}
+        {overdueList.length > 0 && (
+          <div className="rounded-xl border border-orange-200 bg-orange-50 p-4 flex items-start gap-3">
+            <div className="w-8 h-8 bg-orange-100 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
+              <AlertCircle className="w-4 h-4 text-orange-600" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold text-orange-800">
+                {overdueList.length} suscripción{overdueList.length > 1 ? 'es' : ''} con pago vencido
+              </p>
+              <p className="text-xs text-orange-600 mt-0.5">
+                {overdueList.map((s: any) => s.customerName || s.customerEmail).join(', ')}
+              </p>
+            </div>
+            <RouterLink href="/dashboard/sales?platform=all">
+              <button className="text-xs text-orange-700 font-medium hover:text-orange-900 flex items-center gap-1 flex-shrink-0">
+                Ver <ArrowRight className="w-3 h-3" />
+              </button>
+            </RouterLink>
           </div>
         )}
 
