@@ -37,6 +37,7 @@ import MonthlyReport from "./pages/MonthlyReport";
 import CompleteProfile from "./pages/CompleteProfile";
 import PendingApproval from "./pages/PendingApproval";
 import MyProfile from "./pages/MyProfile";
+import Blog from "./pages/Blog";
 import Legal from "./pages/Legal";
 import Colaboradores from "./pages/Colaboradores";
 import LoginEmail from "./pages/LoginEmail";
@@ -183,6 +184,8 @@ function Router() {
       <Route path="/forgot-password" component={ForgotPassword} />
       <Route path="/reset-password" component={ResetPassword} />
       <Route path="/verify-email" component={VerifyEmail} />
+      <Route path="/blog" component={Blog} />
+      <Route path="/blog/:slug" component={Blog} />
       <Route path="/legal" component={Legal} />
       <Route path="/terminos" component={Legal} />
       <Route path="/privacidad" component={Legal} />
