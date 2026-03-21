@@ -35,7 +35,7 @@ const ARTICLES = [
     readTime: "5 min",
     date: "15 Mar 2026",
     featured: false,
-    content: false,
+    content: true,
   },
 ];
 
@@ -357,6 +357,202 @@ function AlternativasContent() {
   );
 }
 
+function FreelancersContent() {
+  return (
+    <article className="max-w-3xl mx-auto px-4 py-12">
+      <nav className="flex items-center gap-2 text-sm text-gray-500 mb-8">
+        <Link href="/" className="hover:text-gray-800 transition-colors">Inicio</Link>
+        <span>/</span>
+        <Link href="/blog" className="hover:text-gray-800 transition-colors">Blog</Link>
+        <span>/</span>
+        <span className="text-gray-800 font-medium">Links de pago para freelancers</span>
+      </nav>
+      <header className="mb-10">
+        <Badge className="bg-purple-100 text-purple-700 border-purple-200 mb-4">Freelancers</Badge>
+        <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 leading-tight mb-4">
+          Links de pago para freelancers en México: cobra sin complicaciones en 2026
+        </h1>
+        <p className="text-lg text-gray-600 mb-6">
+          Si eres diseñador, fotógrafo, coach, consultor o desarrollador freelance en México, esta guía te explica cómo cobrar con tarjeta sin terminal, sin mensualidad y sin perder tiempo en bancos.
+        </p>
+        <div className="flex flex-wrap items-center gap-4 text-sm text-gray-500 border-y border-gray-100 py-4">
+          <span className="flex items-center gap-1.5"><Calendar className="w-4 h-4" /> 15 de marzo de 2026</span>
+          <span className="flex items-center gap-1.5"><Clock className="w-4 h-4" /> 5 min de lectura</span>
+          <span className="flex items-center gap-1.5"><Tag className="w-4 h-4" /> Freelancers, Cobros, México</span>
+        </div>
+      </header>
+
+      <div className="prose prose-gray max-w-none">
+        <p className="text-lg text-gray-700 leading-relaxed mb-6">
+          El mayor problema de los freelancers en México no es conseguir clientes — es <strong>cobrarles</strong>. Transferencias que no llegan, clientes que piden factura, pagos en efectivo que generan desconfianza. En 2026 hay una solución simple: <strong>links de pago</strong>.
+        </p>
+
+        <div className="bg-purple-50 border border-purple-200 rounded-2xl p-6 mb-8">
+          <h3 className="text-purple-800 font-bold text-lg mb-3">¿Qué es un link de pago?</h3>
+          <p className="text-purple-700 text-sm mb-3">Un link de pago es una URL única que puedes enviar por WhatsApp, email o Instagram. Tu cliente hace clic, ingresa su tarjeta y listo — el dinero llega a tu cuenta en 2–3 días hábiles.</p>
+          <p className="text-purple-700 text-sm font-semibold">No necesitas terminal física, no necesitas cuenta empresarial, no necesitas saber programar.</p>
+        </div>
+
+        <h2 className="text-2xl font-bold text-gray-900 mb-4">¿Por qué los freelancers necesitan links de pago?</h2>
+        <div className="space-y-3 mb-8">
+          {[
+            { title: "Cobras con tarjeta sin terminal física", desc: "No necesitas comprar hardware ni pagar mensualidad. Solo generas el link y lo compartes." },
+            { title: "Transmites profesionalismo", desc: "Enviar un link de pago con tu logo genera más confianza que pedir transferencia a cuenta personal." },
+            { title: "Reduces el riesgo de no pago", desc: "Con un link puedes pedir anticipo antes de empezar el proyecto. El cliente paga en segundos desde su celular." },
+            { title: "Historial de cobros organizado", desc: "Cada pago queda registrado con nombre del cliente, monto y fecha. Perfecto para llevar tu contabilidad." },
+          ].map((item) => (
+            <div key={item.title} className="flex items-start gap-3 p-4 bg-gray-50 rounded-xl">
+              <CheckCircle2 className="w-5 h-5 text-emerald-500 mt-0.5 shrink-0" />
+              <div>
+                <p className="font-semibold text-gray-800">{item.title}</p>
+                <p className="text-sm text-gray-600">{item.desc}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <h2 className="text-2xl font-bold text-gray-900 mb-4">Cómo crear tu primer link de pago en 3 pasos</h2>
+        <div className="space-y-4 mb-8">
+          {[
+            { step: 1, title: "Crea tu cuenta en KobraPay", desc: "Regístrate gratis en kobrapay.mx. Solo necesitas tu correo y nombre. Sin RFC, sin documentos, sin esperas. Tu cuenta queda activa en minutos." },
+            { step: 2, title: "Genera tu link de pago", desc: 'En el panel, haz clic en "Nuevo Cobro". Escribe el monto, una descripción (ej. "Diseño de logo — 50% anticipo") y genera el link. Todo en menos de 2 minutos.' },
+            { step: 3, title: "Comparte y cobra", desc: "Copia el link y envíalo por WhatsApp, email o Instagram. Tu cliente paga con cualquier tarjeta de crédito o débito. El dinero llega a tu cuenta en 2–3 días hábiles." },
+          ].map((s) => (
+            <div key={s.step} className="flex gap-4 items-start">
+              <div className="w-10 h-10 rounded-full bg-emerald-500 text-white font-bold flex items-center justify-center shrink-0 text-lg">{s.step}</div>
+              <div>
+                <h3 className="font-bold text-gray-900 mb-1">{s.title}</h3>
+                <p className="text-gray-600 text-sm">{s.desc}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <h2 className="text-2xl font-bold text-gray-900 mb-4">¿Cuánto cuesta? Comparativa para freelancers</h2>
+        <div className="overflow-x-auto mb-4">
+          <table className="w-full text-sm border-collapse">
+            <thead>
+              <tr className="bg-gray-50">
+                <th className="text-left p-3 border border-gray-200 font-semibold">Plataforma</th>
+                <th className="text-center p-3 border border-gray-200 font-semibold">Comisión</th>
+                <th className="text-center p-3 border border-gray-200 font-semibold">Mensualidad</th>
+                <th className="text-center p-3 border border-gray-200 font-semibold">Sin terminal</th>
+                <th className="text-center p-3 border border-gray-200 font-semibold">Depósito</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr className="bg-emerald-50 border-2 border-emerald-300">
+                <td className="p-3 border border-gray-200 font-bold text-emerald-700">KobraPay ⭐</td>
+                <td className="p-3 border border-gray-200 text-center font-semibold text-emerald-700">4.6% + IVA</td>
+                <td className="p-3 border border-gray-200 text-center text-emerald-700">$0</td>
+                <td className="p-3 border border-gray-200 text-center text-emerald-700">✅ Sí</td>
+                <td className="p-3 border border-gray-200 text-center text-emerald-700">2–3 días</td>
+              </tr>
+              <tr>
+                <td className="p-3 border border-gray-200 font-medium">Mercado Pago</td>
+                <td className="p-3 border border-gray-200 text-center">3.95% + IVA</td>
+                <td className="p-3 border border-gray-200 text-center">$0</td>
+                <td className="p-3 border border-gray-200 text-center">✅ Sí</td>
+                <td className="p-3 border border-gray-200 text-center text-red-600">2–14 días</td>
+              </tr>
+              <tr className="bg-gray-50">
+                <td className="p-3 border border-gray-200 font-medium">PayPal</td>
+                <td className="p-3 border border-gray-200 text-center text-red-600">5.4% + IVA</td>
+                <td className="p-3 border border-gray-200 text-center">$0</td>
+                <td className="p-3 border border-gray-200 text-center">✅ Sí</td>
+                <td className="p-3 border border-gray-200 text-center text-red-600">3–5 días</td>
+              </tr>
+              <tr>
+                <td className="p-3 border border-gray-200 font-medium">Clip</td>
+                <td className="p-3 border border-gray-200 text-center">3.6% + IVA</td>
+                <td className="p-3 border border-gray-200 text-center text-red-600">$199/mes</td>
+                <td className="p-3 border border-gray-200 text-center text-red-600">❌ Terminal</td>
+                <td className="p-3 border border-gray-200 text-center">1–2 días</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p className="text-xs text-gray-500 mb-8">*Comisiones verificadas en marzo 2026. IVA (16%) se aplica sobre la comisión.</p>
+
+        <h2 className="text-2xl font-bold text-gray-900 mb-4">Ejemplo real: cuánto pagas por cobrar $5,000 MXN</h2>
+        <div className="grid sm:grid-cols-2 gap-4 mb-8">
+          <div className="border-2 border-emerald-300 bg-emerald-50 rounded-2xl p-5">
+            <h3 className="font-bold text-emerald-800 mb-3">Con KobraPay</h3>
+            <div className="space-y-2 text-sm">
+              <div className="flex justify-between"><span className="text-gray-600">Cobro al cliente</span><span className="font-semibold">$5,000</span></div>
+              <div className="flex justify-between"><span className="text-gray-600">Comisión (4.6%)</span><span className="text-red-500">-$230</span></div>
+              <div className="flex justify-between"><span className="text-gray-600">IVA sobre comisión</span><span className="text-red-500">-$36.80</span></div>
+              <div className="flex justify-between border-t border-emerald-200 pt-2 mt-2"><span className="font-bold text-emerald-800">Recibes</span><span className="font-bold text-emerald-700 text-lg">$4,733.20</span></div>
+            </div>
+          </div>
+          <div className="border border-gray-200 rounded-2xl p-5">
+            <h3 className="font-bold text-gray-800 mb-3">Con Mercado Pago</h3>
+            <div className="space-y-2 text-sm">
+              <div className="flex justify-between"><span className="text-gray-600">Cobro al cliente</span><span className="font-semibold">$5,000</span></div>
+              <div className="flex justify-between"><span className="text-gray-600">Comisión (3.95%)</span><span className="text-red-500">-$197.50</span></div>
+              <div className="flex justify-between"><span className="text-gray-600">IVA sobre comisión</span><span className="text-red-500">-$31.60</span></div>
+              <div className="flex justify-between border-t border-gray-200 pt-2 mt-2"><span className="font-bold">Recibes</span><span className="font-bold text-lg">$4,770.90</span></div>
+              <p className="text-xs text-red-500 mt-1">⚠️ Pero esperas hasta 14 días para recibir tu dinero</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-amber-50 border border-amber-200 rounded-2xl p-6 mb-8">
+          <h3 className="text-amber-800 font-bold text-lg mb-2">💡 Tip: transfiere la comisión al cliente</h3>
+          <p className="text-amber-700 text-sm">Muchos freelancers agregan el 4.6% al precio final cuando el cliente paga con tarjeta. Si tu servicio vale $5,000, cobras $5,230 con tarjeta. Así no absorbes la comisión y el cliente elige cómo pagar.</p>
+        </div>
+
+        <h2 className="text-2xl font-bold text-gray-900 mb-4">¿Para qué tipo de freelancer funciona mejor?</h2>
+        <div className="grid sm:grid-cols-2 gap-3 mb-8">
+          {[
+            { emoji: "🎨", title: "Diseñadores gráficos", desc: "Cobra anticipos y pagos finales por proyecto" },
+            { emoji: "📸", title: "Fotógrafos y videógrafos", desc: "Genera links por sesión y cobra antes del evento" },
+            { emoji: "💻", title: "Desarrolladores web", desc: "Cobra por horas o por proyecto con historial completo" },
+            { emoji: "🧘", title: "Coaches y consultores", desc: "Vende sesiones individuales o paquetes con link único" },
+            { emoji: "✍️", title: "Redactores y copywriters", desc: "Cobra por artículo, por palabra o por proyecto" },
+            { emoji: "🏠", title: "Agentes inmobiliarios", desc: "Cobra honorarios y comisiones de forma profesional" },
+          ].map((item) => (
+            <div key={item.title} className="flex items-start gap-3 p-4 border border-gray-200 rounded-xl">
+              <span className="text-2xl">{item.emoji}</span>
+              <div>
+                <p className="font-semibold text-gray-800 text-sm">{item.title}</p>
+                <p className="text-xs text-gray-500">{item.desc}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <h2 className="text-2xl font-bold text-gray-900 mb-4">Preguntas frecuentes</h2>
+        <div className="space-y-4 mb-8">
+          {[
+            { q: "¿Necesito RFC para usar KobraPay?", a: "No. Puedes registrarte y cobrar sin RFC. Si necesitas emitir facturas, puedes hacerlo por separado con tu contador." },
+            { q: "¿Mis clientes necesitan crear una cuenta?", a: "No. Tu cliente solo recibe el link, hace clic, ingresa su tarjeta y paga. Sin registros, sin apps." },
+            { q: "¿Puedo cobrar en dólares?", a: "Sí. KobraPay soporta cobros en USD para clientes internacionales. El tipo de cambio se aplica automáticamente." },
+            { q: "¿Qué pasa si el cliente hace un contracargo?", a: "KobraPay tiene un proceso de disputa con Stripe. Recibirás notificación y podrás presentar evidencia del servicio entregado." },
+            { q: "¿Puedo personalizar el link con mi marca?", a: "Sí. Puedes agregar tu logo, nombre de negocio y descripción personalizada en cada link de pago." },
+          ].map((faq, i) => (
+            <div key={i} className="border border-gray-200 rounded-xl p-5">
+              <h3 className="font-bold text-gray-800 mb-2 text-sm">❓ {faq.q}</h3>
+              <p className="text-gray-600 text-sm">{faq.a}</p>
+            </div>
+          ))}
+        </div>
+
+        <div className="bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl p-8 text-center text-white mt-10">
+          <h3 className="text-2xl font-bold mb-2">Empieza a cobrar como profesional hoy</h3>
+          <p className="text-emerald-100 mb-2">Sin mensualidad. Sin terminal. Sin contratos.</p>
+          <p className="text-emerald-200 text-sm mb-6">Tu primer link de pago en menos de 2 minutos.</p>
+          <Link href="/">
+            <Button className="bg-white text-emerald-700 hover:bg-emerald-50 font-semibold px-8 py-3 rounded-xl">
+              Crear cuenta gratis →
+            </Button>
+          </Link>
+        </div>
+      </div>
+    </article>
+  );
+}
+
 export default function Blog() {
   const path = window.location.pathname;
   const isArticle = path.includes("/blog/");
@@ -418,6 +614,20 @@ export default function Blog() {
             </button>
           </div>
           <AlternativasContent />
+        </div>
+      ) : isArticle && slug === "links-de-pago-para-freelancers" ? (
+        <div>
+          <div className="max-w-3xl mx-auto px-4 pt-6 flex items-center justify-between">
+            <Link href="/blog">
+              <button className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-800 transition-colors">
+                <ArrowLeft className="w-4 h-4" /> Volver al blog
+              </button>
+            </Link>
+            <button onClick={handleShare} className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-800 transition-colors">
+              <Share2 className="w-4 h-4" /> Compartir
+            </button>
+          </div>
+          <FreelancersContent />
         </div>
       ) : (
         <div className="max-w-6xl mx-auto px-4 py-12">
