@@ -18,7 +18,7 @@ const ARTICLES = [
     content: true,
   },
   {
-    slug: "alternativas-mercado-pago-mexico",
+    slug: "alternativas-mercado-pago-mexico-2026",
     title: "Las mejores alternativas a Mercado Pago en México",
     excerpt: "Comparativa honesta de comisiones, funciones y velocidad de pago entre KobraPay, Clip, Conekta y Mercado Pago.",
     category: "Comparativas",
@@ -212,6 +212,151 @@ function ArticleContent() {
   );
 }
 
+function AlternativasContent() {
+  return (
+    <article className="max-w-3xl mx-auto px-4 py-12">
+      <nav className="flex items-center gap-2 text-sm text-gray-500 mb-8">
+        <Link href="/" className="hover:text-gray-800 transition-colors">Inicio</Link>
+        <span>/</span>
+        <Link href="/blog" className="hover:text-gray-800 transition-colors">Blog</Link>
+        <span>/</span>
+        <span className="text-gray-800 font-medium">Alternativas a Mercado Pago</span>
+      </nav>
+      <header className="mb-10">
+        <Badge className="bg-blue-100 text-blue-700 border-blue-200 mb-4">Comparativas</Badge>
+        <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 leading-tight mb-4">
+          Las mejores alternativas a Mercado Pago en México 2026
+        </h1>
+        <p className="text-lg text-gray-600 mb-6">
+          Comparativa honesta de comisiones, velocidad de pago y funciones entre KobraPay, Clip, Conekta, Stripe y Mercado Pago. Elige la mejor opción para tu negocio.
+        </p>
+        <div className="flex flex-wrap items-center gap-4 text-sm text-gray-500 border-y border-gray-100 py-4">
+          <span className="flex items-center gap-1.5"><Calendar className="w-4 h-4" /> 18 de marzo de 2026</span>
+          <span className="flex items-center gap-1.5"><Clock className="w-4 h-4" /> 7 min de lectura</span>
+          <span className="flex items-center gap-1.5"><Tag className="w-4 h-4" /> Comparativas, México</span>
+        </div>
+      </header>
+
+      <div className="prose prose-gray max-w-none">
+        <p className="text-lg text-gray-700 leading-relaxed mb-6">
+          Mercado Pago cobra <strong>3.95% + IVA</strong> por transacción y retiene tu dinero entre 2 y 14 días hábiles. Para muchos negocios mexicanos, eso es demasiado. En 2026 hay mejores opciones.
+        </p>
+        <p className="text-gray-700 leading-relaxed mb-8">
+          Analizamos las 6 principales alternativas con datos reales de comisiones, tiempos de depósito y facilidad de uso para que puedas tomar la mejor decisión para tu negocio.
+        </p>
+
+        <div className="bg-blue-50 border border-blue-200 rounded-2xl p-6 mb-8">
+          <h3 className="text-blue-800 font-bold text-lg mb-2">¿Por qué buscar alternativas a Mercado Pago?</h3>
+          <ul className="space-y-2 text-blue-700 text-sm">
+            <li className="flex items-start gap-2"><CheckCircle2 className="w-4 h-4 mt-0.5 text-blue-500 shrink-0" /> Retención de fondos de 2 a 14 días hábiles</li>
+            <li className="flex items-start gap-2"><CheckCircle2 className="w-4 h-4 mt-0.5 text-blue-500 shrink-0" /> Comisión de 3.95% + IVA (una de las más altas del mercado)</li>
+            <li className="flex items-start gap-2"><CheckCircle2 className="w-4 h-4 mt-0.5 text-blue-500 shrink-0" /> Cuentas bloqueadas sin previo aviso por disputas</li>
+            <li className="flex items-start gap-2"><CheckCircle2 className="w-4 h-4 mt-0.5 text-blue-500 shrink-0" /> Soporte al cliente lento y difícil de contactar</li>
+          </ul>
+        </div>
+
+        <h2 className="text-2xl font-bold text-gray-900 mb-4">Comparativa de comisiones 2026</h2>
+        <div className="overflow-x-auto mb-8">
+          <table className="w-full text-sm border-collapse">
+            <thead>
+              <tr className="bg-gray-50">
+                <th className="text-left p-3 border border-gray-200 font-semibold">Plataforma</th>
+                <th className="text-center p-3 border border-gray-200 font-semibold">Comisión</th>
+                <th className="text-center p-3 border border-gray-200 font-semibold">Mensualidad</th>
+                <th className="text-center p-3 border border-gray-200 font-semibold">Depósito</th>
+                <th className="text-center p-3 border border-gray-200 font-semibold">Terminal</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr className="bg-emerald-50 border-2 border-emerald-300">
+                <td className="p-3 border border-gray-200 font-bold text-emerald-700">KobraPay ⭐</td>
+                <td className="p-3 border border-gray-200 text-center font-semibold text-emerald-700">4.6% + IVA</td>
+                <td className="p-3 border border-gray-200 text-center text-emerald-700">$0</td>
+                <td className="p-3 border border-gray-200 text-center text-emerald-700">2-3 días</td>
+                <td className="p-3 border border-gray-200 text-center text-emerald-700">No necesaria</td>
+              </tr>
+              <tr>
+                <td className="p-3 border border-gray-200 font-medium">Mercado Pago</td>
+                <td className="p-3 border border-gray-200 text-center">3.95% + IVA</td>
+                <td className="p-3 border border-gray-200 text-center">$0</td>
+                <td className="p-3 border border-gray-200 text-center text-red-600">2–14 días</td>
+                <td className="p-3 border border-gray-200 text-center">Opcional</td>
+              </tr>
+              <tr className="bg-gray-50">
+                <td className="p-3 border border-gray-200 font-medium">Clip</td>
+                <td className="p-3 border border-gray-200 text-center">3.6% + IVA</td>
+                <td className="p-3 border border-gray-200 text-center text-red-600">$199/mes</td>
+                <td className="p-3 border border-gray-200 text-center">1-2 días</td>
+                <td className="p-3 border border-gray-200 text-center text-red-600">Requerida</td>
+              </tr>
+              <tr>
+                <td className="p-3 border border-gray-200 font-medium">Conekta</td>
+                <td className="p-3 border border-gray-200 text-center">2.9% + IVA</td>
+                <td className="p-3 border border-gray-200 text-center text-red-600">Desde $500/mes</td>
+                <td className="p-3 border border-gray-200 text-center">2-3 días</td>
+                <td className="p-3 border border-gray-200 text-center">No</td>
+              </tr>
+              <tr className="bg-gray-50">
+                <td className="p-3 border border-gray-200 font-medium">Stripe (directo)</td>
+                <td className="p-3 border border-gray-200 text-center">3.6% + IVA</td>
+                <td className="p-3 border border-gray-200 text-center">$0</td>
+                <td className="p-3 border border-gray-200 text-center">7 días</td>
+                <td className="p-3 border border-gray-200 text-center">No</td>
+              </tr>
+              <tr>
+                <td className="p-3 border border-gray-200 font-medium">PayPal</td>
+                <td className="p-3 border border-gray-200 text-center">5.4% + IVA</td>
+                <td className="p-3 border border-gray-200 text-center">$0</td>
+                <td className="p-3 border border-gray-200 text-center text-red-600">3-5 días</td>
+                <td className="p-3 border border-gray-200 text-center">No</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h2 className="text-2xl font-bold text-gray-900 mb-4">¿Cuál es la mejor opción para tu negocio?</h2>
+
+        <div className="space-y-4 mb-8">
+          <div className="border border-emerald-200 rounded-xl p-5 bg-emerald-50">
+            <h3 className="font-bold text-emerald-800 mb-1">🏆 KobraPay — Mejor para negocios sin terminal</h3>
+            <p className="text-sm text-emerald-700">Si vendes servicios, eres freelancer o tienes un negocio online, KobraPay es la opción más rápida. Genera un link de pago en 2 minutos, compártelo por WhatsApp y recibe el dinero en 2-3 días. Sin mensualidad, sin hardware, sin complicaciones.</p>
+          </div>
+          <div className="border border-gray-200 rounded-xl p-5">
+            <h3 className="font-bold text-gray-800 mb-1">🏪 Clip — Mejor para tiendas físicas</h3>
+            <p className="text-sm text-gray-600">Si tienes una tienda física con alto volumen de ventas (más de $50,000/mes), la terminal de Clip puede valer la pena por su menor comisión. Pero requiere hardware y mensualidad.</p>
+          </div>
+          <div className="border border-gray-200 rounded-xl p-5">
+            <h3 className="font-bold text-gray-800 mb-1">💻 Conekta — Mejor para e-commerce avanzado</h3>
+            <p className="text-sm text-gray-600">Si tienes una tienda online con desarrollo propio y más de $100,000/mes en ventas, Conekta ofrece la mejor comisión. Pero requiere integración técnica y mensualidad fija.</p>
+          </div>
+          <div className="border border-gray-200 rounded-xl p-5">
+            <h3 className="font-bold text-gray-800 mb-1">🌎 Stripe directo — Mejor para ventas internacionales</h3>
+            <p className="text-sm text-gray-600">Si vendes a clientes fuera de México o necesitas integración con plataformas internacionales, Stripe directo es la opción. KobraPay usa Stripe como procesador, así que obtienes la misma confiabilidad con una interfaz más simple.</p>
+          </div>
+        </div>
+
+        <h2 className="text-2xl font-bold text-gray-900 mb-4">Conclusión: ¿Vale la pena cambiar de Mercado Pago?</h2>
+        <p className="text-gray-700 leading-relaxed mb-4">
+          Si tu negocio genera menos de $50,000 MXN al mes en cobros con tarjeta, <strong>KobraPay es la mejor alternativa</strong>. No pagas mensualidad, no necesitas hardware y tu dinero llega en 2-3 días hábiles — no en 14.
+        </p>
+        <p className="text-gray-700 leading-relaxed mb-8">
+          Si generas más de $100,000 MXN al mes, considera Conekta o Clip dependiendo de si vendes en línea o en físico. En cualquier caso, Mercado Pago rara vez es la mejor opción para negocios mexicanos en 2026.
+        </p>
+
+        <div className="bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl p-8 text-center text-white mt-10">
+          <h3 className="text-2xl font-bold mb-2">Prueba KobraPay gratis hoy</h3>
+          <p className="text-emerald-100 mb-6">Sin mensualidad. Sin terminal. Sin contratos. Solo pagas cuando cobras.</p>
+          <Link href="/">
+            <Button className="bg-white text-emerald-700 hover:bg-emerald-50 font-semibold px-8 py-3 rounded-xl">
+              Crear cuenta gratis →
+            </Button>
+          </Link>
+        </div>
+      </div>
+    </article>
+  );
+}
+
 export default function Blog() {
   const path = window.location.pathname;
   const isArticle = path.includes("/blog/");
@@ -259,6 +404,20 @@ export default function Blog() {
             </button>
           </div>
           <ArticleContent />
+        </div>
+      ) : isArticle && slug === "alternativas-mercado-pago-mexico-2026" ? (
+        <div>
+          <div className="max-w-3xl mx-auto px-4 pt-6 flex items-center justify-between">
+            <Link href="/blog">
+              <button className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-800 transition-colors">
+                <ArrowLeft className="w-4 h-4" /> Volver al blog
+              </button>
+            </Link>
+            <button onClick={handleShare} className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-800 transition-colors">
+              <Share2 className="w-4 h-4" /> Compartir
+            </button>
+          </div>
+          <AlternativasContent />
         </div>
       ) : (
         <div className="max-w-6xl mx-auto px-4 py-12">

@@ -551,6 +551,17 @@ export const appRouter = router({
   // ─── Configuración del vendedor ───────────────────────────────────────────
   vendor: router({
     getSettings: protectedProcedure.query(async ({ ctx }) => {
+      // Si no existe el registro, crearlo automáticamente con valores por defecto
+      const existing = await getVendorSettings(ctx.user.id);
+      if (!existing) {
+        await upsertVendorSettings({
+          userId: ctx.user.id,
+          businessName: ctx.user.name || 'Mi Negocio',
+          businessEmail: ctx.user.email || '',
+          commissionRate: '4.6' as any,
+          currency: 'MXN',
+        });
+      }
       return getVendorSettings(ctx.user.id);
     }),
 

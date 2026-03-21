@@ -880,6 +880,42 @@ export default function Home() {
         </div>
       </section>
 
+      {/* Blog / Recursos SEO */}
+      <section className="py-20 border-t border-border bg-muted/30">
+        <div className="container max-w-5xl mx-auto">
+          <div className="text-center mb-12">
+            <span className="inline-block bg-emerald-500/10 text-emerald-600 text-xs font-semibold px-3 py-1 rounded-full mb-3">Recursos gratuitos</span>
+            <h2 className="text-2xl lg:text-3xl font-extrabold text-foreground mb-3">Aprende a cobrar mejor</h2>
+            <p className="text-muted-foreground text-sm max-w-xl mx-auto">Guías prácticas para emprendedores y negocios que quieren cobrar con tarjeta sin complicaciones.</p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <a href="/blog/cobrar-con-tarjeta-sin-terminal-mexico-2026" className="group block bg-background border border-border rounded-xl p-6 hover:border-emerald-500/50 hover:shadow-md transition-all">
+              <div className="flex items-center gap-2 text-xs text-muted-foreground mb-3">
+                <span className="bg-emerald-500/10 text-emerald-600 px-2 py-0.5 rounded-full font-medium">Guía</span>
+                <span>5 min de lectura</span>
+              </div>
+              <h3 className="font-bold text-foreground text-lg mb-2 group-hover:text-emerald-600 transition-colors">Cómo cobrar con tarjeta sin terminal en México 2026</h3>
+              <p className="text-muted-foreground text-sm leading-relaxed">Descubre las mejores opciones para aceptar pagos con tarjeta sin necesidad de una terminal física. Comparativa completa de comisiones.</p>
+              <span className="inline-flex items-center gap-1 text-emerald-600 text-sm font-medium mt-4">Leer artículo →</span>
+            </a>
+            <a href="/blog/alternativas-mercado-pago-mexico-2026" className="group block bg-background border border-border rounded-xl p-6 hover:border-emerald-500/50 hover:shadow-md transition-all">
+              <div className="flex items-center gap-2 text-xs text-muted-foreground mb-3">
+                <span className="bg-blue-500/10 text-blue-600 px-2 py-0.5 rounded-full font-medium">Comparativa</span>
+                <span>7 min de lectura</span>
+              </div>
+              <h3 className="font-bold text-foreground text-lg mb-2 group-hover:text-emerald-600 transition-colors">Las mejores alternativas a Mercado Pago en México 2026</h3>
+              <p className="text-muted-foreground text-sm leading-relaxed">¿Cansado de las comisiones de Mercado Pago? Analizamos las 6 mejores alternativas para negocios mexicanos con pros, contras y costos reales.</p>
+              <span className="inline-flex items-center gap-1 text-emerald-600 text-sm font-medium mt-4">Leer artículo →</span>
+            </a>
+          </div>
+          <div className="text-center mt-8">
+            <a href="/blog" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-emerald-600 transition-colors font-medium">
+              Ver todos los artículos →
+            </a>
+          </div>
+        </div>
+      </section>
+
       {/* Footer */}
       <footer className="border-t border-border py-8 bg-background">
         <div className="container flex flex-col sm:flex-row items-center justify-between gap-4">
