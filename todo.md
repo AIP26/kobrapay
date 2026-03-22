@@ -1213,3 +1213,9 @@
 - [ ] Webhooks salientes a ContentAI en eventos: checkout.completed, payment.failed, refund.processed, subscription.created
 - [ ] Endpoint GET /api/v1/admin/stats autenticado con API key para ContentAI
 - [ ] Mantener solo soporte IA y generador de marketing en KobraPay (sin panel maestro)
+
+## Lanzamiento Final v2 (2026-03-22)
+- [x] Probar Asistente IA en el dashboard (soporte y marketing)
+- [x] Corregir error esbuild apiV1.ts línea 741 definitivamente
+- [x] Prueba de pago completo Stripe + webhook a ContentAI
+- [x] Checkpoint final y publicar
