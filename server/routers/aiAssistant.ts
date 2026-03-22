@@ -179,6 +179,40 @@ export const aiAssistantRouter = router({
         };
         return suggestions[input.context] ?? suggestions.general;
       }),
+
+    getMerchantContext: protectedProcedure.query(async ({ ctx }) => {
+      // Obtiene contexto dinámico del comerciante para personalizar el asistente
+      try {
+        const { getDb } = await import('../db');
+        const db = await getDb();
+        if (!db) return { businessName: null, businessType: null, totalLinks: 0, totalTx: 0, pendingChargebacks: 0 };
+        const { vendorSettings, paymentLinks, transactions, chargebacks } = await import('../../drizzle/schema');
+        const { eq, count, desc } = await import('drizzle-orm');
+        // Configuración del negocio
+        const [settings] = await db.select({
+          businessName: vendorSettings.businessName,
+          businessType: vendorSettings.publicBio,
+        }).from(vendorSettings).where(eq(vendorSettings.userId, ctx.user.id)).limit(1);
+        // Links totales
+        const [linksRow] = await db.select({ cnt: count() }).from(paymentLinks).where(eq(paymentLinks.userId, ctx.user.id));
+        // Transacciones recientes
+        const [txRow] = await db.select({ cnt: count() }).from(transactions)
+          .innerJoin(paymentLinks, eq(transactions.paymentLinkId, paymentLinks.id))
+          .where(eq(paymentLinks.userId, ctx.user.id));
+        // Contracargos abiertos
+        const [cbRow] = await db.select({ cnt: count() }).from(chargebacks)
+          .where(eq(chargebacks.userId, ctx.user.id));
+        return {
+          businessName: settings?.businessName || null,
+          businessType: settings?.businessType || null,
+          totalLinks: Number(linksRow?.cnt || 0),
+          totalTx: Number(txRow?.cnt || 0),
+          pendingChargebacks: Number(cbRow?.cnt || 0),
+        };
+      } catch {
+        return { businessName: null, businessType: null, totalLinks: 0, totalTx: 0, pendingChargebacks: 0 };
+      }
+    }),
   }),
 
   // ── 2. Generador de Marketing ─────────────────────────────────────────────

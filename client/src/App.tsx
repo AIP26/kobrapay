@@ -82,6 +82,7 @@ import Webhooks from "./pages/Webhooks";
 import PricingAdmin from "./pages/PricingAdmin";
 import AISupport from "./pages/AISupport";
 import AIMarketing from "./pages/AIMarketing";
+import SystemStatus from "./pages/SystemStatus";
 import KobraBot from "./components/KobraBot";
 import WelcomeOnboarding from "./components/WelcomeOnboarding";
 import { trpc } from "@/lib/trpc";
@@ -182,6 +183,7 @@ function Router() {
       <Route path="/dashboard/api-docs" component={ApiKeys} />
       <Route path="/dashboard/ai-support" component={AISupport} />
       <Route path="/dashboard/ai-marketing" component={AIMarketing} />
+      <Route path="/dashboard/system-status" component={SystemStatus} />
       <Route path="/login" component={LoginEmail} />
       <Route path="/register" component={RegisterEmail} />
       <Route path="/register-associate" component={RegisterAssociate} />

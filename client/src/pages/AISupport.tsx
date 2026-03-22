@@ -4,48 +4,71 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import DashboardLayout from "@/components/DashboardLayout";
 import { AIChatBox, type Message } from "@/components/AIChatBox";
 import { Badge } from "@/components/ui/badge";
-import { MessageCircle, CreditCard, AlertCircle, Wifi, Code2, HelpCircle, Zap } from "lucide-react";
-
-const SUGGESTED_PROMPTS = [
-  "¿Por qué fue rechazado el pago de mi cliente?",
-  "¿Cómo integro KobraPay con mi tienda en línea?",
-  "¿Cuándo me depositan mis cobros?",
-  "Un cliente pagó pero no aparece en mi historial, ¿qué hago?",
-  "¿Cómo cancelo una suscripción recurrente?",
-  "¿Qué métodos de pago acepta KobraPay?",
-];
+import {
+  MessageCircle, CreditCard, AlertCircle, Wifi, Code2, HelpCircle, Zap,
+  RefreshCw, TrendingUp, AlertTriangle, Link2, Receipt,
+} from "lucide-react";
 
 const QUICK_ACTIONS = [
   {
     icon: CreditCard,
     label: "Pago rechazado",
-    color: "text-red-600 bg-red-50",
+    color: "text-red-400 bg-red-500/10",
     prompt: "El pago de mi cliente fue rechazado. ¿Cuáles son las causas más comunes y cómo lo resuelvo?",
   },
   {
     icon: Wifi,
     label: "Integración API",
-    color: "text-blue-600 bg-blue-50",
+    color: "text-blue-400 bg-blue-500/10",
     prompt: "¿Cómo integro KobraPay con mi sistema o tienda en línea usando la API?",
   },
   {
     icon: AlertCircle,
     label: "Contracargo",
-    color: "text-orange-600 bg-orange-50",
+    color: "text-orange-400 bg-orange-500/10",
     prompt: "Tengo un contracargo (chargeback) en mi cuenta. ¿Qué debo hacer y cómo lo disputo?",
   },
   {
     icon: Code2,
     label: "Webhook no llega",
-    color: "text-violet-600 bg-violet-50",
+    color: "text-violet-400 bg-violet-500/10",
     prompt: "Mi webhook no está recibiendo notificaciones de pago. ¿Cómo lo diagnostico y corrijo?",
+  },
+  {
+    icon: RefreshCw,
+    label: "Cobro recurrente",
+    color: "text-cyan-400 bg-cyan-500/10",
+    prompt: "¿Cómo configuro un cobro recurrente o suscripción mensual para mis clientes?",
+  },
+  {
+    icon: Receipt,
+    label: "Facturación CFDI",
+    color: "text-emerald-400 bg-emerald-500/10",
+    prompt: "¿Cómo genero facturas CFDI para mis clientes? ¿Qué datos necesito?",
+  },
+  {
+    icon: TrendingUp,
+    label: "Mis ventas",
+    color: "text-amber-400 bg-amber-500/10",
+    prompt: "¿Cómo veo un reporte detallado de mis ventas y exporto en CSV?",
+  },
+  {
+    icon: Link2,
+    label: "Crear link de pago",
+    color: "text-pink-400 bg-pink-500/10",
+    prompt: "¿Cómo creo un link de pago personalizado con QR y lo comparto por WhatsApp?",
   },
 ];
 
 export default function AISupport() {
-  const { user, loading: authLoading } = useAuth();
+  const { loading: authLoading } = useAuth();
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+
+  // Contexto dinámico del comerciante
+  const { data: merchantCtx } = trpc.aiAssistant.merchantSupport.getMerchantContext.useQuery(undefined, {
+    staleTime: 5 * 60 * 1000,
+  });
 
   const chatMutation = trpc.aiAssistant.merchantSupport.chat.useMutation({
     onSuccess: (data) => {
@@ -80,6 +103,9 @@ export default function AISupport() {
         role: m.role as "user" | "assistant",
         content: m.content,
       })),
+      context: merchantCtx?.businessName
+        ? { businessName: merchantCtx.businessName, businessType: merchantCtx.businessType || undefined }
+        : undefined,
     });
   };
 
@@ -99,42 +125,77 @@ export default function AISupport() {
         {/* Header */}
         <div className="flex items-start justify-between">
           <div>
-            <div className="flex items-center gap-3 mb-2">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center">
+            <div className="flex items-center gap-3 mb-1.5">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-lg">
                 <MessageCircle className="w-5 h-5 text-white" />
               </div>
               <div>
-                <h1 className="text-2xl font-bold text-foreground">Soporte IA</h1>
-                <p className="text-sm text-muted-foreground">Asistente inteligente de KobraPay</p>
+                <h1 className="text-2xl font-bold text-foreground">
+                  Soporte IA
+                  {merchantCtx?.businessName && (
+                    <span className="text-muted-foreground font-normal text-lg ml-2">
+                      — {merchantCtx.businessName}
+                    </span>
+                  )}
+                </h1>
+                <p className="text-sm text-muted-foreground">Asistente inteligente especializado en KobraPay</p>
               </div>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <Badge variant="outline" className="text-emerald-600 border-emerald-200 bg-emerald-50">
-              <Zap className="w-3 h-3 mr-1" />
+          <div className="flex items-center gap-2 flex-wrap justify-end">
+            <Badge variant="outline" className="text-emerald-400 border-emerald-500/30 bg-emerald-500/10 gap-1">
+              <Zap className="w-3 h-3" />
               Powered by ContentAI
             </Badge>
-            <Badge variant="outline" className="text-xs">
-              Respuesta en segundos
-            </Badge>
+            {merchantCtx && merchantCtx.pendingChargebacks > 0 && (
+              <Badge variant="outline" className="text-orange-400 border-orange-500/30 bg-orange-500/10 gap-1">
+                <AlertTriangle className="w-3 h-3" />
+                {merchantCtx.pendingChargebacks} contracargo{merchantCtx.pendingChargebacks > 1 ? "s" : ""}
+              </Badge>
+            )}
           </div>
         </div>
 
+        {/* Contexto del comerciante */}
+        {merchantCtx && (merchantCtx.totalLinks > 0 || merchantCtx.totalTx > 0) && messages.length === 0 && (
+          <div className="rounded-xl border border-border bg-card/50 p-4">
+            <p className="text-xs text-muted-foreground mb-2 font-medium uppercase tracking-wide">Tu cuenta en resumen</p>
+            <div className="flex items-center gap-6 text-sm">
+              <div>
+                <span className="text-2xl font-bold text-foreground">{merchantCtx.totalLinks}</span>
+                <span className="text-muted-foreground ml-1.5">links creados</span>
+              </div>
+              <div>
+                <span className="text-2xl font-bold text-foreground">{merchantCtx.totalTx}</span>
+                <span className="text-muted-foreground ml-1.5">transacciones</span>
+              </div>
+              {merchantCtx.businessType && (
+                <div className="hidden md:block">
+                  <Badge variant="outline" className="text-xs capitalize">{merchantCtx.businessType}</Badge>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Acciones rápidas */}
         {messages.length === 0 && (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            {QUICK_ACTIONS.map((action) => (
-              <button
-                key={action.label}
-                onClick={() => handleSendMessage(action.prompt)}
-                className="flex flex-col items-center gap-2 p-4 rounded-xl border border-border bg-card hover:bg-accent transition-colors text-center group"
-              >
-                <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${action.color} group-hover:scale-110 transition-transform`}>
-                  <action.icon className="w-5 h-5" />
-                </div>
-                <span className="text-xs font-medium text-foreground leading-tight">{action.label}</span>
-              </button>
-            ))}
+          <div>
+            <p className="text-xs text-muted-foreground mb-3 font-medium uppercase tracking-wide">Preguntas frecuentes</p>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5">
+              {QUICK_ACTIONS.map((action) => (
+                <button
+                  key={action.label}
+                  onClick={() => handleSendMessage(action.prompt)}
+                  className="flex flex-col items-center gap-2 p-3.5 rounded-xl border border-border bg-card hover:bg-accent transition-colors text-center group"
+                >
+                  <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${action.color} group-hover:scale-110 transition-transform`}>
+                    <action.icon className="w-4 h-4" />
+                  </div>
+                  <span className="text-xs font-medium text-foreground leading-tight">{action.label}</span>
+                </button>
+              ))}
+            </div>
           </div>
         )}
 
@@ -145,8 +206,21 @@ export default function AISupport() {
             onSendMessage={handleSendMessage}
             isLoading={isLoading}
             placeholder="Escribe tu pregunta sobre pagos, integraciones, rechazos..."
-            suggestedPrompts={messages.length === 0 ? SUGGESTED_PROMPTS : []}
-            emptyStateMessage="Soy KobraSupport, tu asistente de soporte especializado en pagos digitales. Pregúntame sobre rechazos, integraciones, SPEI, OXXO, contracargos o cualquier duda técnica."
+            suggestedPrompts={
+              messages.length === 0
+                ? [
+                    "¿Por qué fue rechazado el pago de mi cliente?",
+                    "¿Cómo integro KobraPay con mi tienda en línea?",
+                    "¿Cuándo me depositan mis cobros?",
+                    "¿Cómo cancelo una suscripción recurrente?",
+                  ]
+                : []
+            }
+            emptyStateMessage={
+              merchantCtx?.businessName
+                ? `Hola, soy KobraBot 🐍 Tu asistente de soporte para ${merchantCtx.businessName}. Pregúntame sobre rechazos, integraciones, SPEI, OXXO, contracargos o cualquier duda técnica.`
+                : "Soy KobraBot 🐍, tu asistente de soporte especializado en pagos digitales. Pregúntame sobre rechazos, integraciones, SPEI, OXXO, contracargos o cualquier duda técnica."
+            }
           />
         </div>
 

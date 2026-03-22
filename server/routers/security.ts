@@ -375,4 +375,131 @@ export const securityRouter = router({
       },
     };
   }),
+
+  // ─── Estado del Sistema ────────────────────────────────────────────────────────────────────────────────────────
+  /**
+   * Estado del sistema en tiempo real — visible para cualquier usuario autenticado
+   * Devuelve: estado de la plataforma, ContentAI, webhooks recientes, métricas básicas
+   */
+  getSystemStatus: protectedProcedure.query(async ({ ctx }) => {
+    const db = await getDb();
+    const now = new Date();
+    const since24h = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const since7d = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+
+    let userStats = { totalLinks: 0, totalTx: 0, succeededTx: 0, failedTx: 0, volumeMxn: 0 };
+    let recentWebhooks: Array<{ id: number; event: string; success: boolean; statusCode: number | null; attemptedAt: Date; url: string }> = [];
+    let webhookStats = { total: 0, succeeded: 0, failed: 0, successRate: 100 };
+    let contentAIStatus: 'operational' | 'degraded' | 'down' = 'operational';
+    let contentAILatencyMs: number | null = null;
+
+    try {
+      if (db) {
+        const { webhookEndpoints, webhookDeliveryLogs } = await import('../../drizzle/schema');
+        const { eq, desc, gte, and: drizzleAnd, count: drizzleCount, sql: drizzleSql } = await import('drizzle-orm');
+
+        // Stats de transacciones del usuario (últimos 7 días)
+        const txRows = await db.select({
+          status: transactions.status,
+          cnt: drizzleCount(),
+          total: drizzleSql<string>`COALESCE(SUM(${transactions.amount}), 0)`,
+        }).from(transactions)
+          .innerJoin(paymentLinks, eq(transactions.paymentLinkId, paymentLinks.id))
+          .where(drizzleAnd(eq(paymentLinks.userId, ctx.user.id), gte(transactions.createdAt, since7d)))
+          .groupBy(transactions.status);
+
+        for (const row of txRows) {
+          userStats.totalTx += Number(row.cnt);
+          if (row.status === 'succeeded') {
+            userStats.succeededTx = Number(row.cnt);
+            userStats.volumeMxn = parseFloat(String(row.total));
+          } else if (row.status === 'failed') {
+            userStats.failedTx = Number(row.cnt);
+          }
+        }
+
+        // Links totales del usuario
+        const [linksRow] = await db.select({ cnt: drizzleCount() }).from(paymentLinks)
+          .where(eq(paymentLinks.userId, ctx.user.id));
+        userStats.totalLinks = Number(linksRow?.cnt || 0);
+
+        // Webhooks recientes del usuario (últimas 24h)
+        const userWebhooks = await db.select({ id: webhookEndpoints.id, url: webhookEndpoints.url })
+          .from(webhookEndpoints)
+          .where(eq(webhookEndpoints.userId, ctx.user.id));
+
+        if (userWebhooks.length > 0) {
+          const webhookIds = userWebhooks.map(w => w.id);
+          const urlMap = Object.fromEntries(userWebhooks.map(w => [w.id, w.url]));
+
+          const logs = await db.select().from(webhookDeliveryLogs)
+            .where(gte(webhookDeliveryLogs.attemptedAt, since24h))
+            .orderBy(desc(webhookDeliveryLogs.attemptedAt))
+            .limit(50);
+
+          const userLogs = logs.filter(l => webhookIds.includes(l.webhookEndpointId));
+          recentWebhooks = userLogs.slice(0, 10).map(l => ({
+            id: l.id,
+            event: l.event,
+            success: l.success,
+            statusCode: l.statusCode,
+            attemptedAt: l.attemptedAt,
+            url: urlMap[l.webhookEndpointId] || 'unknown',
+          }));
+
+          webhookStats.total = userLogs.length;
+          webhookStats.succeeded = userLogs.filter(l => l.success).length;
+          webhookStats.failed = userLogs.filter(l => !l.success).length;
+          webhookStats.successRate = webhookStats.total > 0
+            ? Math.round((webhookStats.succeeded / webhookStats.total) * 100)
+            : 100;
+        }
+      }
+    } catch (err) {
+      console.error('[SystemStatus] Error obteniendo métricas:', err);
+    }
+
+    // Ping a ContentAI para verificar disponibilidad
+    try {
+      const pingStart = Date.now();
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 5000);
+      const resp = await fetch('https://www.aicontentlab.co', {
+        method: 'HEAD',
+        signal: controller.signal,
+      });
+      clearTimeout(timeout);
+      contentAILatencyMs = Date.now() - pingStart;
+      contentAIStatus = resp.ok || resp.status < 500 ? 'operational' : 'degraded';
+    } catch {
+      contentAIStatus = 'down';
+    }
+
+    return {
+      generatedAt: now,
+      platform: {
+        status: 'operational' as const,
+        version: '2.0',
+        environment: process.env.NODE_ENV || 'production',
+        uptime: Math.round(process.uptime()),
+      },
+      contentAI: {
+        status: contentAIStatus,
+        latencyMs: contentAILatencyMs,
+        webhookUrl: 'https://www.aicontentlab.co/api/webhooks/kobrapay',
+      },
+      userStats: {
+        ...userStats,
+        period: '7d',
+        successRate: userStats.totalTx > 0
+          ? Math.round((userStats.succeededTx / userStats.totalTx) * 100)
+          : 100,
+      },
+      webhooks: {
+        ...webhookStats,
+        recent: recentWebhooks,
+        period: '24h',
+      },
+    };
+  }),
 });
