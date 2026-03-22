@@ -1184,3 +1184,10 @@
 - [x] Bloquear exposición de archivos sensibles (.env, backups, credenciales)
 - [x] Agregar headers de seguridad HTTP (HSTS, CSP, X-Frame-Options)
 - [x] Sanitizar inputs en endpoints de pago para prevenir inyección
+
+## Auto-bloqueo de IPs y Diagnóstico (2026-03-22)
+- [x] Auto-bloqueo de IPs tras N alertas ip_not_allowed en 1 hora
+- [x] Tabla blocked_ips en la base de datos
+- [x] Tabla de IPs bloqueadas en el panel de seguridad con botón de desbloqueo
+- [x] Endpoint GET /api/v1/my-ip para que ContentAI/BrokerHub conozcan su IP de salida
+- [x] IP Allowlist + auto-bloqueo integrados en authenticateApiKey del apiV1.ts

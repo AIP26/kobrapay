@@ -1545,3 +1545,20 @@ export const securityAlerts = mysqlTable("security_alerts", {
 });
 export type SecurityAlert = typeof securityAlerts.$inferSelect;
 export type InsertSecurityAlert = typeof securityAlerts.$inferInsert;
+
+/**
+ * IPs bloqueadas automáticamente por el sistema de seguridad
+ */
+export const blockedIps = mysqlTable("blocked_ips", {
+  id: int("id").autoincrement().primaryKey(),
+  ip: varchar("ip", { length: 50 }).notNull(),
+  reason: varchar("reason", { length: 200 }).notNull().default("auto_blocked"),
+  alertCount: int("alert_count").notNull().default(1),
+  blockedAt: bigint("blocked_at", { mode: "number" }).notNull(),
+  expiresAt: bigint("expires_at", { mode: "number" }),
+  unblockedAt: bigint("unblocked_at", { mode: "number" }),
+  unblockedBy: int("unblocked_by"),
+  isActive: tinyint("is_active").notNull().default(1),
+});
+export type BlockedIp = typeof blockedIps.$inferSelect;
+export type InsertBlockedIp = typeof blockedIps.$inferInsert;

@@ -272,3 +272,130 @@ export async function getIpAllowlist(userId: number): Promise<typeof ipAllowlist
     .from(ipAllowlist)
     .where(and(eq(ipAllowlist.userId, userId), eq(ipAllowlist.isActive, true)));
 }
+
+// ─── Auto-bloqueo de IPs ──────────────────────────────────────────────────────
+// Contador en memoria de alertas ip_not_allowed por IP en la última hora
+const ipAlertCounter = new Map<string, { count: number; firstSeen: number }>();
+const AUTO_BLOCK_THRESHOLD = 5;   // 5 alertas en 1 hora → bloqueo automático
+const AUTO_BLOCK_WINDOW_MS = 60 * 60 * 1000; // 1 hora
+const AUTO_BLOCK_DURATION_MS = 24 * 60 * 60 * 1000; // 24 horas de bloqueo
+
+/**
+ * Registra un intento fallido de IP y aplica auto-bloqueo si supera el umbral.
+ * Llamar desde checkIpAllowlist cuando la IP no está autorizada.
+ */
+export async function trackAndAutoBlockIp(ip: string, reason: string): Promise<boolean> {
+  const now = Date.now();
+  const entry = ipAlertCounter.get(ip);
+
+  if (!entry || now - entry.firstSeen > AUTO_BLOCK_WINDOW_MS) {
+    // Primera vez o ventana expirada — reiniciar contador
+    ipAlertCounter.set(ip, { count: 1, firstSeen: now });
+    return false;
+  }
+
+  entry.count++;
+
+  if (entry.count >= AUTO_BLOCK_THRESHOLD) {
+    // Umbral alcanzado — bloquear IP
+    ipAlertCounter.delete(ip); // limpiar para no re-bloquear en el mismo ciclo
+    await blockIpAutomatically(ip, reason, entry.count);
+    return true;
+  }
+
+  return false;
+}
+
+async function blockIpAutomatically(ip: string, reason: string, alertCount: number): Promise<void> {
+  try {
+    const db = await getDb();
+    if (!db) return;
+
+    const { blockedIps } = await import("../drizzle/schema");
+    const now = Date.now();
+    const expiresAt = now + AUTO_BLOCK_DURATION_MS;
+
+    // Insertar o actualizar el bloqueo
+    await db.insert(blockedIps).values({
+      ip,
+      reason: reason.slice(0, 200),
+      alertCount,
+      blockedAt: now,
+      expiresAt,
+      isActive: 1,
+    });
+
+    // Crear alerta crítica
+    await createSecurityAlert({
+      type: "ip_blocked",
+      severity: "critical",
+      ip,
+      message: `IP ${ip} bloqueada automáticamente tras ${alertCount} intentos no autorizados en 1 hora. Bloqueo activo por 24 horas.`,
+      metadata: { reason, alertCount, expiresAt },
+      notifyOwnerNow: true,
+    });
+
+    console.log(`[AutoBlock] IP ${ip} bloqueada automáticamente. Intentos: ${alertCount}`);
+  } catch (err) {
+    console.error("[AutoBlock] Error bloqueando IP:", err);
+  }
+}
+
+/**
+ * Verifica si una IP está en la lista de bloqueo activo.
+ * Llamar ANTES de checkIpAllowlist para rechazar IPs bloqueadas.
+ */
+export async function isIpBlocked(ip: string): Promise<boolean> {
+  try {
+    const db = await getDb();
+    if (!db) return false;
+
+    const { blockedIps } = await import("../drizzle/schema");
+    const { and, eq, gt, or, isNull } = await import("drizzle-orm");
+    const now = Date.now();
+
+    const rows = await db
+      .select({ id: blockedIps.id })
+      .from(blockedIps)
+      .where(
+        and(
+          eq(blockedIps.ip, ip),
+          eq(blockedIps.isActive, 1),
+          or(isNull(blockedIps.expiresAt), gt(blockedIps.expiresAt, now))
+        )
+      )
+      .limit(1);
+
+    return rows.length > 0;
+  } catch {
+    return false;
+  }
+}
+
+// ─── Gestión de IPs bloqueadas (para el panel) ────────────────────────────────
+export async function getBlockedIps(limit = 100): Promise<any[]> {
+  try {
+    const db = await getDb();
+    if (!db) return [];
+    const { blockedIps } = await import("../drizzle/schema");
+    const { desc } = await import("drizzle-orm");
+    return await db
+      .select()
+      .from(blockedIps)
+      .orderBy(desc(blockedIps.blockedAt))
+      .limit(limit);
+  } catch {
+    return [];
+  }
+}
+
+export async function unblockIp(id: number, unblockedBy: number): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("DB no disponible");
+  const { blockedIps } = await import("../drizzle/schema");
+  const { eq } = await import("drizzle-orm");
+  await db
+    .update(blockedIps)
+    .set({ isActive: 0, unblockedAt: Date.now(), unblockedBy })
+    .where(eq(blockedIps.id, id));
+}

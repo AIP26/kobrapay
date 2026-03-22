@@ -21,7 +21,7 @@ import { getDb, getVendorSettings } from "./db";
 import { apiKeys, apiCheckoutSessions, subscriptions } from "../drizzle/schema";
 import { eq, and } from "drizzle-orm";
 import crypto from "crypto";
-import { checkIpAllowlist, createSecurityAlert } from "./securityAlerts";
+import { checkIpAllowlist, createSecurityAlert, isIpBlocked, trackAndAutoBlockIp } from "./securityAlerts";
 import { getClientIp } from "./security";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "", {
@@ -39,6 +39,16 @@ export function registerApiV1Routes(app: Router) {
     if (!apiKey) {
       return res.status(401).json({
         error: "API key requerida. Usa el header: Authorization: Bearer kp_live_...",
+      });
+    }
+
+    // ─── Verificar si la IP está bloqueada ─────────────────────────────────────
+    const clientIpEarly = getClientIp(req);
+    const blocked = await isIpBlocked(clientIpEarly);
+    if (blocked) {
+      return res.status(403).json({
+        error: "Tu IP ha sido bloqueada temporalmente por actividad sospechosa. Contacta al soporte.",
+        ip: clientIpEarly,
       });
     }
 
@@ -79,6 +89,8 @@ export function registerApiV1Routes(app: Router) {
           metadata: { apiKeyId: found[0].id, apiKeyName: found[0].name, path: req.path },
           notifyOwnerNow: true,
         }).catch(() => {});
+        // Rastrear y auto-bloquear si supera el umbral
+        await trackAndAutoBlockIp(clientIp, `API key '${found[0].name}' - IP no en allowlist`);
         return res.status(403).json({
           error: "IP no autorizada. Tu IP no está en la lista de IPs permitidas para esta API key.",
           ip: clientIp,

@@ -339,6 +339,9 @@ export default function SecurityAudit() {
           </CardContent>
         </Card>
 
+        {/* Blocked IPs */}
+        <BlockedIpsSection />
+
         {/* IP Allowlist */}
         <IpAllowlistSection
           ipAllowlist={ipAllowlist ?? []}
@@ -462,6 +465,103 @@ export default function SecurityAudit() {
         </div>
       </div>
     </DashboardLayout>
+  );
+}
+
+// ─── Blocked IPs Section Component ──────────────────────────────────────────
+function BlockedIpsSection() {
+  const utils = trpc.useUtils();
+  const { data: isSuperAdmin } = trpc.security.checkSuperAdmin.useQuery();
+  const isSA = !!isSuperAdmin?.isSuperAdmin;
+
+  const { data: blockedIps, refetch } = trpc.security.getBlockedIps.useQuery(
+    { limit: 50 },
+    { enabled: isSA }
+  );
+
+  const unblockMutation = trpc.security.unblockIp.useMutation({
+    onSuccess: () => {
+      refetch();
+      toast.success("IP desbloqueada correctamente.");
+    },
+    onError: (err) => toast.error(err.message),
+  });
+
+  if (!isSA) return null;
+
+  const active = (blockedIps ?? []).filter((b: any) => b.isActive === 1);
+
+  return (
+    <Card className="border-0 shadow-sm">
+      <CardHeader className="pb-3">
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-base flex items-center gap-2">
+            <ShieldAlert className="w-4 h-4 text-red-500" />
+            IPs Bloqueadas Automáticamente
+            {active.length > 0 && (
+              <Badge className="bg-red-500 text-white text-xs">{active.length} activas</Badge>
+            )}
+          </CardTitle>
+          <Button variant="outline" size="sm" onClick={() => refetch()} className="h-7 text-xs">
+            <RefreshCw className="w-3 h-3 mr-1" />
+            Actualizar
+          </Button>
+        </div>
+        <p className="text-xs text-muted-foreground pt-1">
+          IPs bloqueadas automáticamente tras 5+ intentos no autorizados en 1 hora. Bloqueo de 24 horas.
+        </p>
+      </CardHeader>
+      <CardContent className="p-0">
+        <div className="max-h-64 overflow-y-auto">
+          {active.length > 0 ? (
+            <table className="w-full">
+              <thead className="sticky top-0 bg-gray-50">
+                <tr>
+                  <th className="text-left text-xs font-semibold text-muted-foreground px-4 py-2">IP</th>
+                  <th className="text-left text-xs font-semibold text-muted-foreground px-2 py-2">Motivo</th>
+                  <th className="text-left text-xs font-semibold text-muted-foreground px-2 py-2">Intentos</th>
+                  <th className="text-left text-xs font-semibold text-muted-foreground px-2 py-2">Bloqueada</th>
+                  <th className="text-left text-xs font-semibold text-muted-foreground px-2 py-2">Expira</th>
+                  <th className="text-center text-xs font-semibold text-muted-foreground px-2 py-2">Acción</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-50">
+                {active.map((b: any) => (
+                  <tr key={b.id} className="hover:bg-gray-50 bg-red-50/20">
+                    <td className="px-4 py-2.5 text-sm font-mono font-medium text-foreground">{b.ip}</td>
+                    <td className="px-2 py-2.5 text-xs text-muted-foreground truncate max-w-[180px]">{b.reason}</td>
+                    <td className="px-2 py-2.5 text-center">
+                      <span className="text-xs font-bold text-red-600">{b.alertCount}</span>
+                    </td>
+                    <td className="px-2 py-2.5 text-xs text-muted-foreground">
+                      {formatTime(b.blockedAt)}
+                    </td>
+                    <td className="px-2 py-2.5 text-xs text-muted-foreground">
+                      {b.expiresAt ? formatTime(b.expiresAt) : "Permanente"}
+                    </td>
+                    <td className="px-2 py-2.5 text-center">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => unblockMutation.mutate({ id: b.id })}
+                        className="h-7 text-xs text-emerald-600 hover:text-emerald-800 hover:bg-emerald-50"
+                      >
+                        Desbloquear
+                      </Button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          ) : (
+            <div className="p-6 text-center text-muted-foreground text-sm bg-gray-50 rounded-xl m-4">
+              <ShieldCheck className="w-7 h-7 text-emerald-400 mx-auto mb-2" />
+              Sin IPs bloqueadas — el sistema está limpio.
+            </div>
+          )}
+        </div>
+      </CardContent>
+    </Card>
   );
 }
 

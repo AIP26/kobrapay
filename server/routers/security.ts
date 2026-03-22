@@ -16,7 +16,10 @@ import {
   addIpToAllowlist,
   removeIpFromAllowlist,
   getIpAllowlist,
+  getBlockedIps,
+  unblockIp,
 } from "../securityAlerts";
+import { getClientIp } from "../security";
 
 export const securityRouter = router({
   /**
@@ -301,6 +304,46 @@ export const securityRouter = router({
       riskLevel: (riskScore >= 60 ? 'high' : riskScore >= 30 ? 'medium' : 'low') as 'high' | 'medium' | 'low',
       analyzedTransactions: recentTxs.length,
       generatedAt: new Date(),
+    };
+  }),
+
+  // ─── IPs Bloqueadas ────────────────────────────────────────────────────────────────────
+  /**
+   * Obtener lista de IPs bloqueadas — superadmin only
+   */
+  getBlockedIps: superAdminProcedure
+    .input(z.object({ limit: z.number().min(1).max(500).default(100) }))
+    .query(async ({ input }) => {
+      return getBlockedIps(input.limit);
+    }),
+
+  /**
+   * Desbloquear una IP manualmente — superadmin only
+   */
+  unblockIp: superAdminProcedure
+    .input(z.object({ id: z.number() }))
+    .mutation(async ({ input, ctx }) => {
+      await unblockIp(input.id, ctx.user.id);
+      return { success: true };
+    }),
+
+  // ─── Diagnóstico de IP ────────────────────────────────────────────────────────────────────
+  /**
+   * Retorna la IP pública del solicitante.
+   * ContentAI y BrokerHub pueden llamar a este endpoint para conocer su IP de salida
+   * y agregarla a la allowlist de KobraPay.
+   * Requiere autenticación (cualquier usuario logueado).
+   */
+  getMyIp: protectedProcedure.query(async ({ ctx }) => {
+    const req = (ctx as any).req;
+    const ip = req ? getClientIp(req) : "unknown";
+    return {
+      ip,
+      message: "Agrega esta IP a la allowlist de tu API key en KobraPay para restringir el acceso.",
+      instructions: {
+        kobrapay_panel: "Ve a Seguridad → IPs Autorizadas → Agregar IP",
+        api: "POST /api/trpc/security.addIpToAllowlist con { ipCidr: \"" + ip + "\" }",
+      },
     };
   }),
 });
