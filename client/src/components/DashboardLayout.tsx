@@ -225,6 +225,8 @@ const NAV_GROUPS = [
       { href: "/dashboard/widget", icon: Code2, label: "Widget de Pago" },
       { href: "/dashboard/catalog", icon: Package, label: "Catálogo" },
       { href: "/dashboard/reader", icon: ShoppingCart, label: "Compra tu Lector" },
+      { href: "/dashboard/ai-support", icon: Bot, label: "Asistente IA" },
+      { href: "/dashboard/ai-marketing", icon: Brain, label: "Marketing IA" },
     ],
   },
   {
