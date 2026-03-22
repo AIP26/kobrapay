@@ -1496,3 +1496,52 @@ export const pricingPlans = mysqlTable("pricing_plans", {
 });
 export type PricingPlan = typeof pricingPlans.$inferSelect;
 export type InsertPricingPlan = typeof pricingPlans.$inferInsert;
+
+// ─── IP Allowlist para API Keys ────────────────────────────────────────────────
+/**
+ * Permite restringir qué IPs pueden usar cada API key.
+ * Si una API key tiene entradas en esta tabla, solo esas IPs pueden usarla.
+ * Si no tiene entradas, cualquier IP puede usarla (comportamiento por defecto).
+ */
+export const ipAllowlist = mysqlTable("ip_allowlist", {
+  id: int("id").primaryKey().autoincrement(),
+  userId: int("userId").notNull().references(() => users.id),
+  apiKeyId: int("apiKeyId").references(() => apiKeys.id), // null = aplica a todas las keys del user
+  ipCidr: varchar("ipCidr", { length: 50 }).notNull(), // e.g. "203.0.113.0/24" or "203.0.113.5"
+  label: varchar("label", { length: 100 }), // e.g. "ContentAI", "BrokerHub"
+  isActive: boolean("isActive").default(true).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type IpAllowlist = typeof ipAllowlist.$inferSelect;
+export type InsertIpAllowlist = typeof ipAllowlist.$inferInsert;
+
+// ─── Security Alerts ──────────────────────────────────────────────────────────
+/**
+ * Alertas de seguridad generadas automáticamente cuando se detectan
+ * patrones sospechosos: múltiples intentos fallidos, acceso a archivos
+ * sensibles, IPs bloqueadas, etc.
+ */
+export const securityAlerts = mysqlTable("security_alerts", {
+  id: int("id").primaryKey().autoincrement(),
+  userId: int("userId").references(() => users.id), // null = alerta global
+  type: mysqlEnum("type", [
+    "brute_force",
+    "sensitive_file_access",
+    "ip_blocked",
+    "invalid_api_key",
+    "webhook_attack",
+    "rate_limit_exceeded",
+    "ip_not_allowed",
+    "suspicious_request",
+  ]).notNull(),
+  severity: mysqlEnum("severity", ["low", "medium", "high", "critical"]).default("medium").notNull(),
+  ip: varchar("ip", { length: 50 }),
+  resource: varchar("resource", { length: 500 }),
+  message: text("message").notNull(),
+  metadata: text("metadata"), // JSON con detalles adicionales
+  isRead: boolean("isRead").default(false).notNull(),
+  notifiedOwner: boolean("notifiedOwner").default(false).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type SecurityAlert = typeof securityAlerts.$inferSelect;
+export type InsertSecurityAlert = typeof securityAlerts.$inferInsert;

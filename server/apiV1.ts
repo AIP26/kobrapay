@@ -21,6 +21,8 @@ import { getDb, getVendorSettings } from "./db";
 import { apiKeys, apiCheckoutSessions, subscriptions } from "../drizzle/schema";
 import { eq, and } from "drizzle-orm";
 import crypto from "crypto";
+import { checkIpAllowlist, createSecurityAlert } from "./securityAlerts";
+import { getClientIp } from "./security";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "", {
   apiVersion: "2026-02-25.clover",
@@ -52,7 +54,35 @@ export function registerApiV1Routes(app: Router) {
         .limit(1);
 
       if (!found.length) {
+        const clientIp = getClientIp(req);
+        createSecurityAlert({
+          type: "invalid_api_key",
+          severity: "medium",
+          ip: clientIp,
+          resource: req.path,
+          message: `Intento de acceso con API key inválida desde ${clientIp}`,
+          metadata: { path: req.path, method: req.method, keyPrefix: apiKey.slice(0, 10) + "..." },
+        }).catch(() => {});
         return res.status(401).json({ error: "API key inválida o revocada" });
+      }
+
+      // ─── IP Allowlist check ─────────────────────────────────────────────────
+      const clientIp = getClientIp(req);
+      const ipCheck = await checkIpAllowlist(found[0].id, found[0].userId, clientIp);
+      if (!ipCheck.allowed) {
+        createSecurityAlert({
+          type: "ip_not_allowed",
+          severity: "high",
+          ip: clientIp,
+          resource: req.path,
+          message: `IP ${clientIp} intentó usar API key '${found[0].name}' pero no está en la allowlist`,
+          metadata: { apiKeyId: found[0].id, apiKeyName: found[0].name, path: req.path },
+          notifyOwnerNow: true,
+        }).catch(() => {});
+        return res.status(403).json({
+          error: "IP no autorizada. Tu IP no está en la lista de IPs permitidas para esta API key.",
+          ip: clientIp,
+        });
       }
 
       await db

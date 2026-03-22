@@ -6,9 +6,17 @@ import { z } from "zod";
 import { router, superAdminProcedure, protectedProcedure, isSuperAdmin } from "../_core/trpc";
 import { TRPCError } from "@trpc/server";
 import { getDb } from "../db";
-import { users, paymentLinks, transactions, platformClients, auditLogs } from "../../drizzle/schema";
+import { users, paymentLinks, transactions, platformClients, auditLogs, ipAllowlist, securityAlerts } from "../../drizzle/schema";
 import { desc, eq, count, sql, gte, and } from "drizzle-orm";
 import { getAuditLog } from "../security";
+import {
+  getRecentAlerts,
+  getUnreadAlertCount,
+  markAlertsRead,
+  addIpToAllowlist,
+  removeIpFromAllowlist,
+  getIpAllowlist,
+} from "../securityAlerts";
 
 export const securityRouter = router({
   /**
@@ -163,6 +171,75 @@ export const securityRouter = router({
   checkSuperAdmin: protectedProcedure.query(({ ctx }) => {
     return { isSuperAdmin: isSuperAdmin(ctx.user.openId, ctx.user.role) };
   }),
+
+  // ─── IP Allowlist ──────────────────────────────────────────────────────────
+  /**
+   * Obtener la lista de IPs autorizadas para el usuario actual
+   */
+  getIpAllowlist: protectedProcedure.query(async ({ ctx }) => {
+    return getIpAllowlist(ctx.user.id);
+  }),
+
+  /**
+   * Agregar una IP a la allowlist
+   */
+  addIpToAllowlist: protectedProcedure
+    .input(z.object({
+      ipCidr: z.string().min(7).max(50),
+      label: z.string().max(100).optional(),
+      apiKeyId: z.number().optional(),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      // Validar formato IP o CIDR básico
+      const ipRegex = /^(\d{1,3}\.){3}\d{1,3}(\/\d{1,2})?$/;
+      if (!ipRegex.test(input.ipCidr)) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "Formato de IP inválido. Usa IPv4 (ej: 203.0.113.5) o CIDR (ej: 203.0.113.0/24)" });
+      }
+      await addIpToAllowlist({
+        userId: ctx.user.id,
+        apiKeyId: input.apiKeyId,
+        ipCidr: input.ipCidr,
+        label: input.label,
+      });
+      return { success: true };
+    }),
+
+  /**
+   * Eliminar (desactivar) una IP de la allowlist
+   */
+  removeIpFromAllowlist: protectedProcedure
+    .input(z.object({ id: z.number() }))
+    .mutation(async ({ input, ctx }) => {
+      await removeIpFromAllowlist(input.id, ctx.user.id);
+      return { success: true };
+    }),
+
+  // ─── Security Alerts ───────────────────────────────────────────────────────
+  /**
+   * Obtener alertas de seguridad recientes — superadmin only
+   */
+  getSecurityAlerts: superAdminProcedure
+    .input(z.object({ limit: z.number().min(1).max(200).default(50) }))
+    .query(async ({ input }) => {
+      return getRecentAlerts(input.limit);
+    }),
+
+  /**
+   * Contar alertas no leídas — superadmin only
+   */
+  getUnreadAlertCount: superAdminProcedure.query(async () => {
+    return { count: await getUnreadAlertCount() };
+  }),
+
+  /**
+   * Marcar alertas como leídas — superadmin only
+   */
+  markAlertsRead: superAdminProcedure
+    .input(z.object({ ids: z.array(z.number()) }))
+    .mutation(async ({ input }) => {
+      await markAlertsRead(input.ids);
+      return { success: true };
+    }),
 
   /**
    * Analiza transacciones recientes y detecta patrones de fraude/riesgo
