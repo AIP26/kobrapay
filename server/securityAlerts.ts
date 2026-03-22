@@ -286,9 +286,18 @@ const AUTO_BLOCK_DURATION_MS = 24 * 60 * 60 * 1000; // 24 horas de bloqueo
  */
 export async function trackAndAutoBlockIp(ip: string, reason: string): Promise<boolean> {
   const now = Date.now();
+
+  // Leer parámetros dinámicos desde DB (con cache de 1 min)
+  const [thresholdStr, windowStr] = await Promise.all([
+    getSecurityParam("auto_block_threshold", "5"),
+    getSecurityParam("auto_block_window_minutes", "60"),
+  ]);
+  const threshold = parseInt(thresholdStr, 10) || 5;
+  const windowMs = (parseInt(windowStr, 10) || 60) * 60_000;
+
   const entry = ipAlertCounter.get(ip);
 
-  if (!entry || now - entry.firstSeen > AUTO_BLOCK_WINDOW_MS) {
+  if (!entry || now - entry.firstSeen > windowMs) {
     // Primera vez o ventana expirada — reiniciar contador
     ipAlertCounter.set(ip, { count: 1, firstSeen: now });
     return false;
@@ -296,9 +305,9 @@ export async function trackAndAutoBlockIp(ip: string, reason: string): Promise<b
 
   entry.count++;
 
-  if (entry.count >= AUTO_BLOCK_THRESHOLD) {
+  if (entry.count >= threshold) {
     // Umbral alcanzado — bloquear IP
-    ipAlertCounter.delete(ip); // limpiar para no re-bloquear en el mismo ciclo
+    ipAlertCounter.delete(ip);
     await blockIpAutomatically(ip, reason, entry.count);
     return true;
   }
@@ -313,7 +322,9 @@ async function blockIpAutomatically(ip: string, reason: string, alertCount: numb
 
     const { blockedIps } = await import("../drizzle/schema");
     const now = Date.now();
-    const expiresAt = now + AUTO_BLOCK_DURATION_MS;
+    const durationHoursStr = await getSecurityParam("auto_block_duration_hours", "24");
+    const durationMs = (parseInt(durationHoursStr, 10) || 24) * 60 * 60_000;
+    const expiresAt = now + durationMs;
 
     // Insertar o actualizar el bloqueo
     await db.insert(blockedIps).values({
@@ -398,4 +409,59 @@ export async function unblockIp(id: number, unblockedBy: number): Promise<void> 
     .update(blockedIps)
     .set({ isActive: 0, unblockedAt: Date.now(), unblockedBy })
     .where(eq(blockedIps.id, id));
+}
+
+// ─── Security Config (parámetros dinámicos desde DB) ─────────────────────────
+// Cache en memoria para no consultar DB en cada request
+let configCache: Record<string, string> = {};
+let configCacheAt = 0;
+const CONFIG_CACHE_TTL = 60_000; // 1 minuto
+
+async function getSecurityConfig(): Promise<Record<string, string>> {
+  if (Date.now() - configCacheAt < CONFIG_CACHE_TTL) return configCache;
+  try {
+    const db = await getDb();
+    if (!db) return configCache;
+    const { securityConfig } = await import("../drizzle/schema");
+    const rows = await db.select().from(securityConfig);
+    const fresh: Record<string, string> = {};
+    for (const row of rows) fresh[row.configKey] = row.configValue;
+    configCache = fresh;
+    configCacheAt = Date.now();
+    return fresh;
+  } catch {
+    return configCache;
+  }
+}
+
+export async function getSecurityParam(key: string, defaultVal: string): Promise<string> {
+  const cfg = await getSecurityConfig();
+  return cfg[key] ?? defaultVal;
+}
+
+export function invalidateConfigCache(): void {
+  configCacheAt = 0;
+}
+
+/**
+ * Actualiza un parámetro de seguridad en la DB y limpia el cache.
+ */
+export async function updateSecurityParam(key: string, value: string, updatedBy: number): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("DB no disponible");
+  const { securityConfig } = await import("../drizzle/schema");
+  const { eq } = await import("drizzle-orm");
+  await db
+    .update(securityConfig)
+    .set({ configValue: value, updatedAt: Date.now(), updatedBy })
+    .where(eq(securityConfig.configKey, key));
+  invalidateConfigCache();
+}
+
+export async function getAllSecurityConfig(): Promise<Array<{ key: string; value: string; description: string | null }>> {
+  const db = await getDb();
+  if (!db) return [];
+  const { securityConfig } = await import("../drizzle/schema");
+  const rows = await db.select().from(securityConfig);
+  return rows.map((r) => ({ key: r.configKey, value: r.configValue, description: r.description ?? null }));
 }

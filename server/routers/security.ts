@@ -18,6 +18,8 @@ import {
   getIpAllowlist,
   getBlockedIps,
   unblockIp,
+  getAllSecurityConfig,
+  updateSecurityParam,
 } from "../securityAlerts";
 import { getClientIp } from "../security";
 
@@ -324,6 +326,33 @@ export const securityRouter = router({
     .input(z.object({ id: z.number() }))
     .mutation(async ({ input, ctx }) => {
       await unblockIp(input.id, ctx.user.id);
+      return { success: true };
+    }),
+
+  // ─── Configuración Dinámica de Seguridad ────────────────────────────────────────────────────
+  /**
+   * Obtener todos los parámetros de seguridad configurables — superadmin only
+   */
+  getSecurityConfig: superAdminProcedure.query(async () => {
+    return getAllSecurityConfig();
+  }),
+
+  /**
+   * Actualizar un parámetro de seguridad — superadmin only
+   */
+  updateSecurityConfig: superAdminProcedure
+    .input(z.object({
+      key: z.enum([
+        "auto_block_threshold",
+        "auto_block_duration_hours",
+        "auto_block_window_minutes",
+        "alert_throttle_minutes",
+        "ip_allowlist_enabled",
+      ]),
+      value: z.string().min(1).max(100),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      await updateSecurityParam(input.key, input.value, ctx.user.id);
       return { success: true };
     }),
 

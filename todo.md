@@ -1191,3 +1191,11 @@
 - [x] Tabla de IPs bloqueadas en el panel de seguridad con botón de desbloqueo
 - [x] Endpoint GET /api/v1/my-ip para que ContentAI/BrokerHub conozcan su IP de salida
 - [x] IP Allowlist + auto-bloqueo integrados en authenticateApiKey del apiV1.ts
+
+## Configuración Dinámica de Seguridad y Verificación de Producción (2026-03-22)
+- [x] Umbral de auto-bloqueo configurable desde el panel (sin tocar código)
+- [x] Tabla security_config en DB para almacenar parámetros de seguridad
+- [x] Resolver IPs de salida de ContentAI y BrokerHub automáticamente
+- [x] Agregar IPs de ContentAI/BrokerHub a la allowlist desde el panel
+- [x] Verificar flujo de pago completo en producción (checkout → Stripe → webhook)
+- [x] Confirmar que webhooks llegan a ContentAI y BrokerHub correctamente

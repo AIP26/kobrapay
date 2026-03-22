@@ -1,4 +1,5 @@
 import { useState } from "react";
+import React from "react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { trpc } from "@/lib/trpc";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -24,6 +25,8 @@ import {
   ShieldAlert,
   ShieldCheck,
   RefreshCw,
+  Settings,
+  Save,
 } from "lucide-react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { Link } from "wouter";
@@ -354,6 +357,9 @@ export default function SecurityAudit() {
           isAdding={addIp.isPending}
         />
 
+        {/* Security Config Panel */}
+        <SecurityConfigPanel />
+
         <div className="grid lg:grid-cols-2 gap-6">
           {/* All Users */}
           <Card className="border-0 shadow-sm">
@@ -662,6 +668,106 @@ function IpAllowlistSection({
             Sin restricciones de IP — cualquier IP puede usar tus API keys.
             <br />
             <span className="text-xs">Agrega IPs para restringir el acceso a ContentAI y BrokerHub.</span>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+// ─── Security Config Panel ────────────────────────────────────────────────────────────────────
+const CONFIG_LABELS: Record<string, { label: string; hint: string; type: "number" | "boolean" }> = {
+  auto_block_threshold: { label: "Intentos antes de bloquear", hint: "Número de intentos fallidos en la ventana de tiempo antes de bloquear la IP automáticamente.", type: "number" },
+  auto_block_duration_hours: { label: "Duración del bloqueo (horas)", hint: "Cuántas horas permanece bloqueada la IP tras el bloqueo automático.", type: "number" },
+  auto_block_window_minutes: { label: "Ventana de tiempo (minutos)", hint: "Ventana de tiempo en minutos para contar intentos fallidos.", type: "number" },
+  alert_throttle_minutes: { label: "Throttle de alertas (minutos)", hint: "Minutos entre alertas del mismo tipo/IP para evitar spam de notificaciones.", type: "number" },
+  ip_allowlist_enabled: { label: "IP Allowlist activa", hint: "Activar o desactivar la verificación de IP Allowlist globalmente (true/false).", type: "boolean" },
+};
+
+function SecurityConfigPanel() {
+  const { data: isSuperAdmin } = trpc.security.checkSuperAdmin.useQuery();
+  const isSA = !!isSuperAdmin?.isSuperAdmin;
+
+  const { data: configs, refetch } = trpc.security.getSecurityConfig.useQuery(
+    undefined,
+    { enabled: isSA }
+  );
+
+  const [editValues, setEditValues] = React.useState<Record<string, string>>({});
+  const [saving, setSaving] = React.useState<string | null>(null);
+
+  const updateMutation = trpc.security.updateSecurityConfig.useMutation({
+    onSuccess: () => {
+      refetch();
+      setSaving(null);
+      toast.success("Parámetro actualizado correctamente.");
+    },
+    onError: (err) => {
+      setSaving(null);
+      toast.error(err.message);
+    },
+  });
+
+  if (!isSA) return null;
+
+  const handleSave = (key: string) => {
+    const value = editValues[key] ?? (configs?.find((c: any) => c.key === key)?.value ?? "");
+    setSaving(key);
+    updateMutation.mutate({ key: key as any, value });
+  };
+
+  return (
+    <Card className="border-0 shadow-sm">
+      <CardHeader className="pb-3">
+        <CardTitle className="text-base flex items-center gap-2">
+          <Settings className="w-4 h-4 text-blue-500" />
+          Configuración Dinámica de Seguridad
+        </CardTitle>
+        <p className="text-xs text-muted-foreground pt-1">
+          Ajusta los parámetros del sistema de auto-bloqueo y alertas sin tocar el código. Los cambios aplican en menos de 1 minuto.
+        </p>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {(configs ?? []).map((cfg: any) => {
+          const meta = CONFIG_LABELS[cfg.key];
+          if (!meta) return null;
+          const currentVal = editValues[cfg.key] ?? cfg.value;
+          return (
+            <div key={cfg.key} className="flex items-start gap-3 p-3 rounded-lg bg-gray-50">
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-sm font-medium text-foreground">{meta.label}</span>
+                  <Badge variant="outline" className="text-xs font-mono">{cfg.key}</Badge>
+                </div>
+                <p className="text-xs text-muted-foreground mb-2">{meta.hint}</p>
+                <Input
+                  type={meta.type === "number" ? "number" : "text"}
+                  value={currentVal}
+                  onChange={(e) => setEditValues((prev) => ({ ...prev, [cfg.key]: e.target.value }))}
+                  className="h-8 text-sm w-32 font-mono"
+                  min={meta.type === "number" ? 1 : undefined}
+                />
+              </div>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => handleSave(cfg.key)}
+                disabled={saving === cfg.key}
+                className="h-8 mt-6 text-xs"
+              >
+                {saving === cfg.key ? (
+                  <span className="animate-spin mr-1">&#8635;</span>
+                ) : (
+                  <Save className="w-3 h-3 mr-1" />
+                )}
+                Guardar
+              </Button>
+            </div>
+          );
+        })}
+        {(!configs || configs.length === 0) && (
+          <div className="text-center text-muted-foreground text-sm py-4">
+            Cargando configuración...
           </div>
         )}
       </CardContent>

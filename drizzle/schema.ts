@@ -1562,3 +1562,17 @@ export const blockedIps = mysqlTable("blocked_ips", {
 });
 export type BlockedIp = typeof blockedIps.$inferSelect;
 export type InsertBlockedIp = typeof blockedIps.$inferInsert;
+
+/**
+ * Configuración dinámica del sistema de seguridad (editable desde el panel)
+ */
+export const securityConfig = mysqlTable("security_config", {
+  id: int("id").autoincrement().primaryKey(),
+  configKey: varchar("config_key", { length: 100 }).notNull().unique(),
+  configValue: varchar("config_value", { length: 500 }).notNull(),
+  description: varchar("description", { length: 300 }),
+  updatedAt: bigint("updated_at", { mode: "number" }).notNull(),
+  updatedBy: int("updated_by"),
+});
+export type SecurityConfig = typeof securityConfig.$inferSelect;
+export type InsertSecurityConfig = typeof securityConfig.$inferInsert;
