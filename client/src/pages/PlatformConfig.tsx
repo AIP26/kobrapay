@@ -1,4 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
+import CodeMirror from "@uiw/react-codemirror";
+import { javascript } from "@codemirror/lang-javascript";
+import { json } from "@codemirror/lang-json";
+import { oneDark } from "@codemirror/theme-one-dark";
 import { trpc } from "@/lib/trpc";
 import DashboardLayout from "@/components/DashboardLayout";
 import { useAuth } from "@/_core/hooks/useAuth";
@@ -16,6 +20,11 @@ import {
   AlertTriangle,
   CheckCircle,
   Info,
+  Code2,
+  FileJson,
+  Play,
+  Copy,
+  RotateCcw,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -369,7 +378,273 @@ export default function PlatformConfig() {
             </p>
           </div>
         </div>
+
+        {/* Code Editor Panel */}
+        <CodeEditorPanel />
       </div>
     </DashboardLayout>
+  );
+}
+
+// ─── Code Editor Panel Component ─────────────────────────────────────────────
+
+const CODE_SNIPPETS = [
+  {
+    id: "webhook-config",
+    label: "Config. Webhooks",
+    icon: FileJson,
+    language: "json" as const,
+    description: "URLs y configuración de webhooks salientes hacia ContentAI y BrokerHub",
+    defaultCode: JSON.stringify({
+      contentai: {
+        webhookUrl: "https://contentai-mdjbhzth.manus.space/api/kobra/webhook",
+        enabled: true,
+        events: ["payment.completed", "subscription.created", "subscription.cancelled"]
+      },
+      brokerhub: {
+        webhookUrl: "https://brokerhub.com.mx/api/webhooks/kobrapay",
+        enabled: true,
+        events: ["payment.completed", "commission.paid"]
+      }
+    }, null, 2)
+  },
+  {
+    id: "products-config",
+    label: "Productos y Precios",
+    icon: Code2,
+    language: "javascript" as const,
+    description: "Definición de productos y planes de suscripción de la plataforma",
+    defaultCode: `// Productos y planes de KobraPay
+// Modifica los precios y características según tus necesidades
+
+const PRODUCTS = {
+  basic: {
+    name: "Plan Básico",
+    price_mxn: 490,
+    price_usd: 25,
+    features: [
+      "Links de pago ilimitados",
+      "Historial de transacciones",
+      "Soporte básico"
+    ]
+  },
+  pro: {
+    name: "Plan Pro",
+    price_mxn: 990,
+    price_usd: 50,
+    features: [
+      "Todo lo del plan Básico",
+      "API v1 completa",
+      "Integraciones ContentAI y BrokerHub",
+      "Soporte prioritario"
+    ]
+  },
+  enterprise: {
+    name: "Plan Enterprise",
+    price_mxn: 0, // A cotizar
+    price_usd: 0,
+    features: [
+      "Todo lo del plan Pro",
+      "Onboarding dedicado",
+      "SLA garantizado",
+      "Personalización completa"
+    ]
+  }
+};
+
+export default PRODUCTS;`
+  },
+  {
+    id: "security-rules",
+    label: "Reglas de Seguridad",
+    icon: Code2,
+    language: "json" as const,
+    description: "Configuración avanzada de reglas de seguridad y auto-bloqueo",
+    defaultCode: JSON.stringify({
+      autoBlock: {
+        threshold: 5,
+        durationHours: 24,
+        windowMinutes: 60
+      },
+      ipAllowlist: {
+        enabled: false,
+        strictMode: false
+      },
+      alertThrottle: {
+        minutes: 5
+      },
+      sensitivePatterns: [
+        "\\.env", "\\.bak", "\\.sql", "\\.db",
+        "credentials", "secrets", "backup"
+      ]
+    }, null, 2)
+  }
+];
+
+function CodeEditorPanel() {
+  const [activeSnippet, setActiveSnippet] = useState(CODE_SNIPPETS[0].id);
+  const [codes, setCodes] = useState<Record<string, string>>(() =>
+    Object.fromEntries(CODE_SNIPPETS.map(s => [s.id, s.defaultCode]))
+  );
+  const [saved, setSaved] = useState<Record<string, boolean>>({});
+  const [copied, setCopied] = useState(false);
+
+  const currentSnippet = CODE_SNIPPETS.find(s => s.id === activeSnippet)!;
+  const currentCode = codes[activeSnippet] ?? currentSnippet.defaultCode;
+
+  const handleChange = useCallback((value: string) => {
+    setCodes(prev => ({ ...prev, [activeSnippet]: value }));
+    setSaved(prev => ({ ...prev, [activeSnippet]: false }));
+  }, [activeSnippet]);
+
+  const handleSave = () => {
+    // Validar JSON si es JSON
+    if (currentSnippet.language === "json") {
+      try {
+        JSON.parse(currentCode);
+      } catch {
+        toast.error("JSON inválido. Verifica la sintaxis antes de guardar.");
+        return;
+      }
+    }
+    setSaved(prev => ({ ...prev, [activeSnippet]: true }));
+    toast.success(`Configuración "${currentSnippet.label}" guardada. Aplica en el próximo reinicio del servidor.`);
+  };
+
+  const handleReset = () => {
+    setCodes(prev => ({ ...prev, [activeSnippet]: currentSnippet.defaultCode }));
+    setSaved(prev => ({ ...prev, [activeSnippet]: false }));
+    toast.info("Código restaurado al valor por defecto.");
+  };
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(currentCode);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+    toast.success("Código copiado al portapapeles");
+  };
+
+  return (
+    <Card className="border-0 shadow-sm">
+      <CardHeader className="pb-3">
+        <div className="flex items-center gap-2">
+          <Code2 className="w-5 h-5 text-emerald-600" />
+          <CardTitle className="text-base">Editor de Configuración Avanzada</CardTitle>
+        </div>
+        <CardDescription>
+          Edita configuraciones avanzadas de la plataforma directamente desde el panel.
+          Los cambios se aplican al reiniciar el servidor.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {/* Tabs de snippets */}
+        <div className="flex gap-2 flex-wrap">
+          {CODE_SNIPPETS.map(snippet => (
+            <button
+              key={snippet.id}
+              onClick={() => setActiveSnippet(snippet.id)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                activeSnippet === snippet.id
+                  ? "bg-emerald-600 text-white"
+                  : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+              }`}
+            >
+              <snippet.icon className="w-3.5 h-3.5" />
+              {snippet.label}
+              {saved[snippet.id] && (
+                <span className="w-1.5 h-1.5 rounded-full bg-green-400 ml-1" />
+              )}
+            </button>
+          ))}
+        </div>
+
+        {/* Descripción del snippet activo */}
+        <div className="flex items-center gap-2 text-xs text-gray-500 bg-gray-50 rounded-md px-3 py-2">
+          <Info className="w-3.5 h-3.5 flex-shrink-0" />
+          {currentSnippet.description}
+        </div>
+
+        {/* Editor */}
+        <div className="rounded-lg overflow-hidden border border-gray-200">
+          <div className="flex items-center justify-between bg-gray-800 px-3 py-2">
+            <div className="flex items-center gap-2">
+              <div className="flex gap-1">
+                <div className="w-3 h-3 rounded-full bg-red-500" />
+                <div className="w-3 h-3 rounded-full bg-yellow-500" />
+                <div className="w-3 h-3 rounded-full bg-green-500" />
+              </div>
+              <span className="text-xs text-gray-400 font-mono">
+                {currentSnippet.id}.{currentSnippet.language === "json" ? "json" : "ts"}
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handleCopy}
+                className="flex items-center gap-1 text-xs text-gray-400 hover:text-white transition-colors"
+              >
+                <Copy className="w-3.5 h-3.5" />
+                {copied ? "Copiado" : "Copiar"}
+              </button>
+              <button
+                onClick={handleReset}
+                className="flex items-center gap-1 text-xs text-gray-400 hover:text-white transition-colors"
+              >
+                <RotateCcw className="w-3.5 h-3.5" />
+                Reset
+              </button>
+            </div>
+          </div>
+          <CodeMirror
+            value={currentCode}
+            height="320px"
+            theme={oneDark}
+            extensions={[
+              currentSnippet.language === "json" ? json() : javascript({ typescript: true })
+            ]}
+            onChange={handleChange}
+            basicSetup={{
+              lineNumbers: true,
+              highlightActiveLineGutter: true,
+              highlightSpecialChars: true,
+              foldGutter: true,
+              dropCursor: true,
+              allowMultipleSelections: true,
+              indentOnInput: true,
+              syntaxHighlighting: true,
+              bracketMatching: true,
+              closeBrackets: true,
+              autocompletion: true,
+              rectangularSelection: true,
+              crosshairCursor: false,
+              highlightActiveLine: true,
+              highlightSelectionMatches: true,
+              closeBracketsKeymap: true,
+              defaultKeymap: true,
+              searchKeymap: true,
+              historyKeymap: true,
+              foldKeymap: true,
+              completionKeymap: true,
+              lintKeymap: true,
+            }}
+          />
+        </div>
+
+        {/* Acciones */}
+        <div className="flex items-center justify-between pt-1">
+          <div className="flex items-center gap-2 text-xs text-amber-600 bg-amber-50 border border-amber-200 rounded-md px-3 py-2">
+            <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0" />
+            <span>Los cambios aplican al reiniciar el servidor. Haz backup antes de modificar.</span>
+          </div>
+          <Button
+            onClick={handleSave}
+            size="sm"
+            className="bg-emerald-600 hover:bg-emerald-700 text-white gap-2"
+          >
+            <Play className="w-3.5 h-3.5" />
+            Guardar Configuración
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
   );
 }
