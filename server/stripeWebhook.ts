@@ -23,6 +23,7 @@ import { createNotification } from "./db";
 import { sendRecurringPaymentEmail, sendPaymentReceipt, sendVendorPaymentEmail } from "./_core/email";
 import { getVendorSettings } from "./db";
 import { dispatchWebhookEvent } from "./webhookDispatcher";
+import { contentAIEvents } from "./contentAIWebhook";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "", {
   apiVersion: "2026-02-25.clover",
@@ -219,6 +220,21 @@ export function registerStripeWebhook(app: express.Application) {
                 } catch (whErr) {
                   console.error("[Webhook] Error disparando webhooks salientes:", whErr);
                 }
+                // Notificar a ContentAI (Hub de Comando)
+                try {
+                  await contentAIEvents.checkoutCompleted({
+                    sessionId: pi.id,
+                    amount: parseFloat(String(link.amount)),
+                    currency: link.currency || "MXN",
+                    customerEmail: pi.metadata?.payerEmail || undefined,
+                    customerName: pi.metadata?.payerName || undefined,
+                    description: link.description || undefined,
+                    merchantId: userId,
+                    stripePaymentIntentId: pi.id,
+                  });
+                } catch (caiErr) {
+                  console.error("[ContentAI] Error notificando checkout.completed:", caiErr);
+                }
               }
             }
             break;
@@ -242,6 +258,16 @@ export function registerStripeWebhook(app: express.Application) {
                   cardBrand: undefined,
                   errorMessage: errorEs,
                 });
+                // Notificar a ContentAI
+                try {
+                  await contentAIEvents.paymentFailed({
+                    sessionId: pi.id,
+                    merchantId: userId,
+                    errorCode: failureCode,
+                    errorMessage: errorEs,
+                    customerEmail: pi.metadata?.payerEmail || undefined,
+                  });
+                } catch (_) {}
               }
             }
             break;
@@ -294,6 +320,17 @@ export function registerStripeWebhook(app: express.Application) {
                     title: `⚠️ Contracargo recibido: $${(dispute.amount / 100).toFixed(2)} ${dispute.currency.toUpperCase()}`,
                     message: `Motivo: ${reasonEs}. Tienes hasta el ${dueByDate} para responder con evidencia. Ve a Aclaraciones para gestionarlo.`,
                     actionUrl: '/dashboard/chargebacks',
+                  });
+                } catch (_) {}
+                // Notificar a ContentAI
+                try {
+                  await contentAIEvents.chargebackCreated({
+                    chargebackId: tx.id,
+                    transactionId: tx.id,
+                    amount: dispute.amount,
+                    currency: dispute.currency,
+                    reason: reasonEs,
+                    merchantId: tx.userId,
                   });
                 } catch (_) {}
                 // Agregar pagador a lista negra automáticamente

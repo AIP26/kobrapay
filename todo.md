@@ -1199,3 +1199,17 @@
 - [x] Agregar IPs de ContentAI/BrokerHub a la allowlist desde el panel
 - [x] Verificar flujo de pago completo en producción (checkout → Stripe → webhook)
 - [x] Confirmar que webhooks llegan a ContentAI y BrokerHub correctamente
+
+## Integración ContentAI IA — v2.1 (2026-03-22)
+- [ ] Guardar API key de ContentAI como secret seguro en el servidor
+- [ ] Router server/routers/contentAI.ts con 3 procedimientos: soporte, marketing, superadmin-chat
+- [ ] Asistente de Soporte IA para comerciantes (chat con contexto KobraPay)
+- [ ] Generador de Contenido de Marketing en dashboard del comerciante
+- [ ] Panel SuperAdmin exclusivo con asistente tipo Manus que ejecuta cambios vía ContentAI
+- [ ] Proteger API key de ContentAI en el servidor (nunca exponer al frontend)
+
+## Arquitectura Hub-Spoke: ContentAI como Centro de Comando (2026-03-22)
+- [ ] Remover superAdminAI de KobraPay (panel maestro vive en ContentAI)
+- [ ] Webhooks salientes a ContentAI en eventos: checkout.completed, payment.failed, refund.processed, subscription.created
+- [ ] Endpoint GET /api/v1/admin/stats autenticado con API key para ContentAI
+- [ ] Mantener solo soporte IA y generador de marketing en KobraPay (sin panel maestro)

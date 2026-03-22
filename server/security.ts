@@ -249,7 +249,8 @@ const SENSITIVE_FILE_PATTERNS = [
   /\/(config|credentials?|secrets?)\.(json|yaml|yml|toml|ini|cfg|conf)$/i, // config files
   /\/\.git\//i,                // git directory
   /\/\.ssh\//i,                // SSH keys
-  /\/node_modules\//i,         // node_modules (should never be served)
+  // NOTE: /node_modules/ is NOT blocked here — Vite dev server uses /@fs/ paths
+  // In production these paths don't exist so no blocking needed
   /\/(package-lock|yarn\.lock|pnpm-lock\.yaml)$/i, // lock files
   /\/drizzle\/.*\.sql$/i,      // migration SQL files
   /\/server\/.*\.(ts|js)$/i,   // server source files

@@ -98,6 +98,7 @@ import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { isSuperAdmin, protectedProcedure, publicProcedure, router } from "./_core/trpc";
 import { securityRouter } from "./routers/security";
+import { aiAssistantRouter } from "./routers/aiAssistant";
 import { apiKeysRouter } from "./routers/apiKeys";
 import { pricingRouter } from "./routers/pricing";
 import { notifyOwner } from "./_core/notification";
@@ -149,6 +150,7 @@ function calculateCommission(
 export const appRouter = router({
   system: systemRouter,
   security: securityRouter,
+  aiAssistant: aiAssistantRouter,
   apiKeys: apiKeysRouter,
   pricing: pricingRouter,
 

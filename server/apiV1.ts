@@ -644,7 +644,85 @@ export function registerApiV1Routes(app: Router) {
     }
   });
 
-  // ─── GET /api/v1/merchant — Info del merchant ─────────────────────────────
+  // ─── GET /api/v1/admin/stats — Métricas globales para ContentAI (Hub de Comando) ───────
+  // ContentAI llama este endpoint con su API key para obtener métricas en tiempo real
+  app.get("/api/v1/admin/stats", authenticateApiKey, async (req: any, res: any) => {
+    try {
+      const db = await getDb();
+      if (!db) return res.status(500).json({ error: "Error interno del servidor" });
+      const { users, transactions, subscriptions: subs, chargebacks, apiKeys: apiKeysTable } = await import("../drizzle/schema");
+      const { count, sum, sql: sqlExpr } = await import("drizzle-orm");
+
+      const now = new Date();
+      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+      // Conteos totales
+      const [totalUsersRow] = await db.select({ count: count() }).from(users);
+      const [totalTxRow] = await db.select({ count: count() }).from(transactions);
+      const [succeededTxRow] = await db
+        .select({ count: count(), total: sum(transactions.amount) })
+        .from(transactions)
+        .where(sqlExpr`${transactions.status} = 'succeeded'`);
+      const [failedTxRow] = await db
+        .select({ count: count() })
+        .from(transactions)
+        .where(sqlExpr`${transactions.status} = 'failed'`);
+      const [activeSubsRow] = await db
+        .select({ count: count() })
+        .from(subs)
+        .where(sqlExpr`${subs.status} = 'active'`);
+      const [openCbRow] = await db
+        .select({ count: count() })
+        .from(chargebacks)
+        .where(sqlExpr`${chargebacks.status} = 'open'`);
+      const [activeKeysRow] = await db
+        .select({ count: count() })
+        .from(apiKeysTable)
+        .where(sqlExpr`${apiKeysTable.isActive} = 1`);
+      const [monthTxRow] = await db
+        .select({ count: count(), total: sum(transactions.amount) })
+        .from(transactions)
+        .where(sqlExpr`${transactions.status} = 'succeeded' AND ${transactions.createdAt} >= ${startOfMonth}`);
+
+      const totalTx = Number(totalTxRow?.count || 0);
+      const succeededTx = Number(succeededTxRow?.count || 0);
+      const successRate = totalTx > 0 ? Math.round((succeededTx / totalTx) * 1000) / 10 : 0;
+
+      return res.json({
+        platform: "kobrapay",
+        generated_at: now.toISOString(),
+        overview: {
+          total_merchants: Number(totalUsersRow?.count || 0),
+          active_api_keys: Number(activeKeysRow?.count || 0),
+          active_subscriptions: Number(activeSubsRow?.count || 0),
+          open_chargebacks: Number(openCbRow?.count || 0),
+        },
+        transactions: {
+          total: totalTx,
+          succeeded: succeededTx,
+          failed: Number(failedTxRow?.count || 0),
+          success_rate_percent: successRate,
+          total_volume_mxn: parseFloat(String(succeededTxRow?.total || 0)),
+        },
+        current_month: {
+          transactions: Number(monthTxRow?.count || 0),
+          volume_mxn: parseFloat(String(monthTxRow?.total || 0)),
+          month: startOfMonth.toISOString().slice(0, 7),
+        },
+        health: {
+          status: "operational",
+          webhook_url: "https://www.aicontentlab.co/api/webhooks/kobrapay",
+          api_version: "v1",
+          environment: req.apiKey.environment,
+        },
+      });
+    } catch (err: any) {
+      console.error("[API v1] admin/stats error:", err);
+      return res.status(500).json({ error: err.message || "Error interno" });
+    }
+  });
+
+  // ─── GET /api/v1/merchant — Info del merchant ───────────────────────────────────────────────
   app.get("/api/v1/merchant", authenticateApiKey, async (req: any, res: any) => {
     try {
       const db = await getDb();
