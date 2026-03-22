@@ -30,6 +30,7 @@ export default function ApiKeys() {
   const [showCreate, setShowCreate] = useState(false);
   const [newKeyName, setNewKeyName] = useState("");
   const [newEnv, setNewEnv] = useState<"live" | "test">("live");
+  const [newPermissions, setNewPermissions] = useState<"checkout" | "read:stats" | "full">("checkout");
   const [generatedKey, setGeneratedKey] = useState<{ key: string; name: string; environment: string } | null>(null);
   const [revokeId, setRevokeId] = useState<number | null>(null);
   const [copied, setCopied] = useState(false);
@@ -286,7 +287,7 @@ header('Location: ' . $response['checkout_url']);`}
                 onChange={(e) => setNewKeyName(e.target.value)}
                 onKeyDown={(e) => {
                   if (e.key === "Enter" && newKeyName.trim()) {
-                    generate.mutate({ name: newKeyName.trim(), environment: newEnv });
+                    generate.mutate({ name: newKeyName.trim(), environment: newEnv, permissions: newPermissions });
                   }
                 }}
               />
@@ -312,13 +313,37 @@ header('Location: ' . $response['checkout_url']);`}
                 </Button>
               </div>
             </div>
+            <div className="space-y-2">
+              <Label>Permisos</Label>
+              <div className="flex flex-col gap-2">
+                {([
+                  { value: 'checkout', label: 'Checkout', desc: 'Crear pagos y links de cobro' },
+                  { value: 'read:stats', label: 'Leer Estadísticas', desc: 'Consultar métricas y reportes (para ContentAI)' },
+                  { value: 'full', label: 'Acceso Completo', desc: 'Checkout + estadísticas + webhooks' },
+                ] as const).map((p) => (
+                  <button
+                    key={p.value}
+                    type="button"
+                    onClick={() => setNewPermissions(p.value)}
+                    className={`text-left rounded-lg border px-3 py-2 text-sm transition-colors ${
+                      newPermissions === p.value
+                        ? 'border-primary bg-primary/5 text-primary'
+                        : 'border-border hover:border-primary/50'
+                    }`}
+                  >
+                    <span className="font-medium">{p.label}</span>
+                    <span className="text-muted-foreground ml-2 text-xs">{p.desc}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowCreate(false)}>
               Cancelar
             </Button>
             <Button
-              onClick={() => generate.mutate({ name: newKeyName.trim(), environment: newEnv })}
+              onClick={() => generate.mutate({ name: newKeyName.trim(), environment: newEnv, permissions: newPermissions })}
               disabled={!newKeyName.trim() || generate.isPending}
             >
               {generate.isPending ? "Generando..." : "Generar API Key"}

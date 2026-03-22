@@ -34,6 +34,7 @@ export const apiKeysRouter = router({
     .input(z.object({
       name: z.string().min(1).max(100),
       environment: z.enum(['live', 'test']).default('live'),
+      permissions: z.enum(['checkout', 'read:stats', 'full']).default('checkout'),
     }))
     .mutation(async ({ ctx, input }) => {
       const db = await getDb();
@@ -62,7 +63,7 @@ export const apiKeysRouter = router({
         keyHash,
         keyPrefix: prefix,
         environment: input.environment,
-        permissions: 'checkout',
+        permissions: input.permissions,
         isActive: true,
       });
 

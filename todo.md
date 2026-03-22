@@ -1219,3 +1219,16 @@
 - [x] Corregir error esbuild apiV1.ts línea 741 definitivamente
 - [x] Prueba de pago completo Stripe + webhook a ContentAI
 - [x] Checkpoint final y publicar
+
+## Próximos Pasos v2 (2026-03-22 - Fase 2)
+- [ ] Verificar Asistente IA en producción y corregir UI/UX
+- [ ] Implementar generación de API keys desde el dashboard con permisos granulares
+- [ ] Probar endpoint /api/v1/admin/stats con API key real generada desde el dashboard
+- [ ] Implementar receptor de webhooks en ContentAI para eventos de KobraPay
+- [ ] Tests y checkpoint final
+
+## Próximos Pasos v2 (2026-03-22)
+- [x] Probar Asistente IA en el dashboard (soporte y marketing) — 80/80 tests OK
+- [x] API Keys con selector de permisos granulares (checkout, read:stats, full)
+- [x] Generar API key read:stats para ContentAI — endpoint /api/v1/admin/stats activo
+- [x] Preparar código receptor de webhooks para ContentAI — archivo 08_WEBHOOK_RECEPTOR_CONTENTAI.md generado
