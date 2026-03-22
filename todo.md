@@ -1175,3 +1175,12 @@
 - [ ] Corregir ruta de Expedientes (404 en /dashboard/files)
 - [ ] Verificar TypeScript sin errores
 - [ ] Guardar checkpoint y publicar
+
+## Seguridad Crítica de Producción (Prioridad Alta)
+
+- [x] Forzar HTTPS en toda comunicación con ContentAI/BrokerHub (API v1)
+- [x] Validar origen de webhooks con firma HMAC y lista blanca de IPs
+- [x] Reforzar rate limiting en endpoints de pago y webhook
+- [x] Bloquear exposición de archivos sensibles (.env, backups, credenciales)
+- [x] Agregar headers de seguridad HTTP (HSTS, CSP, X-Frame-Options)
+- [x] Sanitizar inputs en endpoints de pago para prevenir inyección

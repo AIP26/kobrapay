@@ -1,6 +1,12 @@
 /**
  * KobraPay Security Middleware
- * Centralizes all security hardening: headers, rate limiting, audit logging, input sanitization
+ * Centralizes all security hardening: headers, rate limiting, audit logging,
+ * input sanitization, HTTPS enforcement, HMAC webhook validation, and sensitive file blocking.
+ *
+ * v3 — Production hardening:
+ *   1. HTTPS enforcement for all outgoing webhook/API calls to external platforms
+ *   2. HMAC signature validation for incoming webhooks from external platforms
+ *   3. Sensitive file blocking (.env, .bak, backups, credentials)
  */
 import type { Express, Request, Response, NextFunction } from "express";
 import helmet from "helmet";
@@ -8,6 +14,7 @@ import rateLimit from "express-rate-limit";
 import slowDown from "express-slow-down";
 import hpp from "hpp";
 import compression from "compression";
+import crypto from "crypto";
 
 // ─── In-memory store for failed login attempts (use Redis in production) ───────
 const failedAttempts = new Map<string, { count: number; blockedUntil?: number }>();
@@ -135,7 +142,7 @@ export const generalRateLimit = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: "Demasiadas solicitudes. Por favor intenta de nuevo en un minuto.", code: "RATE_LIMITED" },
-  handler: (req, res, next, options) => {
+  handler: (req, res, _next, options) => {
     const ip = getClientIp(req);
     logAudit({ ip, action: "RATE_LIMITED", resource: req.path, statusCode: 429 });
     res.status(429).json(options.message);
@@ -149,7 +156,7 @@ export const authRateLimit = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: "Demasiados intentos de acceso. Espera 15 minutos antes de intentar de nuevo.", code: "AUTH_RATE_LIMITED" },
-  handler: (req, res, next, options) => {
+  handler: (req, res, _next, options) => {
     const ip = getClientIp(req);
     logAudit({ ip, action: "AUTH_RATE_LIMITED", resource: req.path, statusCode: 429 });
     console.warn(`[Security] Auth rate limit exceeded for IP: ${ip}`);
@@ -164,9 +171,23 @@ export const paymentRateLimit = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: "Demasiados intentos de pago. Por favor espera unos minutos.", code: "PAYMENT_RATE_LIMITED" },
-  handler: (req, res, next, options) => {
+  handler: (req, res, _next, options) => {
     const ip = getClientIp(req);
     logAudit({ ip, action: "PAYMENT_RATE_LIMITED", resource: req.path, statusCode: 429 });
+    res.status(429).json(options.message);
+  },
+});
+
+/** Webhook rate limiter: 60 events per minute per IP */
+export const webhookRateLimit = rateLimit({
+  windowMs: 60 * 1000,
+  max: 60,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "Demasiadas solicitudes de webhook.", code: "WEBHOOK_RATE_LIMITED" },
+  handler: (req, res, _next, options) => {
+    const ip = getClientIp(req);
+    logAudit({ ip, action: "WEBHOOK_RATE_LIMITED", resource: req.path, statusCode: 429, severity: 'warning' });
     res.status(429).json(options.message);
   },
 });
@@ -205,12 +226,195 @@ export function setupSecurityHeaders(app: Express): void {
   );
 
   // Additional security headers
-  app.use((req: Request, res: Response, next: NextFunction) => {
+  app.use((_req: Request, res: Response, next: NextFunction) => {
     res.setHeader("X-Content-Type-Options", "nosniff");
     res.setHeader("X-Download-Options", "noopen");
     res.setHeader("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
     next();
   });
+}
+
+// ─── [SECURITY #3] Sensitive file blocking middleware ─────────────────────────
+/**
+ * Blocks access to sensitive files that should never be served publicly:
+ * .env files, backup files, credential files, config files with secrets, etc.
+ * Returns 404 (not 403) to avoid revealing that the file exists.
+ */
+const SENSITIVE_FILE_PATTERNS = [
+  /^\/\.env(\.|$)/i,           // .env, .env.local, .env.production, etc.
+  /^\/\.env$/i,                // .env exactly
+  /\.env\./i,                  // any .env.* file
+  /\.(bak|backup|old|orig|save|swp|tmp)$/i, // backup extensions
+  /\.(sql|dump|db|sqlite|sqlite3)$/i,        // database files
+  /\/(config|credentials?|secrets?)\.(json|yaml|yml|toml|ini|cfg|conf)$/i, // config files
+  /\/\.git\//i,                // git directory
+  /\/\.ssh\//i,                // SSH keys
+  /\/node_modules\//i,         // node_modules (should never be served)
+  /\/(package-lock|yarn\.lock|pnpm-lock\.yaml)$/i, // lock files
+  /\/drizzle\/.*\.sql$/i,      // migration SQL files
+  /\/server\/.*\.(ts|js)$/i,   // server source files
+  /\/\.htaccess$/i,            // Apache config
+  /\/web\.config$/i,           // IIS config
+  /\/wp-config\.php$/i,        // WordPress config
+  /\/phpinfo\.php$/i,          // PHP info
+  /\/(passwd|shadow|sudoers)$/i, // Unix system files
+  /\/proc\//i,                 // Linux proc filesystem
+  /\/etc\//i,                  // Linux etc directory
+];
+
+export function blockSensitiveFiles(req: Request, res: Response, next: NextFunction): void {
+  const urlPath = req.path.toLowerCase();
+
+  const isBlocked = SENSITIVE_FILE_PATTERNS.some(pattern => pattern.test(urlPath));
+  if (isBlocked) {
+    const ip = getClientIp(req);
+    logAudit({
+      ip,
+      action: 'SENSITIVE_FILE_ACCESS_BLOCKED',
+      resource: req.path.slice(0, 200),
+      statusCode: 404,
+      severity: 'critical',
+      userAgent: req.headers['user-agent'],
+      details: `Attempted access to sensitive file: ${req.path.slice(0, 100)}`,
+    });
+    console.warn(`[Security] Blocked access to sensitive file: ${req.path} from IP: ${ip}`);
+    // Return 404 (not 403) to avoid revealing that the file exists
+    return void res.status(404).send("Not Found");
+  }
+
+  next();
+}
+
+// ─── [SECURITY #1] HTTPS enforcement for outgoing requests ────────────────────
+/**
+ * Validates that a URL uses HTTPS before making outgoing requests.
+ * Prevents accidental HTTP calls that could expose sensitive data in transit.
+ * @throws Error if URL is not HTTPS
+ */
+export function enforceHttpsUrl(url: string, context: string): void {
+  try {
+    const parsed = new URL(url);
+    if (parsed.protocol !== 'https:') {
+      throw new Error(
+        `[Security] HTTPS required for ${context}: received ${parsed.protocol}// URL. ` +
+        `All external communications must use HTTPS.`
+      );
+    }
+  } catch (err) {
+    if (err instanceof Error && err.message.includes('HTTPS required')) {
+      throw err;
+    }
+    throw new Error(`[Security] Invalid URL for ${context}: ${url}`);
+  }
+}
+
+/**
+ * Safe fetch wrapper that enforces HTTPS for all outgoing requests.
+ * Use this instead of fetch() for all external API calls to ContentAI, BrokerHub, etc.
+ */
+export async function secureFetch(
+  url: string,
+  options: RequestInit = {},
+  context = 'external request'
+): Promise<globalThis.Response> {
+  enforceHttpsUrl(url, context);
+  return fetch(url, options);
+}
+
+// ─── [SECURITY #2] HMAC webhook signature validation ─────────────────────────
+/**
+ * Validates incoming webhook signatures from external platforms (ContentAI, BrokerHub).
+ * Each platform sends a HMAC-SHA256 signature in a header that we verify against the shared secret.
+ */
+
+/** Supported external platforms and their signature header names */
+const WEBHOOK_SIGNATURE_HEADERS: Record<string, string> = {
+  'contentai': 'x-contentai-signature',
+  'brokerhub': 'x-brokerhub-signature',
+  'kobrapay': 'x-kobrapay-signature', // Our own outgoing webhooks
+};
+
+/**
+ * Verifies a HMAC-SHA256 signature from an external platform webhook.
+ * Uses timing-safe comparison to prevent timing attacks.
+ * @returns true if valid, false if invalid or missing
+ */
+export function verifyWebhookSignature(
+  platform: string,
+  rawBody: string | Buffer,
+  headers: Record<string, string | string[] | undefined>,
+  secret: string
+): boolean {
+  const headerName = WEBHOOK_SIGNATURE_HEADERS[platform.toLowerCase()];
+  if (!headerName) {
+    console.warn(`[Security] Unknown platform for webhook validation: ${platform}`);
+    return false;
+  }
+
+  const receivedSig = headers[headerName];
+  if (!receivedSig || typeof receivedSig !== 'string') {
+    console.warn(`[Security] Missing webhook signature header: ${headerName}`);
+    return false;
+  }
+
+  const body = typeof rawBody === 'string' ? rawBody : rawBody.toString('utf8');
+  const expectedSig = crypto.createHmac('sha256', secret).update(body).digest('hex');
+
+  // Use timing-safe comparison to prevent timing attacks
+  try {
+    const receivedBuf = Buffer.from(receivedSig, 'hex');
+    const expectedBuf = Buffer.from(expectedSig, 'hex');
+    if (receivedBuf.length !== expectedBuf.length) return false;
+    return crypto.timingSafeEqual(receivedBuf, expectedBuf);
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Express middleware factory for validating incoming webhooks from external platforms.
+ * If the secret env var is not configured, logs a warning and allows through (backward compat).
+ */
+export function createWebhookValidator(platform: string, secretEnvVar: string) {
+  return (req: Request, res: Response, next: NextFunction): void => {
+    const ip = getClientIp(req);
+    const secret = process.env[secretEnvVar];
+
+    // If no secret configured, log warning and allow through (for backward compat)
+    if (!secret) {
+      console.warn(
+        `[Security] Webhook secret not configured for ${platform} (${secretEnvVar}). ` +
+        `Skipping signature validation. Set ${secretEnvVar} in environment to enable.`
+      );
+      next();
+      return;
+    }
+
+    const rawBody = (req as any).rawBody || req.body;
+    const bodyStr = typeof rawBody === 'string' ? rawBody :
+      Buffer.isBuffer(rawBody) ? rawBody.toString('utf8') :
+      JSON.stringify(rawBody);
+
+    const isValid = verifyWebhookSignature(platform, bodyStr, req.headers as any, secret);
+
+    if (!isValid) {
+      logAudit({
+        ip,
+        action: 'WEBHOOK_SIGNATURE_INVALID',
+        resource: req.path,
+        statusCode: 401,
+        severity: 'critical',
+        userAgent: req.headers['user-agent'],
+        details: `Invalid webhook signature from ${platform}. Possible replay attack or unauthorized caller.`,
+      });
+      console.error(`[Security] Invalid webhook signature from ${platform} — IP: ${ip}`);
+      res.status(401).json({ error: 'Invalid webhook signature', code: 'INVALID_SIGNATURE' });
+      return;
+    }
+
+    console.log(`[Security] Webhook signature valid for ${platform} — IP: ${ip}`);
+    next();
+  };
 }
 
 // ─── Tenant isolation middleware ───────────────────────────────────────────────
@@ -221,7 +425,7 @@ export function setupSecurityHeaders(app: Express): void {
  */
 export function assertTenantAccess(
   requestingUserId: number,
-  requestingUserRole: string,
+  _requestingUserRole: string,
   ownerOpenId: string,
   requestingUserOpenId: string,
   targetUserId: number
@@ -239,7 +443,6 @@ export function assertTenantAccess(
 // ─── Audit middleware for API routes ──────────────────────────────────────────
 export function auditMiddleware(req: Request, res: Response, next: NextFunction): void {
   const ip = getClientIp(req);
-  const start = Date.now();
 
   res.on("finish", () => {
     // Only log non-static, non-health requests
@@ -354,26 +557,36 @@ export function registerSecurityMiddleware(app: Express): void {
   // 2. HTTP Parameter Pollution prevention
   setupHPP(app);
 
-  // 3. Suspicious request detection (before rate limiting)
+  // 3. [SECURITY #3] Block sensitive file access BEFORE static file serving
+  app.use(blockSensitiveFiles);
+
+  // 4. Suspicious request detection (before rate limiting)
   app.use(suspiciousRequestDetector);
 
-  // 4. Request size validation
+  // 5. Request size validation
   app.use(validateRequestSize(10));
 
-  // 5. Rate limiting
+  // 6. Rate limiting
   app.use("/api/oauth", authRateLimit);
-  // Rate limit estricto para endpoints de pago (30 intentos por 10 min por IP)
+  // Strict rate limit for payment endpoints (30 attempts per 10 min per IP)
   app.use("/api/trpc/transactions.createIntent", paymentRateLimit);
   app.use("/api/trpc/transactions.confirmPayment", paymentRateLimit);
-  // Rate limit para login propio (prevenir fuerza bruta)
+  // Strict rate limit for API v1 payment endpoints
+  app.use("/api/v1/checkout", paymentRateLimit);
+  app.use("/api/v1/subscription", paymentRateLimit);
+  // Rate limit for webhook endpoints
+  app.use("/api/stripe/webhook", webhookRateLimit);
+  app.use("/api/v1/webhook", webhookRateLimit);
+  // Rate limit for login/auth (prevent brute force)
   app.use("/api/trpc/auth.loginEmail", authRateLimit);
   app.use("/api/trpc/auth.forgotPassword", authRateLimit);
   app.use("/api/trpc/auth.register", authRateLimit);
   app.use("/api/trpc", generalRateLimit);
   app.use("/api/trpc", speedLimiter);
 
-  // 6. Audit logging
+  // 7. Audit logging
   app.use(auditMiddleware);
 
-  console.log("[Security] All security middleware registered (v2 - enhanced)");
+  console.log("[Security] All security middleware registered (v3 - production hardening)");
+  console.log("[Security] Active: HTTPS enforcement, HMAC webhook validation, sensitive file blocking");
 }

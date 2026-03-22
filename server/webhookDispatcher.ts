@@ -5,6 +5,7 @@
  */
 
 import crypto from "crypto";
+import { enforceHttpsUrl } from "./security";
 
 export type WebhookEventType =
   | "payment.success"
@@ -32,6 +33,15 @@ async function deliverWebhook(
   secret: string,
   payload: WebhookPayload
 ): Promise<{ success: boolean; statusCode: number | null; responseBody: string }> {
+  // [SECURITY #1] Enforce HTTPS for all outgoing webhook deliveries
+  try {
+    enforceHttpsUrl(url, `webhook delivery #${webhookId}`);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error(`[WebhookDispatcher] Blocked non-HTTPS webhook URL: ${url} — ${message}`);
+    return { success: false, statusCode: null, responseBody: `Error: HTTPS required. Non-HTTPS URLs are blocked for security.` };
+  }
+
   const body = JSON.stringify(payload);
   const signature = generateSignature(secret, body);
 
