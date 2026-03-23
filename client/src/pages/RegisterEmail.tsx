@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { toast } from "sonner";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Eye, EyeOff, Lock, Mail, User, ArrowLeft, CheckCircle } from "lucide-react";
 
 const KOBRAPAY_LOGO = "https://d2xsxph8kpxj0f.cloudfront.net/310519663381362445/Tm7GPbTEGgvmgj5v2qy4Z4/kobrapay_logo_correct_48f396eb.png";
@@ -18,6 +19,7 @@ export default function RegisterEmail() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [registered, setRegistered] = useState(false);
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
 
   const registerMutation = trpc.auth.register.useMutation({
     onSuccess: () => {
@@ -41,6 +43,10 @@ export default function RegisterEmail() {
     }
     if (password.length < 8) {
       toast.error("La contraseña debe tener al menos 8 caracteres");
+      return;
+    }
+    if (!acceptedTerms) {
+      toast.error("Debes aceptar los Términos y Condiciones para continuar");
       return;
     }
     registerMutation.mutate({ name, email, password });
@@ -176,10 +182,26 @@ export default function RegisterEmail() {
                 </div>
               </div>
 
+              {/* Aceptar términos y condiciones */}
+              <div className="flex items-start gap-3 pt-1">
+                <Checkbox
+                  id="terms"
+                  checked={acceptedTerms}
+                  onCheckedChange={(v) => setAcceptedTerms(!!v)}
+                  className="mt-0.5 border-gray-300 data-[state=checked]:bg-emerald-600 data-[state=checked]:border-emerald-600"
+                />
+                <label htmlFor="terms" className="text-xs text-gray-600 leading-relaxed cursor-pointer">
+                  He leído y acepto los{" "}
+                  <Link href="/terminos" className="text-emerald-600 hover:underline font-medium" target="_blank">Términos y Condiciones</Link>
+                  {" "}y el{" "}
+                  <Link href="/privacidad" className="text-emerald-600 hover:underline font-medium" target="_blank">Aviso de Privacidad</Link>
+                  {" "}de KobraPay.
+                </label>
+              </div>
               <Button
                 type="submit"
-                disabled={registerMutation.isPending}
-                className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-2.5 mt-2 h-12"
+                disabled={registerMutation.isPending || !acceptedTerms}
+                className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-2.5 mt-2 h-12 disabled:opacity-50"
               >
                 {registerMutation.isPending ? "Creando cuenta..." : "Crear cuenta gratis"}
               </Button>

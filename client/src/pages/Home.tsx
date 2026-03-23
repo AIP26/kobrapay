@@ -14,6 +14,9 @@ import {
   RefreshCw,
   MonitorSmartphone,
   CheckCircle2,
+  Mail,
+  Phone,
+  CheckCircle,
 } from "lucide-react";
 import { Link } from "wouter";
 import { useState } from "react";
@@ -563,12 +566,36 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-background">
+      {/* Barra de contacto superior */}
+      <div className="bg-emerald-700 text-white text-xs py-1.5 hidden md:block">
+        <div className="container flex items-center justify-between">
+          <div className="flex items-center gap-5">
+            <a href="mailto:soporte@kobrapay.mx" className="flex items-center gap-1.5 hover:text-emerald-100 transition-colors">
+              <Mail className="w-3 h-3" />
+              soporte@kobrapay.mx
+            </a>
+            <a href="tel:+528005627279" className="flex items-center gap-1.5 hover:text-emerald-100 transition-colors">
+              <Phone className="w-3 h-3" />
+              800-562-7279
+            </a>
+          </div>
+          <div className="flex items-center gap-1.5 text-emerald-100">
+            <Shield className="w-3 h-3" />
+            Pagos seguros con SSL 256-bit · PCI DSS Nivel 1
+          </div>
+        </div>
+      </div>
       {/* Header */}
       <header className="border-b border-border bg-background/95 backdrop-blur-sm sticky top-0 z-40">
         <div className="container flex items-center justify-between h-16">
           <div className="flex items-center">
             <img src={KOBRAPAY_LOGO} alt="KobraPay" className="h-11 w-auto object-contain" />
           </div>
+          <nav className="hidden md:flex items-center gap-6 text-sm text-muted-foreground">
+            <a href="#simulador" className="hover:text-foreground transition-colors">Comisiones</a>
+            <a href="#caracteristicas" className="hover:text-foreground transition-colors">Características</a>
+            <Link href="/legal" className="hover:text-foreground transition-colors">Legal</Link>
+          </nav>
           <div className="flex items-center gap-3">
             {!loading && (
               isAuthenticated ? (
@@ -916,25 +943,79 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="border-t border-border py-8 bg-background">
-        <div className="container flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
-            <img src={KOBRAPAY_ICON} alt="KobraPay" className="w-6 h-6 object-contain" />
-            <span className="font-semibold text-foreground text-sm">KobraPay</span>
+      {/* Footer mejorado */}
+      <footer className="border-t border-border bg-background">
+        <div className="container py-12">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
+            <div className="md:col-span-2">
+              <div className="flex items-center gap-2 mb-3">
+                <img src={KOBRAPAY_ICON} alt="KobraPay" className="w-7 h-7 object-contain" />
+                <span className="font-bold text-foreground text-lg">KobraPay</span>
+              </div>
+              <p className="text-muted-foreground text-sm leading-relaxed mb-4 max-w-xs">
+                La plataforma de cobros digitales más completa de México. Genera enlaces de pago, cobra con tarjeta, OXXO y SPEI desde cualquier dispositivo.
+              </p>
+              <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                <div className="flex items-center gap-1">
+                  <Shield className="w-3.5 h-3.5 text-emerald-500" />
+                  SSL 256-bit
+                </div>
+                <div className="flex items-center gap-1">
+                  <CheckCircle className="w-3.5 h-3.5 text-emerald-500" />
+                  PCI DSS
+                </div>
+                <div className="flex items-center gap-1">
+                  <Zap className="w-3.5 h-3.5 text-yellow-500" />
+                  Stripe Certified
+                </div>
+              </div>
+            </div>
+            <div>
+              <h4 className="font-semibold text-foreground text-sm mb-3">Plataforma</h4>
+              <ul className="space-y-2 text-sm text-muted-foreground">
+                <li><Link href="/register" className="hover:text-foreground transition-colors">Crear cuenta gratis</Link></li>
+                <li><Link href="/login" className="hover:text-foreground transition-colors">Iniciar sesión</Link></li>
+                <li><a href="#simulador" className="hover:text-foreground transition-colors">Calculador de comisiones</a></li>
+                <li><a href="#caracteristicas" className="hover:text-foreground transition-colors">Características</a></li>
+              </ul>
+            </div>
+            <div>
+              <h4 className="font-semibold text-foreground text-sm mb-3">Contacto</h4>
+              <ul className="space-y-2 text-sm text-muted-foreground">
+                <li>
+                  <a href="mailto:soporte@kobrapay.mx" className="hover:text-foreground transition-colors flex items-center gap-1.5">
+                    <Mail className="w-3.5 h-3.5" />
+                    soporte@kobrapay.mx
+                  </a>
+                </li>
+                <li>
+                  <a href="mailto:ventas@kobrapay.mx" className="hover:text-foreground transition-colors flex items-center gap-1.5">
+                    <Mail className="w-3.5 h-3.5" />
+                    ventas@kobrapay.mx
+                  </a>
+                </li>
+                <li>
+                  <a href="tel:+528005627279" className="hover:text-foreground transition-colors flex items-center gap-1.5">
+                    <Phone className="w-3.5 h-3.5" />
+                    800-562-7279
+                  </a>
+                </li>
+                <li>
+                  <Link href="/legal" className="hover:text-foreground transition-colors flex items-center gap-1.5">
+                    <FileText className="w-3.5 h-3.5" />
+                    Términos y Privacidad
+                  </Link>
+                </li>
+              </ul>
+            </div>
           </div>
-          <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
-            <Shield className="w-3.5 h-3.5" />
-            Pagos procesados con Stripe · SSL 256-bit cifrado
-          </div>
-          <div className="flex items-center gap-3 text-sm text-muted-foreground">
-            <span>© 2026 KobraPay</span>
-            <span>·</span>
-            <Link href="/terminos" className="hover:text-foreground transition-colors">Términos de Uso</Link>
-            <span>·</span>
-            <Link href="/privacidad" className="hover:text-foreground transition-colors">Privacidad</Link>
-            <span>·</span>
-{/* <Link href="/register-associate" className="hover:text-cyan-600 transition-colors">Programa de Asociados</Link> */}
+          <div className="border-t border-border pt-6 flex flex-col sm:flex-row items-center justify-between gap-3">
+            <p className="text-xs text-muted-foreground">© 2026 KobraPay. Todos los derechos reservados. Ciudad de México, México.</p>
+            <div className="flex items-center gap-4 text-xs text-muted-foreground">
+              <Link href="/terminos" className="hover:text-foreground transition-colors">Términos de Uso</Link>
+              <Link href="/privacidad" className="hover:text-foreground transition-colors">Aviso de Privacidad</Link>
+              <Link href="/legal" className="hover:text-foreground transition-colors">Legal</Link>
+            </div>
           </div>
         </div>
       </footer>

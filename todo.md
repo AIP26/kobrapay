@@ -1248,3 +1248,18 @@
 - [x] Estado del Sistema agregado al sidebar en Herramientas
 - [x] TypeScript: 0 errores
 - [x] Servidor: HTTP 200 OK
+
+## Sesión 2026-03-23 — Preparación para Lanzamiento
+
+- [x] Auditoría completa del estado de producción kobrapay.mx
+- [x] Confirmar que apiV1.ts compila sin errores (esbuild 0.25.10)
+- [x] Diagnosticar error PendingReminder (ECONNRESET no crítico — auto-reconexión)
+- [x] Agregar checkbox de aceptación de Términos y Condiciones en RegisterEmail.tsx
+- [x] Botón "Crear cuenta" deshabilitado hasta aceptar términos
+- [x] Barra de contacto superior en Home (email + teléfono 800-562-7279)
+- [x] Navegación mejorada en header (Comisiones, Características, Legal)
+- [x] Footer completo con 4 columnas: descripción, plataforma, contacto, legal
+- [x] Verificar producción: todos los endpoints HTTP 200/400/401 correctos
+- [x] Verificar Stripe webhook rechaza firmas inválidas (comportamiento correcto)
+- [x] Confirmar 5 usuarios registrados en producción
+- [x] Tests: 80/80 pasando
