@@ -155,7 +155,7 @@ export default function Welcome() {
             {markWelcomeShown.isPending ? "Cargando..." : "Ir a mi panel →"}
           </Button>
           <p className="text-slate-500 text-xs mt-3">
-            ¿Tienes dudas? Escríbenos a soporte@kobrapay.mx
+            ¿Tienes dudas? Escríbenos a soporte@kobrapay.mx o escríbenos al <a href="https://wa.me/17869216543" target="_blank" rel="noopener noreferrer" className="text-emerald-400 hover:underline">+1 (786) 921-6543</a>
           </p>
         </div>
       </div>

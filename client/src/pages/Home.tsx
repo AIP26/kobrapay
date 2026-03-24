@@ -574,9 +574,9 @@ export default function Home() {
               <Mail className="w-3 h-3" />
               soporte@kobrapay.mx
             </a>
-            <a href="tel:+528005627279" className="flex items-center gap-1.5 hover:text-emerald-100 transition-colors">
+            <a href="tel:+17869216543" className="flex items-center gap-1.5 hover:text-emerald-100 transition-colors">
               <Phone className="w-3 h-3" />
-              800-562-7279
+              +1 (786) 921-6543
             </a>
           </div>
           <div className="flex items-center gap-1.5 text-emerald-100">
@@ -995,9 +995,9 @@ export default function Home() {
                   </a>
                 </li>
                 <li>
-                  <a href="tel:+528005627279" className="hover:text-foreground transition-colors flex items-center gap-1.5">
+                  <a href="tel:+17869216543" className="hover:text-foreground transition-colors flex items-center gap-1.5">
                     <Phone className="w-3.5 h-3.5" />
-                    800-562-7279
+                    +1 (786) 921-6543
                   </a>
                 </li>
                 <li>

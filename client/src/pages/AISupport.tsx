@@ -227,7 +227,7 @@ export default function AISupport() {
         {/* Footer info */}
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
           <HelpCircle className="w-3.5 h-3.5" />
-          <span>Para soporte humano urgente escribe a <strong>soporte@kobrapay.mx</strong> o llama al <strong>800-KOBRAPAY</strong></span>
+          <span>Para soporte humano urgente escribe a <strong>soporte@kobrapay.mx</strong> o escríbenos por WhatsApp al <a href="https://wa.me/17869216543" target="_blank" rel="noopener noreferrer" className="text-emerald-400 hover:underline"><strong>+1 (786) 921-6543</strong></a></span>
         </div>
       </div>
     </DashboardLayout>
