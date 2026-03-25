@@ -473,7 +473,7 @@ export default function CommissionsPanel() {
             {/* Clientes activos */}
             {drillDown === "clientes" && (
               <>
-                <div className="grid grid-cols-3 gap-3 mb-4">
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-4">
                   <div className="bg-green-50 rounded-xl p-3 text-center">
                     <p className="text-xs text-green-600 font-medium">Activos</p>
                     <p className="text-xl font-bold text-green-700 mt-1">{clients.filter(c => c.status === "active").length}</p>

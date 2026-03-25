@@ -136,7 +136,7 @@ function AssistantPanelInner() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-3 gap-4 mb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
         <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 text-center">
           <p className="text-2xl font-bold text-yellow-700">{pending.length}</p>
           <p className="text-xs text-yellow-600 mt-1">Pendientes de revisión</p>

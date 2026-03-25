@@ -134,7 +134,7 @@ export default function KobraScorePage() {
         </div>
 
         {/* Métricas resumen */}
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div className="bg-white rounded-xl border border-gray-200 p-4 text-center">
             <div className="flex items-center justify-center gap-2 mb-1">
               <TrendingUp className="w-4 h-4 text-blue-500" />
@@ -252,7 +252,7 @@ export default function KobraScorePage() {
         {/* Leyenda */}
         <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
           <p className="text-xs font-semibold text-muted-foreground mb-3">Escala de KobraScore</p>
-          <div className="grid grid-cols-5 gap-2 text-center">
+          <div className="grid grid-cols-3 sm:grid-cols-5 gap-2 text-center">
             {[
               { label: "Nuevo", range: "0–24", color: "#6b7280" },
               { label: "Bajo", range: "25–44", color: "#f97316" },

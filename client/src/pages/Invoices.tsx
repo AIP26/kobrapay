@@ -215,7 +215,7 @@ export default function Invoices() {
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           {[
             { label: "Total facturas", value: invoices.length, color: "text-foreground" },
             { label: "Pagadas", value: invoices.filter(i => i.status === "paid").length, color: "text-green-600" },

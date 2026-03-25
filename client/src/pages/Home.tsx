@@ -673,7 +673,7 @@ export default function Home() {
       {/* Hero split-screen */}
       <section className="min-h-[calc(100vh-64px)] grid lg:grid-cols-2">
         {/* Izquierda: texto de bienvenida */}
-        <div className="flex flex-col justify-center items-center px-8 lg:px-14 py-12 relative overflow-hidden">
+        <div className="flex flex-col justify-center items-center px-4 sm:px-8 lg:px-14 py-10 sm:py-12 relative overflow-hidden">
           <div className="absolute inset-0 pointer-events-none">
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] bg-emerald-500/6 rounded-full blur-3xl" />
           </div>
@@ -695,7 +695,7 @@ export default function Home() {
             <p className="text-sm text-muted-foreground mb-5 leading-relaxed">
               Genera un enlace de pago, compártelo por WhatsApp y recibe el dinero. Sin hardware, sin contratos, sin mensualidad. Solo pagas cuando cobras.
             </p>
-            <div className="flex items-center gap-4 mb-6">
+            <div className="flex items-center gap-2 sm:gap-4 mb-6 flex-wrap">
               <div className="text-center">
                 <p className="text-xl font-black text-foreground">{expressRate}% + IVA*</p>
                 <p className="text-xs text-muted-foreground">Plan Beta — sin mensualidad</p>
@@ -736,7 +736,7 @@ export default function Home() {
         </div>
 
         {/* Derecha: card con tabs Acceso / Registrar */}
-        <div className="flex flex-col justify-center items-center px-6 lg:px-12 py-8 lg:py-12 bg-muted/40 border-t lg:border-t-0 lg:border-l border-border">
+        <div className="flex flex-col justify-center items-center px-4 sm:px-6 lg:px-12 py-8 lg:py-12 bg-muted/40 border-t lg:border-t-0 lg:border-l border-border">
           <div className="w-full max-w-sm">
             <div className="bg-card border border-border rounded-2xl overflow-hidden shadow-xl">
               {/* Tabs funcionales */}
@@ -952,7 +952,7 @@ export default function Home() {
             </Button>
             */}
           </div>
-          <div className="mt-8 flex items-center justify-center gap-6 text-xs text-muted-foreground">
+          <div className="mt-8 flex flex-wrap items-center justify-center gap-3 sm:gap-6 text-xs text-muted-foreground">
             <span className="flex items-center gap-1.5"><CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" /> Sin mensualidad</span>
             <span className="flex items-center gap-1.5"><CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" /> Aprobación en 24h</span>
             <span className="flex items-center gap-1.5"><CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" /> Soporte en español</span>

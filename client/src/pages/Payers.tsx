@@ -88,7 +88,7 @@ function PayerDetail({ payer, onClose }: { payer: Payer; onClose: () => void }) 
         </DialogHeader>
 
         {/* Stats */}
-        <div className="grid grid-cols-3 gap-3 mt-2">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mt-2">
           <div className="bg-green-50 rounded-xl p-3 text-center">
             <p className="text-xs text-green-600 font-medium">Total pagado</p>
             <p className="text-lg font-bold text-green-700">{formatCurrency(payer.totalPaid)}</p>
@@ -219,7 +219,7 @@ export default function Payers() {
     <DashboardLayout title="Mis Pagadores">
       <div className="space-y-5">
         {/* Stats */}
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <Card className="border-gray-200 shadow-sm">
             <CardContent className="p-4">
               <div className="flex items-center justify-between">

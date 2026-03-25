@@ -139,7 +139,7 @@ export default function SalesAgents() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-3 gap-4 mb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
         <div className="bg-white rounded-xl border border-gray-200 p-4">
           <p className="text-xs text-muted-foreground uppercase font-semibold mb-1">Total Vendedores</p>
           <p className="text-2xl font-bold text-foreground">{agents.length}</p>

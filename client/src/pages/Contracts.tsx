@@ -808,7 +808,7 @@ export default function Contracts() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
         {(["draft", "sent", "signed", "archived"] as ContractStatus[]).map(status => {
           const count = stats[status];
           const { label, color } = STATUS_LABELS[status];
@@ -1033,7 +1033,7 @@ export default function Contracts() {
             </div>
           </div>
 
-          <div className="grid grid-cols-3 gap-4 text-sm">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
             <div><span className="text-muted-foreground">Email:</span> <span className="font-medium">{selectedContractData.clientEmail}</span></div>
             <div><span className="text-muted-foreground">Teléfono:</span> <span className="font-medium">{selectedContractData.clientPhone || "—"}</span></div>
             <div><span className="text-muted-foreground">RFC:</span> <span className="font-medium">{selectedContractData.clientRfc || "—"}</span></div>
