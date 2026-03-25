@@ -17,6 +17,7 @@ import {
   Mail,
   Phone,
   CheckCircle,
+  Menu,
 } from "lucide-react";
 import { Link } from "wouter";
 import { useState } from "react";
@@ -543,6 +544,7 @@ export default function Home() {
   const { isAuthenticated, loading } = useAuth();
   const [activeFeature, setActiveFeature] = useState<typeof FEATURES[0] | null>(null);
   const [activeTab, setActiveTab] = useState<"acceso" | "registrar">("acceso");
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { data: dbPlans } = trpc.pricing.getAll.useQuery();
   // Usar planes de la BD si están disponibles, sino usar los hardcodeados como fallback
   const activeTiers = (dbPlans && dbPlans.length > 0)
@@ -597,6 +599,14 @@ export default function Home() {
             <Link href="/legal" className="hover:text-foreground transition-colors">Legal</Link>
           </nav>
           <div className="flex items-center gap-3">
+            {/* Botón hamburguesa solo en móvil */}
+            <button
+              className="md:hidden p-2 text-muted-foreground hover:text-foreground transition-colors"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              aria-label="Menú"
+            >
+              {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+            </button>
             {!loading && (
               isAuthenticated ? (
                 <Button asChild className="bg-emerald-500 hover:bg-emerald-400 text-foreground">
@@ -615,6 +625,49 @@ export default function Home() {
             )}
           </div>
         </div>
+        {/* Menú móvil desplegable */}
+        {mobileMenuOpen && (
+          <div className="md:hidden border-t border-border bg-background/98 backdrop-blur-sm">
+            <nav className="container py-4 flex flex-col gap-1">
+              <a
+                href="#caracteristicas"
+                onClick={() => setMobileMenuOpen(false)}
+                className="px-3 py-2.5 text-sm text-muted-foreground hover:text-foreground hover:bg-accent rounded-lg transition-colors"
+              >
+                Características
+              </a>
+              <a
+                href="#simulador"
+                onClick={() => setMobileMenuOpen(false)}
+                className="px-3 py-2.5 text-sm text-muted-foreground hover:text-foreground hover:bg-accent rounded-lg transition-colors"
+              >
+                Comisiones
+              </a>
+              <a
+                href="#faq"
+                onClick={() => setMobileMenuOpen(false)}
+                className="px-3 py-2.5 text-sm text-muted-foreground hover:text-foreground hover:bg-accent rounded-lg transition-colors"
+              >
+                Preguntas Frecuentes
+              </a>
+              <Link
+                href="/legal"
+                onClick={() => setMobileMenuOpen(false)}
+                className="px-3 py-2.5 text-sm text-muted-foreground hover:text-foreground hover:bg-accent rounded-lg transition-colors"
+              >
+                Legal
+              </Link>
+              <div className="border-t border-border mt-2 pt-3 flex flex-col gap-2">
+                <Link href="/login" className="px-3 py-2.5 text-sm text-muted-foreground hover:text-foreground hover:bg-accent rounded-lg transition-colors">
+                  Iniciar sesión
+                </Link>
+                <Link href="/register" className="px-3 py-2.5 text-sm bg-emerald-500 hover:bg-emerald-400 text-foreground font-semibold rounded-lg transition-colors text-center">
+                  Crear cuenta gratis
+                </Link>
+              </div>
+            </nav>
+          </div>
+        )}
       </header>
 
       {/* Hero split-screen */}
@@ -817,7 +870,7 @@ export default function Home() {
       </section>
 
       {/* Features interactivas */}
-      <section className="py-20 border-t border-border">
+      <section id="caracteristicas" className="py-20 border-t border-border">
         <div className="container">
           <div className="text-center mb-12">
             <h2 className="text-2xl lg:text-3xl font-bold text-foreground mb-3">Todo lo que necesitas para cobrar</h2>
@@ -859,7 +912,7 @@ export default function Home() {
       </section>
 
       {/* FAQ */}
-      <section className="py-20 border-t border-border">
+      <section id="faq" className="py-20 border-t border-border">
         <div className="container max-w-3xl mx-auto">
           <div className="text-center mb-12">
             <span className="text-xs font-semibold tracking-widest text-emerald-400 uppercase">Preguntas Frecuentes</span>

@@ -1270,3 +1270,36 @@
 - [ ] Agregar sourcePlatform dinámico al crear suscripciones (selector de plataforma)
 - [ ] Registrar ContentAI como plataforma conectada con API key en la DB
 - [ ] FAQ y responsividad móvil (iOS/Android)
+
+## Sesión 2026-03-25 — Corrección de navegación y responsividad móvil
+
+- [x] Agregar id="caracteristicas" a la sección de Features del Home
+- [x] Agregar id="faq" a la sección FAQ del Home
+- [x] Agregar menú hamburguesa para móvil en el header del Home (iOS/Android)
+- [x] Menú móvil incluye: Características, Comisiones, FAQ, Legal, Iniciar sesión, Crear cuenta
+- [x] Verificar que todos los botones del footer tienen rutas registradas en App.tsx
+- [x] TypeScript: 0 errores | Tests: 80/80 pasando
+
+## Sesión 2026-03-25 — Responsividad completa iOS/Android/Tablet/Desktop
+
+- [ ] Auditar y corregir Home: hero en móvil (texto + formulario apilados)
+- [ ] Auditar y corregir Home: simulador de comisiones en móvil
+- [ ] Auditar y corregir Home: sección de características (grid 3 cols → 1 col en móvil)
+- [ ] Auditar y corregir Home: footer (grid 4 cols → 1 col en móvil)
+- [ ] Auditar y corregir Dashboard: sidebar colapsable en móvil
+- [ ] Auditar y corregir Dashboard: cards de métricas (grid 4 cols → 2 cols en móvil)
+- [ ] Auditar y corregir Dashboard: tablas con scroll horizontal en móvil
+- [ ] Auditar y corregir Dashboard: modales de formularios en móvil
+- [ ] Auditar y corregir páginas críticas: Ventas, Links de Pago, Clientes, Cobros Recurrentes
+
+## Sesión 2026-03-25 — Responsividad completa iOS/Android/Tablet/Desktop
+
+- [ ] Auditar y corregir Home: hero en móvil (texto + formulario apilados)
+- [ ] Auditar y corregir Home: simulador de comisiones en móvil
+- [ ] Auditar y corregir Home: sección de características (grid 3 cols → 1 col en móvil)
+- [ ] Auditar y corregir Home: footer (grid 4 cols → 1 col en móvil)
+- [ ] Auditar y corregir Dashboard: sidebar colapsable en móvil
+- [ ] Auditar y corregir Dashboard: cards de métricas (grid 4 cols → 2 cols en móvil)
+- [ ] Auditar y corregir Dashboard: tablas con scroll horizontal en móvil
+- [ ] Auditar y corregir Dashboard: modales de formularios en móvil
+- [ ] Auditar y corregir páginas críticas: Ventas, Links de Pago, Clientes, Cobros Recurrentes
