@@ -487,7 +487,7 @@ function PublicQuoteCalculator({ tiers: propTiers }: { tiers?: TierType[] }) {
             {showEmailForm && !quoteSent && (
               <div className="space-y-3">
                 <p className="text-sm text-muted-foreground font-semibold">Ingresa tus datos y te enviamos la cotización con análisis IA:</p>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <input
                     type="text"
                     value={prospectName}
@@ -683,7 +683,7 @@ export default function Home() {
         </div>
 
         {/* Derecha: card con tabs Acceso / Registrar */}
-        <div className="flex flex-col justify-center items-center px-8 lg:px-12 py-12 bg-muted/40 border-l border-border">
+        <div className="flex flex-col justify-center items-center px-6 lg:px-12 py-8 lg:py-12 bg-muted/40 border-t lg:border-t-0 lg:border-l border-border">
           <div className="w-full max-w-sm">
             <div className="bg-card border border-border rounded-2xl overflow-hidden shadow-xl">
               {/* Tabs funcionales */}

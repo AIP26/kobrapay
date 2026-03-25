@@ -4215,6 +4215,7 @@ export const appRouter = router({
         customerEmail: z.string().email(),
         customerName: z.string().optional(),
         origin: z.string().optional(),
+        sourcePlatform: z.enum(["kobrapay", "brokerhub", "contentai"]).default("kobrapay"),
       }))
       .mutation(async ({ ctx, input }) => {
         // 1. Crear producto en Stripe
@@ -4277,6 +4278,7 @@ export const appRouter = router({
           customerName: input.customerName || null,
           status: "incomplete",
           cancelAtPeriodEnd: false,
+          sourcePlatform: input.sourcePlatform || "kobrapay",
         });
 
         // 6. Obtener nombre del negocio del vendedor

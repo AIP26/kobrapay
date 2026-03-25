@@ -1263,3 +1263,10 @@
 - [x] Verificar Stripe webhook rechaza firmas inválidas (comportamiento correcto)
 - [x] Confirmar 5 usuarios registrados en producción
 - [x] Tests: 80/80 pasando
+
+## Sesión 2026-03-25 — Flujo de dinero y plataformas
+
+- [ ] Cambiar texto hardcodeado "BrokerHub + ContentAI" en Dashboard.tsx por texto dinámico
+- [ ] Agregar sourcePlatform dinámico al crear suscripciones (selector de plataforma)
+- [ ] Registrar ContentAI como plataforma conectada con API key en la DB
+- [ ] FAQ y responsividad móvil (iOS/Android)

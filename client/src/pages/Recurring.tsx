@@ -113,6 +113,7 @@ function NewSubscriptionModal({ open, onClose }: { open: boolean; onClose: () =>
     intervalCount: "1",
     customerEmail: "",
     customerName: "",
+    sourcePlatform: "kobrapay",
   });
 
   const [createdLink, setCreatedLink] = useState<{ url: string; email: string; emailSent: boolean } | null>(null);
@@ -155,6 +156,7 @@ function NewSubscriptionModal({ open, onClose }: { open: boolean; onClose: () =>
       customerEmail: form.customerEmail,
       customerName: form.customerName || undefined,
       origin: window.location.origin,
+      sourcePlatform: form.sourcePlatform as "kobrapay" | "brokerhub" | "contentai",
     });
   };
 
@@ -232,6 +234,19 @@ function NewSubscriptionModal({ open, onClose }: { open: boolean; onClose: () =>
                 </SelectContent>
               </Select>
             </div>
+          </div>
+
+          {/* Plataforma de origen */}
+          <div>
+            <Label>Plataforma</Label>
+            <Select value={form.sourcePlatform} onValueChange={v => set("sourcePlatform", v)}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="kobrapay">KobraPay (directo)</SelectItem>
+                <SelectItem value="brokerhub">BrokerHub</SelectItem>
+                <SelectItem value="contentai">ContentAI</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
           {/* Datos del cliente */}

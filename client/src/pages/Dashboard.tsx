@@ -328,7 +328,11 @@ export default function Dashboard() {
                   </div>
                   <p className="text-xl font-bold text-amber-900">{subStats.totalActive}</p>
                   <p className="text-xs text-amber-500 mt-0.5 flex items-center gap-1">
-                    BrokerHub + ContentAI
+                    {Object.keys(subStats.byPlatform).length > 0
+                      ? Object.keys(subStats.byPlatform).map(p =>
+                          p === 'brokerhub' ? 'BrokerHub' : p === 'contentai' ? 'ContentAI' : p
+                        ).join(' + ')
+                      : 'Sin plataformas'}
                     <ArrowRight className="w-3 h-3" />
                   </p>
                 </CardContent>
