@@ -84,13 +84,13 @@ export default function Widget() {
     <DashboardLayout title="Widget de Pago">
       <div className="space-y-5 max-w-4xl">
         {/* Header */}
-        <div className="bg-gradient-to-r from-cyan-500 to-blue-600 rounded-2xl p-6 text-foreground">
+        <div className="bg-gradient-to-r from-cyan-500 to-blue-600 rounded-2xl p-6 text-white">
           <div className="flex items-center gap-3 mb-2">
             <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
-              <Code2 className="w-5 h-5 text-foreground" />
+              <Code2 className="w-5 h-5 text-white" />
             </div>
             <div>
-              <h2 className="text-lg font-bold">Widget de Pago Embebible</h2>
+              <h2 className="text-lg font-bold text-white">Widget de Pago Embebible</h2>
               <p className="text-cyan-100 text-sm">Agrega un botón o formulario de pago a cualquier sitio web</p>
             </div>
           </div>

@@ -1303,3 +1303,6 @@
 - [ ] Auditar y corregir Dashboard: tablas con scroll horizontal en móvil
 - [ ] Auditar y corregir Dashboard: modales de formularios en móvil
 - [ ] Auditar y corregir páginas críticas: Ventas, Links de Pago, Clientes, Cobros Recurrentes
+- [x] Fix contraste texto en banners de fondos oscuros/coloridos (Transfers, KobraScore, StripeConnect, Widget, Training, AssociateDashboard, Brochure, CommissionsPanel, PayPage, Registrations, AssociateLiquidation, ImpersonateClient)
+
+- [x] Fix contraste texto en banners de fondos oscuros/coloridos (Transfers, KobraScore, StripeConnect, Widget, Training, AssociateDashboard, Brochure, CommissionsPanel, PayPage, Registrations, AssociateLiquidation, ImpersonateClient)

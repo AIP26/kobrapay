@@ -608,7 +608,7 @@ function PaymentForm({ token }: { token: string }) {
         <div className="w-full max-w-2xl">
           <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
             {/* Banner del pago */}
-            <div className="bg-gradient-to-r from-blue-600 to-blue-700 p-6 text-foreground">
+            <div className="bg-gradient-to-r from-blue-600 to-blue-700 p-6 text-white">
               <div className="flex items-center gap-4">
                 <div className="w-14 h-14 bg-white/20 rounded-full flex items-center justify-center text-2xl font-bold">
                   {businessName.charAt(0).toUpperCase()}

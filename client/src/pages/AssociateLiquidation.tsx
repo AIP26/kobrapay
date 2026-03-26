@@ -136,7 +136,7 @@ export default function AssociateLiquidation() {
                   className="flex items-center gap-4 px-6 py-4 cursor-pointer hover:bg-gray-50/50 transition-colors"
                   onClick={() => setExpandedId(expandedId === assoc.associateId ? null : assoc.associateId)}
                 >
-                  <div className="w-10 h-10 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl flex items-center justify-center text-foreground font-bold text-sm shrink-0">
+                  <div className="w-10 h-10 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl flex items-center justify-center text-white font-bold text-sm shrink-0">
                     {(assoc.associateName || "A").charAt(0).toUpperCase()}
                   </div>
                   <div className="flex-1 min-w-0">

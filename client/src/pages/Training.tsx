@@ -323,7 +323,7 @@ function ModuleItem({
                   {markComplete.isPending ? "Guardando..." : "✅ Marcar como completado"}
                 </Button>
                 <label className="cursor-pointer">
-                  <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-foreground text-xs font-medium transition-colors ${uploading ? "bg-orange-300 cursor-not-allowed" : "bg-orange-500 hover:bg-orange-600"}`}>
+                  <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-white text-xs font-medium transition-colors ${uploading ? "bg-orange-300 cursor-not-allowed" : "bg-orange-500 hover:bg-orange-600"}`}>
                     {uploading ? "⏳ Subiendo..." : "📎 Subir evidencia"}
                   </span>
                   <input
@@ -434,35 +434,35 @@ function CourseDetailModal({ courseId, onClose }: { courseId: number; onClose: (
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="relative bg-gradient-to-r from-gray-900 to-gray-700 rounded-t-2xl p-6 text-foreground">
+        <div className="relative bg-gradient-to-r from-gray-900 to-gray-700 rounded-t-2xl p-6 text-white">
           <div className="absolute top-4 right-4 flex items-center gap-2">
             {/* Botón de actualizar */}
             <button
               onClick={() => { refetch(); toast.info("Progreso actualizado"); }}
               disabled={isFetching}
-              className="text-foreground/70 hover:text-foreground bg-white/10 hover:bg-white/20 rounded-lg p-1.5 transition-colors"
+              className="text-white/70 hover:text-white bg-white/10 hover:bg-white/20 rounded-lg p-1.5 transition-colors"
               title="Actualizar progreso"
             >
               <RefreshCw className={`w-4 h-4 ${isFetching ? "animate-spin" : ""}`} />
             </button>
-            <button onClick={onClose} className="text-foreground/70 hover:text-foreground text-2xl leading-none">×</button>
+            <button onClick={onClose} className="text-white/70 hover:text-white text-2xl leading-none">×</button>
           </div>
           <div className="flex items-center gap-3 mb-2">
             <span className="text-3xl">{cat.emoji}</span>
             <div>
               <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${cat.color}`}>{cat.label}</span>
-              {course.level && <span className="ml-2 text-xs text-foreground/70">{LEVELS[course.level] || course.level}</span>}
+              {course.level && <span className="ml-2 text-xs text-white/70">{LEVELS[course.level] || course.level}</span>}
               {course.ownerId === null && (
-                <span className="ml-2 text-xs bg-orange-500 text-foreground px-2 py-0.5 rounded-full font-bold">KobraPay</span>
+                <span className="ml-2 text-xs bg-orange-500 text-white px-2 py-0.5 rounded-full font-bold">KobraPay</span>
               )}
             </div>
           </div>
-          <h2 className="text-xl font-bold">{course.title}</h2>
-          {course.description && <p className="text-foreground/80 text-sm mt-1">{course.description}</p>}
-          {course.durationMinutes ? <p className="text-foreground/60 text-xs mt-1">⏱ {course.durationMinutes} minutos estimados</p> : null}
+          <h2 className="text-xl font-bold text-white">{course.title}</h2>
+          {course.description && <p className="text-white/80 text-sm mt-1">{course.description}</p>}
+          {course.durationMinutes ? <p className="text-white/60 text-xs mt-1">⏱ {course.durationMinutes} minutos estimados</p> : null}
           {modules.length > 0 && (
             <div className="mt-4">
-              <div className="flex items-center justify-between text-xs text-foreground/70 mb-1">
+              <div className="flex items-center justify-between text-xs text-white/70 mb-1">
                 <span>Progreso del curso</span>
                 <span>{completedModules}/{modules.length} módulos · {progressPct}%</span>
               </div>
@@ -522,7 +522,7 @@ function CourseDetailModal({ courseId, onClose }: { courseId: number; onClose: (
                 {markComplete.isPending ? "Guardando..." : "✅ Marcar como completado"}
               </Button>
               <label className="cursor-pointer">
-                <span className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-foreground text-sm font-medium transition-colors ${uploading ? "bg-orange-300 cursor-not-allowed" : "bg-orange-500 hover:bg-orange-600"}`}>
+                <span className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-white text-sm font-medium transition-colors ${uploading ? "bg-orange-300 cursor-not-allowed" : "bg-orange-500 hover:bg-orange-600"}`}>
                   {uploading ? "⏳ Subiendo..." : "📎 Subir evidencia"}
                 </span>
                 <input ref={fileRef} type="file" className="hidden" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx,.ppt,.pptx" onChange={handleCourseEvidenceUpload} disabled={uploading} />
@@ -619,7 +619,7 @@ function CourseCard({ course, onOpen }: { course: CourseWithProgress; onOpen: ()
         </div>
       )}
       {course.ownerId === null && (
-        <div className={`absolute ${course.coverImageUrl ? "top-3" : "top-3"} left-3 bg-orange-500 text-foreground text-xs font-bold px-2 py-0.5 rounded-full`}>
+        <div className={`absolute ${course.coverImageUrl ? "top-3" : "top-3"} left-3 bg-orange-500 text-white text-xs font-bold px-2 py-0.5 rounded-full`}>
           KobraPay
         </div>
       )}
@@ -828,7 +828,7 @@ function NewCourseModal({ onClose, onCreated }: { onClose: () => void; onCreated
             <Button
               onClick={handleCreate}
               disabled={!form.title.trim() || create.isPending || uploadingCover}
-              className="flex-1 bg-orange-500 hover:bg-orange-600 text-foreground"
+              className="flex-1 bg-orange-500 hover:bg-orange-600 text-white"
             >
               {create.isPending || uploadingCover ? "Creando..." : "Crear Curso"}
             </Button>
@@ -909,7 +909,7 @@ export function TrainingPanel() {
               <span className="hidden sm:inline">Actualizar</span>
             </button>
             {isAdmin && (
-              <Button onClick={() => setShowNewCourse(true)} className="bg-orange-500 hover:bg-orange-600 text-foreground">
+              <Button onClick={() => setShowNewCourse(true)} className="bg-orange-500 hover:bg-orange-600 text-white">
                 + Nuevo Curso
               </Button>
             )}
@@ -945,10 +945,10 @@ export function TrainingPanel() {
         </div>
 
         {kobrapayCount > 0 && activeCategory === "all" && !searchQuery && (
-          <div className="bg-gradient-to-r from-orange-500 to-orange-600 rounded-2xl p-5 mb-6 text-foreground flex items-center gap-4">
+          <div className="bg-gradient-to-r from-orange-500 to-orange-600 rounded-2xl p-5 mb-6 text-white flex items-center gap-4">
             <span className="text-4xl">🐍</span>
             <div>
-              <p className="font-bold text-lg">Academia KobraPay</p>
+              <p className="font-bold text-lg text-white">Academia KobraPay</p>
               <p className="text-orange-100 text-sm">
                 {kobrapayCount} cursos con contenido interno: guías, videos y material completo sin salir de la plataforma.
               </p>
@@ -1037,7 +1037,7 @@ export function TrainingPanel() {
             </div>
             <button
               onClick={() => setShowGraduation(false)}
-              className="w-full bg-gradient-to-r from-orange-500 to-orange-600 text-foreground font-bold py-3 rounded-xl hover:from-orange-600 hover:to-orange-700 transition-all"
+              className="w-full bg-gradient-to-r from-orange-500 to-orange-600 text-white font-bold py-3 rounded-xl hover:from-orange-600 hover:to-orange-700 transition-all"
             >
               ¡Gracias! Ver mi perfil profesional
             </button>

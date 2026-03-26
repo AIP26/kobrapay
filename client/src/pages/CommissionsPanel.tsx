@@ -555,7 +555,7 @@ export default function CommissionsPanel() {
           onClick={e => e.stopPropagation()}
         >
           {/* Header */}
-          <div className="bg-gradient-to-r from-emerald-500 to-cyan-500 px-6 py-5 text-foreground">
+          <div className="bg-gradient-to-r from-emerald-500 to-cyan-500 px-6 py-5 text-white">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
                 <CheckCircle2 className="w-5 h-5" />
@@ -1174,7 +1174,7 @@ function AssociateCommissionsSection() {
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-foreground font-bold text-sm">
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-white font-bold text-sm">
                       {(assoc.associate.name || assoc.associate.email || 'A')[0].toUpperCase()}
                     </div>
                     <div>
@@ -1301,7 +1301,7 @@ function AssociateTabContent({ assoc }: { assoc: { associate: { id: number; name
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-4 p-4 bg-amber-50 border border-amber-200 rounded-xl">
-        <div className="w-12 h-12 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-foreground font-bold text-lg">
+        <div className="w-12 h-12 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-white font-bold text-lg">
           {(assoc.associate.name || assoc.associate.email || 'A')[0].toUpperCase()}
         </div>
         <div className="flex-1">

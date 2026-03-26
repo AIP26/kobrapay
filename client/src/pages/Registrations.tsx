@@ -312,7 +312,7 @@ export default function Registrations() {
                       className={`flex items-center gap-4 px-5 py-4 hover:bg-gray-50 transition-colors cursor-pointer ${isSelected ? "bg-blue-50 border-l-4 border-blue-500" : ""}`}
                       onClick={() => openApproval(reg)}>
                       {/* Avatar */}
-                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-foreground font-bold text-sm flex-shrink-0">
+                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
                         {(reg.fullName || reg.name || "?").charAt(0).toUpperCase()}
                       </div>
                       {/* Info principal */}
@@ -362,7 +362,7 @@ export default function Registrations() {
             {/* Header del panel */}
             <div className="flex items-center justify-between p-5 border-b border-gray-100 bg-gray-50">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-foreground font-bold text-sm">
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold text-sm">
                   {(selectedReg.fullName || selectedReg.name || "?").charAt(0).toUpperCase()}
                 </div>
                 <div>

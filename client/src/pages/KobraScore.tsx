@@ -123,10 +123,10 @@ export default function KobraScorePage() {
       <div className="max-w-5xl mx-auto space-y-6">
 
         {/* Header */}
-        <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl p-6 text-foreground">
+        <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl p-6 text-white">
           <div className="flex items-center gap-3 mb-1">
-            <Star className="w-7 h-7" />
-            <h1 className="text-xl font-bold">KobraScore</h1>
+            <Star className="w-7 h-7 text-white" />
+            <h1 className="text-xl font-bold text-white">KobraScore</h1>
           </div>
           <p className="text-blue-100 text-sm">
             Puntaje interno de confianza para cada cliente. Basado en volumen de ventas, frecuencia de cobros, contracargos y antigüedad.

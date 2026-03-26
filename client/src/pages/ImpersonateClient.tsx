@@ -159,7 +159,7 @@ export default function ImpersonateClient() {
                 {filtered.map((u) => (
                   <div key={u.id} className="flex items-center gap-4 px-5 py-4 hover:bg-gray-50/50 transition-colors">
                     {/* Avatar */}
-                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-400 to-blue-500 flex items-center justify-center flex-shrink-0 text-foreground font-bold text-sm">
+                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-400 to-blue-500 flex items-center justify-center flex-shrink-0 text-white font-bold text-sm">
                       {(u.name || u.email || "?")[0].toUpperCase()}
                     </div>
 

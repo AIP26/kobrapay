@@ -175,7 +175,7 @@ function BrochureContent({ lastUpdated }: { lastUpdated: string }) {
     <div id="brochure-content" className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
 
       {/* ── Portada ── */}
-      <div className="bg-gradient-to-br from-gray-900 via-gray-800 to-emerald-900 text-foreground p-10 relative overflow-hidden">
+      <div className="bg-gradient-to-br from-gray-900 via-gray-800 to-emerald-900 text-white p-10 relative overflow-hidden">
         <div className="absolute inset-0 opacity-5">
           <div className="absolute top-0 right-0 w-96 h-96 rounded-full bg-emerald-400 blur-3xl" />
           <div className="absolute bottom-0 left-0 w-64 h-64 rounded-full bg-teal-400 blur-3xl" />
@@ -405,7 +405,7 @@ function BrochureContent({ lastUpdated }: { lastUpdated: string }) {
       </div>
 
       {/* ── CTA ── */}
-      <div className="p-8 bg-gradient-to-br from-emerald-600 to-teal-700 text-foreground text-center">
+      <div className="p-8 bg-gradient-to-br from-emerald-600 to-teal-700 text-white text-center">
         <h3 className="text-2xl font-bold mb-2">¿Listo para empezar?</h3>
         <p className="text-emerald-100 mb-4">
           Regístrate hoy y empieza a cobrar en menos de 24 horas.

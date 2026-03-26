@@ -122,10 +122,10 @@ export default function Transfers() {
                   En desarrollo activo
                 </Badge>
               </div>
-              <h1 className="text-3xl font-black text-foreground mb-3 leading-tight">
+              <h1 className="text-3xl font-black text-white mb-3 leading-tight">
                 Transferencias <span style={{ color: "#00c896" }}>KobraPay</span>
               </h1>
-              <p className="text-muted-foreground text-base leading-relaxed max-w-xl">
+              <p className="text-white/85 text-base leading-relaxed max-w-xl">
                 Estamos construyendo el módulo de transferencias más completo de México: SPEI nacional, Wire internacional, tipo Zelle USA-México y cripto. Todo en un solo panel.
               </p>
               <div className="flex items-center gap-3 mt-6">
@@ -137,14 +137,14 @@ export default function Transfers() {
                   <Bell className="w-4 h-4" />
                   Notificarme cuando esté listo
                 </Button>
-                <span className="text-muted-foreground text-xs">Sin compromiso · Gratis</span>
+                <span className="text-white/70 text-xs">Sin compromiso · Gratis</span>
               </div>
             </div>
             <div className="hidden md:flex flex-col items-center gap-3">
               <div className="w-24 h-24 rounded-2xl flex items-center justify-center" style={{ background: "rgba(0,200,150,0.15)", border: "1px solid rgba(0,200,150,0.3)" }}>
                 <ArrowLeftRight className="w-12 h-12" style={{ color: "#00c896" }} />
               </div>
-              <span className="text-xs text-muted-foreground text-center">Cobra fácil,<br />cobra global</span>
+              <span className="text-xs text-white/70 text-center">Cobra fácil,<br />cobra global</span>
             </div>
           </div>
         </div>
@@ -178,17 +178,17 @@ export default function Transfers() {
               const Icon = type.icon;
               return (
                 <div key={type.id} className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm hover:shadow-md transition-shadow">
-                  <div className={`bg-gradient-to-r ${type.gradient} px-5 py-4 text-foreground`}>
+                  <div className={`bg-gradient-to-r ${type.gradient} px-5 py-4 text-white`}>
                     <div className="flex items-center justify-between mb-2">
                       <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
-                        <Icon className="w-5 h-5 text-foreground" />
+                        <Icon className="w-5 h-5 text-white" />
                       </div>
                       <Badge className={`text-xs font-semibold border ${type.badgeClass}`}>
                         {type.badgeText}
                       </Badge>
                     </div>
-                    <h3 className="font-bold text-lg">{type.title}</h3>
-                    <p className="text-foreground/80 text-sm">{type.subtitle}</p>
+                    <h3 className="font-bold text-lg text-white">{type.title}</h3>
+                    <p className="text-white/85 text-sm">{type.subtitle}</p>
                   </div>
 
                   <div className="p-5 space-y-4">

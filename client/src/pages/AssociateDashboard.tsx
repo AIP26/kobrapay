@@ -107,7 +107,7 @@ function CommissionTiersTable({ activeClients }: { activeClients: number }) {
 
       {/* Banner nivel actual */}
       {currentTier && (
-        <div className="mx-6 mt-4 bg-gradient-to-r from-emerald-500 to-teal-600 rounded-xl p-4 text-foreground flex items-center justify-between">
+        <div className="mx-6 mt-4 bg-gradient-to-r from-emerald-500 to-teal-600 rounded-xl p-4 text-white flex items-center justify-between">
           <div>
             <p className="text-xs text-emerald-100 font-medium">Tu nivel actual</p>
             <p className="text-xl font-bold">{currentTier.label}</p>
@@ -432,7 +432,7 @@ function AssociateQuoteSimulator() {
 
   return (
     <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-      <div className="bg-gradient-to-r from-indigo-600 to-violet-700 px-6 py-5 text-foreground">
+      <div className="bg-gradient-to-r from-indigo-600 to-violet-700 px-6 py-5 text-white">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Calculator className="w-6 h-6" />
@@ -683,7 +683,7 @@ function SalesFAQ() {
   const [open, setOpen] = useState<number | null>(null);
   return (
     <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-      <div className="bg-gradient-to-r from-teal-600 to-emerald-700 px-6 py-5 text-foreground">
+      <div className="bg-gradient-to-r from-teal-600 to-emerald-700 px-6 py-5 text-white">
         <div className="flex items-center gap-3">
           <HelpCircle className="w-6 h-6" />
           <div>
@@ -982,7 +982,7 @@ export default function AssociateDashboard() {
         {activeTab === "manual" && (
           <div className="space-y-6">
             {/* Intro banner */}
-            <div className="bg-gradient-to-r from-emerald-600 to-teal-700 rounded-2xl p-6 text-foreground">
+            <div className="bg-gradient-to-r from-emerald-600 to-teal-700 rounded-2xl p-6 text-white">
               <div className="flex items-start justify-between gap-4">
                 <div>
                   <h2 className="text-xl font-bold mb-2">Tu catálogo de planes KobraPay</h2>
@@ -1096,7 +1096,7 @@ export default function AssociateDashboard() {
                               setForm(f => ({ ...f, assignedPlan: plan.id }));
                               setActiveTab("registro");
                             }}
-                            className={`flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg bg-gradient-to-r ${plan.headerBg} text-foreground`}
+                            className={`flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg bg-gradient-to-r ${plan.headerBg} text-white`}
                           >
                             <UserPlus className="w-3.5 h-3.5" />
                             Registrar cliente
@@ -1143,7 +1143,7 @@ export default function AssociateDashboard() {
 
             {/* Catalogo de Terminales Stripe */}
             <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-              <div className="bg-gradient-to-r from-violet-600 to-purple-700 px-6 py-4 text-foreground">
+              <div className="bg-gradient-to-r from-violet-600 to-purple-700 px-6 py-4 text-white">
                 <div className="flex items-center gap-3">
                   <CreditCard className="w-5 h-5" />
                   <div>
@@ -1231,7 +1231,7 @@ export default function AssociateDashboard() {
         {activeTab === "registro" && (
           <div className="max-w-2xl mx-auto">
             <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-              <div className="bg-gradient-to-r from-emerald-600 to-teal-700 px-6 py-5 text-foreground">
+              <div className="bg-gradient-to-r from-emerald-600 to-teal-700 px-6 py-5 text-white">
                 <h2 className="text-lg font-bold">Registrar nuevo cliente</h2>
                 <p className="text-emerald-100 text-sm mt-1">
                   Completa los datos del negocio que quieres inscribir en KobraPay
@@ -1571,7 +1571,7 @@ export default function AssociateDashboard() {
         {activeTab === "referidos" && (
           <div className="space-y-6">
             {/* Header del programa */}
-            <div className="bg-gradient-to-r from-emerald-600 to-teal-600 rounded-2xl p-6 text-foreground">
+            <div className="bg-gradient-to-r from-emerald-600 to-teal-600 rounded-2xl p-6 text-white">
               <div className="flex items-center gap-3 mb-3">
                 <Handshake className="w-8 h-8" />
                 <div>
