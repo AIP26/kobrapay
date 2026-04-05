@@ -104,7 +104,7 @@ type Permissions = Record<string, boolean>;
 export default function Registrations() {
   const { user, loading: authLoading } = useAuth();
   const [search, setSearch] = useState("");
-  const [filterStatus, setFilterStatus] = useState<"all" | "pending" | "active" | "blocked">("pending");
+  const [filterStatus, setFilterStatus] = useState<"all" | "pending" | "active" | "blocked">("all");
   const [selectedReg, setSelectedReg] = useState<Registration | null>(null);
   const [rejectReason, setRejectReason] = useState("");
   const [showRejectReason, setShowRejectReason] = useState(false);
