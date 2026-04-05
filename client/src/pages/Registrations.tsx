@@ -12,7 +12,8 @@ import {
   User, Phone, MapPin, Globe, Banknote, Lock, Eye, Settings2, X,
   Briefcase, UserCheck, UserCog, UserX,
 } from "lucide-react";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
+import { Download } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { SECTOR_TEMPLATES, templateToPermissionsJson, type SectorTemplate } from "@shared/sectorTemplates";
 
@@ -97,6 +98,9 @@ type Registration = {
   businessName?: string | null; businessType?: string | null;
   accountType?: string | null; permissions?: string | null;
   profileCompleted?: boolean | null;
+  totalCobros?: number | null;
+  cobrosExitosos?: number | null;
+  totalCobrado?: string | null;
 };
 
 type Permissions = Record<string, boolean>;
@@ -245,9 +249,37 @@ export default function Registrations() {
                 Revisa y aprueba las cuentas que se registran en KobraPay.
               </p>
             </div>
-            <Button variant="outline" onClick={() => refetch()} className="gap-2">
-              <RefreshCw className="w-4 h-4" /> Actualizar
-            </Button>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => {
+                // Exportar a CSV
+                const headers = ["ID","Nombre","Email","Negocio","Estado","Tipo","Cobros totales","Cobros exitosos","Total cobrado (MXN)","Registro","Último acceso"];
+                const rows = (registrations as Registration[]).map(r => [
+                  r.id,
+                  r.fullName || r.name || "",
+                  r.email || "",
+                  r.businessName || "",
+                  r.accountStatus,
+                  r.accountType || "",
+                  r.totalCobros ?? 0,
+                  r.cobrosExitosos ?? 0,
+                  parseFloat(r.totalCobrado || "0").toFixed(2),
+                  new Date(r.createdAt).toLocaleDateString("es-MX"),
+                  new Date(r.lastSignedIn).toLocaleDateString("es-MX"),
+                ]);
+                const csvContent = [headers, ...rows].map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(",")).join("\n");
+                const blob = new Blob(["\uFEFF" + csvContent], { type: "text/csv;charset=utf-8;" });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement("a");
+                a.href = url; a.download = `kobrapay-usuarios-${new Date().toISOString().slice(0,10)}.csv`;
+                a.click(); URL.revokeObjectURL(url);
+                toast.success("CSV exportado correctamente");
+              }} className="gap-2">
+                <Download className="w-4 h-4" /> Exportar CSV
+              </Button>
+              <Button variant="outline" onClick={() => refetch()} className="gap-2">
+                <RefreshCw className="w-4 h-4" /> Actualizar
+              </Button>
+            </div>
           </div>
 
           {/* KPIs */}
@@ -334,6 +366,18 @@ export default function Registrations() {
                           </p>
                         )}
                       </div>
+                      {/* Cobros del usuario */}
+                      {reg.accountStatus === "active" && (
+                        <div className="hidden sm:flex flex-col items-center gap-0.5 flex-shrink-0 px-3 border-r border-gray-100">
+                          <p className="text-sm font-bold text-emerald-700">{reg.cobrosExitosos ?? 0}</p>
+                          <p className="text-xs text-muted-foreground">cobros</p>
+                          {Number(reg.totalCobrado || 0) > 0 && (
+                            <p className="text-xs font-semibold text-emerald-600">
+                              ${parseFloat(reg.totalCobrado || "0").toLocaleString("es-MX", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                            </p>
+                          )}
+                        </div>
+                      )}
                       {/* Estado y tipo */}
                       <div className="flex flex-col items-end gap-1.5 flex-shrink-0">
                         <span className={`inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full border ${statusInfo.color}`}>

@@ -28,7 +28,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { useMemo, useState } from "react";
-import { Landmark, Zap, AlertCircle, Repeat } from "lucide-react";
+import { Landmark, Zap, AlertCircle, Repeat, UserPlus, Activity, Shield } from "lucide-react";
 import { toast } from "sonner";
 
 function formatCurrency(amount: number | string, currency = "MXN") {
@@ -100,6 +100,13 @@ export default function Dashboard() {
   }, [txs]);
 
   const isAdmin = user?.role === "admin";
+  const isSuperAdmin = !!(user?.isSuperAdmin || user?.role === "superadmin");
+  // Métricas de plataforma para superadmin
+  const { data: platformMetrics } = trpc.metrics.getDashboard.useQuery(undefined, {
+    enabled: isSuperAdmin,
+    staleTime: 60000,
+    refetchOnWindowFocus: true,
+  });
   const { data: connectStatus } = trpc.vendor.connectStatus.useQuery(undefined, {
     enabled: !!user && !user.isSuperAdmin && user.role !== "superadmin",
     staleTime: 60000,
@@ -310,6 +317,76 @@ export default function Dashboard() {
               </Card>
               </RouterLink>
             ))}
+          </div>
+        )}
+
+        {/* Panel de Administración para SuperAdmin */}
+        {isSuperAdmin && (
+          <div className="rounded-2xl border border-violet-200 bg-gradient-to-r from-violet-50 to-indigo-50 p-4">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 bg-violet-100 rounded-lg flex items-center justify-center">
+                  <Shield className="w-4 h-4 text-violet-600" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-violet-900">Panel de Administración</h3>
+                  <p className="text-xs text-violet-500">Acceso rápido a gestión de plataforma</p>
+                </div>
+              </div>
+              <RouterLink href="/dashboard/metrics">
+                <button className="text-xs text-violet-700 font-medium hover:text-violet-900 flex items-center gap-1">
+                  Ver métricas <ArrowRight className="w-3 h-3" />
+                </button>
+              </RouterLink>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <RouterLink href="/dashboard/registrations">
+                <div className="bg-white rounded-xl p-3 border border-violet-100 cursor-pointer hover:border-violet-300 hover:shadow-sm transition-all">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <UserPlus className="w-4 h-4 text-violet-600" />
+                    {platformMetrics && platformMetrics.today.newUsers > 0 && (
+                      <span className="bg-red-500 text-white text-xs font-bold px-1.5 py-0.5 rounded-full">
+                        +{platformMetrics.today.newUsers}
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-lg font-bold text-violet-900">{platformMetrics?.month.newUsers ?? "—"}</p>
+                  <p className="text-xs text-violet-500">Registros este mes</p>
+                </div>
+              </RouterLink>
+              <RouterLink href="/dashboard/metrics">
+                <div className="bg-white rounded-xl p-3 border border-violet-100 cursor-pointer hover:border-violet-300 hover:shadow-sm transition-all">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <Activity className="w-4 h-4 text-indigo-600" />
+                  </div>
+                  <p className="text-lg font-bold text-indigo-900">{platformMetrics ? formatCurrency(platformMetrics.today.salesTotal) : "—"}</p>
+                  <p className="text-xs text-indigo-500">Ventas hoy (plataforma)</p>
+                </div>
+              </RouterLink>
+              <RouterLink href="/dashboard/impersonate">
+                <div className="bg-white rounded-xl p-3 border border-violet-100 cursor-pointer hover:border-violet-300 hover:shadow-sm transition-all">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <Users className="w-4 h-4 text-cyan-600" />
+                  </div>
+                  <p className="text-lg font-bold text-cyan-900">{platformMetrics?.month.activeUsers ?? "—"}</p>
+                  <p className="text-xs text-cyan-500">Usuarios activos</p>
+                </div>
+              </RouterLink>
+              <RouterLink href="/dashboard/chargebacks">
+                <div className="bg-white rounded-xl p-3 border border-violet-100 cursor-pointer hover:border-violet-300 hover:shadow-sm transition-all">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <AlertCircle className="w-4 h-4 text-amber-600" />
+                    {platformMetrics && platformMetrics.alerts.pendingChargebacks > 0 && (
+                      <span className="bg-amber-500 text-white text-xs font-bold px-1.5 py-0.5 rounded-full">
+                        {platformMetrics.alerts.pendingChargebacks}
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-lg font-bold text-amber-900">{platformMetrics?.alerts.pendingChargebacks ?? "—"}</p>
+                  <p className="text-xs text-amber-500">Aclaraciones pendientes</p>
+                </div>
+              </RouterLink>
+            </div>
           </div>
         )}
 

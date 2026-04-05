@@ -1306,3 +1306,9 @@
 - [x] Fix contraste texto en banners de fondos oscuros/coloridos (Transfers, KobraScore, StripeConnect, Widget, Training, AssociateDashboard, Brochure, CommissionsPanel, PayPage, Registrations, AssociateLiquidation, ImpersonateClient)
 
 - [x] Fix contraste texto en banners de fondos oscuros/coloridos (Transfers, KobraScore, StripeConnect, Widget, Training, AssociateDashboard, Brochure, CommissionsPanel, PayPage, Registrations, AssociateLiquidation, ImpersonateClient)
+- [x] Fix contraste texto en banners coloridos/oscuros (Transfers, KobraScore, Widget, Training, etc.)
+- [x] Filtro por defecto en Registros cambiado a "Todos" (antes mostraba solo "Pendientes")
+- [x] Panel de Administración en Dashboard con acceso rápido a Registros, métricas del día y usuarios activos
+- [x] Notificación automática al owner cuando se registra un nuevo usuario (email + panel)
+- [x] Columna de cobros realizados en la lista de Registros (visible en desktop)
+- [x] Botón "Exportar CSV" en Registros con todos los datos de usuarios

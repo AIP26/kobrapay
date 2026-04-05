@@ -184,6 +184,10 @@ export async function getAllRegistrations() {
     accountType: userProfiles.accountType,
     permissions: userProfiles.permissions,
     profileCompleted: userProfiles.profileCompleted,
+    // Estadísticas de cobros del usuario
+    totalCobros: sql<number>`COALESCE((SELECT COUNT(*) FROM payment_links WHERE user_id = ${users.id}), 0)`,
+    cobrosExitosos: sql<number>`COALESCE((SELECT COUNT(*) FROM payment_links WHERE user_id = ${users.id} AND status = 'paid'), 0)`,
+    totalCobrado: sql<string>`COALESCE((SELECT SUM(CAST(amount AS DECIMAL(10,2))) FROM payment_links WHERE user_id = ${users.id} AND status = 'paid'), '0')`,
   }).from(users)
     .leftJoin(userProfiles, eq(users.id, userProfiles.userId))
     .orderBy(users.createdAt);
