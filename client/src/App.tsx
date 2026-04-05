@@ -76,6 +76,7 @@ import AssociateLiquidation from "./pages/AssociateLiquidation";
 import PlatformConfig from "./pages/PlatformConfig";
 import BusinessProfile from "./pages/BusinessProfile";
 import ImpersonateClient from "./pages/ImpersonateClient";
+import FailedPayments from "./pages/FailedPayments";
 import ImpersonationBar from "./components/ImpersonationBar";
 import ApiKeys from "./pages/ApiKeys";
 import Webhooks from "./pages/Webhooks";
@@ -175,6 +176,7 @@ function Router() {
       <Route path="/complete-profile" component={CompleteProfile} />
       <Route path="/dashboard/profile" component={MyProfile} />
       <Route path="/dashboard/impersonate" component={ImpersonateClient} />
+      <Route path="/dashboard/failed-payments" component={FailedPayments} />
       <Route path="/pending">{() => <PendingApproval status="pending" />}</Route>
       <Route path="/dashboard/colaboradores" component={Colaboradores} />
       <Route path="/dashboard/api-keys" component={ApiKeys} />

@@ -53,6 +53,7 @@ import {
   Activity,
   Eye,
   Key,
+  XCircle,
 } from "lucide-react";
 import { useState, useCallback, useMemo, useEffect, useRef } from "react";
 import GlobalSearch from "./GlobalSearch";
@@ -254,6 +255,7 @@ const NAV_GROUPS = [
       { href: "/dashboard/precios", icon: DollarSign, label: "Gestionar Precios", superAdminOnly: true },
       { href: "/dashboard/clients", icon: Users, label: "Mis Clientes", superAdminOnly: true },
       { href: "/dashboard/registrations", icon: UserCog, label: "Registros", superAdminOnly: true },
+      { href: "/dashboard/failed-payments", icon: XCircle, label: "Cobros Fallidos", superAdminOnly: true },
       { href: "/dashboard/ai-scoring", icon: Brain, label: "Scoring IA", superAdminOnly: true },
       { href: "/dashboard/kobra-score", icon: Star, label: "KobraScore", superAdminOnly: true },
       { href: "/dashboard/quote-logs", icon: Mail, label: "Cotizaciones", superAdminOnly: true },

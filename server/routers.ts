@@ -1822,6 +1822,67 @@ export const appRouter = router({
         await db.delete(txTable).where(inArray(txTable.id, input.transactionIds));
          return { success: true, deleted: input.transactionIds.length };
       }),
+    // Listar cobros fallidos del usuario actual
+    listFailed: protectedProcedure.query(async ({ ctx }) => {
+      const db = await import('./db').then(m => m.getDb());
+      if (!db) return [];
+      const { transactions } = await import('../drizzle/schema');
+      const { eq, and, desc } = await import('drizzle-orm');
+      const rows = await db.select().from(transactions)
+        .where(and(eq(transactions.userId, ctx.user.id), eq(transactions.status, 'failed')))
+        .orderBy(desc(transactions.createdAt));
+      return rows.map((t: any) => ({
+        id: t.id,
+        operationNumber: t.operationNumber,
+        payerName: t.payerName,
+        payerEmail: t.payerEmail,
+        amount: parseFloat(String(t.amount)),
+        errorMessage: t.errorMessage || 'Pago no completado',
+        createdAt: t.createdAt,
+        cardBrand: t.cardBrand,
+        cardLast4: t.cardLast4,
+      }));
+    }),
+    // Listar TODOS los cobros fallidos de la plataforma (solo superadmin)
+    listAllFailed: protectedProcedure.query(async ({ ctx }) => {
+      if (!isSuperAdmin(ctx.user.openId, ctx.user.role)) throw new TRPCError({ code: 'FORBIDDEN' });
+      const db = await import('./db').then(m => m.getDb());
+      if (!db) return [];
+      const { transactions, users } = await import('../drizzle/schema');
+      const { eq, desc } = await import('drizzle-orm');
+      const rows = await db.select({
+        id: transactions.id,
+        operationNumber: transactions.operationNumber,
+        payerName: transactions.payerName,
+        payerEmail: transactions.payerEmail,
+        amount: transactions.amount,
+        errorMessage: transactions.errorMessage,
+        createdAt: transactions.createdAt,
+        cardBrand: transactions.cardBrand,
+        cardLast4: transactions.cardLast4,
+        userId: transactions.userId,
+        ownerName: users.name,
+        ownerEmail: users.email,
+      }).from(transactions)
+        .leftJoin(users, eq(transactions.userId, users.id))
+        .where(eq(transactions.status, 'failed'))
+        .orderBy(desc(transactions.createdAt))
+        .limit(200);
+      return rows.map((t: any) => ({
+        id: t.id,
+        operationNumber: t.operationNumber,
+        payerName: t.payerName,
+        payerEmail: t.payerEmail,
+        amount: parseFloat(String(t.amount)),
+        errorMessage: t.errorMessage || 'Pago no completado',
+        createdAt: t.createdAt,
+        cardBrand: t.cardBrand,
+        cardLast4: t.cardLast4,
+        userId: t.userId,
+        ownerName: t.ownerName,
+        ownerEmail: t.ownerEmail,
+      }));
+    }),
     // Listar transacciones con solicitudes de reembolso pendientes (para admin del negocio)
     listPendingRefunds: protectedProcedure.query(async ({ ctx }) => {
       const db = await import('./db').then(m => m.getDb());
