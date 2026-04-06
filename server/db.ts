@@ -163,7 +163,8 @@ export async function getUserById(id: number) {
 export async function getAllRegistrations() {
   const db = await getDb();
   if (!db) return [];
-  return db.select({
+  // Obtener usuarios con perfil
+  const rows = await db.select({
     id: users.id,
     name: users.name,
     email: users.email,
@@ -173,7 +174,6 @@ export async function getAllRegistrations() {
     createdAt: users.createdAt,
     lastSignedIn: users.lastSignedIn,
     loginMethod: users.loginMethod,
-    // Perfil extendido (puede ser null si no completó el perfil)
     fullName: userProfiles.fullName,
     birthDate: userProfiles.birthDate,
     curp: userProfiles.curp,
@@ -184,13 +184,27 @@ export async function getAllRegistrations() {
     accountType: userProfiles.accountType,
     permissions: userProfiles.permissions,
     profileCompleted: userProfiles.profileCompleted,
-    // Estadísticas de cobros del usuario
-    totalCobros: sql<number>`COALESCE((SELECT COUNT(*) FROM payment_links WHERE user_id = ${users.id}), 0)`,
-    cobrosExitosos: sql<number>`COALESCE((SELECT COUNT(*) FROM payment_links WHERE user_id = ${users.id} AND status = 'paid'), 0)`,
-    totalCobrado: sql<string>`COALESCE((SELECT SUM(CAST(amount AS DECIMAL(10,2))) FROM payment_links WHERE user_id = ${users.id} AND status = 'paid'), '0')`,
   }).from(users)
     .leftJoin(userProfiles, eq(users.id, userProfiles.userId))
     .orderBy(users.createdAt);
+
+  // Obtener estadísticas de cobros por usuario en una sola consulta
+  const stats = await db.select({
+    userId: paymentLinks.userId,
+    totalCobros: sql<number>`COUNT(*)`,
+    cobrosExitosos: sql<number>`SUM(CASE WHEN ${paymentLinks.status} = 'paid' THEN 1 ELSE 0 END)`,
+    totalCobrado: sql<string>`COALESCE(SUM(CASE WHEN ${paymentLinks.status} = 'paid' THEN CAST(${paymentLinks.amount} AS DECIMAL(10,2)) ELSE 0 END), 0)`,
+  }).from(paymentLinks)
+    .groupBy(paymentLinks.userId);
+
+  const statsMap = new Map(stats.map(s => [s.userId, s]));
+
+  return rows.map(r => ({
+    ...r,
+    totalCobros: statsMap.get(r.id)?.totalCobros ?? 0,
+    cobrosExitosos: statsMap.get(r.id)?.cobrosExitosos ?? 0,
+    totalCobrado: String(statsMap.get(r.id)?.totalCobrado ?? '0'),
+  }));
 }
 
 export async function updateUserAccountStatus(
