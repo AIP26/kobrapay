@@ -2793,6 +2793,40 @@ export const appRouter = router({
         await updateUserAccountStatus(input.userId, "pending");
         return { success: true };
       }),
+    getUserDetail: protectedProcedure
+      .input(z.object({ userId: z.number() }))
+      .query(async ({ ctx, input }) => {
+        if (!ctx.isSuperAdmin) throw new TRPCError({ code: "FORBIDDEN" });
+        const targetUser = await getUserById(input.userId);
+        if (!targetUser) throw new TRPCError({ code: "NOT_FOUND" });
+        const profile = await getUserProfile(input.userId);
+        const allTx = await getTransactionsByUser(input.userId);
+        const recentTransactions = allTx.slice(0, 10).map(t => ({
+          id: t.id,
+          amount: t.amount,
+          status: t.status,
+          payerName: t.payerName,
+          createdAt: t.createdAt,
+          commissionRate: t.commissionRate,
+          netAmount: t.netAmount,
+          errorMessage: t.errorMessage,
+        }));
+        const vendorConfig = await getVendorSettings(input.userId);
+        const stats = {
+          totalCobros: allTx.length,
+          cobrosExitosos: allTx.filter(t => t.status === 'succeeded').length,
+          totalCobrado: allTx.filter(t => t.status === 'succeeded').reduce((sum, t) => sum + parseFloat(String(t.amount || 0)), 0),
+          commissionRate: parseFloat(String(vendorConfig?.commissionRate || '4.6')),
+        };
+        return { user: targetUser, profile, recentTransactions, stats };
+      }),
+    updateCommission: protectedProcedure
+      .input(z.object({ userId: z.number(), commissionRate: z.number().min(0).max(100) }))
+      .mutation(async ({ ctx, input }) => {
+        if (!ctx.isSuperAdmin) throw new TRPCError({ code: "FORBIDDEN" });
+        await upsertVendorSettings({ userId: input.userId, commissionRate: String(input.commissionRate) });
+        return { success: true };
+      }),
   }),
   // ─── Contratos digitales (solo super-admin y asistente) ─────────────────────
   contracts: router({

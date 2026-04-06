@@ -17,6 +17,92 @@ import { Download } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { SECTOR_TEMPLATES, templateToPermissionsJson, type SectorTemplate } from "@shared/sectorTemplates";
 
+// ─── Componente de estadísticas del usuario ─────────────────────────────────
+function UserDetailStats({ userId }: { userId: number }) {
+  const [commission, setCommission] = useState("");
+  const { data, isLoading } = trpc.registrations.getUserDetail.useQuery({ userId }, { enabled: !!userId });
+  const updateCommission = trpc.registrations.updateCommission.useMutation({
+    onSuccess: () => { toast.success("Comisión actualizada"); },
+    onError: () => { toast.error("Error al actualizar comisión"); },
+  });
+
+  if (isLoading) return <div className="py-4 text-center text-xs text-muted-foreground">Cargando estadísticas...</div>;
+  if (!data) return null;
+
+  const { stats, recentTransactions } = data;
+
+  return (
+    <div className="space-y-4">
+      {/* Estadísticas de cobros */}
+      <div>
+        <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3">Actividad de Cobros</h3>
+        <div className="grid grid-cols-2 gap-2">
+          <div className="bg-green-50 rounded-xl p-3 text-center">
+            <p className="text-lg font-bold text-green-700">{stats.cobrosExitosos}</p>
+            <p className="text-xs text-green-600">Cobros exitosos</p>
+          </div>
+          <div className="bg-blue-50 rounded-xl p-3 text-center">
+            <p className="text-lg font-bold text-blue-700">${stats.totalCobrado.toLocaleString("es-MX", { minimumFractionDigits: 2 })}</p>
+            <p className="text-xs text-blue-600">Total cobrado MXN</p>
+          </div>
+          {(stats.totalCobros - stats.cobrosExitosos) > 0 && (
+            <div className="bg-red-50 rounded-xl p-3 text-center col-span-2">
+              <p className="text-lg font-bold text-red-700">{stats.totalCobros - stats.cobrosExitosos}</p>
+              <p className="text-xs text-red-600">Cobros fallidos</p>
+            </div>
+          )}
+        </div>
+      </div>
+      {/* Últimas transacciones */}
+      {recentTransactions && recentTransactions.length > 0 && (
+        <div>
+          <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Últimos Cobros</h3>
+          <div className="space-y-1.5">
+            {recentTransactions.slice(0, 4).map((tx) => (
+              <div key={tx.id} className="flex items-center justify-between text-xs bg-gray-50 rounded-lg px-3 py-2">
+                <span className="text-foreground truncate max-w-[120px]">{tx.payerName || "Cobro"}</span>
+                <div className="flex items-center gap-2">
+                  <span className={`font-semibold ${tx.status === "succeeded" ? "text-green-600" : "text-red-500"}`}>
+                    ${parseFloat(String(tx.amount)).toLocaleString("es-MX", { minimumFractionDigits: 2 })}
+                  </span>
+                  <span className={`px-1.5 py-0.5 rounded-full text-xs font-medium ${
+                    tx.status === "succeeded" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-600"
+                  }`}>{tx.status === "succeeded" ? "Exitoso" : "Fallido"}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+      {/* Control de comisión */}
+      <div className="border-t border-gray-100 pt-4">
+        <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Comisión Personalizada</h3>
+        <p className="text-xs text-muted-foreground mb-2">Comisión actual: <span className="font-semibold text-foreground">{stats.commissionRate ?? "7"}%</span></p>
+        <div className="flex gap-2">
+          <input
+            type="number"
+            min="0"
+            max="100"
+            step="0.1"
+            placeholder="Ej: 5.5"
+            value={commission}
+            onChange={(e) => setCommission(e.target.value)}
+            className="flex-1 border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+          <Button
+            size="sm"
+            className="bg-blue-600 hover:bg-blue-700 text-white"
+            disabled={!commission || updateCommission.isPending}
+            onClick={() => updateCommission.mutate({ userId, commissionRate: parseFloat(commission) })}
+          >
+            {updateCommission.isPending ? "..." : "Guardar"}
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Tipos de cuenta disponibles ─────────────────────────────────────────────
 const ACCOUNT_TYPES = [
   {
@@ -109,6 +195,7 @@ export default function Registrations() {
   const { user, loading: authLoading } = useAuth();
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState<"all" | "pending" | "active" | "blocked">("all");
+  const [filterDate, setFilterDate] = useState<"all" | "7d" | "30d" | "90d">("all");
   const [selectedReg, setSelectedReg] = useState<Registration | null>(null);
   const [rejectReason, setRejectReason] = useState("");
   const [showRejectReason, setShowRejectReason] = useState(false);
@@ -156,9 +243,16 @@ export default function Registrations() {
         (r.fullName?.toLowerCase().includes(search.toLowerCase())) ||
         (r.businessName?.toLowerCase().includes(search.toLowerCase()));
       const matchStatus = filterStatus === "all" || r.accountStatus === filterStatus;
-      return matchSearch && matchStatus;
+      let matchDate = true;
+      if (filterDate !== "all") {
+        const days = filterDate === "7d" ? 7 : filterDate === "30d" ? 30 : 90;
+        const cutoff = new Date();
+        cutoff.setDate(cutoff.getDate() - days);
+        matchDate = new Date(r.createdAt) >= cutoff;
+      }
+      return matchSearch && matchStatus && matchDate;
     });
-  }, [registrations, search, filterStatus]);
+  }, [registrations, search, filterStatus, filterDate]);
 
   const counts = useMemo(() => ({
     total: (registrations as Registration[]).length,
@@ -302,17 +396,26 @@ export default function Registrations() {
           </div>
 
           {/* Filtros */}
-          <div className="flex flex-col sm:flex-row gap-3">
-            <div className="relative flex-1">
+          <div className="flex flex-col gap-3">
+            <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input className="pl-9" placeholder="Buscar por nombre, email o negocio..." value={search} onChange={(e) => setSearch(e.target.value)} />
             </div>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2 items-center">
+              <span className="text-xs text-muted-foreground font-medium">Estado:</span>
               {(["all", "pending", "active", "blocked"] as const).map((s) => (
                 <Button key={s} variant={filterStatus === s ? "default" : "outline"} size="sm"
                   onClick={() => setFilterStatus(s)}
-                  className={filterStatus === s ? "bg-blue-600 text-foreground" : ""}>
+                  className={filterStatus === s ? "bg-blue-600 text-white" : ""}>
                   {s === "all" ? "Todos" : STATUS_LABELS[s]?.label}
+                </Button>
+              ))}
+              <span className="text-xs text-muted-foreground font-medium ml-2">Registro:</span>
+              {(["all", "7d", "30d", "90d"] as const).map((d) => (
+                <Button key={d} variant={filterDate === d ? "default" : "outline"} size="sm"
+                  onClick={() => setFilterDate(d)}
+                  className={filterDate === d ? "bg-emerald-600 text-white" : ""}>
+                  {d === "all" ? "Siempre" : d === "7d" ? "Últimos 7 días" : d === "30d" ? "Últimos 30 días" : "Últimos 90 días"}
                 </Button>
               ))}
             </div>
@@ -541,6 +644,9 @@ export default function Registrations() {
                   </div>
                 </div>
               </div>
+
+              {/* Estadísticas de cobros y comisión */}
+              <UserDetailStats userId={selectedReg.id} />
 
               {/* Acciones */}
               <div className="space-y-2 pt-2 border-t border-gray-100">
