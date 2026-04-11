@@ -1233,3 +1233,73 @@ export async function sendRegistrationConfirmationEmail(data: {
     return false;
   }
 }
+
+// ─── Email de cobro fallido al vendedor ──────────────────────────────────────
+export async function sendPaymentFailedVendorEmail(data: {
+  vendorEmail: string;
+  vendorName: string;
+  payerName: string;
+  payerEmail: string;
+  amount: number;
+  currency: string;
+  errorMessage: string;
+  description?: string;
+  failedAt: Date;
+}): Promise<boolean> {
+  const resend = getResend();
+  if (!resend) { console.warn("[Email] RESEND_API_KEY no configurada."); return false; }
+  const amountFormatted = new Intl.NumberFormat("es-MX", { style: "currency", currency: data.currency || "MXN" }).format(parseFloat(String(data.amount)));
+  const dateFormatted = new Intl.DateTimeFormat("es-MX", { dateStyle: "full", timeStyle: "short", timeZone: "America/Mexico_City" }).format(data.failedAt);
+  const html = `<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>Cobro no procesado</title></head>
+<body style="margin:0;padding:0;background:#f4f4f5;font-family:'Helvetica Neue',Arial,sans-serif;">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f4f5;padding:40px 0;"><tr><td align="center">
+<table width="600" cellpadding="0" cellspacing="0" style="background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.08);">
+<tr><td style="background:linear-gradient(135deg,#dc2626,#f97316);padding:28px 40px;">
+  <p style="margin:0;color:#fff;font-size:13px;opacity:0.85;">KobraPay</p>
+  <h1 style="margin:6px 0 0;color:#fff;font-size:26px;font-weight:800;">&#9888;&#65039; Cobro no procesado</h1>
+</td></tr>
+<tr><td style="padding:32px 40px;">
+  <p style="color:#374151;font-size:15px;margin:0 0 24px;">Hola <strong>${data.vendorName}</strong>, un cobro a tu cliente no pudo procesarse.</p>
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#fef2f2;border:1px solid #fecaca;border-radius:10px;margin-bottom:24px;"><tr><td style="padding:20px;">
+    <p style="margin:0;color:#991b1b;font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:1px;">Monto rechazado</p>
+    <p style="margin:8px 0 4px;color:#991b1b;font-size:36px;font-weight:900;">${amountFormatted}</p>
+    <p style="margin:0;color:#b91c1c;font-size:14px;font-weight:600;">&#10060; ${data.errorMessage}</p>
+  </td></tr></table>
+  <table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #e5e7eb;border-radius:10px;overflow:hidden;margin-bottom:24px;">
+    <tr><td style="background:#f9fafb;padding:10px 16px;border-bottom:1px solid #e5e7eb;"><p style="margin:0;color:#6b7280;font-size:12px;font-weight:600;text-transform:uppercase;">Detalles del intento</p></td></tr>
+    <tr><td style="padding:0 16px;"><table width="100%" cellpadding="0" cellspacing="0">
+      <tr><td style="padding:10px 0;border-bottom:1px solid #f3f4f6;color:#6b7280;font-size:13px;">Cliente</td><td style="padding:10px 0;border-bottom:1px solid #f3f4f6;text-align:right;color:#111827;font-size:13px;font-weight:600;">${data.payerName}</td></tr>
+      <tr><td style="padding:10px 0;border-bottom:1px solid #f3f4f6;color:#6b7280;font-size:13px;">Email del cliente</td><td style="padding:10px 0;border-bottom:1px solid #f3f4f6;text-align:right;color:#111827;font-size:13px;">${data.payerEmail}</td></tr>
+      ${data.description ? `<tr><td style="padding:10px 0;border-bottom:1px solid #f3f4f6;color:#6b7280;font-size:13px;">Concepto</td><td style="padding:10px 0;border-bottom:1px solid #f3f4f6;text-align:right;color:#111827;font-size:13px;">${data.description}</td></tr>` : ""}
+      <tr><td style="padding:10px 0;color:#6b7280;font-size:13px;">Fecha del intento</td><td style="padding:10px 0;text-align:right;color:#111827;font-size:13px;">${dateFormatted}</td></tr>
+    </table></td></tr>
+  </table>
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#fffbeb;border:1px solid #fde68a;border-radius:10px;margin-bottom:28px;"><tr><td style="padding:20px;">
+    <p style="margin:0 0 10px;color:#92400e;font-size:14px;font-weight:700;">&#128161; Dile a tu cliente que haga lo siguiente:</p>
+    <p style="margin:0 0 8px;color:#78350f;font-size:13px;">&#128222; <strong>Llamar a su banco</strong> y solicitar que autoricen compras en linea con su tarjeta. Muchos bancos en Mexico bloquean pagos digitales por defecto.</p>
+    <p style="margin:0 0 8px;color:#78350f;font-size:13px;">&#128179; <strong>Verificar su saldo</strong> disponible en la tarjeta que intento usar.</p>
+    <p style="margin:0 0 8px;color:#78350f;font-size:13px;">&#128260; <strong>Intentar con otra tarjeta</strong> (debito o credito de otro banco).</p>
+    <p style="margin:0;color:#78350f;font-size:13px;">&#8987; <strong>Intentar mas tarde</strong> si el banco bloqueo el pago por seguridad temporal.</p>
+  </td></tr></table>
+  <div style="text-align:center;">
+    <a href="https://kobrapay.mx/dashboard/sales" style="display:inline-block;background:#dc2626;color:#fff;font-weight:700;font-size:15px;padding:14px 36px;border-radius:10px;text-decoration:none;">Ver en mi panel &#8594;</a>
+  </div>
+</td></tr>
+<tr><td style="background:#1a1a2e;padding:20px 40px;text-align:center;">
+  <p style="margin:0;color:#9ca3af;font-size:12px;">Procesado por <strong style="color:#00c853;">KobraPay</strong> &middot; kobrapay.mx</p>
+</td></tr>
+</table></td></tr></table></body></html>`;
+  try {
+    const { error } = await resend.emails.send({
+      from: `KobraPay <${ENV.fromEmail}>`,
+      to: data.vendorEmail,
+      subject: `\u26a0\ufe0f Cobro no procesado: ${amountFormatted} de ${data.payerName}`,
+      html,
+    });
+    if (error) { console.error("[Email] Error al enviar notificacion de fallo al vendedor:", error); return false; }
+    return true;
+  } catch (err) {
+    console.error("[Email] Excepcion al enviar notificacion de fallo al vendedor:", err);
+    return false;
+  }
+}

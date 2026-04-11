@@ -329,9 +329,9 @@ export default function Registrations() {
 
   return (
     <DashboardLayout title="Solicitudes de Registro">
-      <div className="flex gap-6 h-full">
+      <div className="flex gap-0 lg:gap-6 h-full relative">
         {/* ── Columna izquierda: lista ── */}
-        <div className={`flex-1 space-y-5 transition-all ${selectedReg ? "max-w-[calc(100%-420px)]" : ""}`}>
+        <div className={`flex-1 space-y-5 transition-all min-w-0 ${selectedReg ? "lg:max-w-[calc(100%-420px)]" : ""}`}>
           {/* Header */}
           <div className="flex items-center justify-between">
             <div>
@@ -505,7 +505,10 @@ export default function Registrations() {
 
         {/* ── Panel lateral de aprobación ── */}
         {selectedReg && (
-          <div className="w-[400px] flex-shrink-0 bg-white border border-gray-200 rounded-xl overflow-y-auto max-h-[calc(100vh-120px)] sticky top-4">
+          <div className="fixed inset-0 z-50 lg:static lg:inset-auto lg:z-auto lg:w-[400px] lg:flex-shrink-0 flex items-end lg:items-start justify-center lg:justify-start">
+            {/* Overlay en móvil */}
+            <div className="absolute inset-0 bg-black/50 lg:hidden" onClick={() => setSelectedReg(null)} />
+            <div className="relative w-full max-w-lg lg:max-w-none lg:w-[400px] bg-white border border-gray-200 rounded-t-2xl lg:rounded-xl overflow-y-auto max-h-[90vh] lg:max-h-[calc(100vh-120px)] lg:sticky lg:top-4">
             {/* Header del panel */}
             <div className="flex items-center justify-between p-5 border-b border-gray-100 bg-gray-50">
               <div className="flex items-center gap-3">
@@ -716,6 +719,7 @@ export default function Registrations() {
                   </Button>
                 )}
               </div>
+            </div>
             </div>
           </div>
         )}

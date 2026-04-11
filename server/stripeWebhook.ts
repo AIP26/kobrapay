@@ -20,7 +20,7 @@ import {
 } from "./db";
 import { notifyOwner } from "./_core/notification";
 import { createNotification } from "./db";
-import { sendRecurringPaymentEmail, sendPaymentReceipt, sendVendorPaymentEmail } from "./_core/email";
+import { sendRecurringPaymentEmail, sendPaymentReceipt, sendVendorPaymentEmail, sendPaymentFailedVendorEmail } from "./_core/email";
 import { getVendorSettings } from "./db";
 import { dispatchWebhookEvent } from "./webhookDispatcher";
 import { contentAIEvents } from "./contentAIWebhook";
@@ -258,6 +258,41 @@ export function registerStripeWebhook(app: express.Application) {
                   cardBrand: undefined,
                   errorMessage: errorEs,
                 });
+                // Enviar email de fallo al vendedor
+                try {
+                  const vendor = await getUserById(userId);
+                  if (vendor?.email) {
+                    // Intentar obtener amount desde el link de pago
+                    const token = pi.metadata?.paymentLinkToken;
+                    let amount = pi.amount ? pi.amount / 100 : 0;
+                    let currency = pi.currency?.toUpperCase() || "MXN";
+                    let description: string | undefined;
+                    if (token) {
+                      try {
+                        const link = await getPaymentLinkByToken(token);
+                        if (link) {
+                          amount = parseFloat(String(link.amount));
+                          currency = link.currency || "MXN";
+                          description = link.description || undefined;
+                        }
+                      } catch (_) {}
+                    }
+                    await sendPaymentFailedVendorEmail({
+                      vendorEmail: vendor.email,
+                      vendorName: vendor.name || "Vendedor",
+                      payerName: pi.metadata?.payerName || "Cliente",
+                      payerEmail: pi.metadata?.payerEmail || "",
+                      amount,
+                      currency,
+                      errorMessage: errorEs,
+                      description,
+                      failedAt: new Date(),
+                    });
+                    console.log(`[Webhook] Email de cobro fallido enviado al vendedor ${vendor.email}`);
+                  }
+                } catch (failedEmailErr) {
+                  console.error("[Webhook] Error enviando email de fallo al vendedor:", failedEmailErr);
+                }
                 // Notificar a ContentAI
                 try {
                   await contentAIEvents.paymentFailed({
