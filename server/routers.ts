@@ -2318,6 +2318,56 @@ export const appRouter = router({
          return { success: false, status: paymentIntent.status };
       }),
 
+    // ─── Sistema 2: Polling de estado de pago ────────────────────────────────
+    // Endpoint público que el frontend llama cada 5-10s para saber si un pago
+    // en estado 'processing' ya fue confirmado por Stripe.
+    getPaymentStatus: publicProcedure
+      .input(z.object({
+        paymentIntentId: z.string().min(1),
+        token: z.string().min(1),
+      }))
+      .query(async ({ input }) => {
+        // Verificar que el token existe y el PI pertenece a él (anti-enumeración)
+        const link = await getPaymentLinkByToken(input.token);
+        if (!link) throw new TRPCError({ code: "NOT_FOUND", message: "Enlace no encontrado" });
+
+        // Consultar el estado real del PaymentIntent en Stripe
+        let piStatus: string;
+        try {
+          const pi = await stripe.paymentIntents.retrieve(input.paymentIntentId);
+          // Verificar que el PI pertenece al link (anti-fraude)
+          if (pi.metadata?.paymentLinkToken && pi.metadata.paymentLinkToken !== input.token) {
+            throw new TRPCError({ code: "FORBIDDEN" });
+          }
+          piStatus = pi.status;
+        } catch (err) {
+          if (err instanceof TRPCError) throw err;
+          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Error consultando estado del pago" });
+        }
+
+        // Mapear el estado de Stripe a un estado legible para el frontend
+        const statusMap: Record<string, { label: string; isFinal: boolean; isSuccess: boolean }> = {
+          succeeded:               { label: "Pago confirmado",           isFinal: true,  isSuccess: true  },
+          processing:              { label: "Procesando pago",            isFinal: false, isSuccess: false },
+          requires_action:         { label: "Requiere acción del banco",   isFinal: false, isSuccess: false },
+          requires_payment_method: { label: "Pago no completado",         isFinal: true,  isSuccess: false },
+          canceled:                { label: "Pago cancelado",              isFinal: true,  isSuccess: false },
+          requires_confirmation:   { label: "Pendiente de confirmar",      isFinal: false, isSuccess: false },
+          requires_capture:        { label: "Pendiente de captura",        isFinal: false, isSuccess: false },
+        };
+        const mapped = statusMap[piStatus] ?? { label: piStatus, isFinal: false, isSuccess: false };
+
+        return {
+          piStatus,
+          label: mapped.label,
+          isFinal: mapped.isFinal,
+          isSuccess: mapped.isSuccess,
+          linkStatus: link.status,
+          // Si Stripe dice succeeded pero el link aún no está 'paid', el webhook está en camino
+          webhookPending: piStatus === "succeeded" && link.status !== "paid",
+        };
+      }),
+
     // ─── Reembolso de una transacción ───────────────────────────────────────
     refund: protectedProcedure
       .input(z.object({

@@ -182,6 +182,8 @@ type Transaction = {
   idDocumentUrl?: string | null;
   selfieVerified?: boolean | null;
   faceMatchScore?: number | string | null;
+  // Sistema 3: Trazabilidad OXXO/SPEI tardío
+  paidAfterExpiry?: boolean | null;
 };
 
 function generateOperationNumber(tx: Transaction): string {
@@ -462,6 +464,13 @@ function TransactionDetailModal({
               </span>
             )}
             <p className="text-xs text-muted-foreground mt-2">{formatDate(tx.createdAt)}</p>
+            {/* Sistema 3: Badge de pago tardío OXXO/SPEI */}
+            {tx.paidAfterExpiry && (
+              <div className="mt-2 inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-orange-100 text-orange-700 border border-orange-200">
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                Pago tardío — link estaba expirado
+              </div>
+            )}
           </div>
 
           {/* Alerta de fallo */}

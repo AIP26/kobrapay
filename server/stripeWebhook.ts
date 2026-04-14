@@ -24,6 +24,13 @@ import { sendRecurringPaymentEmail, sendPaymentReceipt, sendVendorPaymentEmail, 
 import { getVendorSettings } from "./db";
 import { dispatchWebhookEvent } from "./webhookDispatcher";
 import { contentAIEvents } from "./contentAIWebhook";
+import {
+  persistirEvento,
+  marcarProcesando,
+  marcarProcesado,
+  marcarFallido,
+  alertarWebhookDuplicado,
+} from "./webhookStore";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "", {
   apiVersion: "2026-02-25.clover",
@@ -71,6 +78,33 @@ export function registerStripeWebhook(app: express.Application) {
       }
 
       console.log(`[Stripe Webhook] Event: ${event.type} (${event.id})`);
+
+      // ─── Sistema 1: Persistir evento ANTES de procesarlo ─────────────────────
+      // Garantiza que ningún evento se pierda aunque la BD falle durante el procesamiento.
+      let webhookEventDbId: number | null = null;
+      try {
+        const piObj = event.data.object as unknown as Record<string, unknown>;
+        const piMeta = (piObj?.metadata ?? {}) as Record<string, string>;
+        const persistResult = await persistirEvento({
+          stripeEventId: event.id,
+          eventType: event.type,
+          payload: JSON.stringify(event),
+          paymentLinkToken: piMeta?.paymentLinkToken,
+          stripePaymentIntentId: (piObj?.id as string) || undefined,
+          relatedUserId: piMeta?.userId ? parseInt(piMeta.userId) : undefined,
+        });
+        if (!persistResult.saved) {
+          // Evento duplicado — ya fue procesado antes. Responder 200 a Stripe.
+          alertarWebhookDuplicado(event.id, event.type);
+          return res.json({ received: true, duplicate: true });
+        }
+        webhookEventDbId = persistResult.id;
+        await marcarProcesando(webhookEventDbId);
+      } catch (persistErr) {
+        // Si falla la persistencia, procesamos igual (degraded mode) para no perder pagos.
+        console.error("[Stripe Webhook] Fallo al persistir evento (degraded mode):", persistErr);
+      }
+      // ─────────────────────────────────────────────────────────────────────────
 
       try {
         switch (event.type) {
@@ -125,7 +159,12 @@ export function registerStripeWebhook(app: express.Application) {
                     stripeChargeId: stripeChargeId || "",
                     cardLast4,
                     cardBrand,
+                    // Sistema 3: Trazabilidad OXXO/SPEI tardío
+                    paidAfterExpiry: wasExpired,
                   });
+                  if (wasExpired) {
+                    console.log(`[Webhook][Sistema3] TX id=${tx.id} marcada con paidAfterExpiry=true (pago tardío de link expirado)`);
+                  }
                 }
 
                 // Notify vendor via Manus push
@@ -199,6 +238,7 @@ export function registerStripeWebhook(app: express.Application) {
                   console.error("[Webhook] Error enviando comprobante al pagador:", emailErr);
                 }
                 // Enviar notificación por email al vendedor
+                // Sistema 3: Si fue pago tardío, incluir nota especial en el email
                 try {
                   const vendor = await getUserById(userId);
                   if (vendor?.email) {
@@ -209,13 +249,19 @@ export function registerStripeWebhook(app: express.Application) {
                       payerEmail: pi.metadata?.payerEmail || "",
                       amount: link.amount,
                       currency: link.currency || "MXN",
-                      description: link.description || "Pago",
+                      description: wasExpired
+                        ? `[PAGO TARDÍO - LINK EXPIRADO] ${link.description || "Pago"}`
+                        : link.description || "Pago",
                       transactionId: pi.id,
                       cardBrand,
                       cardLast4,
                       paidAt: new Date(),
                     });
-                    console.log(`[Webhook] Notificación de pago enviada al vendedor ${vendor.email}`);
+                    if (wasExpired) {
+                      console.log(`[Webhook][Sistema3] Notificación de pago tardío enviada al vendedor ${vendor.email}`);
+                    } else {
+                      console.log(`[Webhook] Notificación de pago enviada al vendedor ${vendor.email}`);
+                    }
                   }
                 } catch (vendorEmailErr) {
                   console.error("[Webhook] Error enviando notificación al vendedor:", vendorEmailErr);
@@ -807,8 +853,21 @@ export function registerStripeWebhook(app: express.Application) {
           default:
             console.log(`[Stripe Webhook] Unhandled event type: ${event.type}`);
         }
+        // ─── Sistema 1: Marcar evento como procesado exitosamente ─────────────────────────
+        if (webhookEventDbId) {
+          await marcarProcesado(webhookEventDbId).catch((e) =>
+            console.error("[WebhookStore] Error al marcar procesado:", e)
+          );
+        }
       } catch (err) {
-        console.error("[Stripe Webhook] Error processing event:", err);
+        const errMsg = err instanceof Error ? err.message : String(err);
+        console.error("[Stripe Webhook] Error processing event:", errMsg);
+        // ─── Sistema 1: Marcar evento como fallido y registrar error para retry ─────────────────
+        if (webhookEventDbId) {
+          await marcarFallido(webhookEventDbId, errMsg).catch((e) =>
+            console.error("[WebhookStore] Error al marcar fallido:", e)
+          );
+        }
       }
 
       res.json({ received: true });

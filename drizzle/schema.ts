@@ -224,6 +224,10 @@ export const transactions = mysqlTable("transactions", {
   refundRequestedAt: timestamp("refundRequestedAt"),
   refundRequestReason: varchar("refundRequestReason", { length: 64 }),
   refundRequestStatus: mysqlEnum("refundRequestStatus", ["pending", "approved", "rejected"]),
+  // Sistema 3: Trazabilidad OXXO/SPEI tardío
+  // true cuando el pago llegó después de que el link ya había expirado.
+  // Permite conciliación, soporte y alertas diferenciadas.
+  paidAfterExpiry: boolean("paidAfterExpiry").default(false).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
@@ -1577,3 +1581,41 @@ export const securityConfig = mysqlTable("security_config", {
 });
 export type SecurityConfig = typeof securityConfig.$inferSelect;
 export type InsertSecurityConfig = typeof securityConfig.$inferInsert;
+
+/**
+ * Sistema 1: Tabla de eventos de webhook para procesamiento resiliente.
+ * Cada evento de Stripe se persiste ANTES de procesarlo.
+ * Esto garantiza que ningún evento se pierda aunque la BD falle durante el procesamiento.
+ *
+ * Estados:
+ *   pending    → recibido, aún no procesado
+ *   processing → en proceso (lock para evitar procesamiento paralelo)
+ *   processed  → procesado exitosamente
+ *   failed     → falló después de todos los reintentos
+ *   duplicate  → evento duplicado, ignorado intencionalmente
+ */
+export const webhookEvents = mysqlTable("webhook_events", {
+  id: int("id").autoincrement().primaryKey(),
+  stripeEventId: varchar("stripeEventId", { length: 128 }).notNull().unique(),
+  eventType: varchar("eventType", { length: 128 }).notNull(),
+  // Payload completo del evento serializado como JSON
+  payload: text("payload").notNull(),
+  status: mysqlEnum("status", ["pending", "processing", "processed", "failed", "duplicate"])
+    .default("pending")
+    .notNull(),
+  // Número de intentos de procesamiento (para retry con backoff)
+  attempts: int("attempts").default(0).notNull(),
+  // Último error registrado para diagnóstico
+  lastError: text("lastError"),
+  // Metadatos de trazabilidad extraídos del payload para búsquedas rápidas
+  paymentLinkToken: varchar("paymentLinkToken", { length: 128 }),
+  stripePaymentIntentId: varchar("stripePaymentIntentId", { length: 128 }),
+  relatedUserId: int("relatedUserId"),
+  // Timestamps para auditoría y conciliación
+  receivedAt: timestamp("receivedAt").defaultNow().notNull(),
+  processedAt: timestamp("processedAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type WebhookEvent = typeof webhookEvents.$inferSelect;
+export type InsertWebhookEvent = typeof webhookEvents.$inferInsert;

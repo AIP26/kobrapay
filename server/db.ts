@@ -458,6 +458,8 @@ export async function updateTransactionStatus(
     faceMatchScore?: string;
     ipAddress?: string;
     userAgent?: string;
+    // Sistema 3: Trazabilidad OXXO/SPEI tardío
+    paidAfterExpiry?: boolean;
   }
 ) {
   const db = await getDb();

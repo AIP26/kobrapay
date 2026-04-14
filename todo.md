@@ -1319,3 +1319,10 @@
 - [x] Bug #2: Pantalla "pago en proceso" cuando confirmPayment retorna success:false con status=processing
 - [x] Bug #3: Migración SQL UNIQUE en stripePaymentIntentId + guard de idempotencia en webhook
 - [x] Bug #4: Manejo de OXXO/SPEI en links expirados en stripeWebhook.ts
+
+## Infraestructura Crítica v9.5 — 14 Abril 2026
+
+- [x] Sistema 1: Tabla webhook_events + procesamiento resiliente con retry
+- [x] Sistema 2: Endpoint /api/payment-status/{token} + polling en PayPage.tsx
+- [x] Sistema 3: Flag paid_after_expiry en transactions + trazabilidad OXXO/SPEI
+- [x] Sistema 4: Alertas internas (pagos fallidos, webhooks duplicados, sin confirmación)
