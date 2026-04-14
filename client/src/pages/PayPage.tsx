@@ -40,7 +40,10 @@ import {
 
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || "");
 
-type Step = "info" | "customer" | "otp" | "selfie" | "signature" | "id_upload" | "payment" | "success";
+// Bug #2 fix: Se agrega estado 'processing' para cuando el banco necesita tiempo extra
+// (pagos SPEI, 3DS pendiente, o tarjetas que requieren verificación adicional).
+// Sin este estado, el usuario quedaba en la pantalla de pago sin ningún feedback.
+type Step = "info" | "customer" | "otp" | "selfie" | "signature" | "id_upload" | "payment" | "processing" | "success";
 
 interface CustomerData {
   firstName: string;
@@ -556,11 +559,61 @@ function PaymentForm({ token }: { token: string }) {
             businessName: result.businessName || businessName,
           });
           setStep("success");
+        } else if (result.status === "processing") {
+          // Bug #2 fix: El banco está procesando el pago de forma asíncrona.
+          // Esto ocurre con SPEI, 3DS pendiente, o algunos bancos que demoran.
+          // El webhook de Stripe confirmará el pago cuando el banco responda.
+          // NO mostrar error — el dinero puede estar en camino.
+          setStep("processing");
+        } else {
+          // Estado inesperado: mostrar mensaje genérico sin pánico
+          toast.error(lang === "es" ? "No se pudo confirmar el pago. Intenta de nuevo." : "Could not confirm payment. Please try again.");
         }
       }
     } catch { toast.error(lang === "es" ? "Error al confirmar el pago" : "Error confirming payment"); }
     finally { setProcessing(false); }
   };
+
+  // ─── Bug #2 fix: Pantalla de pago en proceso ──────────────────────────────
+  // Se muestra cuando el banco necesita tiempo para confirmar el pago (SPEI, 3DS).
+  // Evita que el usuario quede en la pantalla de pago sin feedback y entre en pánico.
+  if (step === "processing") {
+    return (
+      <div className="min-h-screen bg-gray-50 flex flex-col">
+        <PageHeader businessName={businessName} />
+        <div className="flex-1 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-lg max-w-md w-full p-8 text-center">
+            <div className="w-20 h-20 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-5">
+              <Loader2 className="w-12 h-12 text-amber-500 animate-spin" />
+            </div>
+            <h2 className="text-2xl font-bold text-foreground mb-2">
+              {lang === "es" ? "Pago en proceso" : "Payment processing"}
+            </h2>
+            <p className="text-muted-foreground text-sm mb-6">
+              {lang === "es"
+                ? "Tu banco está verificando el pago. Esto puede tardar unos minutos. Recibirás un correo de confirmación cuando se complete."
+                : "Your bank is verifying the payment. This may take a few minutes. You will receive a confirmation email when it is complete."}
+            </p>
+            <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-left mb-5">
+              <p className="text-sm font-semibold text-amber-800 mb-1">
+                {lang === "es" ? "¿Qué debo hacer?" : "What should I do?"}
+              </p>
+              <ul className="text-sm text-amber-700 space-y-1 list-disc list-inside">
+                <li>{lang === "es" ? "No cierres esta página todavía" : "Do not close this page yet"}</li>
+                <li>{lang === "es" ? "Revisa tu correo en los próximos minutos" : "Check your email in the next few minutes"}</li>
+                <li>{lang === "es" ? "Si no recibes confirmación, contacta a tu banco" : "If you don't receive confirmation, contact your bank"}</li>
+              </ul>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {lang === "es"
+                ? "Si ya ves el cargo en tu estado de cuenta, el pago fue exitoso."
+                : "If you see the charge on your bank statement, the payment was successful."}
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   // ─── Pantalla de éxito ────────────────────────────────────────────────────
   if (step === "success") {

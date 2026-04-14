@@ -186,7 +186,8 @@ export const transactions = mysqlTable("transactions", {
   id: int("id").autoincrement().primaryKey(),
   paymentLinkId: int("paymentLinkId").notNull(),
   userId: int("userId").notNull(),
-  stripePaymentIntentId: varchar("stripePaymentIntentId", { length: 128 }),
+  // Bug #3 fix: índice UNIQUE para prevenir duplicados ante reintentos del webhook
+  stripePaymentIntentId: varchar("stripePaymentIntentId", { length: 128 }).unique("idx_uniq_stripe_pi_id"),
   stripeChargeId: varchar("stripeChargeId", { length: 128 }),
   amount: decimal("amount", { precision: 12, scale: 2 }).notNull(),
   currency: varchar("currency", { length: 8 }).default("MXN").notNull(),

@@ -1312,3 +1312,10 @@
 - [x] Notificación automática al owner cuando se registra un nuevo usuario (email + panel)
 - [x] Columna de cobros realizados en la lista de Registros (visible en desktop)
 - [x] Botón "Exportar CSV" en Registros con todos los datos de usuarios
+
+## Auditoría Crítica — 14 Abril 2026
+
+- [x] Bug #1: Eliminar doble email de recibo desde confirmPayment en routers.ts
+- [x] Bug #2: Pantalla "pago en proceso" cuando confirmPayment retorna success:false con status=processing
+- [x] Bug #3: Migración SQL UNIQUE en stripePaymentIntentId + guard de idempotencia en webhook
+- [x] Bug #4: Manejo de OXXO/SPEI en links expirados en stripeWebhook.ts

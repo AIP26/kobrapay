@@ -80,9 +80,28 @@ export function registerStripeWebhook(app: express.Application) {
             const userId = pi.metadata?.userId ? parseInt(pi.metadata.userId) : null;
 
             if (token && userId) {
+              // ─── Bug #3 fix: Guard de idempotencia ────────────────────────────────────────────────────────────────────
+              // Si ya existe una transacción con este paymentIntentId en estado succeeded,
+              // el webhook fue reenviado por Stripe. No procesar de nuevo para evitar
+              // duplicar emails, comisiones y notificaciones.
+              const existingTx = await getTransactionByPaymentIntent(pi.id);
+              if (existingTx && existingTx.status === "succeeded") {
+                console.log(`[Webhook] Idempotencia: PI ${pi.id} ya procesado (TX id=${existingTx.id}). Ignorando reenvío.`);
+                break;
+              }
+              // ──────────────────────────────────────────────────────────────────────────────────────
               const link = await getPaymentLinkByToken(token);
-              if (link && link.status === "pending") {
+              // Bug #4 fix: Aceptar pagos de links en estado 'pending' O 'expired'.
+              // OXXO y SPEI son métodos asíncronos: el cliente puede pagar en tienda
+              // horas después de que el link expiró. Stripe confirma el pago igual.
+              // Si el link está expirado pero Stripe lo confirmó, lo procesamos y
+              // dejamos traza de que fue un pago tardío.
+              if (link && (link.status === "pending" || link.status === "expired")) {
+                const wasExpired = link.status === "expired";
                 await updatePaymentLinkStatus(link.id, "paid", new Date());
+                if (wasExpired) {
+                  console.log(`[Webhook] OXXO/SPEI tardío: link ${token} estaba expirado pero PI ${pi.id} fue confirmado por Stripe. Procesando pago tardío.`);
+                }
 
                 // Get card info from charge
                 let cardLast4: string | undefined;

@@ -2289,28 +2289,12 @@ export const appRouter = router({
             console.error("[ClientRecords] Error al registrar expediente:", err);
           }
 
-          // Enviar recibo profesional por email
-          try {
-            if (paymentIntent.metadata.payerEmail) {
-              const txs2 = await getTransactionsByUser(link.userId);
-              const tx2 = txs2.find((t) => t.stripePaymentIntentId === input.paymentIntentId);
-              await sendPaymentReceipt({
-                payerEmail: paymentIntent.metadata.payerEmail,
-                payerName: paymentIntent.metadata.payerName || "Cliente",
-                businessName: settings?.businessName || "Procesador de Pagos",
-                businessEmail: settings?.businessEmail,
-                amount: link.amount,
-                currency: link.currency,
-                description: link.description,
-                transactionId: paymentIntent.id,
-                cardBrand: tx?.cardBrand,
-                cardLast4: tx?.cardLast4,
-                paidAt: new Date(),
-              });
-            }
-          } catch (err) {
-            console.error("[Email] Error al enviar recibo:", err);
-          }
+          // Bug #1 fix: El recibo al pagador se envía EXCLUSIVAMENTE desde el webhook
+          // de Stripe (payment_intent.succeeded), que es la única fuente de verdad.
+          // Eliminar este bloque evita que el cliente reciba dos correos idénticos,
+          // lo que generaba confusión y riesgo de contracargo.
+          // El webhook garantiza el envío incluso si confirmPayment falla o se interrumpe.
+          console.log(`[confirmPayment] Pago succeeded PI=${paymentIntent.id}. Recibo delegado al webhook de Stripe.`);
 
           try {
             await notifyOwner({
