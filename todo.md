@@ -1326,3 +1326,24 @@
 - [x] Sistema 2: Endpoint /api/payment-status/{token} + polling en PayPage.tsx
 - [x] Sistema 3: Flag paid_after_expiry en transactions + trazabilidad OXXO/SPEI
 - [x] Sistema 4: Alertas internas (pagos fallidos, webhooks duplicados, sin confirmación)
+
+## Fase 2A — Integración GHL (Cobro → GHL)
+
+- [x] Módulo ghlClient.ts: buscar contacto por email, actualizar, crear, agregar nota
+- [x] Tabla ghl_sync_queue: cola de sincronización con retry
+- [x] Conectar al webhook payment_intent.succeeded
+- [x] Mapping de campos: nombre, email, phone, monto, fecha, método, txID, status, paidAfterExpiry
+- [x] Guard de idempotencia (evitar doble sync)
+- [x] Comportamiento si contacto no existe (crear automáticamente)
+- [x] Comportamiento si GHL falla (encolar con retry)
+- [x] Logs estructurados y alertas
+- [ ] Tests con mocks de GHL API (pendiente)
+- [ ] Variable de entorno GHL_API_KEY pendiente de configurar
+
+## Fase 2B — Integración Google Sheets (Log Central de Ingresos)
+
+- [ ] Schema: tabla sheets_sync_queue en BD
+- [ ] Módulo sheetsClient.ts con Google Sheets API, anti-duplicados y retry
+- [ ] Conectar al webhook: success, failed, processing
+- [ ] Tests con mocks
+- [ ] Variables de entorno: GOOGLE_SERVICE_ACCOUNT_JSON + GOOGLE_SHEETS_ID

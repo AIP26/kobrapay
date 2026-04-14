@@ -1619,3 +1619,105 @@ export const webhookEvents = mysqlTable("webhook_events", {
 });
 export type WebhookEvent = typeof webhookEvents.$inferSelect;
 export type InsertWebhookEvent = typeof webhookEvents.$inferInsert;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// FASE 2A — Integración Go High Level (GHL)
+// ─────────────────────────────────────────────────────────────────────────────
+/**
+ * Cola de sincronización con Go High Level.
+ *
+ * Cada pago exitoso genera un registro aquí. El módulo ghlClient.ts intenta
+ * sincronizar con GHL y actualiza el estado. Si GHL falla, el registro queda
+ * en 'pending' para reintento automático (máx 5 intentos, backoff exponencial).
+ *
+ * Estrategia anti-duplicados:
+ *   - stripePaymentIntentId tiene índice UNIQUE → imposible duplicar por PI
+ *   - Si GHL ya tiene el contacto, se actualiza (upsert por email)
+ *   - Si GHL no tiene el contacto, se crea automáticamente
+ *
+ * Activación: requiere variable de entorno GHL_API_KEY y GHL_LOCATION_ID.
+ * Mientras no estén configuradas, todos los registros quedan en 'skipped'
+ * con reason='GHL_NOT_CONFIGURED'. No hay errores ni interrupciones.
+ */
+export const ghlSyncQueue = mysqlTable("ghl_sync_queue", {
+  id: int("id").autoincrement().primaryKey(),
+
+  // Referencia a la transacción de KobraPay
+  transactionId: int("transactionId").notNull(),
+
+  // Anti-duplicados: un PaymentIntent solo puede tener un registro en la cola
+  stripePaymentIntentId: varchar("stripePaymentIntentId", { length: 128 }).unique("idx_ghl_uniq_pi"),
+
+  // ─── Datos del pagador (cacheados para no depender de la TX en el retry) ───
+  payerName: varchar("payerName", { length: 255 }),
+  payerEmail: varchar("payerEmail", { length: 320 }),
+  payerPhone: varchar("payerPhone", { length: 32 }),
+
+  // ─── Datos del pago ────────────────────────────────────────────────────────
+  amountMxn: decimal("amountMxn", { precision: 12, scale: 2 }).notNull(),
+  currency: varchar("currency", { length: 8 }).default("MXN").notNull(),
+  paymentMethod: varchar("paymentMethod", { length: 64 }),   // card | oxxo | spei
+  cardBrand: varchar("cardBrand", { length: 32 }),
+  cardLast4: varchar("cardLast4", { length: 4 }),
+  paidAt: timestamp("paidAt").notNull(),
+  paidAfterExpiry: boolean("paidAfterExpiry").default(false).notNull(),
+
+  // ─── Contexto del link (para la nota en GHL) ──────────────────────────────
+  paymentLinkDescription: varchar("paymentLinkDescription", { length: 500 }),
+  vendorUserId: int("vendorUserId"),
+
+  // ─── Estado de la sincronización ──────────────────────────────────────────
+  status: mysqlEnum("status", ["pending", "processing", "synced", "failed", "skipped"])
+    .default("pending")
+    .notNull(),
+  attempts: int("attempts").default(0).notNull(),
+  lastError: text("lastError"),
+
+  // ─── Resultado de GHL (para trazabilidad) ─────────────────────────────────
+  ghlContactId: varchar("ghlContactId", { length: 128 }),   // ID del contacto en GHL
+  ghlNoteId: varchar("ghlNoteId", { length: 128 }),         // ID de la nota creada en GHL
+  ghlAction: mysqlEnum("ghlAction", ["created", "updated", "skipped"]),
+
+  // ─── Timestamps ───────────────────────────────────────────────────────────
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  syncedAt: timestamp("syncedAt"),
+  nextRetryAt: timestamp("nextRetryAt"),
+});
+
+export type GhlSyncQueue = typeof ghlSyncQueue.$inferSelect;
+export type InsertGhlSyncQueue = typeof ghlSyncQueue.$inferInsert;
+
+// ─── Sheets Sync Queue ────────────────────────────────────────────────────────
+/**
+ * sheets_sync_queue — Cola de sincronización con Google Sheets via Apps Script.
+ * Anti-duplicados por (stripePaymentIntentId + eventType).
+ * Si Apps Script falla, el registro queda en 'failed' para reintento.
+ * Si no está configurado (GOOGLE_APPS_SCRIPT_URL), queda en 'skipped'.
+ */
+export const sheetsSyncQueue = mysqlTable("sheets_sync_queue", {
+  id: int("id").autoincrement().primaryKey(),
+  stripePaymentIntentId: varchar("stripePaymentIntentId", { length: 128 }).notNull(),
+  eventType: mysqlEnum("eventType", ["payment_succeeded", "payment_failed", "payment_processing"])
+    .notNull(),
+  payerEmail:         varchar("payerEmail", { length: 320 }),
+  payerName:          varchar("payerName", { length: 255 }),
+  amountMxn:          decimal("amountMxn", { precision: 12, scale: 2 }),
+  currency:           varchar("currency", { length: 8 }).default("MXN"),
+  paymentMethod:      varchar("paymentMethod", { length: 64 }),
+  paymentStatus:      varchar("paymentStatus", { length: 64 }),
+  paymentLinkToken:   varchar("paymentLinkToken", { length: 128 }),
+  errorMessage:       text("errorMessage"),
+  paidAfterExpiry:    boolean("paidAfterExpiry").default(false).notNull(),
+  vendorUserId:       int("vendorUserId"),
+  payloadJson:        text("payloadJson"),
+  status: mysqlEnum("status", ["pending", "synced", "failed", "skipped"])
+    .default("pending")
+    .notNull(),
+  retries:    int("retries").default(0).notNull(),
+  lastError:  text("lastError"),
+  createdAt:  timestamp("createdAt").defaultNow().notNull(),
+  updatedAt:  timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type SheetsSyncQueue = typeof sheetsSyncQueue.$inferSelect;
+export type InsertSheetsSyncQueue = typeof sheetsSyncQueue.$inferInsert;

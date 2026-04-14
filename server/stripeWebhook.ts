@@ -300,6 +300,58 @@ export function registerStripeWebhook(app: express.Application) {
                 } catch (caiErr) {
                   console.error("[ContentAI] Error notificando checkout.completed:", caiErr);
                 }
+
+                // ─── FASE 2A: Sincronización con Go High Level ─────────────────────────
+                // Se encola de forma no bloqueante. Si GHL no está configurado
+                // (GHL_API_KEY o GHL_LOCATION_ID ausentes), el registro queda en
+                // 'skipped' sin interrumpir el flujo de pago.
+                try {
+                  const { enqueueGhlSync } = await import('./ghlClient');
+                  await enqueueGhlSync({
+                    transactionId: tx?.id ?? 0,
+                    stripePaymentIntentId: pi.id,
+                    payerName: pi.metadata?.payerName || null,
+                    payerEmail: pi.metadata?.payerEmail || null,
+                    payerPhone: pi.metadata?.payerPhone || null,
+                    amountMxn: String(link.amount),
+                    currency: link.currency || 'MXN',
+                    paymentMethod: pi.payment_method_types?.[0] || null,
+                    cardBrand: cardBrand || null,
+                    cardLast4: cardLast4 || null,
+                    paidAt: new Date(),
+                    paidAfterExpiry: wasExpired,
+                    paymentLinkDescription: link.description || null,
+                    vendorUserId: userId,
+                  });
+                } catch (ghlErr) {
+                  console.error('[GHL] Error al encolar sincronización:', ghlErr);
+                }
+
+                // ── FASE 2B: Google Sheets — Log Central de Ingresos ─────────────
+                // No bloqueante. Si Sheets no está configurado, queda en 'skipped'.
+                try {
+                  const { enqueueSheetSync } = await import('./sheetsClient');
+                  await enqueueSheetSync({
+                    stripePaymentIntentId: pi.id,
+                    eventType: 'payment_succeeded',
+                    payerName: pi.metadata?.payerName || null,
+                    payerEmail: pi.metadata?.payerEmail || null,
+                    payerPhone: pi.metadata?.payerPhone || null,
+                    amountMxn: String(link.amount),
+                    currency: link.currency || 'MXN',
+                    paymentMethod: pi.payment_method_types?.[0] || null,
+                    cardBrand: cardBrand || null,
+                    cardLast4: cardLast4 || null,
+                    paymentStatus: 'succeeded',
+                    paymentLinkToken: link.token || null,
+                    errorMessage: null,
+                    paidAfterExpiry: wasExpired,
+                    vendorUserId: userId,
+                    paidAt: new Date(),
+                  });
+                } catch (sheetsErr) {
+                  console.error('[Sheets] Error al encolar sincronización de pago exitoso:', sheetsErr);
+                }
               }
             }
             break;
@@ -368,6 +420,31 @@ export function registerStripeWebhook(app: express.Application) {
                     customerEmail: pi.metadata?.payerEmail || undefined,
                   });
                 } catch (_) {}
+
+                // ── FASE 2B: Google Sheets — Log de Pago Fallido ───────────────
+                try {
+                  const { enqueueSheetSync } = await import('./sheetsClient');
+                  await enqueueSheetSync({
+                    stripePaymentIntentId: pi.id,
+                    eventType: 'payment_failed',
+                    payerName: pi.metadata?.payerName || null,
+                    payerEmail: pi.metadata?.payerEmail || null,
+                    payerPhone: pi.metadata?.payerPhone || null,
+                    amountMxn: String(pi.amount ? pi.amount / 100 : 0),
+                    currency: pi.currency?.toUpperCase() || 'MXN',
+                    paymentMethod: pi.payment_method_types?.[0] || null,
+                    cardBrand: null,
+                    cardLast4: null,
+                    paymentStatus: 'failed',
+                    paymentLinkToken: pi.metadata?.paymentLinkToken || null,
+                    errorMessage: errorEs,
+                    paidAfterExpiry: false,
+                    vendorUserId: userId,
+                    paidAt: null,
+                  });
+                } catch (sheetsFailedErr) {
+                  console.error('[Sheets] Error al encolar pago fallido:', sheetsFailedErr);
+                }
               }
             }
             break;
