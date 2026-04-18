@@ -3609,6 +3609,11 @@ export const appRouter = router({
       if (ctx.user.role !== "admin" && ctx.user.role !== "superadmin") throw new TRPCError({ code: "FORBIDDEN" });
       return getAllChargebacks();
     }),
+    countOpen: protectedProcedure.query(async ({ ctx }) => {
+      const cbs = await getChargebacksByUser(ctx.user.id);
+      const open = cbs.filter(c => c.status === "open" || c.status === "under_review");
+      return { count: open.length };
+    }),
     create: protectedProcedure
       .input(z.object({
         transactionId: z.number().optional(),

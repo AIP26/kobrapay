@@ -34,6 +34,8 @@ import {
   Eye,
   MessageSquare,
   FileDown,
+  AlertCircle,
+  BookOpen,
 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -127,6 +129,14 @@ export default function Chargebacks() {
   const inReview = chargebacks.filter(c => c.status === "under_review").length;
   const won = chargebacks.filter(c => c.status === "won").length;
   const lost = chargebacks.filter(c => c.status === "lost").length;
+  // Contracargos urgentes: dueBy <= 72h
+  const urgentChargebacks = chargebacks.filter(c => {
+    if (c.status !== "open" && c.status !== "under_review") return false;
+    if (!c.dueBy) return false;
+    const daysLeft = Math.ceil((new Date(c.dueBy).getTime() - Date.now()) / 86400000);
+    return daysLeft <= 3;
+  });
+  const [showGuide, setShowGuide] = useState(false);
 
   return (
     <DashboardLayout>
@@ -140,6 +150,31 @@ export default function Chargebacks() {
             <Plus className="w-4 h-4 mr-2" /> Nueva Aclaración
           </Button>
         </div>
+
+        {/* Banner de urgencia: contracargos con menos de 72h */}
+        {!isAdmin && urgentChargebacks.length > 0 && (
+          <div className="rounded-xl border-2 border-red-400 bg-red-50 p-4 flex items-start gap-3 animate-pulse">
+            <div className="w-9 h-9 bg-red-100 rounded-xl flex items-center justify-center flex-shrink-0">
+              <AlertCircle className="w-5 h-5 text-red-600" />
+            </div>
+            <div className="flex-1">
+              <p className="text-sm font-bold text-red-800">
+                🚨 URGENTE: {urgentChargebacks.length} contracargo{urgentChargebacks.length > 1 ? 's' : ''} vence{urgentChargebacks.length > 1 ? 'n' : ''} en menos de 72 horas
+              </p>
+              <p className="text-xs text-red-600 mt-1">
+                Tienes muy poco tiempo para presentar evidencia. Cada hora cuenta — el banco decide automáticamente si no respondes.
+              </p>
+              <div className="flex gap-2 mt-2">
+                {urgentChargebacks.map(c => (
+                  <button key={c.id} onClick={() => openDetail(c as Chargeback)}
+                    className="text-xs bg-red-100 hover:bg-red-200 text-red-800 font-bold px-2 py-1 rounded transition-colors">
+                    #{c.id} — {fmt(c.amount, c.currency)}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Info banner */}
         <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex gap-3">
@@ -205,6 +240,7 @@ export default function Chargebacks() {
                       <th className="text-left py-2 px-3 font-medium">Monto</th>
                       <th className="text-left py-2 px-3 font-medium">Motivo</th>
                       <th className="text-left py-2 px-3 font-medium">Estado</th>
+                      <th className="text-left py-2 px-3 font-medium">Fecha límite</th>
                       <th className="text-left py-2 px-3 font-medium">Acciones</th>
                     </tr>
                   </thead>
@@ -228,6 +264,18 @@ export default function Chargebacks() {
                             <Badge className={cfg.color + " border-0 flex items-center gap-1 w-fit"}>
                               {cfg.icon} {cfg.label}
                             </Badge>
+                          </td>
+                          <td className="py-3 px-3">
+                            {cb.dueBy ? (() => {
+                              const daysLeft = Math.ceil((new Date(cb.dueBy).getTime() - Date.now()) / 86400000);
+                              const isUrgent = daysLeft <= 3 && (cb.status === "open" || cb.status === "under_review");
+                              return (
+                                <span className={`text-xs font-medium ${isUrgent ? 'text-red-600 font-bold' : 'text-muted-foreground'}`}>
+                                  {isUrgent && '⚠️ '}{new Date(cb.dueBy).toLocaleDateString('es-MX', { day: 'numeric', month: 'short' })}
+                                  {isUrgent && ` (${daysLeft}d)`}
+                                </span>
+                              );
+                            })() : <span className="text-xs text-muted-foreground">—</span>}
                           </td>
                           <td className="py-3 px-3">
                             <Button
@@ -415,10 +463,50 @@ export default function Chargebacks() {
                   </div>
                 </>
               ) : (
-                <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
-                  <p className="text-xs text-amber-700">
-                    <strong>Estado actual:</strong> {STATUS_CONFIG[(detailCb.status as CBStatus) || "open"]?.label}. El equipo de KobraPay revisará tu caso y actualizará el estado en un plazo de 2-3 días hábiles.
-                  </p>
+                <div className="space-y-3">
+                  {/* Urgencia dueBy */}
+                  {detailCb.dueBy && (() => {
+                    const daysLeft = Math.ceil((new Date(detailCb.dueBy!).getTime() - Date.now()) / 86400000);
+                    const isUrgent = daysLeft <= 3;
+                    return (
+                      <div className={`rounded-lg p-3 border ${isUrgent ? 'bg-red-50 border-red-300' : 'bg-amber-50 border-amber-200'}`}>
+                        <p className={`text-xs font-bold ${isUrgent ? 'text-red-700' : 'text-amber-700'}`}>
+                          {isUrgent ? `🚨 URGENTE: Solo te quedan ${daysLeft} día${daysLeft === 1 ? '' : 's'}` : `⏰ Tienes ${daysLeft} días para responder`}
+                          {' — Fecha límite: '}{new Date(detailCb.dueBy!).toLocaleDateString('es-MX', { day: 'numeric', month: 'long', year: 'numeric' })}
+                        </p>
+                      </div>
+                    );
+                  })()}
+                  {/* Guía de 5 pasos */}
+                  {(detailCb.status === 'open' || detailCb.status === 'under_review') && (
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                      <p className="text-xs font-bold text-blue-800 mb-2 flex items-center gap-1">
+                        <BookOpen className="w-3.5 h-3.5" /> Guía de acción — 5 pasos para ganar este caso
+                      </p>
+                      <ol className="space-y-1.5">
+                        {[
+                          'Revisa los datos del cliente y el motivo de la disputa arriba.',
+                          'Reúne evidencia: capturas de conversaciones, comprobante de entrega, contrato firmado, selfie del cliente.',
+                          'Descarga el PDF de evidencia (botón abajo) y úbrelo junto a tus archivos.',
+                          'Contacta al cliente directamente para resolver el malentendido antes de que el banco decida.',
+                          'Responde antes de la fecha límite. Sin evidencia, el banco falla a favor del cliente automáticamente.',
+                        ].map((step, i) => (
+                          <li key={i} className="flex items-start gap-2 text-xs text-blue-700">
+                            <span className="flex-shrink-0 w-4 h-4 bg-blue-600 text-white rounded-full flex items-center justify-center text-[10px] font-bold mt-0.5">{i + 1}</span>
+                            {step}
+                          </li>
+                        ))}
+                      </ol>
+                      <p className="text-xs text-blue-600 mt-2 italic">
+                        💡 Tip: KobraPay guarda automáticamente la selfie y firma si las activaste en tu enlace de pago.
+                      </p>
+                    </div>
+                  )}
+                  <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
+                    <p className="text-xs text-amber-700">
+                      <strong>Estado actual:</strong> {STATUS_CONFIG[(detailCb.status as CBStatus) || "open"]?.label}. El equipo de KobraPay revisará tu caso y actualizará el estado en un plazo de 2-3 días hábiles.
+                    </p>
+                  </div>
                 </div>
               )}
             </div>

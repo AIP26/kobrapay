@@ -20,7 +20,7 @@ import {
 } from "./db";
 import { notifyOwner } from "./_core/notification";
 import { createNotification } from "./db";
-import { sendRecurringPaymentEmail, sendPaymentReceipt, sendVendorPaymentEmail, sendPaymentFailedVendorEmail } from "./_core/email";
+import { sendRecurringPaymentEmail, sendPaymentReceipt, sendVendorPaymentEmail, sendPaymentFailedVendorEmail, sendChargebackAlertEmail } from "./_core/email";
 import { getVendorSettings } from "./db";
 import { dispatchWebhookEvent } from "./webhookDispatcher";
 import { contentAIEvents } from "./contentAIWebhook";
@@ -499,6 +499,29 @@ export function registerStripeWebhook(app: express.Application) {
                     actionUrl: '/dashboard/chargebacks',
                   });
                 } catch (_) {}
+                // Enviar email de alerta al vendedor
+                try {
+                  const vendor = await getUserById(tx.userId);
+                  const vendorSettings = await getVendorSettings(tx.userId);
+                  if (vendor?.email) {
+                    await sendChargebackAlertEmail({
+                      vendorEmail: vendor.email,
+                      vendorName: vendorSettings?.businessName || vendor.name || "Vendedor",
+                      payerName: tx.payerName || "Cliente",
+                      payerEmail: tx.payerEmail || "",
+                      payerPhone: tx.payerPhone || undefined,
+                      amount: dispute.amount,
+                      currency: dispute.currency,
+                      reasonEs,
+                      stripeDisputeId: dispute.id,
+                      transactionId: tx.id,
+                      dueBy: dispute.evidence_details?.due_by ? new Date(dispute.evidence_details.due_by * 1000) : undefined,
+                    });
+                    console.log(`[Webhook] Email de alerta de contracargo enviado a ${vendor.email}`);
+                  }
+                } catch (emailErr) {
+                  console.error('[Webhook] Error enviando email de alerta de contracargo:', emailErr);
+                }
                 // Notificar a ContentAI
                 try {
                   await contentAIEvents.chargebackCreated({

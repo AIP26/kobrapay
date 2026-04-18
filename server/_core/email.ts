@@ -1303,3 +1303,104 @@ export async function sendPaymentFailedVendorEmail(data: {
     return false;
   }
 }
+
+
+// --- Email de alerta de contracargo al vendedor ---
+export async function sendChargebackAlertEmail(data: {
+  vendorEmail: string;
+  vendorName: string;
+  payerName: string;
+  payerEmail: string;
+  payerPhone?: string;
+  amount: number;
+  currency: string;
+  reasonEs: string;
+  stripeDisputeId: string;
+  transactionId?: number;
+  dueBy?: Date;
+}): Promise<boolean> {
+  const resend = getResend();
+  if (!resend) {
+    console.warn("[Email] RESEND_API_KEY no configurada. No se envio alerta de contracargo.");
+    return false;
+  }
+  const amountFormatted = `$${(data.amount / 100).toLocaleString("es-MX", { minimumFractionDigits: 2 })} ${data.currency.toUpperCase()}`;
+  const dueByFormatted = data.dueBy
+    ? data.dueBy.toLocaleDateString("es-MX", { day: "numeric", month: "long", year: "numeric" })
+    : "proxima fecha limite";
+  const daysLeft = data.dueBy
+    ? Math.max(0, Math.ceil((data.dueBy.getTime() - Date.now()) / 86400000))
+    : null;
+  const urgencyColor = daysLeft !== null && daysLeft <= 3 ? "#dc2626" : daysLeft !== null && daysLeft <= 7 ? "#f97316" : "#d97706";
+  const urgencyLabel = daysLeft !== null && daysLeft <= 3
+    ? `URGENTE: Solo te quedan ${daysLeft} dia${daysLeft === 1 ? "" : "s"}`
+    : daysLeft !== null
+    ? `Tienes ${daysLeft} dias para responder`
+    : "Responde lo antes posible";
+
+  const phoneRow = data.payerPhone
+    ? `<tr><td style="padding:10px 0;border-bottom:1px solid #f3f4f6;color:#6b7280;font-size:13px;">Telefono</td><td style="padding:10px 0;border-bottom:1px solid #f3f4f6;text-align:right;color:#111827;font-size:13px;">${data.payerPhone}</td></tr>`
+    : "";
+
+  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Contracargo recibido</title></head>
+<body style="margin:0;padding:0;background:#f4f4f5;font-family:Helvetica Neue,Arial,sans-serif;">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f4f5;padding:40px 0;"><tr><td align="center">
+<table width="600" cellpadding="0" cellspacing="0" style="background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.08);">
+<tr><td style="background:linear-gradient(135deg,#7c3aed,#dc2626);padding:28px 40px;">
+  <p style="margin:0;color:#fff;font-size:13px;opacity:0.85;">KobraPay - Alerta de Contracargo</p>
+  <h1 style="margin:6px 0 0;color:#fff;font-size:26px;font-weight:800;">Contracargo recibido</h1>
+</td></tr>
+<tr><td style="padding:32px 40px;">
+  <p style="color:#374151;font-size:15px;margin:0 0 20px;">Hola <strong>${data.vendorName}</strong>, uno de tus clientes abrio una disputa de pago ante su banco. Necesitas actuar <strong>antes de la fecha limite</strong> para no perder el dinero.</p>
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#fef2f2;border:2px solid #fecaca;border-radius:10px;margin-bottom:24px;"><tr><td style="padding:20px;">
+    <p style="margin:0;color:#991b1b;font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:1px;">Monto en disputa</p>
+    <p style="margin:8px 0 4px;color:#991b1b;font-size:36px;font-weight:900;">${amountFormatted}</p>
+    <p style="margin:0;color:${urgencyColor};font-size:14px;font-weight:700;">${urgencyLabel} - Fecha limite: ${dueByFormatted}</p>
+  </td></tr></table>
+  <table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #e5e7eb;border-radius:10px;overflow:hidden;margin-bottom:24px;">
+    <tr><td style="background:#f9fafb;padding:10px 16px;border-bottom:1px solid #e5e7eb;"><p style="margin:0;color:#6b7280;font-size:12px;font-weight:600;text-transform:uppercase;">Cliente que disputo</p></td></tr>
+    <tr><td style="padding:0 16px;"><table width="100%" cellpadding="0" cellspacing="0">
+      <tr><td style="padding:10px 0;border-bottom:1px solid #f3f4f6;color:#6b7280;font-size:13px;">Nombre</td><td style="padding:10px 0;border-bottom:1px solid #f3f4f6;text-align:right;color:#111827;font-size:13px;font-weight:600;">${data.payerName}</td></tr>
+      <tr><td style="padding:10px 0;border-bottom:1px solid #f3f4f6;color:#6b7280;font-size:13px;">Email</td><td style="padding:10px 0;border-bottom:1px solid #f3f4f6;text-align:right;color:#111827;font-size:13px;">${data.payerEmail}</td></tr>
+      ${phoneRow}
+      <tr><td style="padding:10px 0;border-bottom:1px solid #f3f4f6;color:#6b7280;font-size:13px;">Motivo declarado</td><td style="padding:10px 0;border-bottom:1px solid #f3f4f6;text-align:right;color:#dc2626;font-size:13px;font-weight:600;">${data.reasonEs}</td></tr>
+      <tr><td style="padding:10px 0;color:#6b7280;font-size:13px;">ID Disputa Stripe</td><td style="padding:10px 0;text-align:right;color:#6b7280;font-size:11px;font-family:monospace;">${data.stripeDisputeId}</td></tr>
+    </table></td></tr>
+  </table>
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;margin-bottom:24px;"><tr><td style="padding:20px;">
+    <p style="margin:0 0 14px;color:#1e40af;font-size:15px;font-weight:800;">Que hacer ahora - 5 pasos</p>
+    <table width="100%" cellpadding="0" cellspacing="0">
+      <tr><td style="padding:8px 0;vertical-align:top;"><span style="display:inline-block;background:#1e40af;color:#fff;border-radius:50%;width:22px;height:22px;text-align:center;line-height:22px;font-size:12px;font-weight:700;margin-right:10px;">1</span><span style="color:#1e3a8a;font-size:13px;"><strong>Entra a tu panel de KobraPay</strong> seccion Aclaraciones y abre el caso.</span></td></tr>
+      <tr><td style="padding:8px 0;vertical-align:top;"><span style="display:inline-block;background:#1e40af;color:#fff;border-radius:50%;width:22px;height:22px;text-align:center;line-height:22px;font-size:12px;font-weight:700;margin-right:10px;">2</span><span style="color:#1e3a8a;font-size:13px;"><strong>Reune evidencia</strong>: capturas de conversaciones, comprobante de entrega, contrato firmado, selfie del cliente si la tienes.</span></td></tr>
+      <tr><td style="padding:8px 0;vertical-align:top;"><span style="display:inline-block;background:#1e40af;color:#fff;border-radius:50%;width:22px;height:22px;text-align:center;line-height:22px;font-size:12px;font-weight:700;margin-right:10px;">3</span><span style="color:#1e3a8a;font-size:13px;"><strong>Sube la evidencia</strong> usando el boton Subir evidencia dentro del caso en tu panel.</span></td></tr>
+      <tr><td style="padding:8px 0;vertical-align:top;"><span style="display:inline-block;background:#1e40af;color:#fff;border-radius:50%;width:22px;height:22px;text-align:center;line-height:22px;font-size:12px;font-weight:700;margin-right:10px;">4</span><span style="color:#1e3a8a;font-size:13px;"><strong>Contacta al cliente</strong> directamente para resolver el malentendido antes de que el banco decida.</span></td></tr>
+      <tr><td style="padding:8px 0;vertical-align:top;"><span style="display:inline-block;background:#1e40af;color:#fff;border-radius:50%;width:22px;height:22px;text-align:center;line-height:22px;font-size:12px;font-weight:700;margin-right:10px;">5</span><span style="color:#1e3a8a;font-size:13px;"><strong>Responde antes del ${dueByFormatted}</strong>. Sin evidencia, el banco falla a favor del cliente automaticamente.</span></td></tr>
+    </table>
+  </td></tr></table>
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#fffbeb;border:1px solid #fde68a;border-radius:10px;margin-bottom:28px;"><tr><td style="padding:16px 20px;">
+    <p style="margin:0;color:#92400e;font-size:13px;"><strong>Tip:</strong> Los contracargos ganados tienen mayor probabilidad cuando tienes: firma digital, selfie, conversaciones por escrito y comprobante de servicio. KobraPay guarda automaticamente la selfie y firma si las activaste en tu enlace de pago.</p>
+  </td></tr></table>
+  <div style="text-align:center;"><a href="https://kobrapay.mx/dashboard/chargebacks" style="display:inline-block;background:#7c3aed;color:#fff;font-weight:700;font-size:15px;padding:14px 36px;border-radius:10px;text-decoration:none;">Ver mi caso de aclaracion</a></div>
+</td></tr>
+<tr><td style="background:#1a1a2e;padding:20px 40px;text-align:center;">
+  <p style="margin:0;color:#9ca3af;font-size:12px;">Procesado por <strong style="color:#00c853;">KobraPay</strong> - kobrapay.mx - soporte@kobrapay.mx</p>
+</td></tr>
+</table></td></tr></table></body></html>`;
+
+  try {
+    const { error } = await resend.emails.send({
+      from: `KobraPay <${ENV.fromEmail}>`,
+      to: data.vendorEmail,
+      subject: `Contracargo recibido: ${amountFormatted} - Responde antes del ${dueByFormatted}`,
+      html,
+    });
+    if (error) {
+      console.error("[Email] Error al enviar alerta de contracargo al vendedor:", error);
+      return false;
+    }
+    return true;
+  } catch (err) {
+    console.error("[Email] Excepcion al enviar alerta de contracargo:", err);
+    return false;
+  }
+}

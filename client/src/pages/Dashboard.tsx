@@ -112,6 +112,13 @@ export default function Dashboard() {
     staleTime: 60000,
   });
   const showOnboardingBanner = (!user?.isSuperAdmin && user?.role !== "superadmin") && connectStatus && !connectStatus.chargesEnabled;
+  // Contracargos abiertos (solo para vendedores, no superadmin)
+  const { data: openChargebacks } = trpc.chargebacks.countOpen.useQuery(undefined, {
+    enabled: !!user && !isSuperAdmin,
+    staleTime: 60000,
+    refetchOnWindowFocus: true,
+  });
+  const openChargebackCount = openChargebacks?.count ?? 0;
 
   return (
     <DashboardLayout title="Panel de Control">
@@ -459,6 +466,27 @@ export default function Dashboard() {
           </div>
         )}
 
+        {/* Alerta de contracargos abiertos */}
+        {!isSuperAdmin && openChargebackCount > 0 && (
+          <div className="rounded-xl border-2 border-red-300 bg-red-50 p-4 flex items-start gap-3">
+            <div className="w-9 h-9 bg-red-100 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5">
+              <AlertCircle className="w-5 h-5 text-red-600" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-bold text-red-800">
+                ⚠️ Tienes {openChargebackCount} contracargo{openChargebackCount > 1 ? 's' : ''} abierto{openChargebackCount > 1 ? 's' : ''} — Acción urgente requerida
+              </p>
+              <p className="text-xs text-red-600 mt-0.5">
+                Debes responder con evidencia antes de la fecha límite o perderás el dinero. Ve a Aclaraciones para gestionar tu caso.
+              </p>
+            </div>
+            <RouterLink href="/dashboard/chargebacks">
+              <button className="text-xs text-red-700 font-bold hover:text-red-900 flex items-center gap-1 flex-shrink-0 bg-red-100 hover:bg-red-200 px-3 py-1.5 rounded-lg transition-colors">
+                Ver aclaraciones <ArrowRight className="w-3 h-3" />
+              </button>
+            </RouterLink>
+          </div>
+        )}
         {/* Alerta de suscripciones vencidas */}
         {overdueList.length > 0 && (
           <div className="rounded-xl border border-orange-200 bg-orange-50 p-4 flex items-start gap-3">
