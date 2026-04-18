@@ -256,6 +256,7 @@ const NAV_GROUPS = [
       { href: "/dashboard/clients", icon: Users, label: "Mis Clientes", superAdminOnly: true },
       { href: "/dashboard/registrations", icon: UserCog, label: "Registros", superAdminOnly: true },
       { href: "/dashboard/failed-payments", icon: XCircle, label: "Cobros Fallidos", superAdminOnly: true },
+      { href: "/dashboard/admin-chargebacks", icon: AlertTriangle, label: "Contracargos (Global)", superAdminOnly: true },
       { href: "/dashboard/ai-scoring", icon: Brain, label: "Scoring IA", superAdminOnly: true },
       { href: "/dashboard/kobra-score", icon: Star, label: "KobraScore", superAdminOnly: true },
       { href: "/dashboard/quote-logs", icon: Mail, label: "Cotizaciones", superAdminOnly: true },

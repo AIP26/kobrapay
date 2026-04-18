@@ -18,6 +18,7 @@ import Clients from "./pages/Clients";
 import Widget from "./pages/Widget";
 import Recurring from "./pages/Recurring";
 import Chargebacks from "./pages/Chargebacks";
+import AdminChargebacks from "./pages/AdminChargebacks";
 import Invoices from "./pages/Invoices";
 import Reader from "./pages/Reader";
 import SecurityAudit from "./pages/SecurityAudit";
@@ -129,6 +130,7 @@ function Router() {
       <Route path="/dashboard/widget" component={Widget} />
       <Route path="/dashboard/recurring" component={Recurring} />
       <Route path="/dashboard/chargebacks" component={Chargebacks} />
+      <Route path="/dashboard/admin-chargebacks" component={AdminChargebacks} />
       <Route path="/dashboard/invoices" component={Invoices} />
       <Route path="/dashboard/reader" component={Reader} />
       <Route path="/dashboard/security" component={SecurityAudit} />

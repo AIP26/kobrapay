@@ -956,16 +956,87 @@ export async function createChargeback(data: Omit<InsertChargeback, "id" | "crea
   await db.insert(chargebacks).values(data as InsertChargeback);
 }
 
-export async function getChargebacksByUser(userId: number): Promise<Chargeback[]> {
+export type ChargebackEnriched = Chargeback & {
+  vendorName: string | null;
+  vendorEmail: string | null;
+  payerName: string | null;
+  payerEmail: string | null;
+  payerPhone: string | null;
+  operationNumber: string | null;
+  linkDescription: string | null;
+};
+
+export async function getChargebacksByUser(userId: number): Promise<ChargebackEnriched[]> {
   const db = await getDb();
   if (!db) return [];
-  return db.select().from(chargebacks).where(eq(chargebacks.userId, userId)).orderBy(desc(chargebacks.createdAt));
+  const rows = await db
+    .select({
+      id: chargebacks.id,
+      userId: chargebacks.userId,
+      transactionId: chargebacks.transactionId,
+      stripeDisputeId: chargebacks.stripeDisputeId,
+      amount: chargebacks.amount,
+      currency: chargebacks.currency,
+      reason: chargebacks.reason,
+      reasonEs: chargebacks.reasonEs,
+      status: chargebacks.status,
+      evidence: chargebacks.evidence,
+      notes: chargebacks.notes,
+      dueBy: chargebacks.dueBy,
+      resolvedAt: chargebacks.resolvedAt,
+      createdAt: chargebacks.createdAt,
+      updatedAt: chargebacks.updatedAt,
+      vendorName: users.name,
+      vendorEmail: users.email,
+      payerName: transactions.payerName,
+      payerEmail: transactions.payerEmail,
+      payerPhone: transactions.payerPhone,
+      operationNumber: transactions.operationNumber,
+      linkDescription: paymentLinks.description,
+    })
+    .from(chargebacks)
+    .leftJoin(users, eq(chargebacks.userId, users.id))
+    .leftJoin(transactions, eq(chargebacks.transactionId, transactions.id))
+    .leftJoin(paymentLinks, eq(transactions.paymentLinkId, paymentLinks.id))
+    .where(eq(chargebacks.userId, userId))
+    .orderBy(desc(chargebacks.createdAt));
+  return rows;
 }
 
-export async function getAllChargebacks(): Promise<Chargeback[]> {
+export async function getAllChargebacks(): Promise<ChargebackEnriched[]> {
   const db = await getDb();
   if (!db) return [];
-  return db.select().from(chargebacks).orderBy(desc(chargebacks.createdAt));
+  const rows = await db
+    .select({
+      id: chargebacks.id,
+      userId: chargebacks.userId,
+      transactionId: chargebacks.transactionId,
+      stripeDisputeId: chargebacks.stripeDisputeId,
+      amount: chargebacks.amount,
+      currency: chargebacks.currency,
+      reason: chargebacks.reason,
+      reasonEs: chargebacks.reasonEs,
+      status: chargebacks.status,
+      evidence: chargebacks.evidence,
+      notes: chargebacks.notes,
+      dueBy: chargebacks.dueBy,
+      resolvedAt: chargebacks.resolvedAt,
+      createdAt: chargebacks.createdAt,
+      updatedAt: chargebacks.updatedAt,
+      vendorName: users.name,
+      vendorEmail: users.email,
+      payerName: transactions.payerName,
+      payerEmail: transactions.payerEmail,
+      payerPhone: transactions.payerPhone,
+      operationNumber: transactions.operationNumber,
+      linkDescription: paymentLinks.description,
+    })
+    .from(chargebacks)
+    .leftJoin(users, eq(chargebacks.userId, users.id))
+    .leftJoin(transactions, eq(chargebacks.transactionId, transactions.id))
+    .leftJoin(paymentLinks, eq(transactions.paymentLinkId, paymentLinks.id))
+    .orderBy(desc(chargebacks.createdAt));
+  return rows;
 }
 
 export async function updateChargebackStatus(id: number, status: string, notes?: string, resolvedAt?: Date): Promise<void> {
