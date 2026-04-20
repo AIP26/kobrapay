@@ -444,6 +444,17 @@ export async function getTransactionByPaymentIntent(stripePaymentIntentId: strin
   return result[0];
 }
 
+export async function getTransactionByChargeId(stripeChargeId: string) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db
+    .select()
+    .from(transactions)
+    .where(eq(transactions.stripeChargeId, stripeChargeId))
+    .limit(1);
+  return result[0];
+}
+
 export async function updateTransactionStatus(
   id: number,
   status: "pending" | "processing" | "succeeded" | "failed" | "refunded",

@@ -4,6 +4,7 @@ import {
   getPaymentLinkByToken,
   getTransactionsByUser,
   getTransactionByPaymentIntent,
+  getTransactionByChargeId,
   updatePaymentLinkStatus,
   updateTransactionStatus,
   createChargeback,
@@ -455,9 +456,28 @@ export function registerStripeWebhook(app: express.Application) {
             console.log(`[Stripe Webhook] Disputa creada: ${dispute.id} por $${dispute.amount / 100} ${dispute.currency}`);
             try {
               // Buscar la transacción relacionada
+              // Stripe puede enviar payment_intent o solo charge_id dependiendo del método de cobro
               let tx: Awaited<ReturnType<typeof getTransactionByPaymentIntent>> | undefined;
-              if (typeof dispute.payment_intent === "string") {
+              if (typeof dispute.payment_intent === "string" && dispute.payment_intent) {
                 tx = await getTransactionByPaymentIntent(dispute.payment_intent);
+              }
+              // Fallback: buscar por charge_id si no se encontró por payment_intent
+              if (!tx && typeof dispute.charge === "string" && dispute.charge) {
+                tx = await getTransactionByChargeId(dispute.charge);
+                console.log(`[Webhook] Buscando transacción por chargeId ${dispute.charge}: ${tx ? 'encontrada' : 'no encontrada'}`);
+              }
+              if (!tx) {
+                // Último recurso: buscar el charge en Stripe para obtener el payment_intent
+                try {
+                  const stripeClient = new (await import('stripe')).default(process.env.STRIPE_SECRET_KEY || '', { apiVersion: '2026-02-25.clover' as any });
+                  const charge = await stripeClient.charges.retrieve(typeof dispute.charge === 'string' ? dispute.charge : '');
+                  if (charge.payment_intent && typeof charge.payment_intent === 'string') {
+                    tx = await getTransactionByPaymentIntent(charge.payment_intent);
+                    console.log(`[Webhook] Buscando transacción por PI desde charge ${dispute.charge}: ${tx ? 'encontrada' : 'no encontrada'}`);
+                  }
+                } catch (chargeErr) {
+                  console.error('[Webhook] Error buscando charge en Stripe:', chargeErr);
+                }
               }
               if (tx) {
                 const reasonMap: Record<string, string> = {
@@ -970,6 +990,189 @@ export function registerStripeWebhook(app: express.Application) {
         }
       }
 
+      res.json({ received: true });
+    }
+  );
+}
+
+// ─── Stripe Connect Webhook ───────────────────────────────────────────────────
+// Este endpoint recibe eventos de las cuentas Connect de los vendedores.
+// Se debe registrar en Stripe Dashboard → Webhooks → "Connect webhooks" apuntando a:
+// https://payprocess-tm7gpbte.manus.space/api/stripe/connect-webhook
+// Eventos a escuchar: charge.dispute.created, charge.dispute.updated, charge.dispute.closed
+export function registerStripeConnectWebhook(app: express.Application) {
+  app.post(
+    "/api/stripe/connect-webhook",
+    express.raw({ type: "application/json" }),
+    async (req, res) => {
+      const sig = req.headers["stripe-signature"] as string;
+      // Usar el secret del Connect webhook (diferente al webhook principal)
+      const connectSecret = process.env.STRIPE_CONNECT_WEBHOOK_SECRET || process.env.STRIPE_WEBHOOK_SECRET || "";
+      let event: Stripe.Event;
+      try {
+        event = stripe.webhooks.constructEvent(req.body, sig, connectSecret);
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : "Unknown error";
+        console.error("[Connect Webhook] Signature verification failed:", message);
+        return res.status(400).json({ error: `Webhook Error: ${message}` });
+      }
+      // Handle test events
+      if (event.id.startsWith("evt_test_")) {
+        return res.json({ verified: true });
+      }
+      // La cuenta Connect afectada está en event.account
+      const connectedAccountId = (event as unknown as { account?: string }).account;
+      console.log(`[Connect Webhook] Event: ${event.type} (${event.id}) account: ${connectedAccountId}`);
+      try {
+        switch (event.type) {
+          case "charge.dispute.created": {
+            const dispute = event.data.object as Stripe.Dispute;
+            console.log(`[Connect Webhook] Disputa creada en cuenta ${connectedAccountId}: ${dispute.id} por $${dispute.amount / 100} ${dispute.currency}`);
+            // Buscar el vendedor por stripeConnectAccountId
+            let vendor: Awaited<ReturnType<typeof getUserById>> | undefined;
+            let vendorSettings: Awaited<ReturnType<typeof getVendorSettings>> | undefined;
+            if (connectedAccountId) {
+              const db = await (await import("./db")).getDb();
+              if (db) {
+                const { eq } = await import("drizzle-orm");
+                const { vendorSettings: vsTable, users } = await import("../drizzle/schema");
+                const rows = await db
+                  .select({ userId: vsTable.userId, businessName: vsTable.businessName, businessEmail: vsTable.businessEmail })
+                  .from(vsTable)
+                  .where(eq(vsTable.stripeConnectAccountId, connectedAccountId))
+                  .limit(1);
+                if (rows[0]) {
+                  vendor = await getUserById(rows[0].userId);
+                  vendorSettings = await getVendorSettings(rows[0].userId);
+                }
+              }
+            }
+            if (!vendor?.email) {
+              console.warn(`[Connect Webhook] No se encontró vendedor para cuenta Connect ${connectedAccountId}`);
+              break;
+            }
+            // Buscar la transacción relacionada
+            let tx: Awaited<ReturnType<typeof getTransactionByPaymentIntent>> | undefined;
+            if (typeof dispute.payment_intent === "string" && dispute.payment_intent) {
+              tx = await getTransactionByPaymentIntent(dispute.payment_intent);
+            }
+            if (!tx && typeof dispute.charge === "string" && dispute.charge) {
+              tx = await getTransactionByChargeId(dispute.charge);
+            }
+            const reasonMap: Record<string, string> = {
+              fraudulent: "Cargo fraudulento",
+              duplicate: "Cargo duplicado",
+              product_not_received: "Producto no recibido",
+              product_unacceptable: "Producto inaceptable",
+              credit_not_processed: "Crédito no procesado",
+              subscription_canceled: "Suscripción cancelada",
+              unrecognized: "Cargo no reconocido",
+              general: "Disputa general",
+            };
+            const reasonEs = reasonMap[dispute.reason] || dispute.reason || "Contracargo";
+            const dueBy = dispute.evidence_details?.due_by ? new Date(dispute.evidence_details.due_by * 1000) : undefined;
+            // Crear chargeback en BD si no existe
+            if (tx) {
+              try {
+                const existing = await getChargebackByDisputeId(dispute.id);
+                if (!existing) {
+                  await createChargeback({
+                    userId: tx.userId,
+                    transactionId: tx.id,
+                    stripeDisputeId: dispute.id,
+                    amount: dispute.amount,
+                    currency: dispute.currency,
+                    reason: dispute.reason,
+                    reasonEs,
+                    status: "open",
+                    dueBy,
+                  });
+                  // Notificación en panel
+                  try {
+                    const dueByDate = dueBy ? dueBy.toLocaleDateString('es-MX') : 'próximamente';
+                    await createNotification({
+                      userId: tx.userId,
+                      type: 'chargeback_alert',
+                      title: `⚠️ Contracargo recibido: $${(dispute.amount / 100).toFixed(2)} ${dispute.currency.toUpperCase()}`,
+                      message: `Motivo: ${reasonEs}. Tienes hasta el ${dueByDate} para responder con evidencia. Ve a Aclaraciones para gestionarlo.`,
+                      actionUrl: '/dashboard/chargebacks',
+                    });
+                  } catch (_) {}
+                }
+              } catch (cbErr) {
+                console.error('[Connect Webhook] Error creando chargeback:', cbErr);
+              }
+            }
+            // Enviar email de alerta al vendedor
+            try {
+              await sendChargebackAlertEmail({
+                vendorEmail: vendor.email,
+                vendorName: vendorSettings?.businessName || vendor.name || "Vendedor",
+                payerName: tx?.payerName || "Cliente",
+                payerEmail: tx?.payerEmail || "",
+                payerPhone: tx?.payerPhone || undefined,
+                amount: dispute.amount,
+                currency: dispute.currency,
+                reasonEs,
+                stripeDisputeId: dispute.id,
+                transactionId: tx?.id || 0,
+                dueBy,
+              });
+              console.log(`[Connect Webhook] ✅ Email de alerta enviado a ${vendor.email} para disputa ${dispute.id}`);
+            } catch (emailErr) {
+              console.error('[Connect Webhook] Error enviando email de alerta:', emailErr);
+            }
+            // Notificar al owner también
+            await notifyOwner({
+              title: `⚠️ Contracargo Connect: $${(dispute.amount / 100).toFixed(2)} ${dispute.currency.toUpperCase()} — ${vendor.name}`,
+              content: `Vendedor: ${vendor.email} | Motivo: ${reasonEs} | Disputa: ${dispute.id} | Cuenta: ${connectedAccountId}`,
+            });
+            break;
+          }
+          case "charge.dispute.updated": {
+            const dispute = event.data.object as Stripe.Dispute;
+            const statusMap: Record<string, string> = {
+              warning_needs_response: "open",
+              warning_under_review: "under_review",
+              warning_closed: "closed",
+              needs_response: "open",
+              under_review: "under_review",
+              charge_refunded: "won",
+              won: "won",
+              lost: "lost",
+            };
+            const newStatus = statusMap[dispute.status] || "open";
+            try {
+              const existing = await getChargebackByDisputeId(dispute.id);
+              if (existing) {
+                await updateChargebackStatus(existing.id, newStatus as "open" | "under_review" | "won" | "lost" | "closed");
+                console.log(`[Connect Webhook] Chargeback ${dispute.id} actualizado a ${newStatus}`);
+              }
+            } catch (err) {
+              console.error('[Connect Webhook] Error actualizando chargeback:', err);
+            }
+            break;
+          }
+          case "charge.dispute.closed": {
+            const dispute = event.data.object as Stripe.Dispute;
+            const finalStatus = dispute.status === "won" ? "won" : "lost";
+            try {
+              const existing = await getChargebackByDisputeId(dispute.id);
+              if (existing) {
+                await updateChargebackStatus(existing.id, finalStatus);
+                console.log(`[Connect Webhook] Chargeback ${dispute.id} cerrado como ${finalStatus}`);
+              }
+            } catch (err) {
+              console.error('[Connect Webhook] Error cerrando chargeback:', err);
+            }
+            break;
+          }
+          default:
+            console.log(`[Connect Webhook] Unhandled event: ${event.type}`);
+        }
+      } catch (err) {
+        console.error("[Connect Webhook] Error processing event:", err);
+      }
       res.json({ received: true });
     }
   );

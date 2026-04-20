@@ -7,7 +7,7 @@ import { registerOAuthRoutes } from "./oauth";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
-import { registerStripeWebhook } from "../stripeWebhook";
+import { registerStripeWebhook, registerStripeConnectWebhook } from "../stripeWebhook";
 import { registerApiV1Routes } from "../apiV1";
 import { registerSecurityMiddleware } from "../security";
 import { getPendingRegistrationsOlderThan, createNotification, getUserByOpenId, hasRecentNotification, deduplicateNotifications, resetDbConnection } from "../db";
@@ -45,6 +45,8 @@ async function startServer() {
 
   // Stripe webhook MUST be registered BEFORE json middleware (needs raw body)
   registerStripeWebhook(app);
+  // Stripe Connect webhook — receives events from connected accounts (disputes, etc.)
+  registerStripeConnectWebhook(app);
 
   // Configure body parser — 10MB es suficiente para imágenes base64 (~7MB) con margen
   // Reducido de 50MB para prevenir ataques DoS por body inflado
