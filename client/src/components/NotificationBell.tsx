@@ -33,6 +33,7 @@ function notificationIcon(type: string): string {
     case "new_registration": return "🆕";
     case "pending_reminder": return "⏰";
     case "chargeback": return "⚠️";
+    case "chargeback_alert": return "🚨";
     case "payment": return "💳";
     case "contract_signed": return "✍️";
     case "module_approved": return "✅";
@@ -52,11 +53,18 @@ export function NotificationBell() {
   const [, navigate] = useLocation();
   const utils = trpc.useUtils();
 
+  // IDs de contracargos ya mostrados como toast en esta sesión
+  const shownChargebackIds = useRef<Set<number>>(new Set());
+  // Si es la primera carga, no mostrar toasts de notificaciones antiguas
+  const isFirstLoad = useRef(true);
+
   const { data: countData, refetch: refetchCount } = trpc.notifications.countUnread.useQuery(undefined, {
-    refetchInterval: 15000, // refrescar cada 15s para pagos en tiempo real
+    refetchInterval: 15000, // refrescar cada 15s
   });
-  const { data: notifications = [], refetch: refetchList } = trpc.notifications.list.useQuery(undefined, {
-    enabled: open,
+
+  // Polling activo de todas las notificaciones para detectar contracargos en tiempo real
+  const { data: allNotifications = [], refetch: refetchList } = trpc.notifications.list.useQuery(undefined, {
+    refetchInterval: 15000,
   });
 
   const markRead = trpc.notifications.markRead.useMutation({
@@ -73,6 +81,61 @@ export function NotificationBell() {
       toast.success("Todas las notificaciones marcadas como leídas");
     },
   });
+
+  // ─── Toast automático para contracargos ──────────────────────────────────────
+  // Detecta notificaciones nuevas de tipo chargeback_alert y muestra un toast urgente
+  useEffect(() => {
+    if (!allNotifications || allNotifications.length === 0) return;
+
+    // En la primera carga, solo registrar los IDs existentes sin mostrar toasts
+    if (isFirstLoad.current) {
+      allNotifications.forEach((n) => {
+        if (n.type === 'chargeback_alert' || n.type === 'chargeback') {
+          shownChargebackIds.current.add(n.id);
+        }
+      });
+      isFirstLoad.current = false;
+      return;
+    }
+
+    // En cargas posteriores, mostrar toast para contracargos no leídos y no mostrados
+    const chargebackAlerts = allNotifications.filter(
+      (n) => (n.type === 'chargeback_alert' || n.type === 'chargeback') && !n.isRead
+    );
+
+    chargebackAlerts.forEach((notif) => {
+      if (!shownChargebackIds.current.has(notif.id)) {
+        shownChargebackIds.current.add(notif.id);
+        const actionUrl = notif.actionUrl;
+
+        // Toast urgente rojo con botón de acción
+        toast.error(
+          <div className="flex flex-col gap-1.5">
+            <div className="flex items-center gap-2 font-bold text-sm">
+              <span>🚨</span>
+              <span>{notif.title}</span>
+            </div>
+            <p className="text-xs leading-relaxed opacity-90">{notif.message}</p>
+            {actionUrl && (
+              <button
+                onClick={() => {
+                  toast.dismiss(`chargeback-${notif.id}`);
+                  navigate(actionUrl as string);
+                }}
+                className="mt-1 text-xs font-bold underline text-left hover:opacity-80"
+              >
+                → Ver en Aclaraciones ahora
+              </button>
+            )}
+          </div>,
+          {
+            duration: 20000, // 20 segundos visible
+            id: `chargeback-${notif.id}`,
+          }
+        );
+      }
+    });
+  }, [allNotifications, navigate]);
 
   // Cerrar al hacer click fuera
   useEffect(() => {
@@ -95,6 +158,9 @@ export function NotificationBell() {
 
   const unreadCount = countData?.count ?? 0;
 
+  // Notificaciones filtradas para el dropdown (usar allNotifications ya que siempre está cargado)
+  const displayNotifications = open ? allNotifications : [];
+
   function handleNotificationClick(notif: Notification) {
     if (!notif.isRead) {
       markRead.mutate({ id: notif.id });
@@ -115,7 +181,7 @@ export function NotificationBell() {
       >
         <Bell className="w-5 h-5 text-muted-foreground" />
         {unreadCount > 0 && (
-          <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] bg-red-500 text-foreground text-[10px] font-bold rounded-full flex items-center justify-center px-1 leading-none">
+          <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1 leading-none">
             {unreadCount > 99 ? "99+" : unreadCount}
           </span>
         )}
@@ -149,19 +215,23 @@ export function NotificationBell() {
 
           {/* Lista de notificaciones */}
           <div className="max-h-[420px] overflow-y-auto divide-y divide-gray-50">
-            {notifications.length === 0 ? (
+            {displayNotifications.length === 0 ? (
               <div className="py-12 text-center">
                 <Bell className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
                 <p className="text-muted-foreground text-sm font-medium">Sin notificaciones</p>
                 <p className="text-muted-foreground text-xs mt-1">Aquí aparecerán los nuevos registros y alertas</p>
               </div>
             ) : (
-              notifications.map((notif) => (
+              displayNotifications.map((notif) => (
                 <button
                   key={notif.id}
                   onClick={() => handleNotificationClick(notif as Notification)}
                   className={`w-full text-left px-4 py-3.5 hover:bg-gray-50 transition-colors flex gap-3 items-start ${
-                    !notif.isRead ? "bg-blue-50/50" : ""
+                    !notif.isRead
+                      ? (notif.type === 'chargeback_alert' || notif.type === 'chargeback')
+                        ? "bg-red-50/60"
+                        : "bg-blue-50/50"
+                      : ""
                   }`}
                 >
                   {/* Icono */}
@@ -172,11 +242,21 @@ export function NotificationBell() {
                   {/* Contenido */}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between gap-2">
-                      <p className={`text-sm leading-snug ${!notif.isRead ? "font-semibold text-foreground" : "font-medium text-foreground"}`}>
+                      <p className={`text-sm leading-snug ${
+                        !notif.isRead
+                          ? (notif.type === 'chargeback_alert' || notif.type === 'chargeback')
+                            ? "font-bold text-red-700"
+                            : "font-semibold text-foreground"
+                          : "font-medium text-foreground"
+                      }`}>
                         {notif.title}
                       </p>
                       {!notif.isRead && (
-                        <span className="flex-shrink-0 w-2 h-2 bg-blue-500 rounded-full mt-1" />
+                        <span className={`flex-shrink-0 w-2 h-2 rounded-full mt-1 ${
+                          (notif.type === 'chargeback_alert' || notif.type === 'chargeback')
+                            ? "bg-red-500"
+                            : "bg-blue-500"
+                        }`} />
                       )}
                     </div>
                     <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed line-clamp-2">
@@ -194,7 +274,7 @@ export function NotificationBell() {
                       )}
                       {(notif.type === 'payment_received' || notif.type === 'new_payment') && (
                         <a
-                          href={`https://wa.me/?text=${encodeURIComponent('\u00a1Gracias por tu pago! \u2705 Hemos recibido tu transacci\u00f3n correctamente. Cualquier duda estamos a tus \u00f3rdenes. - KobraPay')}`}
+                          href={`https://wa.me/?text=${encodeURIComponent('¡Gracias por tu pago! ✅ Hemos recibido tu transacción correctamente. Cualquier duda estamos a tus órdenes. - KobraPay')}`}
                           target="_blank"
                           rel="noopener noreferrer"
                           onClick={e => e.stopPropagation()}
@@ -212,13 +292,19 @@ export function NotificationBell() {
           </div>
 
           {/* Footer */}
-          {notifications.length > 0 && (
-            <div className="px-4 py-2.5 border-t border-gray-100 bg-gray-50">
+          {displayNotifications.length > 0 && (
+            <div className="px-4 py-2.5 border-t border-gray-100 bg-gray-50 flex gap-2">
+              <button
+                onClick={() => { setOpen(false); navigate("/dashboard/chargebacks"); }}
+                className="flex-1 text-center text-xs text-red-600 hover:text-red-800 font-medium transition-colors"
+              >
+                Ver Aclaraciones →
+              </button>
               <button
                 onClick={() => { setOpen(false); navigate("/dashboard/registrations"); }}
-                className="w-full text-center text-xs text-blue-600 hover:text-blue-800 font-medium transition-colors"
+                className="flex-1 text-center text-xs text-blue-600 hover:text-blue-800 font-medium transition-colors"
               >
-                Ver panel de registros →
+                Ver registros →
               </button>
             </div>
           )}

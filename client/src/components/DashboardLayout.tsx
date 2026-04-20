@@ -476,6 +476,12 @@ function Sidebar({
   onClose: () => void;
   onLogout: () => void;
 }) {
+  // Badge de contracargos abiertos en el menú Aclaraciones
+  const { data: chargebackCount } = trpc.chargebacks.countOpen.useQuery(undefined, {
+    refetchInterval: 30000,
+  });
+  const openChargebacks = chargebackCount?.count ?? 0;
+
   const isGroupActive = (groupId: string) => {
     const group = NAV_GROUPS.find(g => g.id === groupId);
     return group?.items.some(i => location === i.href) ?? false;
@@ -590,7 +596,12 @@ function Sidebar({
                           )}
                         >
                           <Icon className={cn("w-4 h-4 flex-shrink-0", isActive ? "text-primary" : "text-muted-foreground")} />
-                          {label}
+                          <span className="flex-1">{label}</span>
+                          {href === '/dashboard/chargebacks' && openChargebacks > 0 && (
+                            <span className="min-w-[18px] h-[18px] bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1 leading-none">
+                              {openChargebacks > 9 ? '9+' : openChargebacks}
+                            </span>
+                          )}
                         </Link>
                       );
                     })}
