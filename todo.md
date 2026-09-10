@@ -1348,7 +1348,7 @@
 - [ ] Tests con mocks
 - [ ] Variables de entorno: GOOGLE_SERVICE_ACCOUNT_JSON + GOOGLE_SHEETS_ID
 
-- [ ] Migrar el proyecto completo de KobraPay al repositorio GitHub dperuyeros-cpu/KOBRAPAY sin incluir secretos ni archivos .env
-- [ ] Documentar variables de entorno, pasos de instalación y ejecución local desde GitHub
-- [ ] Validar que el proyecto exportado compile y que sus 123 pruebas sigan pasando
+- [x] Migrar el proyecto completo de KobraPay al repositorio GitHub dperuyeros-cpu/KOBRAPAY sin incluir secretos ni archivos .env
+- [x] Documentar variables de entorno, pasos de instalación y ejecución local desde GitHub
+- [x] Validar que el proyecto exportado compile y que sus 123 pruebas sigan pasando
 
