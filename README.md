@@ -74,6 +74,10 @@ El backend expone los endpoints:
 
 Configura ambos endpoints en Stripe con los eventos correspondientes y guarda sus signing secrets únicamente como variables de entorno.
 
+## Ejecutar en servidores propios
+
+Consulta [`SELF_HOSTING.md`](./SELF_HOSTING.md) para conocer qué componentes no se incluyen en GitHub, las credenciales necesarias, la migración de base de datos y los pasos para reemplazar las dependencias de Manus.
+
 ## Seguridad
 
 No se deben subir claves de Stripe, tokens OAuth, contraseñas, secretos JWT, credenciales de base de datos, archivos `.env`, archivos de logs ni datos reales de clientes. Antes de publicar cambios, revisa `git status` y el diff del commit.

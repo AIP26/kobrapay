@@ -1352,3 +1352,7 @@
 - [x] Documentar variables de entorno, pasos de instalación y ejecución local desde GitHub
 - [x] Validar que el proyecto exportado compile y que sus 123 pruebas sigan pasando
 
+
+- [ ] Auditar qué archivos, datos, secretos e integraciones faltan para ejecutar KobraPay en servidores propios
+- [ ] Documentar requisitos de despliegue propio: variables, base de datos, almacenamiento, OAuth, Stripe, Resend, dominios y webhooks
+- [ ] Validar que el repositorio GitHub sea reproducible en un servidor externo
