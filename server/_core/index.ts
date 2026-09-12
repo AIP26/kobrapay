@@ -1,37 +1,16 @@
 import "dotenv/config";
 import express from "express";
 import { createServer } from "http";
-import net from "net";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
-import { registerOAuthRoutes } from "./oauth";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
 import { registerStripeWebhook, registerStripeConnectWebhook } from "../stripeWebhook";
 import { registerApiV1Routes } from "../apiV1";
 import { registerSecurityMiddleware } from "../security";
-import { getPendingRegistrationsOlderThan, createNotification, getUserByOpenId, hasRecentNotification, deduplicateNotifications, resetDbConnection } from "../db";
+import { getPendingRegistrationsOlderThan, createNotification, getUserByEmail, hasRecentNotification, deduplicateNotifications, resetDbConnection, getDb } from "../db";
 import { ENV } from "./env";
-import { notifyOwner } from "./notification";
-
-function isPortAvailable(port: number): Promise<boolean> {
-  return new Promise(resolve => {
-    const server = net.createServer();
-    server.listen(port, () => {
-      server.close(() => resolve(true));
-    });
-    server.on("error", () => resolve(false));
-  });
-}
-
-async function findAvailablePort(startPort: number = 3000): Promise<number> {
-  for (let port = startPort; port < startPort + 20; port++) {
-    if (await isPortAvailable(port)) {
-      return port;
-    }
-  }
-  throw new Error(`No available port found starting from ${startPort}`);
-}
+import { resolveStorageFile } from "../storage";
 
 async function startServer() {
   const app = express();
@@ -53,20 +32,44 @@ async function startServer() {
   app.use(express.json({ limit: "10mb" }));
   app.use(express.urlencoded({ limit: "10mb", extended: true }));
 
-  // OAuth callback under /api/oauth/callback
-  registerOAuthRoutes(app);
+  // Health check para Railway/monitores (ligero, sin tocar DB)
+  app.get("/health", (_req, res) => {
+    res.status(200).json({ ok: true, uptime: process.uptime() });
+  });
+  // Health profundo: verifica conexión a la base de datos
+  app.get("/health/db", async (_req, res) => {
+    const db = await getDb();
+    if (!db) return res.status(503).json({ ok: false, db: "unavailable" });
+    try {
+      await db.execute("SELECT 1");
+      res.status(200).json({ ok: true, db: "up" });
+    } catch {
+      res.status(503).json({ ok: false, db: "error" });
+    }
+  });
+
+  // Archivos del volumen persistente (evidencias, logos, documentos)
+  app.get(/^\/api\/files\/(.+)$/, (req, res) => {
+    const relKey = (req.params[0] || "").split("?")[0];
+    const resolved = resolveStorageFile(relKey);
+    if (!resolved) return res.status(404).send("Not Found");
+    res.setHeader("Content-Type", resolved.contentType);
+    res.setHeader("Cache-Control", "private, max-age=3600");
+    res.setHeader("X-Content-Type-Options", "nosniff");
+    res.sendFile(resolved.filePath);
+  });
 
   // Public API v1 (requires API Key auth)
   registerApiV1Routes(app as any);
 
-  // Image proxy: permite al frontend cargar imágenes de S3 sin bloqueo CORS
-  // Solo permite URLs de dominios de confianza (S3/CDN de Manus)
+  // Image proxy: permite al frontend cargar imágenes externas sin bloqueo CORS
+  // Solo permite URLs de dominios de confianza (S3/R2/CloudFront)
   app.get("/api/image-proxy", async (req, res) => {
     try {
       const url = req.query.url as string;
       if (!url) return res.status(400).json({ error: "Missing url" });
       // Validar que la URL sea de un dominio permitido
-      const allowedDomains = ["s3.amazonaws.com", "manus.space", "manus.computer", "amazonaws.com", "cloudfront.net"];
+      const allowedDomains = ["s3.amazonaws.com", "amazonaws.com", "cloudfront.net", "r2.dev"];
       const urlObj = new URL(url);
       const isAllowed = allowedDomains.some(d => urlObj.hostname.endsWith(d));
       if (!isAllowed) return res.status(403).json({ error: "Domain not allowed" });
@@ -98,14 +101,10 @@ async function startServer() {
     serveStatic(app);
   }
 
-  const preferredPort = parseInt(process.env.PORT || "3000");
-  const port = await findAvailablePort(preferredPort);
+  // Railway asigna PORT; hay que bindear exactamente ese puerto (sin fallback)
+  const port = parseInt(process.env.PORT || "3000");
 
-  if (port !== preferredPort) {
-    console.log(`Port ${preferredPort} is busy, using port ${port} instead`);
-  }
-
-  server.listen(port, () => {
+  server.listen(port, "0.0.0.0", () => {
     console.log(`Server running on http://localhost:${port}/`);
   });
 
@@ -114,7 +113,7 @@ async function startServer() {
     try {
       const pending = await getPendingRegistrationsOlderThan(24);
       if (pending.length === 0) return;
-      const ownerUser = await getUserByOpenId(ENV.ownerOpenId);
+      const ownerUser = ENV.ownerEmail ? await getUserByEmail(ENV.ownerEmail) : undefined;
       if (ownerUser) {
         // Solo crear si no hay una notificación del mismo tipo en las últimas 3 horas
         const alreadyNotified = await hasRecentNotification(ownerUser.id, "pending_reminder", 3);

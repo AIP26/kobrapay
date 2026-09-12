@@ -313,7 +313,7 @@ export async function sendWelcomeEmail(data: {
         <table width="600" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);">
           <tr>
             <td style="background:linear-gradient(135deg,#1a1a2e 0%,#16213e 100%);padding:40px;text-align:center;">
-              <img src="https://files.manuscdn.com/user_upload_by_module/session_file/310519663381362445/yMTQoaqGYTxuRnnF.png" alt="KobraPay" width="64" style="margin-bottom:12px;" />
+              <img src="${ENV.appUrl || 'https://kobrapay.mx'}/assets/logo-email.png" alt="KobraPay" width="64" style="margin-bottom:12px;" />
               <h1 style="margin:0;color:#ffffff;font-size:28px;font-weight:800;">¡Bienvenido a KobraPay!</h1>
               <p style="margin:8px 0 0;color:#9ca3af;font-size:14px;">Tu cuenta ha sido aprobada</p>
             </td>

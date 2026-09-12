@@ -397,7 +397,7 @@ const CODE_SNIPPETS = [
     description: "URLs y configuración de webhooks salientes hacia ContentAI y BrokerHub",
     defaultCode: JSON.stringify({
       contentai: {
-        webhookUrl: "https://contentai-mdjbhzth.manus.space/api/kobra/webhook",
+        webhookUrl: "https://tu-plataforma.com/api/kobra/webhook",
         enabled: true,
         events: ["payment.completed", "subscription.created", "subscription.cancelled"]
       },

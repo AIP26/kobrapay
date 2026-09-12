@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link } from "wouter";
 import { Shield, FileText, ChevronDown, ChevronUp, ArrowLeft } from "lucide-react";
 
-const KOBRAPAY_LOGO = "https://files.manuscdn.com/user_upload_by_module/session_file/310519663381362445/BlaEgmymroahADGF.png";
+const KOBRAPAY_LOGO = "/assets/logo-legal.png";
 
 const LAST_UPDATED = "28 de febrero de 2026";
 const COMPANY = "KobraPay";

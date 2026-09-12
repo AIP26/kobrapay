@@ -128,13 +128,13 @@ export async function upsertUser(user: InsertUser): Promise<void> {
   if (user.role !== undefined) {
     values.role = user.role;
     updateSet.role = user.role;
-  } else if (user.openId === ENV.ownerOpenId) {
-    // El owner siempre debe tener role superadmin para que isSuperAdmin() funcione correctamente
+  } else if (ENV.ownerEmail && user.email && user.email.toLowerCase() === ENV.ownerEmail) {
+    // El owner (identificado por OWNER_EMAIL) siempre debe tener role superadmin
     values.role = "superadmin";
     updateSet.role = "superadmin";
   }
   // El superadmin (owner) siempre queda activo; nuevos registros quedan en "pending"
-  if (user.openId === ENV.ownerOpenId) {
+  if (ENV.ownerEmail && user.email && user.email.toLowerCase() === ENV.ownerEmail) {
     values.accountStatus = "active";
     updateSet.accountStatus = "active";
   }
@@ -148,6 +148,13 @@ export async function getUserByOpenId(openId: string) {
   const db = await getDb();
   if (!db) return undefined;
   const result = await db.select().from(users).where(eq(users.openId, openId)).limit(1);
+  return result[0];
+}
+
+export async function getUserByEmail(email: string) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(users).where(sql`LOWER(${users.email}) = ${email.trim().toLowerCase()}`).limit(1);
   return result[0];
 }
 

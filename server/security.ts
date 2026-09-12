@@ -210,7 +210,7 @@ export function setupSecurityHeaders(app: Express): void {
           styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
           fontSrc: ["'self'", "https://fonts.gstatic.com"],
           imgSrc: ["'self'", "data:", "https:", "blob:"],
-          connectSrc: ["'self'", "https://api.stripe.com", "https://*.manus.computer", "wss://*.manus.computer"],
+          connectSrc: ["'self'", "https://api.stripe.com"],
           frameSrc: ["'self'", "https://js.stripe.com", "https://hooks.stripe.com", "https://www.youtube.com", "https://youtube.com", "https://www.youtube-nocookie.com"],
           objectSrc: ["'none'"],
           upgradeInsecureRequests: [],

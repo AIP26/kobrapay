@@ -1,12 +1,18 @@
 export const ENV = {
-  appId: process.env.VITE_APP_ID ?? "",
   cookieSecret: process.env.JWT_SECRET ?? "",
   databaseUrl: process.env.DATABASE_URL ?? "",
-  oAuthServerUrl: process.env.OAUTH_SERVER_URL ?? "",
-  ownerOpenId: process.env.OWNER_OPEN_ID ?? "",
+  ownerEmail: (process.env.OWNER_EMAIL ?? "").trim().toLowerCase(),
   isProduction: process.env.NODE_ENV === "production",
-  forgeApiUrl: process.env.BUILT_IN_FORGE_API_URL ?? "",
-  forgeApiKey: process.env.BUILT_IN_FORGE_API_KEY ?? "",
   resendApiKey: process.env.RESEND_API_KEY ?? "",
   fromEmail: process.env.FROM_EMAIL ?? "noreply@kobrapay.mx",
+  // URL pública de la app (para links absolutos en emails y archivos)
+  appUrl: (process.env.APP_URL ?? "").replace(/\/+$/, ""),
+  // Directorio del volumen persistente para evidencias (Railway: /data/storage)
+  storageDir: process.env.STORAGE_DIR ?? "",
+  // Funciones de IA desactivadas por defecto (pendiente: proveedor propio)
+  aiEnabled: process.env.AI_ENABLED === "true",
+  // Proveedor OpenAI-compatible para reactivar IA después (opcional)
+  aiApiUrl: process.env.AI_API_URL ?? "",
+  aiApiKey: process.env.AI_API_KEY ?? "",
+  aiModel: process.env.AI_MODEL ?? "gpt-4o-mini",
 };

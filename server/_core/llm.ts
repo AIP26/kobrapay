@@ -209,14 +209,24 @@ const normalizeToolChoice = (
   return toolChoice;
 };
 
-const resolveApiUrl = () =>
-  ENV.forgeApiUrl && ENV.forgeApiUrl.trim().length > 0
-    ? `${ENV.forgeApiUrl.replace(/\/$/, "")}/v1/chat/completions`
-    : "https://forge.manus.im/v1/chat/completions";
+// Proveedor OpenAI-compatible (OpenAI, Anthropic vía proxy, OpenRouter, etc.).
+// Las funciones de IA están DESACTIVADAS por defecto tras la migración:
+// exportar AI_ENABLED=true + AI_API_URL + AI_API_KEY para reactivarlas.
+const resolveApiUrl = () => {
+  if (!ENV.aiEnabled) {
+    throw new Error(
+      "AI_DISABLED: las funciones de IA están desactivadas. Configura AI_ENABLED=true, AI_API_URL y AI_API_KEY para reactivarlas."
+    );
+  }
+  if (!ENV.aiApiUrl) {
+    throw new Error("AI_DISABLED: falta AI_API_URL (endpoint OpenAI-compatible)");
+  }
+  return `${ENV.aiApiUrl.replace(/\/$/, "")}/v1/chat/completions`;
+};
 
 const assertApiKey = () => {
-  if (!ENV.forgeApiKey) {
-    throw new Error("OPENAI_API_KEY is not configured");
+  if (!ENV.aiApiKey) {
+    throw new Error("AI_DISABLED: falta AI_API_KEY");
   }
 };
 
@@ -280,7 +290,7 @@ export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
   } = params;
 
   const payload: Record<string, unknown> = {
-    model: "gemini-2.5-flash",
+    model: ENV.aiModel,
     messages: messages.map(normalizeMessage),
   };
 
@@ -316,7 +326,7 @@ export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
     method: "POST",
     headers: {
       "content-type": "application/json",
-      authorization: `Bearer ${ENV.forgeApiKey}`,
+      authorization: `Bearer ${ENV.aiApiKey}`,
     },
     body: JSON.stringify(payload),
   });

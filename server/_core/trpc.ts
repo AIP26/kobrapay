@@ -2,7 +2,6 @@ import { NOT_ADMIN_ERR_MSG, UNAUTHED_ERR_MSG } from '@shared/const';
 import { initTRPC, TRPCError } from "@trpc/server";
 import superjson from "superjson";
 import type { TrpcContext } from "./context";
-import { ENV } from "./env";
 
 const t = initTRPC.context<TrpcContext>().create({
   transformer: superjson,
@@ -12,14 +11,11 @@ export const router = t.router;
 export const publicProcedure = t.procedure;
 
 // ─── Helper: check if user is the platform owner (superadmin) ─────────────────
-// El superadmin es el dueño de la plataforma (OWNER_OPEN_ID) o cualquier usuario
-// con role='superadmin' en la base de datos.
-export function isSuperAdmin(userOpenId: string, userRole?: string): boolean {
-  // El dueño real de la plataforma (OWNER_OPEN_ID) siempre es superadmin
-  if (ENV.ownerOpenId && userOpenId === ENV.ownerOpenId) return true;
-  // También reconocer usuarios con role='superadmin' en la BD
-  if (userRole === 'superadmin') return true;
-  return false;
+// El superadmin es cualquier usuario con role='superadmin' en la base de datos.
+// El dueño de la plataforma obtiene ese rol automáticamente al registrarse con
+// el email configurado en OWNER_EMAIL (ver db.upsertUser y auth.register).
+export function isSuperAdmin(_userOpenId: string, userRole?: string): boolean {
+  return userRole === 'superadmin';
 }
 
 // ─── Require any authenticated user ──────────────────────────────────────────

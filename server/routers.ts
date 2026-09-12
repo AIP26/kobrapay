@@ -92,6 +92,7 @@ import {
   deleteAttendanceRecord,
   createAbsenceRecord,
   getUserByOpenId,
+  getUserByEmail,
 } from "./db";
 import { COOKIE_NAME } from "@shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
@@ -106,8 +107,19 @@ import { sendOtpEmail, sendPaymentReceipt, sendWelcomeEmail, sendInvoiceEmail, s
 import { ENV } from "./_core/env";
 import { storagePut } from "./storage";
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "", {
-  apiVersion: "2026-02-25.clover",
+let _stripe: Stripe | null = null;
+function getStripe(): Stripe {
+  if (!_stripe) {
+    const key = process.env.STRIPE_SECRET_KEY;
+    if (!key) throw new Error("STRIPE_SECRET_KEY no esta configurada");
+    _stripe = new Stripe(key, { apiVersion: "2026-02-25.clover" });
+  }
+  return _stripe;
+}
+// Proxy perezoso: no instancia Stripe hasta el primer uso real.
+// Evita que el servidor/tests caigan al importar el modulo sin la clave.
+const stripe = new Proxy({} as Stripe, {
+  get: (_target, prop) => (getStripe() as unknown as Record<string | symbol, unknown>)[prop],
 });
 
 // Helper: generar código OTP de 6 dígitos
@@ -273,7 +285,7 @@ export const appRouter = router({
                   // Crear como cliente de la plataforma
                   const existingClient = await getPlatformClientByEmail(input.email);
                   if (!existingClient) {
-                    const owner = await getUserByOpenId(ENV.ownerOpenId);
+                    const owner = ENV.ownerEmail ? await getUserByEmail(ENV.ownerEmail) : undefined;
                     if (owner) {
                       await createPlatformClient({
                         adminUserId: owner.id,
@@ -304,7 +316,7 @@ export const appRouter = router({
         }
         // Enviar email al owner (notificación propia de KobraPay, sin Manus)
         try {
-          const owner = await getUserByOpenId(ENV.ownerOpenId);
+          const owner = ENV.ownerEmail ? await getUserByEmail(ENV.ownerEmail) : undefined;
           if (owner?.email) {
             await sendNewRegistrationEmail({
               ownerEmail: owner.email,
@@ -391,7 +403,7 @@ export const appRouter = router({
         await db.update(users).set({ passwordResetToken: token, passwordResetExpires: expires })
           .where(eq(users.id, found[0].id));
         try {
-          const origin = ctx.req.headers.origin || 'https://payprocess-tm7gpbte.manus.space';
+          const origin = ctx.req.headers.origin || ENV.appUrl || 'https://kobrapay.mx';
           const resetUrl = `${origin}/reset-password?token=${token}`;
           const { Resend } = await import('resend');
           const resend = new Resend(process.env.RESEND_API_KEY);
@@ -2801,7 +2813,7 @@ export const appRouter = router({
               to: targetUser.email,
               subject: 'Actualizaci\u00f3n sobre tu solicitud en KobraPay',
               html: `<div style="font-family:sans-serif;max-width:560px;margin:0 auto;padding:24px">
-                <img src="https://files.manuscdn.com/user_upload_by_module/session_file/310519663381362445/yMTQoaqGYTxuRnnF.png" alt="KobraPay" style="width:48px;height:48px;margin-bottom:16px" />
+                <img src="${ENV.appUrl || 'https://kobrapay.mx'}/assets/logo-email.png" alt="KobraPay" style="width:48px;height:48px;margin-bottom:16px" />
                 <h2 style="color:#1a1f2e">Actualizaci\u00f3n de tu solicitud</h2>
                 <p>Hola <strong>${targetUser.name || 'Usuario'}</strong>,</p>
                 <p>Hemos revisado tu solicitud de acceso a KobraPay y lamentamos informarte que en este momento no podemos activar tu cuenta.</p>

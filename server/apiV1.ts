@@ -24,8 +24,17 @@ import crypto from "crypto";
 import { checkIpAllowlist, createSecurityAlert, isIpBlocked, trackAndAutoBlockIp } from "./securityAlerts";
 import { getClientIp } from "./security";
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "", {
-  apiVersion: "2026-02-25.clover",
+let _stripe: Stripe | null = null;
+function getStripe(): Stripe {
+  if (!_stripe) {
+    const key = process.env.STRIPE_SECRET_KEY;
+    if (!key) throw new Error("STRIPE_SECRET_KEY no esta configurada");
+    _stripe = new Stripe(key, { apiVersion: "2026-02-25.clover" });
+  }
+  return _stripe;
+}
+const stripe = new Proxy({} as Stripe, {
+  get: (_target, prop) => (getStripe() as unknown as Record<string | symbol, unknown>)[prop],
 });
 
 export function registerApiV1Routes(app: Router) {

@@ -58,10 +58,24 @@ export function serveStatic(app: Express) {
     );
   }
 
-  app.use(express.static(distPath));
+  // Caché: assets con hash son inmutables; index.html nunca se cachea
+  app.use(
+    express.static(distPath, {
+      setHeaders(res, filePath) {
+        if (/[.-][0-9A-Za-z_-]{8,}\.(js|css|png|jpe?g|webp|svg|woff2?|ttf)$/.test(filePath)) {
+          res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
+        } else if (filePath.endsWith(".html")) {
+          res.setHeader("Cache-Control", "no-cache, must-revalidate");
+        } else {
+          res.setHeader("Cache-Control", "public, max-age=3600");
+        }
+      },
+    })
+  );
 
-  // fall through to index.html if the file doesn't exist
+  // fall through to index.html if the file doesn't exist (SPA)
   app.use("*", (_req, res) => {
+    res.setHeader("Cache-Control", "no-cache, must-revalidate");
     res.sendFile(path.resolve(distPath, "index.html"));
   });
 }

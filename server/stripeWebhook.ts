@@ -33,8 +33,19 @@ import {
   alertarWebhookDuplicado,
 } from "./webhookStore";
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "", {
-  apiVersion: "2026-02-25.clover",
+let _stripe: Stripe | null = null;
+function getStripe(): Stripe {
+  if (!_stripe) {
+    const key = process.env.STRIPE_SECRET_KEY;
+    if (!key) throw new Error("STRIPE_SECRET_KEY no esta configurada");
+    _stripe = new Stripe(key, { apiVersion: "2026-02-25.clover" });
+  }
+  return _stripe;
+}
+// Proxy perezoso: no instancia Stripe hasta el primer uso real.
+// Evita que el servidor/tests caigan al importar el modulo sin la clave.
+const stripe = new Proxy({} as Stripe, {
+  get: (_target, prop) => (getStripe() as unknown as Record<string | symbol, unknown>)[prop],
 });
 
 function getErrorMessageEs(code: string, message: string): string {
