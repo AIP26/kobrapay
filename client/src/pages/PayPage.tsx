@@ -199,6 +199,28 @@ function PaymentForm({ token }: { token: string }) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [stripe, linkData]);
 
+  // ─── Sistema 2: Polling automático de estado de pago ─────────────────────────────────────
+  // Cuando el pago está en 'processing', consultamos el estado real en Stripe
+  // cada 7 segundos. Cuando Stripe confirma, avanzamos automáticamente a 'success'.
+  // NOTA: estos hooks DEBEN estar antes de cualquier return anticipado (regla de hooks de React).
+  const pollingEnabled = step === "processing" && !!paymentIntentId;
+  const { data: pollingData } = trpc.payments.getPaymentStatus.useQuery(
+    { paymentIntentId, token },
+    {
+      enabled: pollingEnabled,
+      refetchInterval: pollingEnabled ? 7000 : false,
+      refetchIntervalInBackground: false,
+      retry: 2,
+    }
+  );
+  // Cuando el polling detecta que el pago fue confirmado, avanzar a success
+  useEffect(() => {
+    if (pollingData?.isSuccess && step === "processing") {
+      console.log("[Polling] Pago confirmado por Stripe. Avanzando a success.");
+      setStep("success");
+    }
+  }, [pollingData?.isSuccess, step]);
+
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -572,28 +594,7 @@ function PaymentForm({ token }: { token: string }) {
       }
     } catch { toast.error(lang === "es" ? "Error al confirmar el pago" : "Error confirming payment"); }
     finally { setProcessing(false); }
-  };  // ─── Sistema 2: Polling automático de estado de pago ─────────────────────────────────────
-  // Cuando el pago está en 'processing', consultamos el estado real en Stripe
-  // cada 7 segundos. Cuando Stripe confirma, avanzamos automáticamente a 'success'.
-  const pollingEnabled = step === "processing" && !!paymentIntentId;
-  const { data: pollingData } = trpc.payments.getPaymentStatus.useQuery(
-    { paymentIntentId, token },
-    {
-      enabled: pollingEnabled,
-      refetchInterval: pollingEnabled ? 7000 : false,
-      refetchIntervalInBackground: false,
-      retry: 2,
-    }
-  );
-  // Cuando el polling detecta que el pago fue confirmado, avanzar a success
-  useEffect(() => {
-    if (pollingData?.isSuccess && step === "processing") {
-      console.log("[Polling] Pago confirmado por Stripe. Avanzando a success.");
-      setStep("success");
-    }
-  }, [pollingData?.isSuccess, step]);
-
-  // ─── Bug #2 fix: Pantalla de pago en proceso ──────────────────────────────────────────
+  };  // ─── Bug #2 fix: Pantalla de pago en proceso ──────────────────────────────────────────
   // Se muestra cuando el banco necesita tiempo para confirmar el pago (SPEI, 3DS).
   // Evita que el usuario quede en la pantalla de pago sin feedback y entre en pánico.
   if (step === "processing") {
