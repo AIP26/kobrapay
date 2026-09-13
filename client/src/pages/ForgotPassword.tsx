@@ -45,7 +45,6 @@ export default function ForgotPassword() {
             Si el correo <strong className="text-gray-900">{email}</strong> está registrado, recibirás instrucciones para restablecer tu contraseña.
           </p>
           <p className="text-gray-500 text-xs mb-2">Revisa también tu carpeta de spam.</p>
-          <p className="text-gray-500 text-xs mb-6">Si te registraste con Manus, usa el botón <strong>"Continuar con Manus"</strong> en la página de inicio de sesión.</p>
           <Link href="/login">
             <Button className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold w-full h-12">
               Volver a iniciar sesión
@@ -107,7 +106,7 @@ export default function ForgotPassword() {
             </form>
 
             <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-800">
-              <strong>Nota:</strong> Si te registraste con tu cuenta Manus, usa el botón <strong>"Continuar con Manus"</strong> en la página de inicio de sesión.
+              <strong>Nota:</strong> El acceso es con tu correo y contraseña. Si no recuerdas tu contraseña, este es el lugar correcto para restablecerla.
             </div>
 
             <div className="mt-4 text-center">

@@ -119,7 +119,7 @@ function PasswordSection() {
         {/* Cambiar contraseña */}
         <div className="space-y-3 pt-4 border-t border-gray-100">
           <p className="text-sm font-semibold text-foreground">Contraseña de Acceso</p>
-          <p className="text-xs text-muted-foreground">Si iniciaste sesión con Manus OAuth, deja el campo actual en blanco para crear una contraseña nueva.</p>
+          <p className="text-xs text-muted-foreground">Si aún no tienes contraseña, deja el campo actual en blanco para crear una nueva.</p>
           <div className="space-y-3">
             <div className="space-y-1.5">
               <Label className="text-sm text-foreground">Contraseña actual</Label>
