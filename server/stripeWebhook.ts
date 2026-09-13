@@ -20,6 +20,7 @@ import {
   addPayerToBlacklist,
 } from "./db";
 import { notifyOwner } from "./_core/notification";
+import { submitDisputeEvidence } from "./disputeEvidence";
 import { createNotification } from "./db";
 import { sendRecurringPaymentEmail, sendPaymentReceipt, sendVendorPaymentEmail, sendPaymentFailedVendorEmail, sendChargebackAlertEmail } from "./_core/email";
 import { getVendorSettings } from "./db";
@@ -1109,6 +1110,28 @@ export function registerStripeConnectWebhook(app: express.Application) {
                       actionUrl: '/dashboard/chargebacks',
                     });
                   } catch (_) {}
+                  // AUTO-ENVÍO de evidencia en nombre de la cuenta Connect del vendedor.
+                  // Stripe solo permite UNA entrega por disputa (submit es irreversible).
+                  try {
+                    const ev = await submitDisputeEvidence({
+                      userId: tx.userId,
+                      transactionId: tx.id,
+                      stripeDisputeId: dispute.id,
+                      chargebackAmountCents: dispute.amount,
+                      chargebackCurrency: dispute.currency,
+                      stripeAccountId: connectedAccountId || undefined,
+                    });
+                    if (ev.submitted) {
+                      const cb = await getChargebackByDisputeId(dispute.id);
+                      if (cb) await updateChargebackStatus(cb.id, "under_review", "Evidencia auto-enviada a Stripe al abrirse la disputa");
+                      console.log(`[Connect Webhook] ✅ Evidencia auto-enviada para disputa ${dispute.id} (cuenta ${connectedAccountId})`);
+                    } else {
+                      console.warn(`[Connect Webhook] Evidencia NO enviada para ${dispute.id}: ${ev.reason}`);
+                    }
+                  } catch (evErr) {
+                    // El fallo del auto-envío NO debe romper el procesamiento del webhook
+                    console.error(`[Connect Webhook] Error en auto-envío de evidencia para ${dispute.id}:`, evErr);
+                  }
                 }
               } catch (cbErr) {
                 console.error('[Connect Webhook] Error creando chargeback:', cbErr);

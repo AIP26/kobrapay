@@ -3667,77 +3667,25 @@ export const appRouter = router({
         stripeDisputeId: z.string(),
       }))
       .mutation(async ({ ctx, input }) => {
-        const { getAllChargebacks, getPaymentConsentByTransaction } = await import('./db');
+        const { submitDisputeEvidence } = await import('./disputeEvidence');
         // Verificar que el chargeback pertenece al usuario
         const cbs = await getChargebacksByUser(ctx.user.id);
         const cb = cbs.find(c => c.id === input.chargebackId);
         if (!cb) throw new TRPCError({ code: 'NOT_FOUND', message: 'Contracargo no encontrado' });
         if (!cb.stripeDisputeId) throw new TRPCError({ code: 'BAD_REQUEST', message: 'Sin ID de disputa en Stripe' });
-        // Obtener evidencia: consentimiento + datos de transacción
-        const consent = cb.transactionId ? await getPaymentConsentByTransaction(cb.transactionId) : null;
-        const txs = await getTransactionsByUser(ctx.user.id);
-        const tx = cb.transactionId ? txs.find(t => t.id === cb.transactionId) : null;
-        const vendorCfg = await getVendorSettings(ctx.user.id);
-        // Construir evidencia de texto para Stripe
-        const consentText = consent ? [
-          `CONSENTIMIENTO EXPLÍCITO DEL PAGADOR:`,
-          `  - Nombre: ${consent.payerName}`,
-          `  - Email: ${consent.payerEmail}`,
-          `  - Teléfono: ${consent.payerPhone || 'N/A'}`,
-          `  - IP del dispositivo: ${consent.ipAddress || 'N/A'}`,
-          `  - Timestamp de aceptación: ${new Date(consent.consentAt).toLocaleString('es-MX')}`,
-          `  - Monto aceptado: $${consent.amountAccepted} ${consent.currency}`,
-          `  - User-Agent: ${consent.userAgent || 'N/A'}`,
-          `  - Términos aceptados: ${consent.termsSnapshot ? 'Sí — ' + consent.termsSnapshot.substring(0, 300) : 'Sí'}`,
-        ].join('\n') : 'Sin registro de consentimiento digital';
-        const evidencePayload: Record<string, string> = {
-          product_description: (tx?.metadata ? (() => { try { return JSON.parse(String(tx.metadata)).description || ''; } catch { return ''; } })() : '') || 'Servicio procesado a través de KobraPay',
-          customer_name: tx?.payerName || consent?.payerName || 'Cliente',
-          customer_email_address: tx?.payerEmail || consent?.payerEmail || '',
-          billing_address: `${tx?.payerName || ''} - ${tx?.payerEmail || ''}`,
-          service_date: tx ? new Date(tx.createdAt).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
-          uncategorized_text: [
-            `EVIDENCIA DE PAGO - KobraPay`,
-            `Negocio: ${vendorCfg?.businessName || 'KobraPay'}`,
-            `Monto: $${tx?.amount || cb.amount / 100} ${tx?.currency || cb.currency}`,
-            `Fecha de pago: ${tx ? new Date(tx.createdAt).toLocaleString('es-MX') : 'N/A'}`,
-            `N° Operación: ${tx?.operationNumber || 'N/A'}`,
-            `Stripe PI: ${tx?.stripePaymentIntentId || 'N/A'}`,
-            `Selfie del pagador: ${tx?.selfieUrl ? 'Disponible — ' + tx.selfieUrl : 'No disponible'}`,
-            `Identificación del pagador: ${tx?.idDocumentUrl ? 'Disponible — ' + tx.idDocumentUrl : 'No disponible'}`,
-            consentText,
-          ].join('\n'),
-        };
-        // Subir archivos de evidencia (selfie + ID) a Stripe si están disponibles
-        const stripe = new (await import('stripe')).default(process.env.STRIPE_SECRET_KEY || '', { apiVersion: '2026-02-25.clover' as any });
-        if (tx?.selfieUrl) {
-          try {
-            const selfieResp = await fetch(tx.selfieUrl);
-            const selfieBuffer = Buffer.from(await selfieResp.arrayBuffer());
-            const selfieFile = await stripe.files.create({
-              purpose: 'dispute_evidence',
-              file: { data: selfieBuffer, name: 'selfie_pagador.jpg', type: 'image/jpeg' },
-            });
-            (evidencePayload as any).customer_signature = selfieFile.id;
-          } catch { /* selfie no crítica */ }
-        }
-        if (tx?.idDocumentUrl) {
-          try {
-            const idResp = await fetch(tx.idDocumentUrl);
-            const idBuffer = Buffer.from(await idResp.arrayBuffer());
-            const idFile = await stripe.files.create({
-              purpose: 'dispute_evidence',
-              file: { data: idBuffer, name: 'identificacion_pagador.jpg', type: 'image/jpeg' },
-            });
-            (evidencePayload as any).uncategorized_file = idFile.id;
-          } catch { /* ID no crítico */ }
-        }
-        await stripe.disputes.update(cb.stripeDisputeId, {
-          evidence: evidencePayload as any,
-          submit: true,
+        // Lógica compartida con el auto-envío del webhook (server/disputeEvidence.ts)
+        const result = await submitDisputeEvidence({
+          userId: ctx.user.id,
+          transactionId: cb.transactionId,
+          stripeDisputeId: cb.stripeDisputeId,
+          chargebackAmountCents: cb.amount,
+          chargebackCurrency: cb.currency,
         });
+        if (!result.submitted) {
+          throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: result.reason || 'No se pudo enviar la evidencia' });
+        }
         // Actualizar estado a under_review
-        await updateChargebackStatus(cb.id, 'under_review', 'Evidencia enviada automáticamente a Stripe');
+        await updateChargebackStatus(cb.id, 'under_review', 'Evidencia enviada manualmente a Stripe desde el panel');
         return { success: true, message: 'Evidencia enviada a Stripe correctamente' };
       }),
     // Guardar consentimiento del pagador antes del pago
