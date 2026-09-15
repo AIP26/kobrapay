@@ -38,6 +38,52 @@ interface AuditEntry {
 const auditLog: AuditEntry[] = [];
 const MAX_AUDIT_ENTRIES = 10000;
 
+// ─── Anti-inundación de alertas por email ──────────────────────────────────────
+// Un escáner que prueba cientos de rutas generaba un correo POR intento.
+// Regla: máximo 1 email por (IP + acción) cada hora; todo sigue en auditLogs (BD).
+const alertThrottle = new Map<string, number>(); // "ip:action" -> timestamp del último email
+const ALERT_THROTTLE_MS = 60 * 60 * 1000; // 1 hora
+
+function shouldSendAlertEmail(ip: string, action: string): boolean {
+  const key = `${ip}:${action}`;
+  const last = alertThrottle.get(key) || 0;
+  const now = Date.now();
+  if (now - last < ALERT_THROTTLE_MS) return false;
+  alertThrottle.set(key, now);
+  // Limpieza ocasional para que el mapa no crezca sin límite
+  if (alertThrottle.size > 5000) {
+    alertThrottle.forEach((ts, k) => {
+      if (now - ts >= ALERT_THROTTLE_MS) alertThrottle.delete(k);
+    });
+  }
+  return true;
+}
+
+// ─── Bloqueo temporal de IPs escáneras ─────────────────────────────────────────
+// Tras varios intentos de acceder a archivos sensibles, la IP queda bloqueada
+// 15 min: sigue recibiendo 404 pero sin generar más eventos/logs.
+const scannerBlocks = new Map<string, { count: number; blockedUntil?: number }>();
+const SCANNER_BLOCK_AFTER = 5;
+const SCANNER_BLOCK_MS = 15 * 60 * 1000;
+
+function isScannerBlocked(ip: string): boolean {
+  const rec = scannerBlocks.get(ip);
+  if (!rec?.blockedUntil) return false;
+  if (Date.now() < rec.blockedUntil) return true;
+  scannerBlocks.delete(ip);
+  return false;
+}
+
+function recordScannerHit(ip: string): void {
+  const rec = scannerBlocks.get(ip) || { count: 0 };
+  rec.count += 1;
+  if (rec.count >= SCANNER_BLOCK_AFTER && !rec.blockedUntil) {
+    rec.blockedUntil = Date.now() + SCANNER_BLOCK_MS;
+    console.warn(`[Security] IP escáner ${ip} bloqueada 15 min tras ${rec.count} intentos a archivos sensibles`);
+  }
+  scannerBlocks.set(ip, rec);
+}
+
 export function logAudit(entry: Omit<AuditEntry, "timestamp">) {
   const fullEntry = { ...entry, timestamp: new Date().toISOString() };
   if (auditLog.length >= MAX_AUDIT_ENTRIES) auditLog.shift();
@@ -64,12 +110,12 @@ export function logAudit(entry: Omit<AuditEntry, "timestamp">) {
         success: entry.success !== false,
         severity: severity as 'info' | 'warning' | 'critical',
       });
-      // Alert superadmin on critical events
-      if (severity === 'critical') {
+      // Alert superadmin on critical events (con anti-inundación: 1 email por IP+acción/hora)
+      if (severity === 'critical' && shouldSendAlertEmail(entry.ip, entry.action)) {
         import('./_core/notification').then(({ notifyOwner }) => {
           notifyOwner({
             title: `⚠️ Alerta de Seguridad: ${entry.action}`,
-            content: `IP: ${entry.ip}\nRecurso: ${entry.resource}\n${entry.details || ''}`,
+            content: `IP: ${entry.ip}\nRecurso: ${entry.resource}\n${entry.details || ''}\n\n(Alertas repetidas de esta IP se silencian por 1 hora; el detalle completo está en la auditoría del panel.)`,
           }).catch(() => {});
         }).catch(() => {});
       }
